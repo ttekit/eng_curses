@@ -46,7 +46,7 @@ export class ContentsService {
         });
     }
 
-    async createContent(dto: CreateContentDto, file: Express.Multer.File) {
+    async createContent(dto: CreateContentDto, file: Express.Multer.File, thumbnailFile?: Express.Multer.File) {
         const key = buildSafeS3ObjectKey(file.originalname);
         await this.s3Client.send(
             new PutObjectCommand({
@@ -56,6 +56,19 @@ export class ContentsService {
             }),
         );
         const videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+
+        let thumbnailUrl: string | null = null;
+        if (thumbnailFile) {
+            const thumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+            await this.s3Client.send(
+                new PutObjectCommand({
+                    Bucket: this.bucket,
+                    Key: thumbKey,
+                    Body: thumbnailFile.buffer,
+                }),
+            );
+            thumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+        }
 
         const created = await this.prisma.content.create({
             data: {
@@ -70,6 +83,7 @@ export class ContentsService {
                                 videoLink: videoUrl,
                                 videoName: dto.name,
                                 playlistPosition: 0,
+                                thumbnailUrl: thumbnailUrl,
                             },
                         },
                     },
@@ -259,6 +273,7 @@ export class ContentsService {
         contentId: number,
         dto: AddContentEpisodeDto,
         file: Express.Multer.File,
+        thumbnailFile?: Express.Multer.File,
     ) {
         const content = await this.prisma.content.findUnique({
             where: { id: contentId },
@@ -281,6 +296,20 @@ export class ContentsService {
             }),
         );
         const videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+
+        let thumbnailUrl: string | null = null;
+        if (thumbnailFile) {
+            const thumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+            await this.s3Client.send(
+                new PutObjectCommand({
+                    Bucket: this.bucket,
+                    Key: thumbKey,
+                    Body: thumbnailFile.buffer,
+                }),
+            );
+            thumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+        }
+
         const createdMedia = await this.prisma.contentMedia.create({
             data: {
                 categoryId: contentId,
@@ -291,6 +320,7 @@ export class ContentsService {
                         videoName: dto.videoName,
                         videoDescription: dto.videoDescription ?? null,
                         playlistPosition: 0,
+                        thumbnailUrl: thumbnailUrl,
                     },
                 },
             },

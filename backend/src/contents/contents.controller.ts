@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -12,10 +13,11 @@ import {
   Post,
   Req,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileInterceptor, FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Express, Request } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
@@ -117,23 +119,24 @@ export class ContentsController {
 
   @Post("create")
   @UseInterceptors(
-    FileInterceptor("file", {
+    FileFieldsInterceptor([
+      { name: "file", maxCount: 1 },
+      { name: "thumbnailFile", maxCount: 1 },
+    ], {
       limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
     }),
   )
   async createContent(
     @Body() createContentDto: CreateContentDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: CONTENT_VIDEO_MAX_FILE_BYTES }),
-          new FileTypeValidator({ fileType: "video/mp4" }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFiles()
+    files: { file?: Express.Multer.File[]; thumbnailFile?: Express.Multer.File[] },
   ) {
-    return await this.contentsService.createContent(createContentDto, file);
+    const videoFile = files?.file?.[0];
+    const thumbnailFile = files?.thumbnailFile?.[0];
+    if (!videoFile) {
+      throw new BadRequestException("Video file is required");
+    }
+    return await this.contentsService.createContent(createContentDto, videoFile, thumbnailFile);
   }
 
   @Patch(":id/playlist")
@@ -151,7 +154,10 @@ export class ContentsController {
   @Post(":id/episodes")
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(
-    FileInterceptor("file", {
+    FileFieldsInterceptor([
+      { name: "file", maxCount: 1 },
+      { name: "thumbnailFile", maxCount: 1 },
+    ], {
       limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
     }),
   )
@@ -161,17 +167,15 @@ export class ContentsController {
   async addEpisode(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddContentEpisodeDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: CONTENT_VIDEO_MAX_FILE_BYTES }),
-          new FileTypeValidator({ fileType: "video/mp4" }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFiles()
+    files: { file?: Express.Multer.File[]; thumbnailFile?: Express.Multer.File[] },
   ) {
-    return await this.contentsService.addEpisode(id, dto, file);
+    const videoFile = files?.file?.[0];
+    const thumbnailFile = files?.thumbnailFile?.[0];
+    if (!videoFile) {
+      throw new BadRequestException("Video file is required");
+    }
+    return await this.contentsService.addEpisode(id, dto, videoFile, thumbnailFile);
   }
 
   @Patch(":id")

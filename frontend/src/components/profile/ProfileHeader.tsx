@@ -23,13 +23,13 @@ function initialsFromName(name: string): string {
 
 export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
   const { messages } = useLandingLocale();
-  const h = messages.profileHeader;
+  const h: any = (messages as any).profileHeader || {};
   const initials = initialsFromName(user.name);
   const roleLabel =
-    user.role === "teacher" ? h.roleTeacher
-    : user.role === "student" ? h.roleStudent
-    : user.role === "admin" ? h.roleAdmin
-    : h.roleAdult;
+    user.role === "teacher" ? (h.roleTeacher || "Teacher")
+      : user.role === "student" ? (h.roleStudent || "Student")
+        : user.role === "admin" ? (h.roleAdmin || "Admin")
+          : (h.roleAdult || "Learner");
 
   return (
     <div className="relative">
@@ -53,7 +53,7 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
             </div>
             <button
               type="button"
-              title={h.photoSoonAria}
+              title={h.photoSoonAria || "Change photo"}
               className="absolute hover:cursor-pointer -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground shadow-md"
             >
               <Edit2 className="size-4" />
@@ -63,11 +63,11 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
           <div className="min-w-0 flex-1 space-y-2 text-center sm:text-left">
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap">
               <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-                {user.name || h.learnerFallback}
+                {user.name || h.learnerFallback || "Learner"}
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <span className="rounded-md border-0 bg-primary/20 px-2.5 py-0.5 text-sm font-medium text-primary">
-                  {formatMessage(h.levelLine, { level: user.level || "—" })}
+                  {formatMessage(h.levelLine || "Level: {level}", { level: user.level || "—" })}
                 </span>
                 <span className="rounded-md border border-accent px-2.5 py-0.5 text-sm text-accent">
                   {roleLabel}
@@ -82,7 +82,7 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
                 <div className="flex items-center gap-1.5">
                   <Calendar className="size-4 shrink-0" />
                   <span>
-                    {formatMessage(h.joinedLine, {
+                    {formatMessage(h.joinedLine || "Joined {date}", {
                       date: user.joinDateLabel,
                     })}
                   </span>
@@ -92,10 +92,10 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
                 <Flame className="size-4 shrink-0 text-orange-500" />
                 <span className="font-medium text-foreground">
                   {user.streakDays
-                    ? formatMessage(h.streakLine, {
-                        count: String(user.streakDays),
-                      })
-                    : h.streakStart}
+                    ? formatMessage(h.streakLine || "{count} day streak", {
+                      count: String(user.streakDays),
+                    })
+                    : (h.streakStart || "Start your streak!")}
                 </span>
               </div>
             </div>

@@ -48,10 +48,49 @@ import {
   patchAdminSeriesPlaylistOrder,
   postAdminSeriesEpisode,
   regenerateAdminVideoLevelTags,
-  regenerateAdminVideoCaptions,
   regenerateAdminVideoThemeTags,
+  regenerateAdminVideoCaptions,
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
+
+/**
+ * Extracts a frame at 0.1s from a video File and returns a binary JPEG Blob.
+ */
+function generateVideoThumbnailBlob(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.playsInline = true;
+    video.muted = true;
+    video.src = URL.createObjectURL(file);
+
+    video.onloadeddata = () => {
+      video.currentTime = 0.1;
+    };
+
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(video.src);
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Canvas blob generation failed"));
+        }
+      }, "image/jpeg", 0.85);
+    };
+
+    video.onerror = (e) => {
+      URL.revokeObjectURL(video.src);
+      reject(e);
+    };
+  });
+}
 
 function sortAdminPlaylistRows(
   rows: AdminCatalogVideoRow[],
@@ -404,6 +443,15 @@ export default function AdminVideosPage() {
         "description",
         (description || `${name} — learner catalog.`).slice(0, 250),
       );
+
+      // Генерируем миниатюру на лету и крепим как файл
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (thumbErr) {
+        console.warn("Failed to generate auto-thumbnail:", thumbErr);
+      }
+
       await createAdminCatalogVideo(fd);
       toast.success("Video uploaded and published");
       setUploadOpen(false);
@@ -507,6 +555,15 @@ export default function AdminVideosPage() {
       fd.append("videoName", name);
       const d = addEpisodeDesc.trim();
       if (d) fd.append("videoDescription", d);
+
+      // Генерируем миниатюру для нового эпизода плейлиста
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (thumbErr) {
+        console.warn("Failed to generate auto-thumbnail for episode:", thumbErr);
+      }
+
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
@@ -620,7 +677,7 @@ export default function AdminVideosPage() {
         title={
           addEpisodeSeries ?
             `Add episode · ${addEpisodeSeries.seriesName}`
-          : "Add episode"
+            : "Add episode"
         }
         footer={
           <>
@@ -692,7 +749,7 @@ export default function AdminVideosPage() {
           <>
             <AdminButton
               variant="outline"
-              onClick={() => setEditing(null)}
+              onClick={(e) => { e.stopPropagation(); setEditing(null); }}
               disabled={editSaving || !!regenBusy}
             >
               Cancel
@@ -893,7 +950,7 @@ export default function AdminVideosPage() {
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity != null ?
                       inspectMeta.video.content.stats.processingComplexity
-                    : "—"}
+                      : "—"}
                   </span>
                 </p>
               </div>
@@ -920,22 +977,22 @@ export default function AdminVideosPage() {
                       Open raw file on storage
                     </a>
                   </>
-                : (
-                  <p className="text-sm text-muted-foreground">
-                    No captions row yet. Open Edit → Regenerate captions.
-                  </p>
-                )}
+                  : (
+                    <p className="text-sm text-muted-foreground">
+                      No captions row yet. Open Edit → Regenerate captions.
+                    </p>
+                  )}
                 {subtitleLoading ?
                   <p className="text-sm text-muted-foreground">Loading WebVTT…</p>
-                : null}
+                  : null}
                 {subtitleError ?
                   <p className="text-sm text-destructive">{subtitleError}</p>
-                : null}
+                  : null}
                 {subtitleText ?
                   <pre className="max-h-[min(420px,50vh)] overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] whitespace-pre-wrap break-all">
                     {subtitleText}
                   </pre>
-                : null}
+                  : null}
               </div>
             ) : null}
           </div>
@@ -1086,7 +1143,7 @@ export default function AdminVideosPage() {
                         {group.rows.length === 1 ? "episode" : "episodes"}
                         {group.rows.length > 1 ?
                           " · use arrows to set playlist order"
-                        : null}
+                          : null}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -1101,7 +1158,7 @@ export default function AdminVideosPage() {
                           Learner playlist
                           <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                         </Link>
-                      : null}
+                        : null}
                       <AdminButton
                         size="sm"
                         variant="outline"
@@ -1132,7 +1189,7 @@ export default function AdminVideosPage() {
                                 <AdminBadge variant="secondary">
                                   #{episodeIndex + 1}
                                 </AdminBadge>
-                              : null}
+                                : null}
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
                               <a
@@ -1248,7 +1305,7 @@ export default function AdminVideosPage() {
                                   Down
                                 </AdminButton>
                               </div>
-                            : null}
+                              : null}
                             <div className="mt-3 flex flex-wrap gap-2">
                               <AdminBadge variant="secondary">{lvl}</AdminBadge>
                               <AdminBadge variant="outline">
