@@ -205,7 +205,7 @@ export class ContentVideoService {
   }
 
   async findOne(id: number) {
-    const video = await this.prisma.contentVideo.findUnique({
+    const contentVideo = await this.prisma.contentVideo.findUnique({
       where: { id },
       include: {
         videoCaption: { select: { subtitlesFileLink: true } },
@@ -215,25 +215,12 @@ export class ContentVideoService {
             stats: { include: { topics: { select: { id: true, name: true } } } },
           },
         },
-        series: {
-          include: {
-            videos: {
-              orderBy: { episodeNumber: 'asc' },
-              select: {
-                id: true,
-                videoName: true,
-                videoDescription: true,
-                thumbnailUrl: true,
-                episodeNumber: true,
-              }
-            }
-          }
-        }
       },
     });
-
-    if (!video) throw new NotFoundException(`Video ${id} not found`);
-    return video;
+    if (!contentVideo) {
+      throw new NotFoundException(`ContentVideo with ID ${id} not found`);
+    }
+    return contentVideo;
   }
 
   async getIframePayload(id: number): Promise<{ iframeHtml: string }> {
