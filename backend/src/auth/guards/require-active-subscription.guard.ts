@@ -20,8 +20,7 @@ import { extractAccessTokenFromRequest } from "../extract-request-access-token.u
 
 /**
  * Requires an active Stripe-backed subscription for learner JWT calls.
- * Bypass: `SKIP_SUBSCRIPTION_ENFORCEMENT`, automatic skip when `NODE_ENV=development`,
- * @Public routes, routes without Bearer token (other guards must enforce auth),
+ * Bypass: SKIP_SUBSCRIPTION_ENFORCEMENT, @Public routes, routes without Bearer token (other guards must enforce auth),
  * allowlisted paths (see ALLOWLIST), teachers, roster students (`teacherId` set).
  */
 @Injectable()
