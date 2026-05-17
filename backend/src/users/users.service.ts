@@ -50,6 +50,8 @@ export class UsersService {
         isSuspended: true,
         hasCompletedPlacement: true,
         createdAt: true,
+        xp: true,
+        currentStreak: true,
         additionalUserData: {
             select: {
                 englishLevel: true,
