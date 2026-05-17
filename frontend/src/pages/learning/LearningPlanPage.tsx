@@ -11,9 +11,15 @@ import {
 } from "lucide-react";
 import ContentHeader from "../../components/catalog/ContentHeader";
 import { LearningPlanPhasesSection } from "../../components/learning/LearningPlanPhasesSection";
+import { LearningPlanAchievabilityNote } from "../../components/learning/LearningPlanAchievabilityNote";
 import { useUser } from "../../context/UserContext";
 import { useRegenerateStudyingPlan } from "../../hooks/useRegenerateStudyingPlan";
 import { buildLearningPlanModel } from "../../lib/learningPlan";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { SEO } from "../../components/SEO/SEO";
+import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { LEARNING_PLAN_UK_DEFAULTS } from "../../locales/learningPlanUkDefaults";
+import { renderLightMarkdown } from "../../lib/renderLightMarkdown";
 
 function renderIntroMarkdownish(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g);
@@ -29,10 +35,19 @@ function renderIntroMarkdownish(text: string) {
 export default function LearningPlanPage() {
   const { user, isLoading, isLoggedIn } = useUser();
   const { regenerate, isRegenerating } = useRegenerateStudyingPlan();
+  const { messages, locale } = useLandingLocale();
+  const lp = messages.learningPlan;
 
   const plan = useMemo(
-    () => (user ? buildLearningPlanModel(user) : null),
-    [user],
+    () =>
+      user ?
+        buildLearningPlanModel(
+          user,
+          locale === "uk" ? LEARNING_PLAN_UK_DEFAULTS : undefined,
+          locale === "uk" ? "uk" : "en",
+        )
+      : null,
+    [user, locale],
   );
 
   if (!isLoading && (!isLoggedIn || !user)) {
@@ -56,23 +71,29 @@ export default function LearningPlanPage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.25_295/_18%)_0%,transparent_50%)]" />
       <div className="absolute inset-0 bg-card/55" />
 
+      <SEO
+        title={lp.seoTitle}
+        description={lp.seoDescription}
+        canonicalUrl={resolveCanonicalUrl("/learning-plan")}
+        ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
+        ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+      />
       <ContentHeader />
 
       <main className="relative z-10 mx-auto max-w-3xl px-4 pb-24 pt-28 md:pt-32">
         {isLoading || !plan || !user ?
-          <p className="text-center text-sm text-muted-foreground">Loading…</p>
+          <p className="text-center text-sm text-muted-foreground">{lp.loading}</p>
         : <>
             <div className="mb-10 text-center">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
                 <Sparkles className="size-3.5 text-primary" />
-                Your personalized roadmap
+                {lp.badge}
               </div>
               <h1 className="font-display text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-                Learning plan
+                {lp.title}
               </h1>
               <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground md:text-base">
-                Here’s how to work toward your goal across your timeline — using
-                lessons, quizzes, and steady habits.
+                {lp.subtitle}
               </p>
               <button
                 type="button"
@@ -84,7 +105,7 @@ export default function LearningPlanPage() {
                   <Loader2 className="size-4 animate-spin text-primary" aria-hidden
                   />
                 : <RefreshCw className="size-4 text-primary" aria-hidden />}
-                {isRegenerating ? "Regenerating…" : "Regenerate studying plan"}
+                {isRegenerating ? lp.regenerating : lp.regenerateCta}
               </button>
             </div>
 
@@ -93,7 +114,7 @@ export default function LearningPlanPage() {
                 <div className="mb-2 flex items-center gap-2 text-primary">
                   <Target className="size-5" />
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Goal
+                    {lp.goalLabel}
                   </span>
                 </div>
                 <p className="text-lg font-semibold leading-snug">{plan.goal}</p>
@@ -102,7 +123,7 @@ export default function LearningPlanPage() {
                 <div className="mb-2 flex items-center gap-2 text-primary">
                   <Calendar className="size-5" />
                   <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Time to achieve
+                    {lp.timeLabel}
                   </span>
                 </div>
                 <p className="text-lg font-semibold leading-snug">
@@ -116,6 +137,12 @@ export default function LearningPlanPage() {
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
                 {renderIntroMarkdownish(plan.intro)}
               </p>
+              <LearningPlanAchievabilityNote
+                horizon={plan.horizon}
+                score={plan.achievabilityScore}
+                suggestedMonths={plan.achievabilitySuggestedMonths}
+                copy={lp}
+              />
             </div>
 
             <div className="mb-10">
@@ -128,16 +155,19 @@ export default function LearningPlanPage() {
             <div className="mb-12 rounded-2xl border border-border bg-card/80 p-6 md:p-8">
               <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
                 <ListChecks className="size-6 text-primary" />
-                Weekly rhythm
+                {lp.weeklyRhythm}
               </h2>
               <ul className="space-y-3 text-sm md:text-base">
-                {plan.weeklyHabits.map((h) => (
-                  <li key={h} className="flex gap-3">
+                {plan.weeklyHabits.map((h, hi) => (
+                  <li
+                    key={`${hi}-${h.slice(0, 24)}`}
+                    className="flex items-start gap-3"
+                  >
                     <span
                       className="mt-2 size-1.5 shrink-0 rounded-full bg-emerald-500/90"
                       aria-hidden
                     />
-                    {h}
+                    {renderLightMarkdown(h)}
                   </li>
                 ))}
               </ul>
@@ -148,14 +178,14 @@ export default function LearningPlanPage() {
                 to="/catalog"
                 className="inline-flex items-center justify-center gap-2 rounded-[15px] bg-primary px-8 py-4 text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:bg-purple-hover hover:text-white"
               >
-                Go to catalog
+                {lp.goCatalog}
                 <ArrowRight className="size-4" />
               </Link>
               <Link
                 to="/profile"
                 className="inline-flex items-center justify-center rounded-[15px] border border-border px-8 py-3.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted/50"
               >
-                Update profile &amp; goal
+                {lp.updateProfileGoal}
               </Link>
             </div>
           </>

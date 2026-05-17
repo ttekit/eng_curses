@@ -10,6 +10,25 @@ import * as bcrypt from 'bcrypt';
 import { parseStudyingPlanV2Strict } from '../studying-plan/studying-plan-json.util';
 import { AlcorythmService } from '../alcorythm/alcorythm.service';
 import { Prisma } from '../generated/prisma/client';
+import type { AuthMethod } from "@generated/prisma/enums";
+import { UserRole } from "@generated/prisma/enums";
+
+function parseRoleFromDto(roleRaw: string | undefined): UserRole | undefined {
+    if (roleRaw == null || typeof roleRaw !== "string") {
+        return undefined;
+    }
+    const k = roleRaw.trim().toUpperCase();
+    if (k === "ADULT") return UserRole.ADULT;
+    if (k === "STUDENT") return UserRole.STUDENT;
+    if (k === "TEACHER") return UserRole.TEACHER;
+    if (k === "ADMIN") return UserRole.ADMIN;
+    return undefined;
+}
+
+function resolveAuthMethodForCreate(dto: CreateUserDto): AuthMethod {
+    const raw = String(dto.method ?? "").trim().toUpperCase();
+    return raw === "GOOGLE" ? "GOOGLE" : "CREDENTIALS";
+}
 
 function clampPhaseIndex(index: number, phaseCount: number): number {
     if (phaseCount <= 0) return 0;
@@ -84,11 +103,8 @@ export class UsersService {
             studyingPlanPhases,
             activeStudyingPhaseIndex,
         } = createUserDto;
-        const role =
-            roleRaw &&
-                ["adult", "student", "teacher"].includes(roleRaw)
-                ? roleRaw
-                : undefined;
+        const role = parseRoleFromDto(roleRaw);
+        const resolvedAuthMethod = resolveAuthMethodForCreate(createUserDto);
         const additionalDataPayload: any = {
             englishLevel,
             nativeLanguage,
@@ -135,16 +151,25 @@ export class UsersService {
             );
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        let hashedPassword = null;
+
+        if (password) {
+            hashedPassword = await bcrypt.hash(password, 10);
+        }
+
+        const coreUserFields = {
+            email,
+            name,
+            password: hashedPassword,
+            ...(role ? { role } : {}),
+        };
 
         let created: any;
         try {
             created = await prisma.user.create({
                 data: {
-                    email,
-                    password: hashedPassword,
-                    name,
-                    ...(role ? { role } : {}),
+                    ...coreUserFields,
+                    method: resolvedAuthMethod,
                     additionalUserData: {
                         create: additionalDataPayload,
                     },
@@ -162,10 +187,8 @@ export class UsersService {
             if (message.includes('Unknown argument `knownLanguages`') || message.includes('Unknown argument `knownLanguageLevels`')) {
                 created = await prisma.user.create({
                     data: {
-                        email,
-                        password: hashedPassword,
-                        name,
-                        ...(role ? { role } : {}),
+                        ...coreUserFields,
+                        method: resolvedAuthMethod,
                         additionalUserData: { create: additionalDataPayload },
                     },
                     select: this.userSelect,
@@ -180,10 +203,8 @@ export class UsersService {
 
             created = await prisma.user.create({
                 data: {
-                    email,
-                    password: hashedPassword,
-                    name,
-                    ...(role ? { role } : {}),
+                    ...coreUserFields,
+                    method: resolvedAuthMethod,
                 },
                 select: this.userSelect,
             });
@@ -199,7 +220,7 @@ export class UsersService {
         });
     }
 
-    async findOne(id: number) {
+    async findById(id: number) {
         const user = await this.prisma.user.findUnique({
             where: { id },
             select: this.userSelect,
@@ -211,10 +232,21 @@ export class UsersService {
 
         return user;
     }
+    async FindByEmail(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: email.toLowerCase()
+            },
+            include: {
+                accounts: true,
+            }
+        })
+        return user
+    }
 
     async update(id: number, updateUserDto: UpdateUserDto) {
         const prisma = this.prisma as any;
-        await this.findOne(id);
+        await this.findById(id);
 
         const {
             favoriteGenres,
@@ -232,6 +264,15 @@ export class UsersService {
             currentResolution,
             ...dataToUpdate
         } = updateUserDto as any;
+
+        if (dataToUpdate.role !== undefined && dataToUpdate.role !== null) {
+            const coerced = parseRoleFromDto(String(dataToUpdate.role));
+            if (coerced !== undefined) {
+                dataToUpdate.role = coerced;
+            } else {
+                delete dataToUpdate.role;
+            }
+        }
 
         if (
             dataToUpdate.password !== undefined &&
@@ -381,7 +422,7 @@ export class UsersService {
     }
 
     async remove(id: number) {
-        await this.findOne(id);
+        await this.findById(id);
 
         return this.prisma.user.delete({
             where: { id },

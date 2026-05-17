@@ -10,7 +10,12 @@ export type GeneratedStudentAccount = {
 };
 
 export type RegisterResult =
-  | { success: true; generatedStudents?: GeneratedStudentAccount[] }
+  | {
+      success: true;
+      generatedStudents?: GeneratedStudentAccount[];
+      /** JWT from `POST /auth/register` when registration succeeds. */
+      accessToken?: string;
+    }
   | { success: false; message: string };
 
 /** Matches backend `@IsEmail` + `@MinLength(6)`; returns a user-facing error or `null`. */
@@ -113,9 +118,11 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
   if (response.ok) {
     clearRegistrationDraft();
     let generatedStudents: GeneratedStudentAccount[] | undefined;
+    let accessToken: string | undefined;
     try {
       const data = (await response.json()) as {
         generatedStudents?: GeneratedStudentAccount[];
+        access_token?: string;
       };
       if (
         Array.isArray(data.generatedStudents) &&
@@ -123,10 +130,16 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
       ) {
         generatedStudents = data.generatedStudents;
       }
+      if (
+        typeof data.access_token === "string" &&
+        data.access_token.length > 0
+      ) {
+        accessToken = data.access_token;
+      }
     } catch {
       // ignore body parse
     }
-    return { success: true, generatedStudents };
+    return { success: true, generatedStudents, accessToken };
   }
   return { success: false, message: await readApiErrorBody(response) };
 }

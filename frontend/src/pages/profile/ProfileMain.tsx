@@ -49,7 +49,8 @@ const LEARNER_TABS = [
 type TabId = (typeof LEARNER_TABS)[number]["id"] | "students" | "videos";
 
 function normalizeRole(role: string): ProfileHeaderRole {
-  if (role === "student" || role === "teacher") return role;
+  const k = role.trim().toLowerCase();
+  if (k === "student" || k === "teacher" || k === "admin") return k;
   return "adult";
 }
 

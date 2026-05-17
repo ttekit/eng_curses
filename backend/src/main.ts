@@ -1,4 +1,5 @@
 import { config } from "dotenv";
+import cookieParser from "cookie-parser";
 
 config();
 
@@ -8,6 +9,60 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { join } from "path";
 import { AppModule } from "./app.module";
+import { ConfigService } from "@nestjs/config";
+import IORedis from "ioredis";
+import { RedisStore } from "connect-redis";
+import session from "express-session";
+import { ms, StringValue } from "./common/utils/ms.util";
+import { parseBoolean } from "./common/utils/parse-boolean.util";
+import type { NextFunction, Request, Response } from "express";
+
+function normalizeCorsOriginEntry(entry: string): string {
+  return entry.trim().replace(/\/+$/, "");
+}
+
+/** Echo `Origin` back only when it matches production/dev allowlist (same rules as `enableCors`). */
+function echoAllowedRequestOrigin(req: Request): string | undefined {
+  const rawOrigin = req.headers.origin;
+  const originHeader =
+    typeof rawOrigin === "string" ? rawOrigin : undefined;
+  if (!originHeader?.trim()) {
+    return undefined;
+  }
+  const normalizedBrowserOrigin = normalizeCorsOriginEntry(originHeader);
+  const isProd = process.env.NODE_ENV === "production";
+  const rawList = process.env.CORS_ORIGINS?.trim() ?? "";
+  if (isProd) {
+    if (!rawList) {
+      return undefined;
+    }
+    const allowed = rawList
+      .split(",")
+      .map((s) => normalizeCorsOriginEntry(s))
+      .filter(Boolean);
+    return allowed.includes(normalizedBrowserOrigin) ? originHeader : undefined;
+  }
+  if (!rawList) {
+    return originHeader;
+  }
+  const allowed = rawList
+    .split(",")
+    .map((s) => normalizeCorsOriginEntry(s))
+    .filter(Boolean);
+  return allowed.includes(normalizedBrowserOrigin) ? originHeader : undefined;
+}
+
+function applyAllowedCorsHeaders(req: Request, res: Response): void {
+  if (res.headersSent) {
+    return;
+  }
+  const origin = echoAllowedRequestOrigin(req);
+  if (!origin) {
+    return;
+  }
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+}
 
 function resolveCorsOrigin():
   | boolean
@@ -25,32 +80,89 @@ function resolveCorsOrigin():
     if (!raw?.trim()) {
       throw new Error("CORS_ORIGINS must be set when NODE_ENV=production");
     }
-    return raw.split(",").map((s) => s.trim());
+    return raw
+      .split(",")
+      .map((s) => normalizeCorsOriginEntry(s))
+      .filter(Boolean);
   }
 
   if (!raw?.trim()) {
     return true;
   }
 
-  return raw.split(",").map((s) => s.trim());
+  return raw
+    .split(",")
+    .map((s) => normalizeCorsOriginEntry(s))
+    .filter(Boolean);
 }
 
 async function bootstrap() {
+  /**
+   * Default Express/Nest JSON limit is small (~100kb). Larger payloads (e.g. studying-plan JSON)
+   * otherwise fail with 413. Proxies (nginx, Cloudflare) may enforce their own limits too — if the
+   * browser shows "CORS" + 413, the edge often omitted `Access-Control-Allow-Origin` on the error.
+   */
+  const jsonBodyLimit = process.env.HTTP_JSON_BODY_LIMIT?.trim() || "500mb";
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
+    bodyParser: false,
   });
-  // Dev helper: same-origin test UI for the placement/entrance test (e.g. /dev/entrance-test.html)
-  app.useStaticAssets(join(process.cwd(), "public"), { prefix: "/dev/" });
 
   app.enableCors({
     origin: resolveCorsOrigin(),
+    exposedHeaders: ["set-cookie"],
     credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-api-token",
+      "X-Access-Token",
+    ],
   });
+
+  app.useBodyParser("json", { limit: jsonBodyLimit });
+  app.useBodyParser("urlencoded", { extended: true, limit: jsonBodyLimit });
+
+  app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+    applyAllowedCorsHeaders(req, res);
+    next(err);
+  });
+
+  const config = app.get(ConfigService);
+  const redis = new IORedis("redis://localhost:6379");
+  //const redis = new IORedis(config.getOrThrow('REDIS_URL'))
+
+  app.use(cookieParser(config.getOrThrow<string>("COOKIES_SECRET")));
+
+
+  // Dev helper: same-origin test UI for the placement/entrance test (e.g. /dev/entrance-test.html)
+  app.useStaticAssets(join(process.cwd(), "public"), { prefix: "/dev/" });
 
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
       whitelist: true,
+    }),
+  );
+
+  app.use(
+    session({
+      secret: config.getOrThrow<string>("SESSION_SECRET"),
+      name: config.getOrThrow<string>("SESSION_NAME"),
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        domain: config.getOrThrow<string>("SESSION_DOMAIN") || undefined,
+        maxAge: ms(config.getOrThrow<StringValue>("SESSION_MAX_AGE")),
+        httpOnly: parseBoolean(config.getOrThrow<string>("SESSION_HTTP_ONLY")),
+        secure: parseBoolean(config.getOrThrow<string>("SESSION_SECURE")) || false,
+        sameSite: 'lax',
+      },
+      store: new RedisStore({
+        client: redis,
+        prefix: config.getOrThrow<string>('SESSION_FOLDER')
+      })
     }),
   );
 

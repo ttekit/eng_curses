@@ -35,7 +35,7 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(["adult", "student", "teacher"])
+  @IsIn(["adult", "student", "teacher", "admin"])
   role?: string;
 
   @IsOptional()

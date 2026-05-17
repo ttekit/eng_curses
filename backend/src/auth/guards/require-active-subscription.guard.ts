@@ -15,6 +15,8 @@ import {
   isSubscriptionEnforcementDisabled,
 } from "../../billing/subscription-access.util";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
+import { UserRole } from "@generated/prisma/enums";
+import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
 
 /**
  * Requires an active Stripe-backed subscription for learner JWT calls.
@@ -73,12 +75,7 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
       return true;
     }
 
-    const auth = req.headers.authorization;
-    if (!auth || !auth.startsWith("Bearer ")) {
-      return true;
-    }
-
-    const token = auth.slice(7).trim();
+    const token = extractAccessTokenFromRequest(req);
     if (!token) {
       return true;
     }
@@ -111,7 +108,7 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
       throw new UnauthorizedException("User not found");
     }
 
-    if (user.role === "teacher" || user.teacherId != null) {
+    if (user.role === UserRole.TEACHER || user.role === UserRole.ADMIN || user.teacherId != null) {
       return true;
     }
 

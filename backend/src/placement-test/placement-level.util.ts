@@ -7,6 +7,64 @@ export type PlacementLevelBand = {
   label: string;
 };
 
+/** Monotonic CEFR ladder for clamping placement outcomes to the learner’s declared band. */
+export const PLACEMENT_CEFR_ORDER = [
+  "A1",
+  "A2",
+  "B1",
+  "B2",
+  "C1",
+  "C2",
+] as const;
+
+export type PlacementCefrCode = (typeof PLACEMENT_CEFR_ORDER)[number];
+
+const PLACEMENT_BAND_LABELS: Record<PlacementCefrCode, string> = {
+  A1: "Beginner",
+  A2: "Elementary",
+  B1: "Intermediate",
+  B2: "Upper intermediate",
+  C1: "Advanced",
+  C2: "Proficient",
+};
+
+export function placementBandAtIndex(index: number): PlacementLevelBand {
+  const idx = Math.min(
+    PLACEMENT_CEFR_ORDER.length - 1,
+    Math.max(0, Math.round(index)),
+  );
+  const code = PLACEMENT_CEFR_ORDER[idx];
+  return { code, label: PLACEMENT_BAND_LABELS[code] };
+}
+
+export function indexOfPlacementCefrCode(
+  code: PlacementLevelBand["code"],
+): number {
+  return PLACEMENT_CEFR_ORDER.indexOf(code as PlacementCefrCode);
+}
+
+/**
+ * Entry test is confirmation-focused: questions target the learner’s declared band,
+ * and we never promote above it from test scores alone. If performance is weaker,
+ * we allow at most **one** CEFR step below the declared band (never more).
+ */
+export function confirmedPlacementBandFromDeclaredAndScore(
+  scored: PlacementLevelBand,
+  declared: PlacementLevelBand,
+): PlacementLevelBand {
+  const si = indexOfPlacementCefrCode(scored.code);
+  const di = indexOfPlacementCefrCode(declared.code);
+  if (si < 0 || di < 0) {
+    return declared;
+  }
+  if (si >= di) {
+    return declared;
+  }
+  const minAllowedIdx = Math.max(0, di - 1);
+  const finalIdx = Math.max(si, minAllowedIdx);
+  return placementBandAtIndex(finalIdx);
+}
+
 /** `englishLevel` string stored without label (Algorythm `getBaseLevel` expects "A1"…"C2"). */
 export function placementBandFromScore(
   score: number,
@@ -78,31 +136,73 @@ export function scorePlacementBySkill(
   };
 }
 
-/** Best-effort parse of already-persisted `englishLevel` (self-report or prior completion). */
+function placementBandFromCode(code: PlacementCefrCode): PlacementLevelBand {
+  return { code, label: PLACEMENT_BAND_LABELS[code] };
+}
+
+/**
+ * Best-effort parse of already-persisted `englishLevel` (self-report or prior completion).
+ * Matches embedded A1–C2 codes anywhere in the string, then coarse wording (aligned with the catalog gate).
+ */
 export function inferPlacementBandFromProfile(
   raw: string | null | undefined,
 ): PlacementLevelBand {
-  const head = String(raw ?? "")
-    .trim()
-    .toUpperCase()
-    .slice(0, 8);
-
+  const full = String(raw ?? "").trim();
+  if (!full) {
+    return placementBandFromCode("B1");
+  }
+  const lowered = full.toLowerCase();
+  if (lowered === "choose") {
+    return placementBandFromCode("B1");
+  }
+  const embedded = full.match(/\b(A1|A2|B1|B2|C1|C2)\b/i)?.[1]?.toUpperCase();
+  if (
+    embedded &&
+    (PLACEMENT_CEFR_ORDER as readonly string[]).includes(embedded)
+  ) {
+    return placementBandFromCode(embedded as PlacementCefrCode);
+  }
+  const upperFull = full.toUpperCase();
+  if ((PLACEMENT_CEFR_ORDER as readonly string[]).includes(upperFull)) {
+    return placementBandFromCode(upperFull as PlacementCefrCode);
+  }
+  if (/\bpre[-\s]?a1\b/i.test(full)) {
+    return placementBandFromCode("A1");
+  }
+  if (/\bbeginner|elementary|starter\b/i.test(lowered)) {
+    return placementBandFromCode("A1");
+  }
+  if (/\ba2\b/i.test(lowered)) {
+    return placementBandFromCode("A2");
+  }
+  if (/\bupper\s+intermediate\b/i.test(lowered)) {
+    return placementBandFromCode("B2");
+  }
+  if (/\bb1\b/i.test(lowered)) {
+    return placementBandFromCode("B1");
+  }
+  if (/\bintermediate\b/i.test(lowered)) {
+    return placementBandFromCode("B1");
+  }
+  if (/\bb2\b/i.test(lowered)) {
+    return placementBandFromCode("B2");
+  }
+  if (/\badvanced\b/i.test(lowered)) {
+    return placementBandFromCode("C1");
+  }
+  if (/\bc1\b/i.test(lowered)) {
+    return placementBandFromCode("C1");
+  }
+  if (/\bproficient|mastery\b/i.test(lowered)) {
+    return placementBandFromCode("C2");
+  }
+  if (/\bc2\b/i.test(lowered)) {
+    return placementBandFromCode("C2");
+  }
+  const head = upperFull.slice(0, 8);
   const m = head.match(/^(A1|A2|B1|B2|C1|C2)\b/)?.[1];
-  if (!m || m === "CHOOSE" || m === "UNKNOWN") {
-    return { code: "B1", label: "Intermediate" };
+  if (m && m !== "CHOOSE" && m !== "UNKNOWN") {
+    return placementBandFromCode(m as PlacementCefrCode);
   }
-  switch (m) {
-    case "A1":
-      return { code: "A1", label: "Beginner" };
-    case "A2":
-      return { code: "A2", label: "Elementary" };
-    case "B1":
-      return { code: "B1", label: "Intermediate" };
-    case "B2":
-      return { code: "B2", label: "Upper intermediate" };
-    case "C1":
-      return { code: "C1", label: "Advanced" };
-    default:
-      return { code: "C2", label: "Proficient" };
-  }
+  return placementBandFromCode("B1");
 }

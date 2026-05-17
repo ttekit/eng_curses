@@ -11,10 +11,19 @@ interface ImportMetaEnv {
   readonly VITE_USE_API_PROXY?: string;
   /** Dev: proxy target when `VITE_USE_API_PROXY` is enabled. */
   readonly VITE_DEV_PROXY_TARGET?: string;
+  /** Optional nginx (or similar) HTTP Basic Auth user — bundled into the client; use only for staging. */
+  readonly VITE_API_BASIC_AUTH_USER?: string;
+  /** Optional companion password for `VITE_API_BASIC_AUTH_USER`. */
+  readonly VITE_API_BASIC_AUTH_PASSWORD?: string;
   /** When `1` or `true`, logs failed API requests to the console (in addition to dev server default logging). */
   readonly VITE_LOG_API_ERRORS?: string;
   /** Skip subscription gates when `true`, `1`, or `yes` (pairs with backend `SKIP_SUBSCRIPTION_ENFORCEMENT`). */
   readonly VITE_SKIP_SUBSCRIPTION_ENFORCEMENT?: string;
+  /**
+   * Injected in `vite.config.ts` from `DEV_MODE` or `VITE_DEV_MODE` in `.env`.
+   * `1` / `true` / `yes` → relax subscription; `0` / `false` / `no` → enforce like production.
+   */
+  readonly VITE_APP_SUBSCRIPTION_DEV_MODE?: string;
   /** Optional; Stripe publishable key (pk_test_… / pk_live_…). Mirrored backend: `STRIPE_PUBLISHABLE_KEY` + GET /billing/stripe-publishable-key */
   readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
 }

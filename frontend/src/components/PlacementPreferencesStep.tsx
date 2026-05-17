@@ -1,12 +1,15 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, type ChangeEvent } from "react";
 import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
 import type { MultiValue } from "react-select";
 import toast from "react-hot-toast";
 import Button from "./Button";
+import InputText from "./InputText";
 import LabelRegister from "./LabelRegister";
 import { apiFetch, readApiErrorBody } from "../lib/api";
 import { useUser, type UserData } from "../context/UserContext";
+import { useLandingLocale } from "../context/LandingLocaleContext";
+import { formatMessage } from "../lib/formatMessage";
 
 type GenreOption = { value: number; label: string };
 type HobbyOption = { value: string; label: string };
@@ -95,6 +98,12 @@ export default function PlacementPreferencesStep({
   onSuccess: (updatedProfile: UserData | null) => void;
 }) {
   const { refreshProfile } = useUser();
+  const { messages } = useLandingLocale();
+  const s = messages.placementFlow.student;
+  const a = messages.placementFlow.adult;
+  const skipGenrePickers = (user.favoriteGenres?.length ?? 0) > 0;
+  const collectIndependentProfile =
+    user.role === "student" && user.teacherId == null;
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
   const [hobbies, setHobbies] = useState<string[]>(() => [
     ...(user.hobbies ?? []),
@@ -105,10 +114,20 @@ export default function PlacementPreferencesStep({
   const [hatedGenres, setHatedGenres] = useState<number[]>(
     user.hatedGenres ?? [],
   );
+  const [workField, setWorkField] = useState(
+    () => user.workField?.trim() ?? "",
+  );
+  const [education, setEducation] = useState(
+    () => user.education?.trim() ?? "",
+  );
+  const [nativeLanguage, setNativeLanguage] = useState(
+    () => user.nativeLanguage?.trim() ?? "",
+  );
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (skipGenrePickers) return undefined;
     let cancelled = false;
     const load = async () => {
       try {
@@ -119,37 +138,71 @@ export default function PlacementPreferencesStep({
           setGenreOptions(data.map((g) => ({ value: g.id, label: g.name })));
         }
       } catch {
-        if (!cancelled) toast.error("Could not load genres.");
+        if (!cancelled) toast.error(s.loadGenresError);
       }
     };
     void load();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [s.loadGenresError, skipGenrePickers]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFieldError(null);
     const hobbiesPayload = hobbies.map((h) => h.trim()).filter(Boolean);
+    if (collectIndependentProfile) {
+      const j = workField.trim();
+      const ed = education.trim();
+      const nl = nativeLanguage.trim();
+      if (!j) {
+        setFieldError(a.errorJob);
+        return;
+      }
+      if (!ed) {
+        setFieldError(a.errorEducation);
+        return;
+      }
+      if (!nl) {
+        setFieldError(a.errorNativeLanguage);
+        return;
+      }
+    }
     if (hobbiesPayload.length < 1) {
-      setFieldError("Add at least one hobby.");
+      setFieldError(s.errorHobbies);
       return;
     }
-    if (favoriteGenres.length < 1) {
-      setFieldError("Choose at least one genre you prefer.");
+    if (favoriteGenres.length < 1 && !skipGenrePickers) {
+      setFieldError(s.errorGenres);
       return;
     }
 
     setSaving(true);
     try {
+      const profilePatch = collectIndependentProfile
+        ? {
+            workField: workField.trim(),
+            education: education.trim(),
+            nativeLanguage: nativeLanguage.trim(),
+          }
+        : {};
       const res = await apiFetch(`/users/${user.id}`, {
         method: "PATCH",
-        body: JSON.stringify({
-          hobbies: hobbiesPayload,
-          favoriteGenres,
-          hatedGenres: hatedGenres.length ? hatedGenres : [],
-        }),
+        body: JSON.stringify(
+          skipGenrePickers ?
+            {
+              ...profilePatch,
+              hobbies: hobbiesPayload,
+              favoriteGenres: user.favoriteGenres ?? [],
+              hatedGenres: user.hatedGenres ?? [],
+            }
+          : {
+              ...profilePatch,
+              hobbies: hobbiesPayload,
+              favoriteGenres,
+              hatedGenres: hatedGenres.length ? hatedGenres : [],
+            },
+        ),
       });
       if (!res.ok) {
         toast.error(await readApiErrorBody(res));
@@ -158,7 +211,7 @@ export default function PlacementPreferencesStep({
       const nextProfile = await refreshProfile();
       onSuccess(nextProfile);
     } catch {
-      toast.error("Could not save preferences.");
+      toast.error(s.saveErrorToast);
     } finally {
       setSaving(false);
     }
@@ -193,62 +246,108 @@ export default function PlacementPreferencesStep({
 
   return (
     <form
-      className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 pt-2 [&_label]:text-foreground"
+      className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 pt-2 [&_label]:text-foreground"
       onSubmit={(e) => void handleSubmit(e)}
     >
       <div>
         <h2 className="font-display text-lg font-semibold tracking-tight">
-          Your tastes first
+          {s.title}
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Tell us what you enjoy so we can tailor the placement experience. Then
-          you&apos;ll take the short entry test.
+          {skipGenrePickers ? s.leadGenresSaved : s.lead}
         </p>
       </div>
 
+      {collectIndependentProfile ?
+        <>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {a.formIntro}
+          </p>
+          <section className="space-y-4 rounded-xl border border-border/50 bg-muted/15 p-4">
+            <h3 className="font-display text-sm font-semibold tracking-tight text-foreground">
+              {a.sectionAbout}
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <LabelRegister isRequired={true}>{a.job}</LabelRegister>
+                <InputText
+                  name="workField"
+                  value={workField}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setWorkField(e.target.value)}
+                  placeholder={a.jobPlaceholder}
+                />
+              </div>
+              <div className="space-y-2">
+                <LabelRegister isRequired={true}>{a.education}</LabelRegister>
+                <InputText
+                  name="education"
+                  value={education}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setEducation(e.target.value)}
+                  placeholder={a.educationPlaceholder}
+                />
+              </div>
+              <div className="space-y-2">
+                <LabelRegister isRequired={true}>{a.nativeLanguage}</LabelRegister>
+                <InputText
+                  name="nativeLanguage"
+                  value={nativeLanguage}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setNativeLanguage(e.target.value)}
+                  placeholder={a.nativeLanguagePlaceholder}
+                />
+              </div>
+            </div>
+          </section>
+        </>
+      : null}
+
       <div className="flex flex-col gap-1">
-        <LabelRegister isRequired={true}>Hobbies</LabelRegister>
+        <LabelRegister isRequired={true}>{s.hobbies}</LabelRegister>
         <CreatableSelect<HobbyOption, true>
           isMulti
           isClearable
           options={[]}
           value={hobbiesToOptions(hobbies)}
           onChange={onHobbiesChange}
-          placeholder="Type a hobby, then press Enter"
+          placeholder={s.hobbiesPlaceholder}
           formatCreateLabel={(input) => {
             const t = input.trim();
-            return t ? `Add \"${t}\"` : "Add";
+            return t ? formatMessage(s.addChipNamed, { name: t }) : s.addChip;
           }}
-          noOptionsMessage={() =>
-            "Start typing a hobby, then press Enter to add it."
-          }
+          noOptionsMessage={() => s.hobbyNoOptions}
           styles={selectDark}
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <LabelRegister isRequired={true}>Genres you prefer</LabelRegister>
-        <Select<GenreOption, true>
-          isMulti
-          options={optionsForFavorite}
-          value={favoriteValue}
-          onChange={onFavoriteChange}
-          placeholder="Choose genres"
-          styles={selectDark}
-        />
-      </div>
+      {!skipGenrePickers ?
+        <>
+          <div className="flex flex-col gap-1">
+            <LabelRegister isRequired={true}>{s.genresPrefer}</LabelRegister>
+            <Select<GenreOption, true>
+              isMulti
+              options={optionsForFavorite}
+              value={favoriteValue}
+              onChange={onFavoriteChange}
+              placeholder={s.genresPreferPlaceholder}
+              styles={selectDark}
+            />
+          </div>
 
-      <div className="flex flex-col gap-1">
-        <LabelRegister isRequired={false}>Genres you avoid</LabelRegister>
-        <Select<GenreOption, true>
-          isMulti
-          options={optionsForHated}
-          value={hatedValue}
-          onChange={onHatedChange}
-          placeholder="Optional"
-          styles={selectDark}
-        />
-      </div>
+          <div className="flex flex-col gap-1">
+            <LabelRegister isRequired={false}>{s.genresAvoid}</LabelRegister>
+            <Select<GenreOption, true>
+              isMulti
+              options={optionsForHated}
+              value={hatedValue}
+              onChange={onHatedChange}
+              placeholder={s.genresAvoidPlaceholder}
+              styles={selectDark}
+            />
+          </div>
+        </>
+      : null}
 
       {fieldError ? (
         <p className="text-destructive text-sm" role="alert">
@@ -257,7 +356,7 @@ export default function PlacementPreferencesStep({
       ) : null}
 
       <Button type="submit" disabled={saving} className="!mt-2">
-        {saving ? "Saving…" : "Continue to entry test"}
+        {saving ? s.saving : s.continueCta}
       </Button>
     </form>
   );

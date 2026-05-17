@@ -19,6 +19,7 @@ import {
   type PlacementStoredDraftQuestion,
 } from "./placement-draft.types";
 import {
+  confirmedPlacementBandFromDeclaredAndScore,
   inferPlacementBandFromProfile,
   placementBandFromScore,
   scoreAgainstDraft,
@@ -32,6 +33,7 @@ import {
   PlacementTestPayload,
   ThemesFile,
 } from "./placement-test.types";
+import { UserRole } from "@generated/prisma/enums";
 import { renderPlacementHtml } from "./placement-html.template";
 
 @Injectable()
@@ -98,10 +100,12 @@ export class PlacementTestService {
     if (!user) {
       throw new NotFoundException("User not found");
     }
-    const isTeacher = user.role === "teacher";
+    const isTeacher = user.role === UserRole.TEACHER;
+    const isAdmin = user.role === UserRole.ADMIN;
     return {
       hasCompletedPlacement: user.hasCompletedPlacement,
-      shouldShowEntryTest: !isTeacher && !user.hasCompletedPlacement,
+      shouldShowEntryTest:
+        !isTeacher && !isAdmin && !user.hasCompletedPlacement,
     };
   }
 
@@ -169,9 +173,9 @@ export class PlacementTestService {
   }
 
   /**
-   * Finishes placement: scores against the persisted draft if present,
-   * writes canonical CEFR code to `additionalUserData.englishLevel`,
-   * and refreshes alcorythm topic scores — matching frontend expectations (`/auth/profile`).
+   * Finishes placement: scores vs persisted draft, then assigns `englishLevel` by **confirming**
+   * the learner’s pre-test declared band — raw scores never promote above it and cannot pull more than **one**
+   * CEFR step below it (questions are generated against their declared level). Refreshes Alcorythm topic scores.
    */
   async completePlacement(
     userId: number,
@@ -207,15 +211,24 @@ export class PlacementTestService {
 
     const draft = parsePlacementDraft(user.placementTestDraft);
 
+    const declaredBand = inferPlacementBandFromProfile(
+      user.additionalUserData?.englishLevel,
+    );
+
     let scored = { score: 0, total: 0 };
-    let band: ReturnType<typeof placementBandFromScore>;
+    let scoredBand: ReturnType<typeof placementBandFromScore>;
 
     if (draft?.questions.length) {
       scored = scoreAgainstDraft(draft.questions, answers);
-      band = placementBandFromScore(scored.score, scored.total);
+      scoredBand = placementBandFromScore(scored.score, scored.total);
     } else {
-      band = { code: "B1", label: "Intermediate" };
+      scoredBand = { code: "B1", label: "Intermediate" };
     }
+
+    const band = confirmedPlacementBandFromDeclaredAndScore(
+      scoredBand,
+      declaredBand,
+    );
 
     await (this.prisma as any).user.update({
       where: { id: userId },
