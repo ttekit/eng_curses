@@ -8,23 +8,21 @@ export type SeriesPlaylistEpisode = {
   videoName: string;
   videoDescription: string | null;
   thumbnailUrl: string | null;
-  videoLink?: string;
 };
 
-export interface SeriesPlaylistPayload {
+export type SeriesPlaylistPayload = {
   contentId: number;
   friendlyLink: string;
   name: string;
-  description: string | null;
+  description: string;
   episodes: SeriesPlaylistEpisode[];
-}
+};
 
 type ApiContentVideo = {
   id?: number;
   videoName?: string;
   videoDescription?: string | null;
   thumbnailUrl?: string | null;
-  videoLink?: string;
   playlistPosition?: number;
 };
 
@@ -96,10 +94,10 @@ export function parseSeriesPlaylistPayload(
             : `Episode ${index}`,
         videoDescription:
           typeof v.videoDescription === "string" ? v.videoDescription
-            : v.videoDescription === null ? null
-              : null,
-        thumbnailUrl: typeof v.thumbnailUrl === "string" ? v.thumbnailUrl : null,
-        videoLink: typeof v.videoLink === "string" ? v.videoLink : undefined,
+          : v.videoDescription === null ? null
+          : null,
+        thumbnailUrl:
+          typeof v.thumbnailUrl === "string" ? v.thumbnailUrl : null,
       });
     }
   }
