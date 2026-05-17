@@ -87,7 +87,7 @@ export default function VideoPage() {
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // icon-only rail until expanded
   const [placementDocHtml, setPlacementDocHtml] = useState<string | null>(null);
   const [placementDocError, setPlacementDocError] = useState<string | null>(
     null,
@@ -162,6 +162,7 @@ export default function VideoPage() {
     user.role !== "admin" &&
     !user.hasCompletedPlacement;
 
+  /** Derive phase synchronously so we never flash the wrong overlay (effect + stale initial state). */
   const placementPhaseResolved = useMemo((): "preferences" | "test" | "off" => {
     if (!needsPlacement || !user) return "off";
     if (user.role === "adult") {
@@ -298,6 +299,7 @@ export default function VideoPage() {
     fetchVideos();
   }, []);
 
+  /** Open Spotlight from sidebar on other routes via Link `state.openSpotlight` */
   useEffect(() => {
     const raw = location.state as { openSpotlight?: boolean } | null | undefined;
     if (raw?.openSpotlight) {
@@ -312,6 +314,7 @@ export default function VideoPage() {
     }
   }, [location.state, location.pathname, location.search, navigate]);
 
+  /** Cmd/Ctrl + K opens Spotlight from catalog shell (closing handled inside Spotlight modal) */
   useEffect(() => {
     if (needsPlacement || showPlacementPrepOverlay || showPlacementTest) return;
     if (spotlightOpen) return;
@@ -460,7 +463,7 @@ export default function VideoPage() {
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
       />
       <div>
-        <div className="flex">
+        <div className="flex w-full">
           <CatalogSidebar
             categories={categoryNames}
             selectedCategory={selectedCategory}
@@ -472,6 +475,7 @@ export default function VideoPage() {
             onCollapsedChange={setSidebarCollapsed}
             catalogSpotlightOpen={spotlightOpen}
             onOpenCatalogSpotlight={() => setSpotlightOpen(true)}
+            reserveTopNavSpace={false}
           />
 
           <main
@@ -481,7 +485,7 @@ export default function VideoPage() {
             )}
           >
             <CatalogHero featured={featuredHero} />
-            <div id="catalog-library" className="space-y-10">
+            <div id="catalog-library" className="space-y-10 px-4 sm:px-6 lg:px-8 pt-8">
               {loading ? (
                 <div className="flex h-60 bg-card/30 flex-col items-center border border-border border-t justify-center space-y-4">
                   <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
