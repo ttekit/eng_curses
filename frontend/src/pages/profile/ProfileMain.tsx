@@ -66,10 +66,12 @@ export default function ProfileMain() {
   const { user, isLoading, isLoggedIn, refreshProfile } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // icon-only rail until expanded
   const [joinMeta, setJoinMeta] = useState<{
     userId: string;
     label: string;
+    xp: number;
+    currentStreak: number;
   } | null>(null);
   const [learningStats, setLearningStats] =
     useState<LearningStatsPayload | null>(null);
@@ -86,6 +88,8 @@ export default function ProfileMain() {
       const j: unknown = await r.json();
       if (!j || typeof j !== "object") return;
       const createdAt = (j as { createdAt?: unknown }).createdAt;
+      const xp = Number((j as any).xp) || 0;
+      const currentStreak = Number((j as any).currentStreak) || 0;
       if (typeof createdAt !== "string") return;
       const d = new Date(createdAt);
       if (Number.isNaN(d.getTime()) || cancelled) return;
@@ -95,6 +99,8 @@ export default function ProfileMain() {
           month: "long",
           year: "numeric",
         }),
+        xp,
+        currentStreak,
       });
     })();
     return () => {
@@ -142,6 +148,7 @@ export default function ProfileMain() {
 
   const headerModel: ProfileHeaderModel | null = useMemo(() => {
     if (!user) return null;
+    const localStreak = joinMeta?.userId === user.id ? joinMeta.currentStreak : undefined;
     return {
       name: user.name,
       email: user.email,
@@ -149,13 +156,15 @@ export default function ProfileMain() {
       role: normalizeRole(user.role),
       level: user.englishLevel?.trim() || "—",
       joinDateLabel,
-      streakDays: (user as any).currentStreak || 0,
+      streakDays: localStreak !== undefined ? localStreak : ((user as any).currentStreak || 0),
     };
-  }, [user, joinDateLabel]);
+  }, [user, joinDateLabel, joinMeta]);
 
   const statsModel: ProfileStatsModel | null = useMemo(() => {
     if (!user) return null;
     const s = learningStats;
+    const localXp = joinMeta?.userId === user.id ? joinMeta.xp : undefined;
+    const finalXp = localXp !== undefined ? localXp : (user.xp || 0);
     return {
       totalWatchTimeMin: s?.totalWatchTimeMin ?? 0,
       videosCompleted: s?.videosCompleted ?? 0,
@@ -166,10 +175,10 @@ export default function ProfileMain() {
           : null,
       weeklyActivity: s?.weeklyActivity ?? [...DEFAULT_WEEKLY_ACTIVITY],
       levelLabel: user.englishLevel?.trim() || "A1",
-      xp: user.xp || 0,
-      appLevel: Math.floor((user.xp || 0) / 1000) + 1,
+      xp: finalXp,
+      appLevel: Math.floor(finalXp / 1000) + 1,
     };
-  }, [user, learningStats]);
+  }, [user, learningStats, joinMeta]);
 
   const tabs = useMemo(() => {
     if (user?.role === "teacher") {

@@ -30,15 +30,15 @@ function renderIntroMarkdownish(text: string) {
       <strong key={i} className="font-semibold text-foreground">
         {chunk}
       </strong>
-    : <span key={i}>{chunk}</span>,
+      : <span key={i}>{chunk}</span>,
   );
 }
 
 export function ProfileStudyingPlan({ user }: { user: UserData }) {
   const { refreshProfile } = useUser();
   const { locale, messages } = useLandingLocale();
-  const regStep3 = messages.auth.registration.step3;
-  const lp = messages.learningPlan;
+  const regStep3 = (messages as any)?.auth?.registration?.step3 || {};
+  const lp = (messages as any)?.learningPlan || {};
 
   const [learningGoal, setLearningGoal] = useState(user.learningGoal ?? "");
   const [timeToAchieve, setTimeToAchieve] = useState(() =>
@@ -67,7 +67,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
   const goalHorizonUnchanged =
     learningGoal.trim() === (user.learningGoal ?? "").trim() &&
     canonicalTimeToAchieveFromProfile(timeToAchieve) ===
-      canonicalTimeToAchieveFromProfile(user.timeToAchieve);
+    canonicalTimeToAchieveFromProfile(user.timeToAchieve);
 
   async function saveGoalAndHorizon(): Promise<void> {
     const trimmedGoal = learningGoal.trim();
@@ -99,18 +99,18 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
         const serverMsg = (await getResponseErrorMessage(regRes)).trim();
         toast.error(
           serverMsg ?
-            `${serverMsg} — ${lp.profileGoalSavedPlanRegenerateFailedToast}`
-          : lp.profileGoalSavedPlanRegenerateFailedToast,
+            `${serverMsg} — ${lp.profileGoalSavedPlanRegenerateFailedToast || ""}`
+            : (lp.profileGoalSavedPlanRegenerateFailedToast || ""),
         );
         await refreshProfile();
         return;
       }
-      toast.success(lp.profileGoalSavedAndPlanRegeneratedToast);
+      toast.success(lp.profileGoalSavedAndPlanRegeneratedToast || "Saved");
       await refreshProfile();
     } catch (err) {
       console.error(err);
       toast.error(
-        err instanceof Error ? err.message : lp.profileGoalHorizonSaveError,
+        err instanceof Error ? err.message : (lp.profileGoalHorizonSaveError || "Error"),
       );
     } finally {
       setSavingGoalHorizon(false);
@@ -122,21 +122,21 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
       <div className="space-y-4">
         <div>
           <h2 className="font-display text-xl font-semibold tracking-tight">
-            {lp.title}
+            {lp.title || "Learning Plan"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {lp.profileIncompleteLead}
+            {lp.profileIncompleteLead || "Please complete your profile configuration first."}
           </p>
         </div>
         <div className="rounded-2xl border border-border bg-card/60 p-6">
           <p className="text-sm text-muted-foreground">
-            {lp.profileIncompleteBody}
+            {lp.profileIncompleteBody || "You need to complete placement diagnostics to unlock your structured track."}
           </p>
           <Link
             to="/catalog"
             className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
-            {lp.goCatalog}
+            {lp.goCatalog || "Go to Catalog"}
             <ArrowRight className="size-4" />
           </Link>
         </div>
@@ -149,24 +149,24 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="font-display text-xl font-semibold tracking-tight">
-            {lp.title}
+            {lp.title || "Learning Plan"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {lp.profileDescription}
+            {lp.profileDescription || "Your structured track."}
           </p>
         </div>
         <Link
           to="/learning-plan"
           className="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted/60"
         >
-          {lp.openFullPage}
+          {lp.openFullPage || "Open full page"}
           <ExternalLink className="size-3.5 opacity-70" />
         </Link>
       </div>
 
       <div className="rounded-2xl border border-border bg-card/70 p-5 md:p-6">
         <p className="mb-4 text-sm text-muted-foreground">
-          {lp.profileGoalHorizonLead}
+          {lp.profileGoalHorizonLead || "Adjust your targets below."}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -175,7 +175,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
               className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
               <Target className="size-4 text-primary" />
-              {regStep3.pointOfLearning}
+              {regStep3.pointOfLearning || "Goal"}
             </label>
             <InputText
               id="profile-learning-goal"
@@ -185,7 +185,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
                 setLearningGoal(e.target.value)
               }
               type="text"
-              placeholder={regStep3.placeholderGoal}
+              placeholder={regStep3.placeholderGoal || ""}
               autoComplete="off"
             />
           </div>
@@ -195,17 +195,17 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
               className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
               <Calendar className="size-4 text-primary" />
-              {regStep3.timeToAchieve}
+              {regStep3.timeToAchieve || "Time horizon"}
             </label>
             <TimeToAchieveField
               id="profile-time-to-achieve"
               value={timeToAchieve}
               onChange={setTimeToAchieve}
               unitLabels={{
-                day: lp.timeToAchieveUnitDays,
-                month: lp.timeToAchieveUnitMonths,
-                year: lp.timeToAchieveUnitYears,
-                unitSelectAria: lp.timeToAchieveUnitSelectAria,
+                day: lp.timeToAchieveUnitDays || "days",
+                month: lp.timeToAchieveUnitMonths || "months",
+                year: lp.timeToAchieveUnitYears || "years",
+                unitSelectAria: lp.timeToAchieveUnitSelectAria || "Select unit",
               }}
             />
           </div>
@@ -220,10 +220,10 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
             {savingGoalHorizon ?
               <Loader2 className="size-4 animate-spin" aria-hidden
               />
-            : <Save className="size-4" aria-hidden />}
+              : <Save className="size-4" aria-hidden />}
             {savingGoalHorizon ?
-              lp.profileSavingGoalHorizon
-            : lp.profileSaveGoalHorizonCta}
+              (lp.profileSavingGoalHorizon || "Saving...")
+              : (lp.profileSaveGoalHorizonCta || "Save Targets")}
           </button>
         </div>
       </div>
@@ -250,7 +250,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
       <div className="rounded-2xl border border-border bg-card/70 p-5 md:p-6">
         <h3 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
           <ListChecks className="size-5 text-primary" />
-          {lp.weeklyRhythm}
+          {lp.weeklyRhythm || "Weekly rhythm"}
         </h3>
         <ul className="space-y-2 text-sm md:text-[15px]">
           {planPreview.weeklyHabits.map((h, hi) => (
@@ -272,7 +272,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
         to="/catalog"
         className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
       >
-        {lp.continueInCatalog}
+        {lp.continueInCatalog || "Continue in Catalog"}
         <ArrowRight className="size-4" />
       </Link>
     </div>
