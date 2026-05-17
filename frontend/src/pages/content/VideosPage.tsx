@@ -61,8 +61,6 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
   };
 }
 
-
-/** Ensure API origin in srcDoc HTML matches the SPA client (avoids broken inline script / proxy host skew). */
 function placementPatchApiOrigin(html: string, apiOrigin: string): string {
   const trimmed = apiOrigin.replace(/\/$/, "");
   const esc = trimmed.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
@@ -72,7 +70,6 @@ function placementPatchApiOrigin(html: string, apiOrigin: string): string {
   );
 }
 
-/** Toast id avoids duplicate banners if the effect runs twice (e.g. React Strict Mode). */
 const STRIPE_CHECKOUT_CATALOG_TOAST_ID = "stripe-checkout-catalog-welcome";
 
 function stripCheckoutSuccessSearch(): { pathname: string; search: string } {
@@ -90,7 +87,7 @@ export default function VideoPage() {
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // icon-only rail until expanded
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [placementDocHtml, setPlacementDocHtml] = useState<string | null>(null);
   const [placementDocError, setPlacementDocError] = useState<string | null>(
     null,
@@ -102,6 +99,8 @@ export default function VideoPage() {
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
+
+  const cb: any = (messages as any).catalogBrowse || {};
 
   const catalogCheckoutReturn = useMemo(() => {
     return new URLSearchParams(location.search).get("checkout") === "success";
@@ -128,7 +127,7 @@ export default function VideoPage() {
           const { pathname, search } = stripCheckoutSuccessSearch();
           void navigate({ pathname, search }, { replace: true });
           if (!import.meta.env.DEV) {
-            toast.success(messages.catalogBrowse.stripeThanksToast, {
+            toast.success(cb.stripeThanksToast || "Thank you for your purchase!", {
               id: STRIPE_CHECKOUT_CATALOG_TOAST_ID,
               duration: 6000,
             });
@@ -142,7 +141,7 @@ export default function VideoPage() {
         void navigate({ pathname, search }, { replace: true });
         if (!import.meta.env.DEV) {
           toast.error(
-            messages.catalogBrowse.stripeConfirmError,
+            cb.stripeConfirmError || "Could not confirm subscription.",
             { duration: 8000, id: `${STRIPE_CHECKOUT_CATALOG_TOAST_ID}-err` },
           );
         }
@@ -163,7 +162,6 @@ export default function VideoPage() {
     user.role !== "admin" &&
     !user.hasCompletedPlacement;
 
-  /** Derive phase synchronously so we never flash the wrong overlay (effect + stale initial state). */
   const placementPhaseResolved = useMemo((): "preferences" | "test" | "off" => {
     if (!needsPlacement || !user) return "off";
     if (user.role === "adult") {
@@ -249,7 +247,7 @@ export default function VideoPage() {
       } catch (e) {
         if (!cancelled) {
           setPlacementDocError(
-            e instanceof Error ? e.message : messages.catalogBrowse.placementLoadError,
+            e instanceof Error ? e.message : (cb.placementLoadError || "Failed to load placement test."),
           );
         }
       }
@@ -300,7 +298,6 @@ export default function VideoPage() {
     fetchVideos();
   }, []);
 
-  /** Open Spotlight from sidebar on other routes via Link `state.openSpotlight` */
   useEffect(() => {
     const raw = location.state as { openSpotlight?: boolean } | null | undefined;
     if (raw?.openSpotlight) {
@@ -315,7 +312,6 @@ export default function VideoPage() {
     }
   }, [location.state, location.pathname, location.search, navigate]);
 
-  /** Cmd/Ctrl + K opens Spotlight from catalog shell (closing handled inside Spotlight modal) */
   useEffect(() => {
     if (needsPlacement || showPlacementPrepOverlay || showPlacementTest) return;
     if (spotlightOpen) return;
@@ -452,13 +448,13 @@ export default function VideoPage() {
         >
           <div className="size-8 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
           <p className="text-muted-foreground text-sm">
-            {messages.catalogBrowse.activatingSubscription}
+            {cb.activatingSubscription || "Activating your subscription..."}
           </p>
         </div>
-      : null}
+        : null}
       <SEO
-        title={catalogSeo.title}
-        description={catalogSeo.description}
+        title={catalogSeo?.title || "Catalog"}
+        description={catalogSeo?.description || "Explys Catalog"}
         canonicalUrl={resolveCanonicalUrl("/catalog")}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
@@ -469,7 +465,7 @@ export default function VideoPage() {
             categories={categoryNames}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
-            onSelectLevel={() => {}}
+            onSelectLevel={() => { }}
             welcomeName={user?.name ? user.name.split(" ")[0] : undefined}
             englishLevel={user?.englishLevel || undefined}
             collapsed={sidebarCollapsed}
@@ -487,22 +483,22 @@ export default function VideoPage() {
             <CatalogHero featured={featuredHero} />
             <div id="catalog-library" className="space-y-10">
               {loading ? (
-                <div className="flex h-60 bg-card/30 flex-col items-center border-border border-t justify-center space-y-4">
-                  <div className="h-10 w-10 animate-spin rounded-full border-solid border-primary border-t-4 border-r-transparent border-b-transparent border-l-transparent" />
-                  <p className="animate-pulse text-muted-foreground">
-                    {messages.catalogBrowse.loadingCatalog}
+                <div className="flex h-60 bg-card/30 flex-col items-center border border-border border-t justify-center space-y-4">
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
+                  <p className="animate-pulse text-muted-foreground text-sm">
+                    {(messages.catalogPage as any)?.loadingCatalog || "Loading catalog..."}
                   </p>
                 </div>
               ) : filteredVideos.length === 0 ? (
                 <div className="border-t border-border bg-card/30 py-15 text-center">
-                  <Frown className="text-foreground/70 justify-center w-full w-10 h-10 pb-2" />
+                  <Frown className="text-foreground/70 justify-center w-10 h-10 pb-2 mx-auto" />
                   <h2 className="font-display text-2xl font-bold">
-                    {messages.catalogBrowse.emptyTitle}
+                    {(messages.catalogPage as any)?.emptyTitle || "No lessons found"}
                   </h2>
-                  <p className="mt-2 text-muted-foreground">
+                  <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
-                      ? messages.catalogBrowse.emptyNoVideos
-                      : messages.catalogBrowse.emptyFiltered}
+                      ? ((messages.catalogPage as any)?.emptyNoVideos || "There are no videos in the catalog yet.")
+                      : ((messages.catalogPage as any)?.emptyFiltered || "No videos match your filters.")}
                   </p>
                 </div>
               ) : (
@@ -533,7 +529,7 @@ export default function VideoPage() {
                 </span>
               </div>
               <span className="justify-self-end text-sm text-muted-foreground">
-                {messages.catalogBrowse.placementStepCounter}
+                {cb.placementStepCounter || "Step 1 of 2"}
               </span>
             </div>
           </header>
@@ -544,7 +540,7 @@ export default function VideoPage() {
               aria-valuenow={50}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={messages.catalogBrowse.placementProgressAria}
+              aria-label={cb.placementProgressAria || "Placement progress"}
             >
               <div className="h-full w-1/2 rounded-full bg-primary transition-all" />
             </div>
@@ -553,14 +549,14 @@ export default function VideoPage() {
             <div className="mx-auto mb-4 w-full max-w-2xl flex flex-col min-h-0 bg-card border border-border rounded-3xl overflow-scroll">
               <div className="mx-auto w-full max-w-md shrink-0 px-4 pt-2 pb-2">
                 <h2 className="font-display text-xl font-semibold mt-1 tracking-tight text-foreground">
-                  {messages.catalogBrowse.beforeEntryTitle}
+                  {cb.beforeEntryTitle || "Before you start"}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {user?.role === "adult"
-                    ? messages.catalogBrowse.beforeEntryAdult
+                    ? (cb.beforeEntryAdult || "Let's set up your profile.")
                     : user?.role === "student" && user?.teacherId == null
-                      ? messages.catalogBrowse.beforeEntryIndependentStudent
-                      : messages.catalogBrowse.beforeEntryStudent}
+                      ? (cb.beforeEntryIndependentStudent || "Let's personalize your learning.")
+                      : (cb.beforeEntryStudent || "Let's get everything ready.")}
                 </p>
               </div>
               <div className="flex-1 pb-6">
@@ -594,11 +590,11 @@ export default function VideoPage() {
                     </span>
                   </div>
                   <p className="max-w-xs text-sm text-muted-foreground">
-                    {messages.catalogBrowse.placementFooterBlurb}
+                    {cb.placementFooterBlurb || "Explys placement test personalization."}
                   </p>
                 </div>
                 <p className="shrink-0 text-sm text-muted-foreground">
-                  {formatMessage(messages.catalogBrowse.placementCopyright, {
+                  {formatMessage(cb.placementCopyright || "© {year} Explys", {
                     year: String(new Date().getFullYear()),
                   })}
                 </p>
@@ -616,7 +612,7 @@ export default function VideoPage() {
               role="alert"
             >
               <p className="text-destructive text-sm font-medium">
-                {messages.catalogBrowse.couldNotLoadPlacement}
+                {cb.couldNotLoadPlacement || "Could not load placement test."}
               </p>
               <p className="text-muted-foreground max-w-md text-sm">
                 {placementDocError}
@@ -625,7 +621,7 @@ export default function VideoPage() {
           ) : placementDocHtml ? (
             <iframe
               key="placement-entry-test"
-              title={messages.catalogBrowse.placementTestTitle}
+              title={cb.placementTestTitle || "Placement Test"}
               className="min-h-0 w-full flex-1 border-0 bg-background"
               srcDoc={placementDocHtml}
               onLoad={() => {
@@ -642,7 +638,7 @@ export default function VideoPage() {
             <div className="flex flex-1 flex-col items-center justify-center gap-3">
               <div className="h-10 w-10 animate-spin rounded-full border-solid border-primary border-t-4 border-r-transparent border-b-transparent border-l-transparent" />
               <p className="text-muted-foreground text-sm">
-                {messages.catalogBrowse.loadingPlacement}
+                {cb.loadingPlacement || "Loading placement test..."}
               </p>
             </div>
           )}
@@ -650,8 +646,8 @@ export default function VideoPage() {
       ) : null}
 
       {!needsPlacement &&
-      !showPlacementPrepOverlay &&
-      !showPlacementTest ? (
+        !showPlacementPrepOverlay &&
+        !showPlacementTest ? (
         <CatalogSpotlight
           open={spotlightOpen}
           onClose={() => setSpotlightOpen(false)}

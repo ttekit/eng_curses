@@ -25,8 +25,8 @@ export default function SubscribePage() {
   const { user, isLoading, logout } = useUser();
   const { startCheckout, checkoutLoading } = usePricingCheckout();
   const { locale, messages } = useLandingLocale();
-  const sub = messages.subscription;
-  const toastAccountCreated = messages.auth.login.toastAccountCreated;
+  const sub: any = messages.subscription || {};
+  const toastAccountCreated = (messages.auth as any)?.login?.toastAccountCreated || "Account created successfully";
 
   const devSkip = subscriptionEnforcementDisabled();
   const devSkipBannerDetail = (() => {
@@ -66,8 +66,8 @@ export default function SubscribePage() {
   return (
     <div className="min-h-screen bg-background font-display text-foreground antialiased">
       <SEO
-        title={sub.seoTitle}
-        description={sub.seoDescription}
+        title={sub?.seoTitle || "Subscribe | Explys"}
+        description={sub?.seoDescription || "Choose your subscription plan."}
         canonicalUrl={resolveCanonicalUrl("/subscribe")}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
@@ -83,10 +83,10 @@ export default function SubscribePage() {
           </div>
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              {sub.title}
+              {sub?.title || "Choose your plan"}
             </h1>
             <p className="mx-auto mt-3 max-w-xl text-muted-foreground text-lg">
-              {sub.subtitle}
+              {sub?.subtitle || "Unlock all features"}
             </p>
           </div>
           {devSkip ?
@@ -94,11 +94,11 @@ export default function SubscribePage() {
               className="mx-auto max-w-lg rounded-xl border border-primary/35 bg-primary/10 px-4 py-3 text-primary text-sm"
               role="status"
             >
-              {formatMessage(sub.devModeBanner, {
+              {formatMessage(sub?.devModeBanner || "DEV_MODE: {env}", {
                 env: devSkipBannerDetail,
               })}
             </p>
-          : null}
+            : null}
         </div>
 
         {!devSkip ?
@@ -110,24 +110,24 @@ export default function SubscribePage() {
               className="mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"
             />
             <p className="mx-auto mt-10 max-w-md text-center text-muted-foreground text-xs">
-              {sub.paymentsNote}
+              {sub?.paymentsNote || "Secure payment processing. "}
               <Link
                 to="/pricing"
                 className="text-primary underline-offset-4 hover:underline"
               >
-                {sub.pricingLinkLabel}
+                {sub?.pricingLinkLabel || "Pricing"}
               </Link>
-              {sub.teacherPlanNote}
+              {sub?.teacherPlanNote || ""}
             </p>
           </>
-        : (
-          <Link
-            to="/catalog"
-            className="mx-auto rounded-xl bg-primary px-8 py-3 font-semibold text-primary-foreground"
-          >
-            {sub.continueCatalog}
-          </Link>
-        )}
+          : (
+            <Link
+              to="/catalog"
+              className="mx-auto rounded-xl bg-primary px-8 py-3 font-semibold text-primary-foreground"
+            >
+              {sub?.continueCatalog || "Continue to Catalog"}
+            </Link>
+          )}
 
         <div className="mt-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-12 text-muted-foreground text-sm">
           {user && !userMayUseLearnerApp(user) ?
@@ -139,14 +139,14 @@ export default function SubscribePage() {
                 navigate("/loginForm");
               }}
             >
-              {sub.signOut}
+              {sub?.signOut || "Sign Out"}
             </button>
-          : null}
+            : null}
           <Link
             to="/pricing"
             className="underline-offset-4 hover:text-foreground hover:underline"
           >
-            {sub.comparePlans}
+            {sub?.comparePlans || "Compare Plans"}
           </Link>
         </div>
       </main>

@@ -203,10 +203,10 @@ export default function RegistrationPreferences() {
                     } as Partial<FormData>)
                   }
                   unitLabels={{
-                    day: lpLearn.timeToAchieveUnitDays,
-                    month: lpLearn.timeToAchieveUnitMonths,
-                    year: lpLearn.timeToAchieveUnitYears,
-                    unitSelectAria: lpLearn.timeToAchieveUnitSelectAria,
+                    day: (lpLearn as any)?.timeToAchieveUnitDays || "Days",
+                    month: (lpLearn as any)?.timeToAchieveUnitMonths || "Months",
+                    year: (lpLearn as any)?.timeToAchieveUnitYears || "Years",
+                    unitSelectAria: (lpLearn as any)?.timeToAchieveUnitSelectAria || "Select unit",
                   }}
                 />
               </div>
