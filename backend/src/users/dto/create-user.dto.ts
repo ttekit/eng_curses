@@ -96,4 +96,15 @@ export class CreateUserDto {
   @IsInt()
   @Min(0)
   activeStudyingPhaseIndex?: number;
+
+  /** `CREDENTIALS` or `GOOGLE` — used when creating accounts from OAuth flows. */
+  @IsOptional()
+  @IsString()
+  @IsIn(["CREDENTIALS", "GOOGLE"])
+  method?: string;
+
+  /** Optional profile image URL (OAuth); ignored if the schema has no matching column. */
+  @IsOptional()
+  @IsString()
+  picture?: string;
 }

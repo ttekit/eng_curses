@@ -14,14 +14,14 @@ import { EmailConfirmationService } from "./email-confirmation.service";
 import { Request, Response } from "express";
 import { ConfirmationDto } from "./dto/confirmation.dto";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { UsersService } from "src/users/users.service";
+import { PrismaService } from "src/prisma.service";
 import { ConfigService } from "@nestjs/config";
 @ApiTags("email-confirmation")
 @Controller("email-confirmation")
 export class EmailConfirmationController {
   constructor(
     private readonly emailConfirmationService: EmailConfirmationService,
-    private readonly userService: UsersService,
+    private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -51,7 +51,9 @@ export class EmailConfirmationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Resend verification token" })
   async resend(@Body("email") email: string) {
-    const user = await this.userService.FindByEmail(email);
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
     if (!user) throw new NotFoundException("User not found");
 
     return await this.emailConfirmationService.sendVerificationToken(user);

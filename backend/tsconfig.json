@@ -14,6 +14,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "es2024",
+    "jsx": "react-jsx",
     "sourceMap": true,
     "outDir": "./dist",
     "ignoreDeprecations": "6.0",

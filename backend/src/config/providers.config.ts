@@ -18,14 +18,17 @@ function resolvePublicApiBaseUrl(configService: ConfigService): string {
 
 export const getProvidersConfig = async (
   configService: ConfigService,
-): Promise<TypeOptions> => ({
-  baseUrl: resolvePublicApiBaseUrl(configService), 
-  services: [
-    new GoogleProvider({
-      client_id: configService.get("GOOGLE_CLIENT_ID") || "dummy_id",
-
-      client_secret: configService.getOrThrow('GOOGLE_CLIENT_SECRET'),
-      scopes: ["email", "profile"],
-    }),
-  ],
-});
+): Promise<TypeOptions> => {
+  const baseUrl = resolvePublicApiBaseUrl(configService);
+  return {
+    baseUrl,
+    services: [
+      new GoogleProvider({
+        baseUrl,
+        client_id: configService.get("GOOGLE_CLIENT_ID") || "dummy_id",
+        client_secret: configService.getOrThrow("GOOGLE_CLIENT_SECRET"),
+        scopes: ["email", "profile"],
+      }),
+    ],
+  };
+};

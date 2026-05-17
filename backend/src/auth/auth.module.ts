@@ -13,11 +13,14 @@ import { UsersService } from "src/users/users.service";
 import { ProviderModule } from "./provider/provider.module";
 import { getProvidersConfig } from "src/config/providers.config";
 import { EmailConfirmationModule } from "./email-confirmation/email-confirmation.module";
-import { MailService } from "src/common/mail/mail.service";
+import { MailModule } from "src/common/mail/mail.module";
 import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service";
+import { PasswordRecoveryController } from "./password-recovery/password-recovery.controller";
+import { PasswordRecoveryService } from "./password-recovery/password-recovery.service";
 
 @Module({
   imports: [
+    MailModule,
     ProviderModule.registerAsync({
       imports: [ConfigModule],
       useFactory: getProvidersConfig,
@@ -35,7 +38,7 @@ import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service"
     }),
     forwardRef(() => EmailConfirmationModule),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, PasswordRecoveryController],
   providers: [
     AuthService,
     AuthGuard,
@@ -44,8 +47,8 @@ import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service"
     JwtAdminGuard,
     UserSelfOrApiGuard,
     UsersService,
-    MailService,
     TwoFactorAuthService,
+    PasswordRecoveryService,
   ],
   exports: [
     JwtModule,

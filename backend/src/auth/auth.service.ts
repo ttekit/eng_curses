@@ -450,47 +450,57 @@ export class AuthService {
     }
 
     const profile = await providerInstance.findUserByCode(code);
+    const email = profile.email.toLowerCase();
 
-    const account = await this.prisma.account.findFirst({
-      where: {
-        id: profile.id,
-        provider: profile.provider,
-      },
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
     });
 
-    let user = account?.userId
-      ? await this.userService.findById(account.userId)
-      : null;
-
-    if (user) {
-      return this.saveSession(req, user);
+    if (existingUser) {
+      const linked = await this.prisma.account.findFirst({
+        where: { userId: existingUser.id, provider: profile.provider },
+      });
+      if (!linked) {
+        await this.prisma.account.create({
+          data: {
+            userId: existingUser.id,
+            type: "oauth",
+            provider: profile.provider,
+            accessToken: profile.access_token,
+            refreshToken: profile.refresh_token ?? null,
+            expiresAt: profile.expires_at ?? 0,
+          },
+        });
+      }
+      const full = await this.userService.findById(existingUser.id);
+      return this.saveSession(req, full);
     }
 
-    user = await this.userService.create({
-      email: profile.email,
+    const oauthMethod =
+      profile.provider.toLowerCase() === "google"
+        ? AuthMethod.GOOGLE
+        : AuthMethod.CREDENTIALS;
+
+    const created = await this.userService.create({
+      email,
       password: "",
       name: profile.name,
       picture: profile.picture,
-      method: AuthMethod[profile.provider.toUpperCase()],
-      //method: profile.provider.toUpperCase() as AuthMethod,
+      method: oauthMethod,
     });
 
-    if (!account) {
-      await this.prisma.account.create({
-        data: {
-          userId: user?.id,
-          type: "oauth",
-          provider: profile.provider,
-          accessToken: profile.access_token,
-          refreshToken: profile.refresh_token,
-          expiresAt: profile.expires_at ?? 0,
-        },
-      });
-    }
-    if (!user) {
-      throw new UnauthorizedException("User not found");
-    }
-    return this.saveSession(req, user);
+    await this.prisma.account.create({
+      data: {
+        userId: created.id,
+        type: "oauth",
+        provider: profile.provider,
+        accessToken: profile.access_token,
+        refreshToken: profile.refresh_token ?? null,
+        expiresAt: profile.expires_at ?? 0,
+      },
+    });
+
+    return this.saveSession(req, created);
   }
 
   public async logout(req: Request, res: Response): Promise<void> {

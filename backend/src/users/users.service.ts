@@ -232,6 +232,10 @@ export class UsersService {
 
         return user;
     }
+
+    async findOne(id: number) {
+        return this.findById(id);
+    }
     async FindByEmail(email: string) {
         const user = await this.prisma.user.findUnique({
             where: {
