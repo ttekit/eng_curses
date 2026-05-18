@@ -3,6 +3,40 @@
  * Парується з `en.ts` через тип `LandingMessages`.
  */
 export const landingUk = {
+  placementFlow: {
+    student: {
+      title: "Ваші вподобання",
+      lead: "Розкажіть про свої хобі та улюблені жанри для персоналізації навчання.",
+      leadGenresSaved: "Розкажіть про свої хобі.",
+      hobbies: "Хобі",
+      hobbiesPlaceholder: "Введіть та натисніть Enter...",
+      addChipNamed: "Додати '{name}'",
+      addChip: "Додати",
+      hobbyNoOptions: "Введіть текст, щоб додати хобі",
+      genresPrefer: "Улюблені жанри",
+      genresPreferPlaceholder: "Оберіть жанри",
+      genresAvoid: "Жанри, яких слід уникати",
+      genresAvoidPlaceholder: "Оберіть жанри для уникнення",
+      errorHobbies: "Будь ласка, додайте хоча б одне хобі.",
+      errorGenres: "Будь ласка, оберіть хоча б один жанр.",
+      saveErrorToast: "Не вдалося зберегти вподобання.",
+      saving: "Збереження...",
+      continueCta: "Продовжити"
+    },
+    adult: {
+      formIntro: "Розкажіть трохи про себе.",
+      sectionAbout: "Про вас",
+      job: "Професія / Сфера діяльності",
+      jobPlaceholder: "напр. Розробник ПЗ",
+      education: "Освіта",
+      educationPlaceholder: "напр. Бакалавр",
+      nativeLanguage: "Рідна мова",
+      nativeLanguagePlaceholder: "напр. Українська",
+      errorJob: "Будь ласка, вкажіть вашу професію.",
+      errorEducation: "Будь ласка, вкажіть вашу освіту.",
+      errorNativeLanguage: "Будь ласка, вкажіть вашу рідну мову."
+    }
+  },
   seo: {
     title: "Explys — платформа для вивчення англійської мови через відео",
     description:
@@ -186,6 +220,7 @@ export const landingUk = {
         ],
         ctaLabel: "Почати зі Смарт",
       },
+      
       family: {
         name: "Сімейний (LMS/Pro)",
         description: "Усі переваги Смарт для всієї родини в одній підписці.",

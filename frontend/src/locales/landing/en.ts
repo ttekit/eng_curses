@@ -1,5 +1,39 @@
 /** English copy for the marketing home page (/) and landing header variant. */
 export const landingEn = {
+  placementFlow: {
+    student: {
+      title: "Your preferences",
+      lead: "Tell us about your hobbies and favorite genres to personalize your experience.",
+      leadGenresSaved: "Tell us about your hobbies.",
+      hobbies: "Hobbies",
+      hobbiesPlaceholder: "Type and press enter...",
+      addChipNamed: "Add '{name}'",
+      addChip: "Add",
+      hobbyNoOptions: "Type to add a hobby",
+      genresPrefer: "Genres you love",
+      genresPreferPlaceholder: "Select genres",
+      genresAvoid: "Genres to avoid",
+      genresAvoidPlaceholder: "Select genres to avoid",
+      errorHobbies: "Please add at least one hobby.",
+      errorGenres: "Please select at least one genre.",
+      saveErrorToast: "Failed to save preferences.",
+      saving: "Saving...",
+      continueCta: "Continue"
+    },
+    adult: {
+      formIntro: "Tell us a bit about yourself.",
+      sectionAbout: "About you",
+      job: "Profession / Work field",
+      jobPlaceholder: "e.g. Software Engineer",
+      education: "Education",
+      educationPlaceholder: "e.g. Bachelor's in CS",
+      nativeLanguage: "Native Language",
+      nativeLanguagePlaceholder: "e.g. Ukrainian",
+      errorJob: "Please enter your profession.",
+      errorEducation: "Please enter your education.",
+      errorNativeLanguage: "Please enter your native language."
+    }
+  },
   seo: {
     title: "Explys — Learn English with video lessons",
     description:
@@ -123,6 +157,7 @@ export const landingEn = {
       "From essentials to adaptive AI and family plans — plus solutions for schools.",
     fullPageLink: "Full pricing page",
   },
+  
 
   releaseCountdown: {
     titleAccent: "Launch",
