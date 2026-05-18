@@ -27,7 +27,7 @@ const badgeClassForLabel = (label: string) => {
     };
     return map[t] ?? "bg-muted text-muted-foreground";
   }
-  return "bg-primary/20 text-primary";
+  return "bg-accent/20 text-accent";
 };
 
 interface CatalogVideoCardProps {
@@ -35,7 +35,10 @@ interface CatalogVideoCardProps {
   showProgress?: boolean;
 }
 
-export function CatalogVideoCard({ video, showProgress }: CatalogVideoCardProps) {
+export function CatalogVideoCard({
+  video,
+  showProgress,
+}: CatalogVideoCardProps) {
   return (
     <Link
       to={`/content/${video.id}`}
@@ -43,19 +46,19 @@ export function CatalogVideoCard({ video, showProgress }: CatalogVideoCardProps)
     >
       <div className="relative mb-3 aspect-video overflow-hidden rounded-xl bg-muted">
         {video.thumbnailUrl ? (
-          <img 
-            src={video.thumbnailUrl} 
-            alt={video.title} 
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" 
+          <img
+            src={video.thumbnailUrl}
+            alt={video.title}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : video.videoLink ? (
-          <video 
-            src={`${video.videoLink}#t=0.1`} 
-            preload="metadata" 
+          <video
+            src={`${video.videoLink}#t=0.1`}
+            preload="metadata"
             crossOrigin="anonymous"
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            muted 
-            playsInline 
+            muted
+            playsInline
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted to-accent/20" />

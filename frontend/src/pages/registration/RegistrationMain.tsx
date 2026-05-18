@@ -185,134 +185,134 @@ export default function RegistrationMain() {
         noindex
       />
       <AuthSplitLayout
-      progressStep={1}
-      progressTotal={3}
-      rightTitle="Welcome to Explys!"
-      rightSubtitle="Join thousands of learners improving their English through personalized video content."
-    >
-      <div className="mb-1 flex items-center gap-3">
-        <img src="/Icon.svg" className="w-15 h-18 mr-4" />
-        <h1 className="font-display text-2xl font-bold">Join Explys</h1>
-      </div>
-      <p className="mb-8 text-muted-foreground">
-        Create your account and start your personalized learning journey
-      </p>
-
-      <form onSubmit={handleNext} tabIndex={0} className="space-y-5">
-        <div className="space-y-2">
-          <LabelRegister isRequired={true}>Username</LabelRegister>
-          <InputText
-            name="name"
-            value={formData.name}
-            onChange={(e) => handleChange(e, "other")}
-            type="text"
-            placeholder="Choose a username"
-            autoComplete="username"
-          />
+        progressStep={1}
+        progressTotal={3}
+        rightTitle="Welcome to Explys!"
+        rightSubtitle="Join thousands of learners improving their English through personalized video content."
+      >
+        <div className="mb-1 flex items-center gap-3">
+          <img src="/Icon.svg" className="w-15 h-18 mr-4" />
+          <h1 className="font-display text-2xl font-bold">Join Explys</h1>
         </div>
+        <p className="mb-8 text-muted-foreground">
+          Create your account and start your personalized learning journey
+        </p>
 
-        <div className="space-y-2">
-          <LabelRegister isRequired={true}>Email</LabelRegister>
-          <InputText
-            name="email"
-            value={formData.email}
-            onChange={(e) => handleChange(e, "email")}
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <LabelRegister isRequired={true}>Password</LabelRegister>
-            <button
-              type="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              aria-pressed={showPassword}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setShowPassword((prev) => !prev)}
-            >
-              {showPassword ? (
-                <EyeOff className="size-5 opacity-70" />
-              ) : (
-                <Eye className="size-5 opacity-70" />
-              )}
-            </button>
+        <form onSubmit={handleNext} tabIndex={0} className="space-y-5">
+          <div className="space-y-2">
+            <LabelRegister isRequired={true}>Username</LabelRegister>
+            <InputText
+              name="name"
+              value={formData.name}
+              onChange={(e) => handleChange(e, "other")}
+              type="text"
+              placeholder="Choose a username"
+              autoComplete="username"
+            />
           </div>
-          <InputText
-            name="password"
-            value={formData.password}
-            onChange={(e) => handleChange(e, "password")}
-            type={showPassword ? "text" : "password"}
-            placeholder="Create a password"
-            autoComplete="new-password"
-          />
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <LabelRegister isRequired={true}>Confirm password</LabelRegister>
-            <button
-              type="button"
-              aria-label={
-                showConfirmPassword
-                  ? "Hide confirm password"
-                  : "Show confirm password"
-              }
-              aria-pressed={showConfirmPassword}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setShowConfirmPassword((prev) => !prev)}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="size-5 opacity-70" />
-              ) : (
-                <Eye className="size-5 opacity-70" />
-              )}
-            </button>
+          <div className="space-y-2">
+            <LabelRegister isRequired={true}>Email</LabelRegister>
+            <InputText
+              name="email"
+              value={formData.email}
+              onChange={(e) => handleChange(e, "email")}
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
           </div>
-          <InputText
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={(e) => handleChange(e, "confirmPassword")}
-            type={showConfirmPassword ? "text" : "password"}
-            placeholder="Confirm password"
-            autoComplete="new-password"
-          />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <LabelRegister isRequired={true}>Password</LabelRegister>
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? (
+                  <EyeOff className="hover:cursor-pointer size-5 opacity-70" />
+                ) : (
+                  <Eye className="hover:cursor-pointer size-5 opacity-70" />
+                )}
+              </button>
+            </div>
+            <InputText
+              name="password"
+              value={formData.password}
+              onChange={(e) => handleChange(e, "password")}
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a password"
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <LabelRegister isRequired={true}>Confirm password</LabelRegister>
+              <button
+                type="button"
+                aria-label={
+                  showConfirmPassword
+                    ? "Hide confirm password"
+                    : "Show confirm password"
+                }
+                aria-pressed={showConfirmPassword}
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="size-5 opacity-70" />
+                ) : (
+                  <Eye className="size-5 opacity-70" />
+                )}
+              </button>
+            </div>
+            <InputText
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={(e) => handleChange(e, "confirmPassword")}
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm password"
+              autoComplete="new-password"
+            />
+          </div>
+
+          {errorText && <ValidateError>{errorText}</ValidateError>}
+
+          <Button
+            type="submit"
+            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          >
+            Continue
+            <ArrowRight className="size-4" />
+          </Button>
+        </form>
+
+        <div className="mt-6 flex flex-col gap-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            onClick={handleBack}
+          >
+            <ArrowLeft className="size-4" />
+            Back home
+          </Link>
         </div>
 
-        {errorText && <ValidateError>{errorText}</ValidateError>}
-
-        <Button
-          type="submit"
-          className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-        >
-          Continue
-          <ArrowRight className="size-4" />
-        </Button>
-      </form>
-
-      <div className="mt-6 flex flex-col gap-4">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          onClick={handleBack}
-        >
-          <ArrowLeft className="size-4" />
-          Back home
-        </Link>
-      </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link
-          to="/loginForm"
-          className="font-medium text-primary hover:underline"
-        >
-          Log in
-        </Link>
-      </p>
-    </AuthSplitLayout>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link
+            to="/loginForm"
+            className="font-medium text-primary hover:underline"
+          >
+            Log in
+          </Link>
+        </p>
+      </AuthSplitLayout>
     </>
   );
 }

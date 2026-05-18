@@ -231,7 +231,7 @@ export default function RegistrationDetails() {
         {formData.role === "teacher" && (
           <section className="space-y-4 border-border border-t pt-8">
             <div className="flex items-start gap-3">
-              <img src="Icon.svg" className="w-12 h-15" />
+              <img src="TeacherIcon.svg" className="w-12 h-15" />
               <div>
                 <h2 className="font-display text-xl font-semibold">
                   Teacher profile

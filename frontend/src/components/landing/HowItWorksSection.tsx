@@ -1,16 +1,10 @@
-import {
-  CircleUser,
-  BookOpenCheck,
-  MonitorPlay,
-  TrendingUp,
-} from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 const stepIcons = [
-  <CircleUser key="0" className="h-10 w-10 text-muted-foreground" />,
-  <BookOpenCheck key="1" className="h-10 w-10 text-muted-foreground" />,
-  <MonitorPlay key="2" className="h-10 w-10 text-muted-foreground" />,
-  <TrendingUp key="3" className="h-10 w-10 text-muted-foreground" />,
+  <img src="/LandingProfile.svg" key="0" className="h-16 w-16" />,
+  <img src="/LandingTest.svg" key="1" className="h-16 w-16" />,
+  <img src="/LandingPlan.svg" key="2" className="h-16 w-16" />,
+  <img src="/LandingResult.svg" key="3" className="h-16 w-16" />,
 ];
 
 export function HowItWorksSection() {

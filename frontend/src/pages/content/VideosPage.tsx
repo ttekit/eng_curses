@@ -127,10 +127,13 @@ export default function VideoPage() {
           const { pathname, search } = stripCheckoutSuccessSearch();
           void navigate({ pathname, search }, { replace: true });
           if (!import.meta.env.DEV) {
-            toast.success(cb.stripeThanksToast || "Thank you for your purchase!", {
-              id: STRIPE_CHECKOUT_CATALOG_TOAST_ID,
-              duration: 6000,
-            });
+            toast.success(
+              cb.stripeThanksToast || "Thank you for your purchase!",
+              {
+                id: STRIPE_CHECKOUT_CATALOG_TOAST_ID,
+                duration: 6000,
+              },
+            );
           }
           return;
         }
@@ -174,8 +177,7 @@ export default function VideoPage() {
         : "test";
     }
     const hasPrefs =
-      (user.hobbies?.length ?? 0) > 0 &&
-      (user.favoriteGenres?.length ?? 0) > 0;
+      (user.hobbies?.length ?? 0) > 0 && (user.favoriteGenres?.length ?? 0) > 0;
     return hasPrefs ? "test" : "preferences";
   }, [
     needsPlacement,
@@ -248,7 +250,9 @@ export default function VideoPage() {
       } catch (e) {
         if (!cancelled) {
           setPlacementDocError(
-            e instanceof Error ? e.message : (cb.placementLoadError || "Failed to load placement test."),
+            e instanceof Error
+              ? e.message
+              : cb.placementLoadError || "Failed to load placement test.",
           );
         }
       }
@@ -301,7 +305,10 @@ export default function VideoPage() {
 
   /** Open Spotlight from sidebar on other routes via Link `state.openSpotlight` */
   useEffect(() => {
-    const raw = location.state as { openSpotlight?: boolean } | null | undefined;
+    const raw = location.state as
+      | { openSpotlight?: boolean }
+      | null
+      | undefined;
     if (raw?.openSpotlight) {
       setSpotlightOpen(true);
       void navigate(
@@ -364,14 +371,14 @@ export default function VideoPage() {
   const featured = filteredVideos[0] ?? null;
   const featuredHero = featured
     ? {
-      id: featured.id,
-      title: featured.videoName,
-      description:
-        featured.videoDescription ??
-        featured.content.category.description ??
-        "",
-      categoryName: featured.content.category.name,
-    }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+      }
     : null;
 
   const catalogRows = useMemo(() => {
@@ -379,12 +386,12 @@ export default function VideoPage() {
     if (selectedCategory !== "All") {
       const sorted = [...filteredVideos].sort((a, b) => {
         const ma =
-          typeof a.content.playlistPosition === "number" ?
-            a.content.playlistPosition
+          typeof a.content.playlistPosition === "number"
+            ? a.content.playlistPosition
             : 0;
         const mb =
-          typeof b.content.playlistPosition === "number" ?
-            b.content.playlistPosition
+          typeof b.content.playlistPosition === "number"
+            ? b.content.playlistPosition
             : 0;
         if (ma !== mb) return ma - mb;
         const va =
@@ -416,12 +423,12 @@ export default function VideoPage() {
       .map(([title, list]) => {
         const sorted = [...list].sort((a, b) => {
           const ma =
-            typeof a.content.playlistPosition === "number" ?
-              a.content.playlistPosition
+            typeof a.content.playlistPosition === "number"
+              ? a.content.playlistPosition
               : 0;
           const mb =
-            typeof b.content.playlistPosition === "number" ?
-              b.content.playlistPosition
+            typeof b.content.playlistPosition === "number"
+              ? b.content.playlistPosition
               : 0;
           if (ma !== mb) return ma - mb;
           const va =
@@ -443,9 +450,9 @@ export default function VideoPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased flex-col">
-      {activatingSubscriptionOverlay ?
+      {activatingSubscriptionOverlay ? (
         <div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm"
+          className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm"
           role="status"
           aria-live="polite"
         >
@@ -454,7 +461,7 @@ export default function VideoPage() {
             {cb.activatingSubscription || "Activating your subscription..."}
           </p>
         </div>
-        : null}
+      ) : null}
       <SEO
         title={catalogSeo?.title || "Catalog"}
         description={catalogSeo?.description || "Explys Catalog"}
@@ -468,7 +475,7 @@ export default function VideoPage() {
             categories={categoryNames}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
-            onSelectLevel={() => { }}
+            onSelectLevel={() => {}}
             welcomeName={user?.name ? user.name.split(" ")[0] : undefined}
             englishLevel={user?.englishLevel || undefined}
             collapsed={sidebarCollapsed}
@@ -485,24 +492,31 @@ export default function VideoPage() {
             )}
           >
             <CatalogHero featured={featuredHero} />
-            <div id="catalog-library" className="space-y-10 px-4 sm:px-6 lg:px-8 pt-8">
+            <div
+              id="catalog-library"
+              className="space-y-10 px-4 sm:px-6 lg:px-8 pt-8"
+            >
               {loading ? (
                 <div className="flex h-60 bg-card/30 flex-col items-center border border-border border-t justify-center space-y-4">
                   <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
                   <p className="animate-pulse text-muted-foreground text-sm">
-                    {(messages.catalogPage as any)?.loadingCatalog || "Loading catalog..."}
+                    {(messages.catalogPage as any)?.loadingCatalog ||
+                      "Loading catalog..."}
                   </p>
                 </div>
               ) : filteredVideos.length === 0 ? (
                 <div className="border-t border-border bg-card/30 py-15 text-center">
                   <Frown className="text-foreground/70 justify-center w-10 h-10 pb-2 mx-auto" />
                   <h2 className="font-display text-2xl font-bold">
-                    {(messages.catalogPage as any)?.emptyTitle || "No lessons found"}
+                    {(messages.catalogPage as any)?.emptyTitle ||
+                      "No lessons found"}
                   </h2>
                   <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
-                      ? ((messages.catalogPage as any)?.emptyNoVideos || "There are no videos in the catalog yet.")
-                      : ((messages.catalogPage as any)?.emptyFiltered || "No videos match your filters.")}
+                      ? (messages.catalogPage as any)?.emptyNoVideos ||
+                        "There are no videos in the catalog yet."
+                      : (messages.catalogPage as any)?.emptyFiltered ||
+                        "No videos match your filters."}
                   </p>
                 </div>
               ) : (
@@ -557,10 +571,11 @@ export default function VideoPage() {
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {user?.role === "adult"
-                    ? (cb.beforeEntryAdult || "Let's set up your profile.")
+                    ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
-                      ? (cb.beforeEntryIndependentStudent || "Let's personalize your learning.")
-                      : (cb.beforeEntryStudent || "Let's get everything ready.")}
+                      ? cb.beforeEntryIndependentStudent ||
+                        "Let's personalize your learning."
+                      : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>
               <div className="flex-1 pb-6">
@@ -594,7 +609,8 @@ export default function VideoPage() {
                     </span>
                   </div>
                   <p className="max-w-xs text-sm text-muted-foreground">
-                    {cb.placementFooterBlurb || "Explys placement test personalization."}
+                    {cb.placementFooterBlurb ||
+                      "Explys placement test personalization."}
                   </p>
                 </div>
                 <p className="shrink-0 text-sm text-muted-foreground">
@@ -649,9 +665,7 @@ export default function VideoPage() {
         </div>
       ) : null}
 
-      {!needsPlacement &&
-        !showPlacementPrepOverlay &&
-        !showPlacementTest ? (
+      {!needsPlacement && !showPlacementPrepOverlay && !showPlacementTest ? (
         <CatalogSpotlight
           open={spotlightOpen}
           onClose={() => setSpotlightOpen(false)}

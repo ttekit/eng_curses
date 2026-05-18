@@ -72,9 +72,9 @@ function CtaButton({
       className={cn(
         base,
         isPrimary &&
-          "border-2 border-primary bg-primary text-primary-foreground shadow-[inset_0_2px_8px_rgba(0,0,0,0.25)] hover:bg-primary/90",
+          "flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
         isSecondary &&
-          "border border-border bg-muted/50 text-foreground hover:bg-muted",
+          "flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10",
       )}
     >
       {plan.ctaLabel}
@@ -106,11 +106,11 @@ function PricingCard({
           : "border-border",
       )}
     >
-      {popular ?
+      {popular ? (
         <span className="absolute -top-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-foreground shadow-md">
           {popularBadge}
         </span>
-      : null}
+      ) : null}
 
       <div className={cn("mb-4 pt-1", popular && "pt-2")}>
         <h3 className="font-display text-lg font-semibold text-foreground">
@@ -122,7 +122,7 @@ function PricingCard({
       </div>
 
       <div className="mb-6 border-border border-b pb-6">
-        {plan.isContactSales ?
+        {plan.isContactSales ? (
           <div>
             <p className="font-display text-3xl font-bold tracking-tight text-foreground">
               {teacherPriceTitle}
@@ -131,7 +131,8 @@ function PricingCard({
               {plan.billingNote}
             </p>
           </div>
-        : <>
+        ) : (
+          <>
             <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0">
               <span className="font-display text-4xl font-bold tracking-tight text-foreground">
                 {plan.priceLabel}
@@ -142,7 +143,7 @@ function PricingCard({
               </span>
             </div>
           </>
-        }
+        )}
       </div>
 
       <ul className="mb-6 flex flex-1 flex-col gap-3">

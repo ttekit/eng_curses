@@ -28,7 +28,10 @@ export function AuthSplitLayout({
       <div className="relative hidden lg:flex flex-1 bg-card items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.25_295/0.2)_0%,transparent_70%)]" />
         <div className="relative px-12 text-center">
-          <img src="/Icon.svg" className="w-45 h-54 animate-float ml-25 my-5" />
+          <img
+            src="/Greeting.svg"
+            className="w-45 h-54 animate-float ml-25 my-5"
+          />
           <h2 className="text-2xl font-bold font-display mb-4">{rightTitle}</h2>
           <p className="text-muted-foreground mx-auto max-w-sm">
             {rightSubtitle}
