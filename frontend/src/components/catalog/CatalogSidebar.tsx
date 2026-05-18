@@ -107,7 +107,7 @@ export function CatalogSidebar({
 
         <div
           className={cn(
-            "mx-3 my-3 flex items-center gap-3 rounded-3xl border border-border p-1",
+            "mx-3 my-3 flex items-center gap-3 rounded-3xl border border-border p-1 shrink-0",
             collapsed && "justify-center",
           )}
         >
@@ -124,126 +124,129 @@ export function CatalogSidebar({
           )}
         </div>
 
-        <nav className="flex-col space-y-1 p-4">
-          {sidebarLinks.map((link) => {
-            if (link.label === "Search") {
-              const active = linkActive(link);
-              const itemClass = cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                collapsed && "justify-center px-2",
-              );
-              return pathname === "/catalog" && onOpenCatalogSpotlight ?
-                <button
-                  key={link.label}
-                  type="button"
-                  className={itemClass}
-                  onClick={() => onOpenCatalogSpotlight()}
-                >
-                  <link.icon className="h-5 w-5 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </button>
-                : <Link
-                  key={link.label}
-                  to="/catalog"
-                  state={{ openSpotlight: true }}
-                  className={itemClass}
-                >
-                  <link.icon className="h-5 w-5 shrink-0" />
-                  {!collapsed && <span>{link.label}</span>}
-                </Link>;
-            }
-            return (
-              <Link
-                key={link.label}
-                to={link.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                  linkActive(link)
+        {/* Скролбару сховано через класи, залишаючи можливість прокручувати елементи мишкою */}
+        <div className="flex-1 overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <nav className="flex-col space-y-1 p-4">
+            {sidebarLinks.map((link) => {
+              if (link.label === "Search") {
+                const active = linkActive(link);
+                const itemClass = cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                  active
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   collapsed && "justify-center px-2",
-                )}
-              >
-                <link.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{link.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {!collapsed && (
-          <div className="space-y-4 border-t border-border p-4">
-            <p className="mb-2 text-sm font-medium text-foreground">Level</p>
-            <div className="flex flex-wrap gap-1">
-              {LEVELS.map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => onSelectLevel?.(level)}
+                );
+                return pathname === "/catalog" && onOpenCatalogSpotlight ?
+                  <button
+                    key={link.label}
+                    type="button"
+                    className={itemClass}
+                    onClick={() => onOpenCatalogSpotlight()}
+                  >
+                    <link.icon className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>{link.label}</span>}
+                  </button>
+                  : <Link
+                    key={link.label}
+                    to="/catalog"
+                    state={{ openSpotlight: true }}
+                    className={itemClass}
+                  >
+                    <link.icon className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>{link.label}</span>}
+                  </Link>;
+              }
+              return (
+                <Link
+                  key={link.label}
+                  to={link.to}
                   className={cn(
-                    "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
-                    selectedLevel === level
-                      ? "bg-primary text-primary-foreground shadow-inner"
-                      : "bg-muted text-muted-foreground hover:text-foreground",
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    linkActive(link)
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    collapsed && "justify-center px-2",
                   )}
                 >
-                  {level}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+                  <link.icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </Link>
+              );
+            })}
+          </nav>
 
-        {!collapsed && (
-          <div className="space-y-4 border-t border-border p-4">
-            <p className="mb-2 text-sm font-medium text-foreground">Category</p>
-            <div className="flex flex-wrap gap-1">
-              {sortedCategories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => onSelectCategory(category)}
-                  className={cn(
-                    "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
-                    selectedCategory === category
-                      ? "bg-accent text-accent-foreground shadow-inner"
-                      : "bg-muted text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {category}
-                </button>
-              ))}
+          {!collapsed && (
+            <div className="space-y-4 border-t border-border p-4">
+              <p className="mb-2 text-sm font-medium text-foreground">Level</p>
+              <div className="flex flex-wrap gap-1">
+                {LEVELS.map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => onSelectLevel?.(level)}
+                    className={cn(
+                      "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
+                      selectedLevel === level
+                        ? "bg-primary text-primary-foreground shadow-inner"
+                        : "bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {!collapsed && genres.length > 0 && (
-          <div className="space-y-4 border-t border-border p-4">
-            <p className="mb-2 text-sm font-medium text-foreground">Genre</p>
-            <div className="flex flex-wrap gap-1">
-              {sortedGenres.map((genre) => (
-                <button
-                  key={genre}
-                  type="button"
-                  onClick={() => onSelectGenre?.(genre)}
-                  className={cn(
-                    "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
-                    selectedGenre === genre
-                      ? "bg-accent text-accent-foreground shadow-inner"
-                      : "bg-muted text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {genre}
-                </button>
-              ))}
+          {!collapsed && (
+            <div className="space-y-4 border-t border-border p-4">
+              <p className="mb-2 text-sm font-medium text-foreground">Category</p>
+              <div className="flex flex-wrap gap-1">
+                {sortedCategories.map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => onSelectCategory(category)}
+                    className={cn(
+                      "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
+                      selectedCategory === category
+                        ? "bg-accent text-accent-foreground shadow-inner"
+                        : "bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="mt-auto border-t border-border p-4">
+          {!collapsed && genres.length > 0 && (
+            <div className="space-y-4 border-t border-border p-4">
+              <p className="mb-2 text-sm font-medium text-foreground">Genre</p>
+              <div className="flex flex-wrap gap-1">
+                {sortedGenres.map((genre) => (
+                  <button
+                    key={genre}
+                    type="button"
+                    onClick={() => onSelectGenre?.(genre)}
+                    className={cn(
+                      "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
+                      selectedGenre === genre
+                        ? "bg-accent text-accent-foreground shadow-inner"
+                        : "bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-auto border-t border-border p-4 shrink-0 bg-card">
           <Link
             to="/profile?tab=settings"
             className={cn(
