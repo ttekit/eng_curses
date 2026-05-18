@@ -37,8 +37,8 @@ function renderIntroMarkdownish(text: string) {
 export function ProfileStudyingPlan({ user }: { user: UserData }) {
   const { refreshProfile } = useUser();
   const { locale, messages } = useLandingLocale();
-  const regStep3 = (messages as any)?.auth?.registration?.step3 || {};
-  const lp = (messages as any)?.learningPlan || {};
+  const regStep3 = messages.auth.registration.step3;
+  const lp = messages.learningPlan;
 
   const [learningGoal, setLearningGoal] = useState(user.learningGoal ?? "");
   const [timeToAchieve, setTimeToAchieve] = useState(() =>

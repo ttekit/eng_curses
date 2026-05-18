@@ -20,8 +20,9 @@ import { extractAccessTokenFromRequest } from "../extract-request-access-token.u
 
 /**
  * Requires an active Stripe-backed subscription for learner JWT calls.
- * Bypass: SKIP_SUBSCRIPTION_ENFORCEMENT, @Public routes, routes without Bearer token (other guards must enforce auth),
- * allowlisted paths (see ALLOWLIST), teachers, roster students (`teacherId` set).
+ * Bypass: non-production `NODE_ENV`, `SKIP_SUBSCRIPTION_ENFORCEMENT`, `@Public` routes,
+ * routes without Bearer token (other guards must enforce auth), allowlisted paths,
+ * teachers, roster students (`teacherId` set).
  */
 @Injectable()
 export class RequireActiveSubscriptionGuard implements CanActivate {
@@ -53,6 +54,17 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
     if (req.method === "OPTIONS") {
+      return true;
+    }
+
+    const nodeEnv = (
+      this.config.get<string>("NODE_ENV") ??
+      process.env.NODE_ENV ??
+      ""
+    )
+      .trim()
+      .toLowerCase();
+    if (nodeEnv !== "production") {
       return true;
     }
 

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import {
-  LANDING_LOCALES,
+  getLandingMessages,
   type LandingLocaleId,
   type LandingMessages,
 } from "../locales/landing";
@@ -63,7 +63,7 @@ export function LandingLocaleProvider({ children }: { children: ReactNode }) {
     () => ({
       locale,
       setLocale,
-      messages: LANDING_LOCALES[locale],
+      messages: getLandingMessages(locale),
     }),
     [locale, setLocale],
   );

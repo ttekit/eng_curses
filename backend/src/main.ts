@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 
 config();
 
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
@@ -130,11 +130,66 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
-  const redis = new IORedis("redis://localhost:6379");
-  //const redis = new IORedis(config.getOrThrow('REDIS_URL'))
+  const bootstrapLogger = new Logger("Bootstrap");
 
   app.use(cookieParser(config.getOrThrow<string>("COOKIES_SECRET")));
 
+  const sessionBase: session.SessionOptions = {
+    secret: config.getOrThrow<string>("SESSION_SECRET"),
+    name: config.getOrThrow<string>("SESSION_NAME"),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      domain: config.get<string>("SESSION_DOMAIN") || undefined,
+      maxAge: ms(config.getOrThrow<StringValue>("SESSION_MAX_AGE")),
+      httpOnly: parseBoolean(config.getOrThrow<string>("SESSION_HTTP_ONLY")),
+      secure: parseBoolean(config.getOrThrow<string>("SESSION_SECURE")) || false,
+      sameSite: "lax",
+    },
+  };
+
+  const sessionStoreRaw = config.get<string>("SESSION_STORE")?.trim().toLowerCase();
+  const sessionStore =
+    sessionStoreRaw === "memory" ? "memory"
+    : sessionStoreRaw === "redis" || sessionStoreRaw === "" || sessionStoreRaw == null ?
+      "redis"
+    : ((): "redis" => {
+        bootstrapLogger.warn(
+          `Unknown SESSION_STORE="${sessionStoreRaw}" — using redis`,
+        );
+        return "redis";
+      })();
+
+  if (process.env.NODE_ENV === "production" && sessionStore === "memory") {
+    throw new Error(
+      "SESSION_STORE=memory is not allowed when NODE_ENV=production",
+    );
+  }
+
+  if (sessionStore === "memory") {
+    bootstrapLogger.warn(
+      "SESSION_STORE=memory — no Redis; fine for local JWT flows. OAuth sessions reset on restart.",
+    );
+    app.use(session(sessionBase));
+  } else {
+    const redisUrl =
+      config.get<string>("REDIS_URL")?.trim() || "redis://127.0.0.1:6379";
+    const redis = new IORedis(redisUrl);
+    redis.on("error", (err: Error) => {
+      bootstrapLogger.error(
+        `Redis (${redisUrl}): ${err.message}. Start Redis (e.g. docker compose up -d redis) or set SESSION_STORE=memory for local dev.`,
+      );
+    });
+    app.use(
+      session({
+        ...sessionBase,
+        store: new RedisStore({
+          client: redis,
+          prefix: config.getOrThrow<string>("SESSION_FOLDER"),
+        }),
+      }),
+    );
+  }
 
   // Dev helper: same-origin test UI for the placement/entrance test (e.g. /dev/entrance-test.html)
   app.useStaticAssets(join(process.cwd(), "public"), { prefix: "/dev/" });
@@ -143,26 +198,6 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
-    }),
-  );
-
-  app.use(
-    session({
-      secret: config.getOrThrow<string>("SESSION_SECRET"),
-      name: config.getOrThrow<string>("SESSION_NAME"),
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        domain: config.getOrThrow<string>("SESSION_DOMAIN") || undefined,
-        maxAge: ms(config.getOrThrow<StringValue>("SESSION_MAX_AGE")),
-        httpOnly: parseBoolean(config.getOrThrow<string>("SESSION_HTTP_ONLY")),
-        secure: parseBoolean(config.getOrThrow<string>("SESSION_SECURE")) || false,
-        sameSite: 'lax',
-      },
-      store: new RedisStore({
-        client: redis,
-        prefix: config.getOrThrow<string>('SESSION_FOLDER')
-      })
     }),
   );
 
