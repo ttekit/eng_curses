@@ -6,6 +6,7 @@ export interface CatalogHeroVideo {
   title: string;
   description: string;
   categoryName: string;
+  thumbnailUrl?: string;
 }
 
 interface CatalogHeroProps {
@@ -16,12 +17,32 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
   const navigate = useNavigate();
 
   return (
-    <section className="relative flex min-h-125 h-[70vh] items-end overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.25_295/0.3)_0%,transparent_50%)]" />
-      <div className="absolute inset-0 bg-card/60" />
+    <section className="relative flex min-h-125 h-[70vh] items-end overflow-hidden bg-background">
+      {featured?.thumbnailUrl ? (
+        <div className="absolute inset-0 z-0">
+          <img
+            src={featured.thumbnailUrl}
+            alt={featured.title}
+            className="h-full w-full object-cover object-[75%_center] opacity-90"
+          />
+          {/* Градієнт зліва направо: текст буде читабельним, картинка плавно виринає справа */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent sm:via-background/70" />
 
-      <div className="relative max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
+          {/* НОВИЙ Градієнт справа наліво: затемнює край перед скролбаром і затемнює щілину */}
+          <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background via-background/80 to-transparent" />
+
+          {/* Градієнт знизу: щоб банер плавно перетікав у список каталогів */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        </div>
+      ) : (
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.25_295/0.3)_0%,transparent_50%)]" />
+          <div className="absolute inset-0 bg-card/60" />
+        </div>
+      )}
+
+      <div className="relative z-10 max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <span className="rounded-full bg-primary/20 px-3 py-1 text-sm font-medium text-primary">
             Featured

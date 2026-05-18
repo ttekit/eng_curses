@@ -28,14 +28,14 @@ interface CatalogSidebarProps {
   onSelectCategory: (category: string) => void;
   welcomeName?: string;
   englishLevel?: string;
-  onSelectLevel: (level: string) => void;
-  /** When false, sidebar/backdrop anchor to viewport top (use when pages omit the fixed app navbar). */
+  selectedLevel?: string;
+  onSelectLevel?: (level: string) => void;
+  genres?: string[];
+  selectedGenre?: string;
+  onSelectGenre?: (genre: string) => void;
   reserveTopNavSpace?: boolean;
-  /** Catalog page: Spotlight command palette is open (highlights Search nav). */
   catalogSpotlightOpen?: boolean;
-  /** Catalog page only: open Spotlight from sidebar Search. */
   onOpenCatalogSpotlight?: () => void;
-  // lifted state — controlled by parent
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
 }
@@ -46,7 +46,11 @@ export function CatalogSidebar({
   onSelectCategory,
   welcomeName,
   englishLevel,
-  // onSelectLevel,
+  selectedLevel = "All",
+  onSelectLevel,
+  genres = [],
+  selectedGenre = "All",
+  onSelectGenre,
   reserveTopNavSpace = true,
   catalogSpotlightOpen = false,
   onOpenCatalogSpotlight,
@@ -56,6 +60,7 @@ export function CatalogSidebar({
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const sortedCategories = ["All", ...categories.filter(Boolean).sort()];
+  const sortedGenres = ["All", ...genres.filter(Boolean).sort()];
 
   const linkActive = (link: (typeof sidebarLinks)[number]) => {
     if (link.label === "Catalog") {
@@ -131,24 +136,24 @@ export function CatalogSidebar({
                 collapsed && "justify-center px-2",
               );
               return pathname === "/catalog" && onOpenCatalogSpotlight ?
-                  <button
-                    key={link.label}
-                    type="button"
-                    className={itemClass}
-                    onClick={() => onOpenCatalogSpotlight()}
-                  >
-                    <link.icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{link.label}</span>}
-                  </button>
+                <button
+                  key={link.label}
+                  type="button"
+                  className={itemClass}
+                  onClick={() => onOpenCatalogSpotlight()}
+                >
+                  <link.icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </button>
                 : <Link
-                    key={link.label}
-                    to="/catalog"
-                    state={{ openSpotlight: true }}
-                    className={itemClass}
-                  >
-                    <link.icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{link.label}</span>}
-                  </Link>;
+                  key={link.label}
+                  to="/catalog"
+                  state={{ openSpotlight: true }}
+                  className={itemClass}
+                >
+                  <link.icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && <span>{link.label}</span>}
+                </Link>;
             }
             return (
               <Link
@@ -177,10 +182,10 @@ export function CatalogSidebar({
                 <button
                   key={level}
                   type="button"
-                  onClick={() => {}}
+                  onClick={() => onSelectLevel?.(level)}
                   className={cn(
                     "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
-                    englishLevel === level
+                    selectedLevel === level
                       ? "bg-primary text-primary-foreground shadow-inner"
                       : "bg-muted text-muted-foreground hover:text-foreground",
                   )}
@@ -209,6 +214,29 @@ export function CatalogSidebar({
                   )}
                 >
                   {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!collapsed && genres.length > 0 && (
+          <div className="space-y-4 border-t border-border p-4">
+            <p className="mb-2 text-sm font-medium text-foreground">Genre</p>
+            <div className="flex flex-wrap gap-1">
+              {sortedGenres.map((genre) => (
+                <button
+                  key={genre}
+                  type="button"
+                  onClick={() => onSelectGenre?.(genre)}
+                  className={cn(
+                    "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
+                    selectedGenre === genre
+                      ? "bg-accent text-accent-foreground shadow-inner"
+                      : "bg-muted text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {genre}
                 </button>
               ))}
             </div>
@@ -252,24 +280,24 @@ export function CatalogSidebar({
                 active ? "text-primary" : "text-muted-foreground",
               );
               return pathname === "/catalog" && onOpenCatalogSpotlight ?
-                  <button
-                    key={link.label}
-                    type="button"
-                    className={itemClass}
-                    onClick={() => onOpenCatalogSpotlight()}
-                  >
-                    <link.icon className="h-5 w-5" />
-                    <span className="text-xs">{link.label}</span>
-                  </button>
+                <button
+                  key={link.label}
+                  type="button"
+                  className={itemClass}
+                  onClick={() => onOpenCatalogSpotlight()}
+                >
+                  <link.icon className="h-5 w-5" />
+                  <span className="text-xs">{link.label}</span>
+                </button>
                 : <Link
-                    key={link.label}
-                    to="/catalog"
-                    state={{ openSpotlight: true }}
-                    className={itemClass}
-                  >
-                    <link.icon className="h-5 w-5" />
-                    <span className="text-xs">{link.label}</span>
-                  </Link>;
+                  key={link.label}
+                  to="/catalog"
+                  state={{ openSpotlight: true }}
+                  className={itemClass}
+                >
+                  <link.icon className="h-5 w-5" />
+                  <span className="text-xs">{link.label}</span>
+                </Link>;
             }
             return (
               <Link
