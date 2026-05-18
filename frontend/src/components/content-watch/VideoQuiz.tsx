@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import {
-  ArrowRight,
-  CheckCircle,
-  Clock,
-  Lock,
-} from "lucide-react";
+import { ArrowRight, CheckCircle, Clock, Lock } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChameleonMascot } from "../ChameleonMascot";
 import type { QuizQuestion } from "./defaultLessonSides";
@@ -65,9 +60,9 @@ export function VideoQuiz({
   const [isAnswered, setIsAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showResults, setShowResults] = useState(false);
-  const [answersById, setAnswersById] = useState<Record<string, number | string>>(
-    {},
-  );
+  const [answersById, setAnswersById] = useState<
+    Record<string, number | string>
+  >({});
 
   const question = questions[currentQuestion];
   const isOpen = question ? isOpenQuestion(question) : false;
@@ -92,7 +87,9 @@ export function VideoQuiz({
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <Lock className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="mb-2 text-lg font-semibold text-foreground">Quiz locked</h3>
+        <h3 className="mb-2 text-lg font-semibold text-foreground">
+          Quiz locked
+        </h3>
         <p className="text-sm text-muted-foreground">
           Finish watching the lesson to unlock the quiz and earn XP.
         </p>
@@ -103,8 +100,7 @@ export function VideoQuiz({
   if (showResults) {
     const mcqPct =
       mcqTotal > 0 ? Math.round((correctCount / mcqTotal) * 100) : 0;
-    const mood =
-      mcqPct >= 80 ? "excited" : mcqPct >= 50 ? "happy" : "thinking";
+    const mood = mcqPct >= 80 ? "excited" : mcqPct >= 50 ? "happy" : "thinking";
 
     const wrongReview: QuizWrongReviewItem[] = [];
     for (const q of questions) {
@@ -125,19 +121,25 @@ export function VideoQuiz({
 
     return (
       <div className="py-4 text-center">
-        <ChameleonMascot size="md" mood={mood} className="mx-auto mb-4" />
+        <img src="/ResultHappy.svg" className="w-40 h-40 mx-23" />
 
-        <h3 className="mb-2 text-xl font-bold text-foreground">Quiz complete</h3>
+        <h3 className="mb-2 text-xl font-bold text-foreground">
+          Quiz complete
+        </h3>
 
         <div className="mb-4 rounded-xl bg-muted p-4">
           <p className="mb-1 text-3xl font-bold text-primary">
             {correctCount}/{mcqTotal}
           </p>
-          <p className="text-sm text-muted-foreground">{mcqPct}% multiple choice</p>
+          <p className="text-sm text-muted-foreground">
+            {mcqPct}% multiple choice
+          </p>
           {hasOpen ? (
             <p className="mt-3 text-xs leading-snug text-muted-foreground">
               Your written summary is included in the final score when you tap{" "}
-              <span className="font-medium text-foreground">Complete lesson</span>{" "}
+              <span className="font-medium text-foreground">
+                Complete lesson
+              </span>{" "}
               (submitted to the server with your answers).
             </p>
           ) : null}
@@ -157,8 +159,8 @@ export function VideoQuiz({
               Review — correct answers
             </p>
             <p className="text-xs text-muted-foreground">
-              Answers were hidden while you worked through the quiz. Here are the
-              items you missed:
+              Answers were hidden while you worked through the quiz. Here are
+              the items you missed:
             </p>
             <ul className="space-y-3 text-sm">
               {wrongReview.map((w) => (
@@ -166,7 +168,9 @@ export function VideoQuiz({
                   key={`${w.question}-${w.selectedIndex}`}
                   className="rounded-lg border border-border/80 bg-background/60 p-3"
                 >
-                  <p className="mb-2 font-medium text-foreground">{w.question}</p>
+                  <p className="mb-2 font-medium text-foreground">
+                    {w.question}
+                  </p>
                   <p className="text-muted-foreground">
                     Your answer:{" "}
                     <span className="text-foreground">
@@ -197,7 +201,7 @@ export function VideoQuiz({
               wrongReview,
             })
           }
-          className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          className="flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
         >
           Complete lesson
         </button>
@@ -331,7 +335,7 @@ export function VideoQuiz({
                   if (!isAnswered) setSelectedAnswer(index);
                 }}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
+                  "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
                   !isAnswered && isSelected && "border-primary bg-primary/10",
                   !isAnswered &&
                     !isSelected &&
@@ -344,10 +348,16 @@ export function VideoQuiz({
                 <span
                   className={cn(
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
-                    !isAnswered && isSelected && "bg-primary text-primary-foreground",
-                    !isAnswered && !isSelected && "bg-muted text-muted-foreground",
+                    !isAnswered &&
+                      isSelected &&
+                      "bg-primary text-primary-foreground",
+                    !isAnswered &&
+                      !isSelected &&
+                      "bg-muted text-muted-foreground",
                     lockedInThis && "bg-primary/80 text-primary-foreground",
-                    isAnswered && !isSelected && "bg-muted text-muted-foreground",
+                    isAnswered &&
+                      !isSelected &&
+                      "bg-muted text-muted-foreground",
                   )}
                 >
                   {lockedInThis ? (
@@ -383,7 +393,7 @@ export function VideoQuiz({
         disabled={primaryDisabled}
         onClick={handleSubmit}
         className={cn(
-          "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50",
+          "flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
         )}
       >
         {!isAnswered ? (
@@ -400,16 +410,14 @@ export function VideoQuiz({
   );
 }
 
-export function LessonCompleteBanner({
-  xpEarned,
-}: {
-  xpEarned: number;
-}) {
+export function LessonCompleteBanner({ xpEarned }: { xpEarned: number }) {
   return (
     <div className="rounded-xl border border-accent/20 bg-accent/10 p-4 text-center">
-      <ChameleonMascot size="sm" mood="excited" className="mx-auto mb-2" />
+      <img src="/ResultHappy.svg" className="w-20 h-20" />
       <p className="font-semibold text-foreground">Lesson complete</p>
-      <p className="mb-3 text-sm text-muted-foreground">You earned {xpEarned} XP</p>
+      <p className="mb-3 text-sm text-muted-foreground">
+        You earned {xpEarned} XP
+      </p>
       <Link
         to="/catalog"
         className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"

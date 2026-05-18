@@ -7,7 +7,6 @@ import {
   CatalogVideoCard,
   type CatalogCardVideo,
 } from "../../components/catalog/CatalogVideoCard";
-import { ChameleonMascot } from "../../components/ChameleonMascot";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { cn } from "../../lib/utils";
@@ -87,8 +86,8 @@ export default function WatchedLessonsPage() {
         <CatalogSidebar
           categories={[]}
           selectedCategory="All"
-          onSelectCategory={() => { }}
-          onSelectLevel={() => { }}
+          onSelectCategory={() => {}}
+          onSelectLevel={() => {}}
           reserveTopNavSpace={false}
           welcomeName={
             user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
@@ -107,7 +106,7 @@ export default function WatchedLessonsPage() {
           <div className="border-border border-b bg-card/30 px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex items-start gap-3">
-                <ChameleonMascot size="sm" mood="happy" animate={false} />
+                <img src="/Icon.svg" className="w-15 h-18" />
                 <div>
                   <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
                     Watched Lessons

@@ -93,34 +93,41 @@ function normalizeQuizReview(raw: unknown): LessonSummaryState["quizReview"] {
       category?: unknown;
     };
     const question = typeof w.question === "string" ? w.question : "";
-    const options = Array.isArray(w.options) ? w.options.filter((x): x is string => typeof x === "string") : [];
-    const si = typeof w.selectedIndex === "number" ? w.selectedIndex : Number.NaN;
+    const options = Array.isArray(w.options)
+      ? w.options.filter((x): x is string => typeof x === "string")
+      : [];
+    const si =
+      typeof w.selectedIndex === "number" ? w.selectedIndex : Number.NaN;
     const ci = typeof w.correctIndex === "number" ? w.correctIndex : Number.NaN;
-    if (!question.trim() || options.length < 2 || !Number.isFinite(si) || !Number.isFinite(ci)) {
+    if (
+      !question.trim() ||
+      options.length < 2 ||
+      !Number.isFinite(si) ||
+      !Number.isFinite(ci)
+    ) {
       continue;
     }
     const explanation =
       typeof w.explanation === "string" ? w.explanation.trim() : undefined;
     const cat = w.category;
     const category =
-      cat === "grammar" || cat === "comprehension" || cat === "vocabulary" ?
-        cat
-      : undefined;
+      cat === "grammar" || cat === "comprehension" || cat === "vocabulary"
+        ? cat
+        : undefined;
     wrong.push({
       question,
       options,
       selectedIndex: si,
       correctIndex: ci,
-      explanation: explanation && explanation.length > 0 ? explanation : undefined,
+      explanation:
+        explanation && explanation.length > 0 ? explanation : undefined,
       category,
     });
   }
   return wrong.length > 0 ? { wrong } : undefined;
 }
 
-function normalizeWrittenSummaryScore(
-  raw: unknown,
-): number | null | undefined {
+function normalizeWrittenSummaryScore(raw: unknown): number | null | undefined {
   if (raw === undefined) return undefined;
   if (raw === null) return null;
   if (typeof raw === "number" && Number.isFinite(raw)) {
@@ -170,9 +177,7 @@ function readStoredSummary(videoId: string): LessonSummaryState | null {
           : p.writtenSummaryFeedback === null
             ? null
             : undefined,
-      writtenSummaryScore: normalizeWrittenSummaryScore(
-        p.writtenSummaryScore,
-      ),
+      writtenSummaryScore: normalizeWrittenSummaryScore(p.writtenSummaryScore),
     };
   } catch {
     return null;
@@ -292,13 +297,15 @@ export default function LessonSummaryPage() {
     const vid = Number.parseInt(String(videoId), 10);
     if (!Number.isFinite(vid) || vid <= 0) return;
     let cancelled = false;
-    void apiFetch(`/content-video/${vid}`, { method: "GET" }).then(async (r) => {
-      if (cancelled || !r.ok) return;
-      const data = await r.json();
-      if (cancelled) return;
-      const meta = parseVideoJson(data);
-      if (meta) setMetaOnly(meta);
-    });
+    void apiFetch(`/content-video/${vid}`, { method: "GET" }).then(
+      async (r) => {
+        if (cancelled || !r.ok) return;
+        const data = await r.json();
+        if (cancelled) return;
+        const meta = parseVideoJson(data);
+        if (meta) setMetaOnly(meta);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -373,8 +380,10 @@ export default function LessonSummaryPage() {
             <span className="text-sm">Catalog</span>
           </Link>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-            <ChameleonMascot size="sm" mood="happy" animate={false} />
-            <span className="font-display truncate font-bold">Lesson summary</span>
+            <img src="/Icon.svg" className="w-15 h-18" />
+            <span className="font-display truncate font-bold">
+              Lesson summary
+            </span>
           </div>
           <div className="w-16 shrink-0" aria-hidden />
         </div>
@@ -419,10 +428,9 @@ export default function LessonSummaryPage() {
         ) : (
           <>
             <div className="text-center">
-              <ChameleonMascot
-                size="lg"
-                mood={display.mood}
-                className="mx-auto mb-6"
+              <img
+                src="/ResultHappy.svg"
+                className="w-50 h-50 mx-55 mb-5 animate-float"
               />
               <span className="inline-block rounded bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
                 {display.summary.categoryName}
@@ -448,7 +456,8 @@ export default function LessonSummaryPage() {
               </h2>
               <div className="mt-6 text-center">
                 <p className="font-display text-4xl font-bold text-primary tabular-nums">
-                  {display.summary.correctCount}/{display.summary.totalQuestions}
+                  {display.summary.correctCount}/
+                  {display.summary.totalQuestions}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {display.knowledgeEstimate.pct}% correct
@@ -470,8 +479,8 @@ export default function LessonSummaryPage() {
                   Your written summary
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Personalized comments on your answer, tailored to the lesson and
-                  your profile when you complete the quiz while signed in.
+                  Personalized comments on your answer, tailored to the lesson
+                  and your profile when you complete the quiz while signed in.
                 </p>
                 {typeof display.summary.writtenSummaryScore === "number" &&
                 display.summary.writtenSummaryScore >= 1 &&
@@ -492,9 +501,10 @@ export default function LessonSummaryPage() {
                   </p>
                 ) : display.summary.writtenSummaryText?.trim() ? (
                   <p className="mt-4 text-sm text-muted-foreground">
-                    No written-summary coach comment was saved. Finish the lesson
-                    from the quiz tab and tap “Complete lesson” while the lesson
-                    tests have finished loading so the server can attach feedback.
+                    No written-summary coach comment was saved. Finish the
+                    lesson from the quiz tab and tap “Complete lesson” while the
+                    lesson tests have finished loading so the server can attach
+                    feedback.
                   </p>
                 ) : null}
               </div>
@@ -560,8 +570,8 @@ export default function LessonSummaryPage() {
               {display.summary.learnedWords.length === 0 ? (
                 <p className="mt-4 text-sm text-muted-foreground">
                   No personalised word list was returned for this run. Try again
-                  after the lesson sidebar finishes loading, or open the lesson to
-                  see defaults.
+                  after the lesson sidebar finishes loading, or open the lesson
+                  to see defaults.
                 </p>
               ) : (
                 <ul className="mt-4 space-y-3">
@@ -667,9 +677,8 @@ export default function LessonSummaryPage() {
                         Quiz-adjusted skills
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Same layout as progress — model points on a 0–100
-                        scale. Listening includes the small watch-complete
-                        boost.
+                        Same layout as progress — model points on a 0–100 scale.
+                        Listening includes the small watch-complete boost.
                       </p>
                     </div>
                     <span className="shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-primary">
@@ -724,13 +733,13 @@ export default function LessonSummaryPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Link
                   to="/catalog"
-                  className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                 >
                   Next in catalog
                 </Link>
                 <Link
                   to={`/content/${videoId}`}
-                  className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted/50"
+                  className="flex text-foreground/70 hover:text-white rounded-[15px] px-6 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
                 >
                   Review lesson
                 </Link>
