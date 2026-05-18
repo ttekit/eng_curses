@@ -481,6 +481,20 @@ export class ContentsService {
         });
     }
 
+    async deleteEpisode(contentMediaId: number) {
+        const media = await this.prisma.contentMedia.findUnique({
+            where: { id: contentMediaId },
+        });
+
+        if (!media) {
+            throw new NotFoundException("Episode not found");
+        }
+
+        return this.prisma.contentMedia.delete({
+            where: { id: contentMediaId },
+        });
+    }
+
     async patchTeacherContentVisibility(
         userId: number,
         contentId: number,

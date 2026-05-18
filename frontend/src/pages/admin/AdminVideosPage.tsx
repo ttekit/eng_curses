@@ -20,6 +20,7 @@ import {
   Video,
   Edit,
 } from "lucide-react";
+import { apiFetch } from "../../lib/api";
 import {
   AdminBadge,
   AdminButton,
@@ -178,8 +179,11 @@ export default function AdminVideosPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [regenBusy, setRegenBusy] = useState<false | "tags" | "cefr" | "captions">(false);
 
-  const [deleteCandidate, setDeleteCandidate] =
-    useState<AdminCatalogVideoRow | null>(null);
+  // Обновленный стейт удаления (храним объект видео и режим удаления)
+  const [deleteCandidate, setDeleteCandidate] = useState<{
+    video: AdminCatalogVideoRow;
+    mode: "series" | "episode";
+  } | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
 
   const [reorderBusy, setReorderBusy] = useState(false);
@@ -458,11 +462,20 @@ export default function AdminVideosPage() {
 
   const handleConfirmDelete = async () => {
     if (!deleteCandidate) return;
-    const contentRootId = deleteCandidate.content.category.id;
     setDeleteSaving(true);
     try {
-      await deleteAdminCatalogContent(contentRootId);
-      toast.success(`${deleteCandidate.videoName} removed from catalog`);
+      if (deleteCandidate.mode === "series") {
+        const contentRootId = deleteCandidate.video.content.category.id;
+        await deleteAdminCatalogContent(contentRootId);
+        toast.success(`${deleteCandidate.video.videoName} (series) removed from catalog`);
+      } else {
+        const contentMediaId = deleteCandidate.video.content.id;
+        const res = await apiFetch(`/contents/episode/${contentMediaId}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Failed to delete episode");
+        toast.success(`Episode ${deleteCandidate.video.videoName} removed`);
+      }
       setDeleteCandidate(null);
       await loadVideos();
     } catch (e) {
@@ -830,7 +843,7 @@ export default function AdminVideosPage() {
       <AdminModal
         open={deleteCandidate != null}
         onClose={() => !deleteSaving && setDeleteCandidate(null)}
-        title="Remove lesson from catalog"
+        title={deleteCandidate?.mode === "series" ? "Remove series from catalog" : "Remove episode"}
         footer={
           <>
             <AdminButton
@@ -850,12 +863,17 @@ export default function AdminVideosPage() {
           </>
         }
       >
-        <p className="text-sm text-foreground">
-          Delete{" "}
-          <strong>{deleteCandidate?.videoName}</strong> and its catalog entry (
-          series <strong>{deleteCandidate?.content.category.name}</strong>)?
-          This uses <code>cascade delete</code> from the backend content row.
-        </p>
+        {deleteCandidate?.mode === "series" ? (
+          <p className="text-sm text-foreground">
+            Delete <strong>{deleteCandidate.video.videoName}</strong> and its catalog entry (
+            series <strong>{deleteCandidate.video.content.category.name}</strong>)?
+            This uses <code>cascade delete</code> from the backend content row.
+          </p>
+        ) : (
+          <p className="text-sm text-foreground">
+            Delete the episode <strong>{deleteCandidate?.video.videoName}</strong> from the series <strong>{deleteCandidate?.video.content.category.name}</strong>?
+          </p>
+        )}
       </AdminModal>
 
       <AdminModal
@@ -1254,7 +1272,7 @@ export default function AdminVideosPage() {
                                 </AdminRowMenuItem>
                                 <AdminRowMenuItem
                                   danger
-                                  onClick={() => setDeleteCandidate(video)}
+                                  onClick={() => setDeleteCandidate({ video, mode: "series" })}
                                 >
                                   <Trash2 className="h-4 w-4" /> Delete series
                                 </AdminRowMenuItem>
@@ -1322,11 +1340,11 @@ export default function AdminVideosPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shrink-0 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                onClick={() => setDeleteCandidate(video)}
+                                onClick={() => setDeleteCandidate({ video, mode: "episode" })}
                                 type="button"
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Delete
+                                Delete episode
                               </AdminButton>
                             </div>
                           </div>

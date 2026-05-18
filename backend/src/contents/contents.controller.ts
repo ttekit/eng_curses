@@ -201,6 +201,13 @@ export class ContentsController {
     return this.contentsService.updateContent(id, dto, file);
   }
 
+  @Delete("episode/:id")
+  @UseGuards(JwtAdminGuard)
+  @ApiOperation({ summary: "Admin: Delete a specific episode from a series" })
+  deleteEpisode(@Param("id", ParseIntPipe) id: number) {
+    return this.contentsService.deleteEpisode(id);
+  }
+
   @Delete("delete/:id")
   deleteContent(@Param("id", ParseIntPipe) id: number) {
     return this.contentsService.deleteContent(id);
