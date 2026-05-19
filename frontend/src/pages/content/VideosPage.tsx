@@ -29,7 +29,7 @@ import {
 } from "../../components/catalog/CatalogSpotlight";
 import type { CatalogCardVideo } from "../../components/catalog/CatalogVideoCard";
 import { cn } from "../../lib/utils";
-import { Frown } from "lucide-react";
+import { Frown, Layers, Tags } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ContentVideo {
@@ -48,6 +48,11 @@ interface ContentVideo {
       description: string;
       friendlyLink: string;
     };
+    stats?: {
+      userTags?: string[];
+      systemTags?: string[];
+      topics?: { id: number; name: string }[];
+    } | null;
   };
 }
 
@@ -83,11 +88,15 @@ function stripCheckoutSuccessSearch(): { pathname: string; search: string } {
   return { pathname, search: q ? `?${q}` : "" };
 }
 
+const LEVELS_LIST = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
+
 export default function VideoPage() {
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // icon-only rail until expanded
+  const [selectedLevel, setSelectedLevel] = useState("All");
+  const [selectedGenre, setSelectedGenre] = useState("All");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [placementDocHtml, setPlacementDocHtml] = useState<string | null>(null);
   const [placementDocError, setPlacementDocError] = useState<string | null>(
     null,
@@ -165,7 +174,6 @@ export default function VideoPage() {
     user.role !== "admin" &&
     !user.hasCompletedPlacement;
 
-  /** Derive phase synchronously so we never flash the wrong overlay (effect + stale initial state). */
   const placementPhaseResolved = useMemo((): "preferences" | "test" | "off" => {
     if (!needsPlacement || !user) return "off";
     if (user.role === "adult") {
@@ -263,33 +271,6 @@ export default function VideoPage() {
   }, [showPlacementTest, accessToken]);
 
   useEffect(() => {
-    try {
-      if (typeof console !== "undefined" && console.log) {
-        console.log("[placement:parent]", "placement state", {
-          placementPhaseResolved,
-          showPlacementTest,
-          showPlacementPrepOverlay,
-          needsPlacement,
-          hasToken: !!accessToken,
-          hasUser: !!user,
-          userRole: user?.role,
-          hasCompletedPlacement: user?.hasCompletedPlacement,
-          apiBase: getApiBase(),
-        });
-      }
-    } catch {
-      /* */
-    }
-  }, [
-    placementPhaseResolved,
-    showPlacementTest,
-    showPlacementPrepOverlay,
-    needsPlacement,
-    accessToken,
-    user,
-  ]);
-
-  useEffect(() => {
     const fetchVideos = async () => {
       try {
         const response = await apiFetch("/content-video", { method: "GET" });
@@ -303,7 +284,6 @@ export default function VideoPage() {
     fetchVideos();
   }, []);
 
-  /** Open Spotlight from sidebar on other routes via Link `state.openSpotlight` */
   useEffect(() => {
     const raw = location.state as
       | { openSpotlight?: boolean }
@@ -321,7 +301,6 @@ export default function VideoPage() {
     }
   }, [location.state, location.pathname, location.search, navigate]);
 
-  /** Cmd/Ctrl + K opens Spotlight from catalog shell (closing handled inside Spotlight modal) */
   useEffect(() => {
     if (needsPlacement || showPlacementPrepOverlay || showPlacementTest) return;
     if (spotlightOpen) return;
@@ -361,16 +340,31 @@ export default function VideoPage() {
     return [...new Set(names)];
   }, [videos]);
 
+  const genreNames = useMemo(() => {
+    const tags = new Set<string>();
+    videos.forEach((v) => {
+      v.content.stats?.userTags?.forEach((tag) => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [videos]);
+
+  const sortedGenres = useMemo(() => {
+    return ["All", ...genreNames.filter(Boolean)];
+  }, [genreNames]);
+
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-      if (selectedCategory === "All") return true;
-      return v.content.category.name === selectedCategory;
+      const matchCategory = selectedCategory === "All" || v.content.category.name === selectedCategory;
+      const matchLevel = selectedLevel === "All" || (v.content.stats?.systemTags && v.content.stats.systemTags.includes(selectedLevel));
+      const matchGenre = selectedGenre === "All" || (v.content.stats?.userTags && v.content.stats.userTags.includes(selectedGenre));
+      return matchCategory && matchLevel && matchGenre;
     });
-  }, [videos, selectedCategory]);
+  }, [videos, selectedCategory, selectedLevel, selectedGenre]);
 
   const featured = filteredVideos[0] ?? null;
-  const featuredHero = featured
-    ? {
+  const featuredHero = useMemo(() => {
+    return featured
+      ? {
         id: featured.id,
         title: featured.videoName,
         description:
@@ -378,12 +372,14 @@ export default function VideoPage() {
           featured.content.category.description ??
           "",
         categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
       }
-    : null;
+      : null;
+  }, [featured]);
 
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
-    if (selectedCategory !== "All") {
+    if (selectedCategory !== "All" || selectedLevel !== "All" || selectedGenre !== "All") {
       const sorted = [...filteredVideos].sort((a, b) => {
         const ma =
           typeof a.content.playlistPosition === "number"
@@ -402,9 +398,14 @@ export default function VideoPage() {
         return a.id - b.id;
       });
       const link = sorted[0]?.content.category.friendlyLink?.trim() ?? "";
+
+      let dynamicTitle = selectedCategory !== "All" ? selectedCategory : "Filtered Results";
+      if (selectedLevel !== "All") dynamicTitle += ` - ${selectedLevel}`;
+      if (selectedGenre !== "All") dynamicTitle += ` - ${selectedGenre}`;
+
       return [
         {
-          title: selectedCategory,
+          title: dynamicTitle,
           description: undefined as string | undefined,
           seriesFriendlyLink: link.length > 0 ? link : undefined,
           videos: sorted.map(toCardVideo),
@@ -446,7 +447,7 @@ export default function VideoPage() {
           videos: sorted.map(toCardVideo),
         };
       });
-  }, [filteredVideos, selectedCategory]);
+  }, [filteredVideos, selectedCategory, selectedLevel, selectedGenre]);
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased flex-col">
@@ -475,7 +476,11 @@ export default function VideoPage() {
             categories={categoryNames}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
-            onSelectLevel={() => {}}
+            selectedLevel={selectedLevel}
+            onSelectLevel={setSelectedLevel}
+            genres={genreNames}
+            selectedGenre={selectedGenre}
+            onSelectGenre={setSelectedGenre}
             welcomeName={user?.name ? user.name.split(" ")[0] : undefined}
             englishLevel={user?.englishLevel || undefined}
             collapsed={sidebarCollapsed}
@@ -492,10 +497,63 @@ export default function VideoPage() {
             )}
           >
             <CatalogHero featured={featuredHero} />
-            <div
-              id="catalog-library"
-              className="space-y-10 px-4 sm:px-6 lg:px-8 pt-8"
-            >
+
+            {/* Filters */}
+            <div className="px-4 sm:px-6 lg:px-8 space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
+
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                    <Layers className="size-3.5" /> Level
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LEVELS_LIST.map((lvl) => (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => setSelectedLevel(lvl)}
+                        className={cn(
+                          "rounded-full px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                          selectedLevel === lvl
+                            ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                            : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                        )}
+                      >
+                        {lvl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {genreNames.length > 0 && (
+                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                      <img src="/Icon.svg" className="size-3.5 grayscale opacity-70" alt="" /> Genre
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-2">
+                      {sortedGenres.map((gen) => (
+                        <button
+                          key={gen}
+                          type="button"
+                          onClick={() => setSelectedGenre(gen)}
+                          className={cn(
+                            "rounded-full px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                            selectedGenre === gen
+                              ? "bg-accent text-accent-foreground shadow-sm scale-105"
+                              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          )}
+                        >
+                          {gen}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+
+            <div id="catalog-library" className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2">
               {loading ? (
                 <div className="flex h-60 bg-card/30 flex-col items-center border border-border border-t justify-center space-y-4">
                   <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
@@ -674,4 +732,4 @@ export default function VideoPage() {
       ) : null}
     </div>
   );
-}
+}  

@@ -28,14 +28,14 @@ interface CatalogSidebarProps {
   onSelectCategory: (category: string) => void;
   welcomeName?: string;
   englishLevel?: string;
-  onSelectLevel: (level: string) => void;
-  /** When false, sidebar/backdrop anchor to viewport top (use when pages omit the fixed app navbar). */
+  selectedLevel?: string;
+  onSelectLevel?: (level: string) => void;
+  genres?: string[];
+  selectedGenre?: string;
+  onSelectGenre?: (genre: string) => void;
   reserveTopNavSpace?: boolean;
-  /** Catalog page: Spotlight command palette is open (highlights Search nav). */
   catalogSpotlightOpen?: boolean;
-  /** Catalog page only: open Spotlight from sidebar Search. */
   onOpenCatalogSpotlight?: () => void;
-  // lifted state — controlled by parent
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
 }
@@ -46,7 +46,11 @@ export function CatalogSidebar({
   onSelectCategory,
   welcomeName,
   englishLevel,
-  // onSelectLevel,
+  selectedLevel = "All",
+  onSelectLevel,
+  genres = [],
+  selectedGenre = "All",
+  onSelectGenre,
   reserveTopNavSpace = true,
   catalogSpotlightOpen = false,
   onOpenCatalogSpotlight,
@@ -56,6 +60,7 @@ export function CatalogSidebar({
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const sortedCategories = ["All", ...categories.filter(Boolean).sort()];
+  const sortedGenres = ["All", ...genres.filter(Boolean).sort()];
 
   const linkActive = (link: (typeof sidebarLinks)[number]) => {
     if (link.label === "Catalog") {
@@ -120,6 +125,26 @@ export function CatalogSidebar({
             )}
           </div>
 
+        <div
+          className={cn(
+            "mx-3 my-3 flex items-center gap-3 rounded-3xl border border-border p-1 shrink-0",
+            collapsed && "justify-center",
+          )}
+        >
+          <CircleUser className="text-muted-foreground m-3 hover:cursor-pointer shrink-0" />
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-foreground/70">
+                {welcomeName?.trim() ? `Hi, ${welcomeName}` : "Welcome back!"}
+              </p>
+              <p className="text-sm font-semibold text-accent">
+                {englishLevel?.trim() ? `• Level ${englishLevel}` : "Explys"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex-col space-y-1 p-4">
             {sidebarLinks.map((link) => {
               if (link.label === "Search") {
@@ -131,7 +156,7 @@ export function CatalogSidebar({
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   collapsed && "justify-center px-2",
                 );
-                return pathname === "/catalog" && onOpenCatalogSpotlight ? (
+                return pathname === "/catalog" && onOpenCatalogSpotlight ?
                   <button
                     key={link.label}
                     type="button"
@@ -141,8 +166,7 @@ export function CatalogSidebar({
                     <link.icon className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{link.label}</span>}
                   </button>
-                ) : (
-                  <Link
+                  : <Link
                     key={link.label}
                     to="/catalog"
                     state={{ openSpotlight: true }}
@@ -150,8 +174,7 @@ export function CatalogSidebar({
                   >
                     <link.icon className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{link.label}</span>}
-                  </Link>
-                );
+                  </Link>;
               }
               return (
                 <Link
@@ -171,6 +194,7 @@ export function CatalogSidebar({
               );
             })}
           </nav>
+
           {!collapsed && (
             <div className="space-y-4 border-t border-border p-4">
               <p className="mb-2 text-sm font-medium text-foreground">Level</p>
@@ -179,10 +203,10 @@ export function CatalogSidebar({
                   <button
                     key={level}
                     type="button"
-                    onClick={() => {}}
+                    onClick={() => onSelectLevel?.(level)}
                     className={cn(
                       "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
-                      englishLevel === level
+                      selectedLevel === level
                         ? "bg-primary text-primary-foreground shadow-inner"
                         : "bg-muted text-muted-foreground hover:text-foreground",
                     )}
@@ -196,9 +220,7 @@ export function CatalogSidebar({
 
           {!collapsed && (
             <div className="space-y-4 border-t border-border p-4">
-              <p className="mb-2 text-sm font-medium text-foreground">
-                Category
-              </p>
+              <p className="mb-2 text-sm font-medium text-foreground">Category</p>
               <div className="flex flex-wrap gap-1">
                 {sortedCategories.map((category) => (
                   <button
@@ -219,22 +241,44 @@ export function CatalogSidebar({
             </div>
           )}
 
-          <div className="mt-auto border-t border-border p-4">
-            <Link
-              to="/profile?tab=settings"
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                pathname === "/profile" &&
-                  searchParams.get("tab") === "settings"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                collapsed && "justify-center px-2",
-              )}
-            >
-              <Settings className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>Settings</span>}
-            </Link>
-          </div>
+          {!collapsed && genres.length > 0 && (
+            <div className="space-y-4 border-t border-border p-4">
+              <p className="mb-2 text-sm font-medium text-foreground">Genre</p>
+              <div className="flex flex-wrap gap-1">
+                {sortedGenres.map((genre) => (
+                  <button
+                    key={genre}
+                    type="button"
+                    onClick={() => onSelectGenre?.(genre)}
+                    className={cn(
+                      "rounded px-2 py-1 text-xs font-medium transition-colors hover:cursor-pointer",
+                      selectedGenre === genre
+                        ? "bg-accent text-accent-foreground shadow-inner"
+                        : "bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-auto border-t border-border p-4 shrink-0 bg-card">
+          <Link
+            to="/profile?tab=settings"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+              pathname === "/profile" && searchParams.get("tab") === "settings"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              collapsed && "justify-center px-2",
+            )}
+          >
+            <Settings className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>Settings</span>}
+          </Link>
         </div>
       </aside>
 
@@ -257,7 +301,7 @@ export function CatalogSidebar({
                 "flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors",
                 active ? "text-primary" : "text-muted-foreground",
               );
-              return pathname === "/catalog" && onOpenCatalogSpotlight ? (
+              return pathname === "/catalog" && onOpenCatalogSpotlight ?
                 <button
                   key={link.label}
                   type="button"
@@ -267,8 +311,7 @@ export function CatalogSidebar({
                   <link.icon className="h-5 w-5" />
                   <span className="text-xs">{link.label}</span>
                 </button>
-              ) : (
-                <Link
+                : <Link
                   key={link.label}
                   to="/catalog"
                   state={{ openSpotlight: true }}
@@ -276,8 +319,7 @@ export function CatalogSidebar({
                 >
                   <link.icon className="h-5 w-5" />
                   <span className="text-xs">{link.label}</span>
-                </Link>
-              );
+                </Link>;
             }
             return (
               <Link
