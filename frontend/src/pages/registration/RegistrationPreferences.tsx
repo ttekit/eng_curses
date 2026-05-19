@@ -161,7 +161,11 @@ export default function RegistrationPreferences() {
         </Link>
 
         <div className="mb-6 flex items-center gap-3">
-          <img src="/Icon.svg" className="w-12 h-15" alt="" />
+          {isAdult ? (
+            <img src="/AdultIcon.svg" className="w-12 h-15" alt="" />
+          ) : (
+            <img src="/StudentIcon.svg" className="w-12 h-15" alt="" />
+          )}
           <div>
             <h1 className="font-display text-2xl font-bold">
               {formData.role === "student" ? t.titleStudent : t.titleAdult}
