@@ -24,8 +24,7 @@ function normalizeCorsOriginEntry(entry: string): string {
 /** Echo `Origin` back only when it matches production/dev allowlist (same rules as `enableCors`). */
 function echoAllowedRequestOrigin(req: Request): string | undefined {
   const rawOrigin = req.headers.origin;
-  const originHeader =
-    typeof rawOrigin === "string" ? rawOrigin : undefined;
+  const originHeader = typeof rawOrigin === "string" ? rawOrigin : undefined;
   if (!originHeader?.trim()) {
     return undefined;
   }
@@ -143,22 +142,29 @@ async function bootstrap() {
       domain: config.get<string>("SESSION_DOMAIN") || undefined,
       maxAge: ms(config.getOrThrow<StringValue>("SESSION_MAX_AGE")),
       httpOnly: parseBoolean(config.getOrThrow<string>("SESSION_HTTP_ONLY")),
-      secure: parseBoolean(config.getOrThrow<string>("SESSION_SECURE")) || false,
+      secure:
+        parseBoolean(config.getOrThrow<string>("SESSION_SECURE")) || false,
       sameSite: "lax",
     },
   };
 
-  const sessionStoreRaw = config.get<string>("SESSION_STORE")?.trim().toLowerCase();
+  const sessionStoreRaw = config
+    .get<string>("SESSION_STORE")
+    ?.trim()
+    .toLowerCase();
   const sessionStore =
-    sessionStoreRaw === "memory" ? "memory"
-    : sessionStoreRaw === "redis" || sessionStoreRaw === "" || sessionStoreRaw == null ?
-      "redis"
-    : ((): "redis" => {
-        bootstrapLogger.warn(
-          `Unknown SESSION_STORE="${sessionStoreRaw}" — using redis`,
-        );
-        return "redis";
-      })();
+    sessionStoreRaw === "memory"
+      ? "memory"
+      : sessionStoreRaw === "redis" ||
+          sessionStoreRaw === "" ||
+          sessionStoreRaw == null
+        ? "redis"
+        : ((): "redis" => {
+            bootstrapLogger.warn(
+              `Unknown SESSION_STORE="${sessionStoreRaw}" — using redis`,
+            );
+            return "redis";
+          })();
 
   if (process.env.NODE_ENV === "production" && sessionStore === "memory") {
     throw new Error(

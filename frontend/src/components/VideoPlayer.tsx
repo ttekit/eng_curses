@@ -1,6 +1,22 @@
-import { HTMLAttributes, useRef, useState, useEffect, useCallback } from "react";
+import {
+  HTMLAttributes,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { cn } from "../lib/utils";
-import { Volume2, VolumeX, Maximize, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, RotateCw } from "lucide-react";
+import {
+  Volume2,
+  VolumeX,
+  Maximize,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  RotateCw,
+} from "lucide-react";
 
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
   src: string;
@@ -9,6 +25,7 @@ interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
   onPlaybackTime?: (seconds: number) => void;
   onPlaybackFraction?: (fraction: number) => void;
   onVideoMount?: (el: HTMLVideoElement | null) => void;
+  onClose?: () => void;
 }
 
 export default function VideoPlayer({
@@ -18,6 +35,7 @@ export default function VideoPlayer({
   onPlaybackTime,
   onPlaybackFraction,
   onVideoMount,
+  onClose,
   className,
   ...rest
 }: VideoPlayerProps) {
@@ -38,33 +56,68 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  
+
   const [showLeftAnimation, setShowLeftAnimation] = useState(false);
   const [showRightAnimation, setShowRightAnimation] = useState(false);
 
-  const clickTimerRef = useRef<number | null>(null);
+  const [showControls, setShowControls] = useState(true);
+
+  const showControlsRef = useRef(true);
+  const playingRef = useRef(false);
+  const hideControlsTimerRef = useRef<number | null>(null);
   const isDraggingRef = useRef<boolean>(false);
+
+  const lastTapRef = useRef<{ time: number; clientX: number } | null>(null);
+  const singleTapTimerRef = useRef<number | null>(null);
+
+  const setControlsVisible = (val: boolean) => {
+    showControlsRef.current = val;
+    setShowControls(val);
+  };
+
+  const clearHideTimer = () => {
+    if (hideControlsTimerRef.current) {
+      clearTimeout(hideControlsTimerRef.current);
+      hideControlsTimerRef.current = null;
+    }
+  };
+
+  const showControlsTemporarily = useCallback(() => {
+    setControlsVisible(true);
+    clearHideTimer();
+    if (playingRef.current) {
+      hideControlsTimerRef.current = window.setTimeout(() => {
+        setControlsVisible(false);
+      }, 3000);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!playing) {
+      clearHideTimer();
+      setControlsVisible(true);
+    } else {
+      showControlsTemporarily();
+    }
+  }, [playing, showControlsTemporarily]);
 
   const handleToggle = useCallback(() => {
     if (!videoRef.current) return;
-    if (playing) {
+    if (playingRef.current) {
       videoRef.current.pause();
-      setPlaying(false);
     } else {
-      videoRef.current.play();
-      setPlaying(true);
+      void videoRef.current.play();
     }
-  }, [playing]);
+  }, []);
 
   function handleTimeUpdate() {
     if (isDraggingRef.current) return;
-
     const video = videoRef.current;
     if (!video) return;
-
     const { currentTime, duration } = video;
     setCurrentTime(currentTime);
-    const dur = duration && Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const dur =
+      duration && Number.isFinite(duration) && duration > 0 ? duration : 0;
     const frac = dur > 0 ? currentTime / dur : 0;
     setProgress(dur > 0 ? frac * 100 : 0);
     onPlaybackTime?.(currentTime);
@@ -83,40 +136,36 @@ export default function VideoPlayer({
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
-  const handleSkip = useCallback((seconds: number) => {
-    if (!videoRef.current) return;
-    let newTime = videoRef.current.currentTime + seconds;
-    if (newTime < 0) newTime = 0;
-    if (newTime > videoRef.current.duration) newTime = videoRef.current.duration;
-    
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+  const handleSkip = useCallback(
+    (seconds: number) => {
+      if (!videoRef.current) return;
+      let newTime = videoRef.current.currentTime + seconds;
+      if (newTime < 0) newTime = 0;
+      if (newTime > videoRef.current.duration)
+        newTime = videoRef.current.duration;
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
 
-    if (seconds > 0) {
-      setShowRightAnimation(true);
-      setTimeout(() => setShowRightAnimation(false), 500);
-    } else {
-      setShowLeftAnimation(true);
-      setTimeout(() => setShowLeftAnimation(false), 500);
-    }
-  }, []);
+      if (seconds > 0) {
+        setShowRightAnimation(true);
+        setTimeout(() => setShowRightAnimation(false), 500);
+      } else {
+        setShowLeftAnimation(true);
+        setTimeout(() => setShowLeftAnimation(false), 500);
+      }
+      showControlsTemporarily();
+    },
+    [showControlsTemporarily],
+  );
 
-  const evaluatePosition = (clientX: number, updateVideo = false) => {
+  const evaluatePosition = (clientX: number) => {
     if (!videoRef.current || !timelineRef.current) return;
-
     const rect = timelineRef.current.getBoundingClientRect();
     const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
     const newTime = ratio * videoRef.current.duration;
-
     setProgress(ratio * 100);
     setCurrentTime(newTime);
-
-    if (updateVideo) {
-      videoRef.current.currentTime = newTime;
-    } else {
-      videoRef.current.currentTime = newTime;
-    }
-
+    videoRef.current.currentTime = newTime;
     const dur = videoRef.current.duration;
     if (dur && Number.isFinite(dur) && dur > 0) {
       onPlaybackFraction?.(Math.min(1, Math.max(0, newTime / dur)));
@@ -128,16 +177,14 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.setPointerCapture(e.pointerId);
-      } catch (err) {
-        console.warn("Pointer capture failed:", err);
-      }
+      } catch {}
     }
-    evaluatePosition(e.clientX, true);
+    evaluatePosition(e.clientX);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
-    evaluatePosition(e.clientX, false); 
+    evaluatePosition(e.clientX);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -145,41 +192,56 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.releasePointerCapture(e.pointerId);
-      } catch (err) {
-      }
+      } catch {}
     }
     if (videoRef.current) {
       videoRef.current.currentTime = currentTime;
     }
   };
 
-  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
-    if (e.detail === 1) {
-      clickTimerRef.current = window.setTimeout(() => {
-        handleToggle();
-      }, 250) as unknown as number;
-    } else if (e.detail === 2) {
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
-      
-      if (!videoRef.current) return;
-      
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const videoWidth = rect.width;
+  const handleGesture = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const now = Date.now();
+      const DOUBLE_TAP_MS = 280;
 
-      if (clickX > videoWidth / 2) {
-        handleSkip(5);
-      } else {
-        handleSkip(-5);
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
       }
-    }
-  };
+
+      const lastTap = lastTapRef.current;
+      const isDoubleTap = lastTap && now - lastTap.time < DOUBLE_TAP_MS;
+
+      if (isDoubleTap) {
+        lastTapRef.current = null;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const tapX = e.clientX - rect.left;
+
+        if (tapX > rect.width / 2) {
+          handleSkip(10);
+        } else {
+          handleSkip(-10);
+        }
+      } else {
+        lastTapRef.current = { time: now, clientX: e.clientX };
+        singleTapTimerRef.current = window.setTimeout(() => {
+          lastTapRef.current = null;
+
+          if (!showControlsRef.current) {
+            showControlsTemporarily();
+          } else {
+            onClose?.();
+          }
+        }, DOUBLE_TAP_MS);
+      }
+    },
+    [handleSkip, onClose, showControlsTemporarily],
+  );
 
   useEffect(() => {
     return () => {
-      if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+      clearHideTimer();
+      if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     };
   }, []);
 
@@ -218,9 +280,8 @@ export default function VideoPlayer({
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA" ||
         document.activeElement?.getAttribute("role") === "combobox"
-      ) {
+      )
         return;
-      }
 
       switch (e.key.toLowerCase()) {
         case " ":
@@ -247,11 +308,8 @@ export default function VideoPlayer({
           e.preventDefault();
           toggleFullscreen();
           break;
-        default:
-          break;
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleToggle, handleSkip, volume]);
@@ -260,32 +318,45 @@ export default function VideoPlayer({
     <div
       ref={containerRef}
       className={cn(
-        "group relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-gray-950 select-none",
+        "relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-gray-950 select-none",
         className,
       )}
+      onMouseMove={showControlsTemporarily}
+      onMouseLeave={() => playing && setControlsVisible(false)}
       {...rest}
     >
       <video
         ref={setVideoNode}
         src={src}
-        className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+        className="absolute inset-0 w-full h-full object-cover"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
-        onClick={handleVideoClick}
         onPlay={() => {
+          playingRef.current = true;
           setPlaying(true);
           onPlay?.();
         }}
+        onPause={() => {
+          playingRef.current = false;
+          setPlaying(false);
+        }}
         onEnded={() => {
+          playingRef.current = false;
           setPlaying(false);
           onEnded?.();
         }}
       />
 
       <div
+        className="absolute inset-0 z-10 cursor-pointer"
+        style={{ touchAction: "manipulation" }}
+        onClick={handleGesture}
+      />
+
+      <div
         className={cn(
           "absolute left-0 top-0 bottom-0 w-1/2 flex items-center justify-center bg-black/20 rounded-r-full pointer-events-none transition-all duration-300 transform -translate-x-10 opacity-0 backdrop-blur-xs z-10",
-          showLeftAnimation && "translate-x-0 opacity-100 duration-150"
+          showLeftAnimation && "translate-x-0 opacity-100 duration-150",
         )}
       >
         <div className="flex flex-col items-center text-white text-center">
@@ -300,7 +371,7 @@ export default function VideoPlayer({
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center bg-black/20 rounded-l-full pointer-events-none transition-all duration-300 transform translate-x-10 opacity-0 backdrop-blur-xs z-10",
-          showRightAnimation && "translate-x-0 opacity-100 duration-150"
+          showRightAnimation && "translate-x-0 opacity-100 duration-150",
         )}
       >
         <div className="flex flex-col items-center text-white text-center">
@@ -308,53 +379,86 @@ export default function VideoPlayer({
             <ChevronRight className="size-6" />
             <ChevronRight className="size-6 -ml-3" />
           </div>
-          <span className="text-xs font-semibold mt-1">10 сек</span>
+          <span className="text-xs font-semibold mt-1">+10 сек</span>
         </div>
       </div>
 
       <div
         className={cn(
-          "absolute inset-0 flex items-center justify-center transition-opacity duration-300 z-20",
-          playing ? "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto" : "opacity-100"
+          "absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-300 z-30 pointer-events-none",
+          showControls ? "opacity-100" : "opacity-0",
         )}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) handleToggle();
-        }}
       >
         <button
           type="button"
-          onClick={() => handleSkip(-10)}
-          className="relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 hover:scale-105 transition-all shadow"
+          className={cn(
+            "relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-md",
+            showControls
+              ? "pointer-events-auto cursor-pointer"
+              : "pointer-events-none",
+          )}
+          style={{ touchAction: "manipulation" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSkip(-10);
+          }}
         >
-          <RotateCcw className="size-5" />
-          <span className="absolute text-[9px] font-bold mt-1">10</span>
+          <RotateCcw className="w-5 h-5 pointer-events-none" />
+          <span className="absolute text-[9px] font-bold mt-1 pointer-events-none">
+            10
+          </span>
         </button>
 
         <button
           type="button"
-          onClick={handleToggle}
-          className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white group-hover:bg-white/25 transition-all shadow-lg backdrop-blur-xs hover:scale-105 mx-6"
+          className={cn(
+            "w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/25 active:scale-95 transition-all shadow-lg backdrop-blur-sm",
+            showControls
+              ? "pointer-events-auto cursor-pointer"
+              : "pointer-events-none",
+          )}
+          style={{ touchAction: "manipulation" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggle();
+          }}
         >
           {playing ? (
-            <Pause className="w-8 h-8 text-white/90" />
+            <Pause className="w-8 h-8 text-white/90 pointer-events-none" />
           ) : (
-            <Play className="w-8 h-8 text-white/90 translate-x-0.5" />
+            <Play className="w-8 h-8 text-white/90 translate-x-0.5 pointer-events-none" />
           )}
         </button>
 
         <button
           type="button"
-          onClick={() => handleSkip(10)}
-          className="relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 hover:scale-105 transition-all shadow"
+          className={cn(
+            "relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-md",
+            showControls
+              ? "pointer-events-auto cursor-pointer"
+              : "pointer-events-none",
+          )}
+          style={{ touchAction: "manipulation" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSkip(10);
+          }}
         >
-          <RotateCw className="size-5" />
-          <span className="absolute text-[9px] font-bold mt-1">10</span>
+          <RotateCw className="w-5 h-5 pointer-events-none" />
+          <span className="absolute text-[9px] font-bold mt-1 pointer-events-none">
+            10
+          </span>
         </button>
       </div>
-
       <div
-        className="absolute bottom-0 left-0 right-0 px-5 pb-4 pt-10 bg-linear-to-t from-black/90 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col gap-3 z-20"
+        className={cn(
+          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-10 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
+          showControls
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
+        )}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <div
           ref={timelineRef}
@@ -364,7 +468,7 @@ export default function VideoPlayer({
           onPointerUp={handlePointerUp}
         >
           <div
-            className="h-full bg-(--purple-default) rounded-full pointer-events-none transition-colors duration-200 group-hover/timeline:bg-purple-500"
+            className="h-full bg-[var(--purple-default,purple)] rounded-full pointer-events-none transition-colors duration-200 group-hover/timeline:bg-purple-500"
             style={{ width: `${progress}%` }}
           />
           <div
@@ -389,7 +493,11 @@ export default function VideoPlayer({
                 onClick={toggleMute}
                 className="text-white/80 hover:text-white transition-colors"
               >
-                {isMuted ? <VolumeX className="size-5.5" /> : <Volume2 className="size-5.5" />}
+                {isMuted ? (
+                  <VolumeX className="size-5.5" />
+                ) : (
+                  <Volume2 className="size-5.5" />
+                )}
               </button>
               <input
                 type="range"
