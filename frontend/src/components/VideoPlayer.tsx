@@ -70,6 +70,8 @@ export default function VideoPlayer({
   const lastTapRef = useRef<{ time: number; clientX: number } | null>(null);
   const singleTapTimerRef = useRef<number | null>(null);
 
+  const [bufferedProgress, setBufferedProgress] = useState(0);
+
   const setControlsVisible = (val: boolean) => {
     showControlsRef.current = val;
     setShowControls(val);
@@ -114,12 +116,23 @@ export default function VideoPlayer({
     if (isDraggingRef.current) return;
     const video = videoRef.current;
     if (!video) return;
+
     const { currentTime, duration } = video;
     setCurrentTime(currentTime);
-    const dur =
-      duration && Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const dur = duration && Number.isFinite(duration) && duration > 0 ? duration : 0;
     const frac = dur > 0 ? currentTime / dur : 0;
     setProgress(dur > 0 ? frac * 100 : 0);
+
+    if (dur > 0 && video.buffered.length > 0) {
+      for (let i = 0; i < video.buffered.length; i++) {
+        if (video.buffered.start(i) <= currentTime && video.buffered.end(i) >= currentTime) {
+          const bufferedEnd = video.buffered.end(i);
+          setBufferedProgress((bufferedEnd / dur) * 100);
+          break;
+        }
+      }
+    }
+
     onPlaybackTime?.(currentTime);
     if (dur > 0) onPlaybackFraction?.(Math.min(1, Math.max(0, frac)));
   }
@@ -314,7 +327,9 @@ export default function VideoPlayer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleToggle, handleSkip, volume]);
 
+  
   return (
+    
     <div
       ref={containerRef}
       className={cn(
@@ -328,6 +343,7 @@ export default function VideoPlayer({
       <video
         ref={setVideoNode}
         src={src}
+        preload="auto"
         className="absolute inset-0 w-full h-full object-cover"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
@@ -468,9 +484,15 @@ export default function VideoPlayer({
           onPointerUp={handlePointerUp}
         >
           <div
-            className="h-full bg-[var(--purple-default,purple)] rounded-full pointer-events-none transition-colors duration-200 group-hover/timeline:bg-purple-500"
+            className="h-full bg-white/30 rounded-full absolute left-0 top-0 pointer-events-none transition-all duration-150"
+            style={{ width: `${bufferedProgress}%` }}
+          />
+
+          <div
+            className="h-full bg-(--purple-default) rounded-full absolute left-0 top-0 pointer-events-none transition-colors duration-200 group-hover/timeline:bg-purple-500"
             style={{ width: `${progress}%` }}
           />
+          
           <div
             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150"
             style={{ left: `calc(${progress}% - 8px)` }}
