@@ -14,7 +14,7 @@ name: Deploy backend
 
 on:
   push:
-    branches: [main]
+    branches: [product]
     paths:
       - "backend/**"
       - ".github/workflows/deploy-backend.yml"
@@ -41,5 +41,7 @@ jobs:
             cd ~/explys/backend
             git pull origin main
             npm install
+            npx prisma db push
+            npx prisma generate
             npm run build
             pm2 restart explys-backend
