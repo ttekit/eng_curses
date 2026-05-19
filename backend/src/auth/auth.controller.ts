@@ -32,6 +32,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
+import { TurnstileGuard } from "./guards/turnstile.guard";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -42,7 +43,9 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+
   @Post("register")
+  @UseGuards(TurnstileGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Register a new user" })
   @ApiResponse({ status: 201, description: "User successfully registered." })
@@ -57,6 +60,7 @@ export class AuthController {
   }
 
   @Post("login")
+  @UseGuards(TurnstileGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Log in a user" })
   @ApiResponse({ status: 200, description: "User successfully logged in." })

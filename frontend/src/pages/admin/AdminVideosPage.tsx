@@ -19,6 +19,7 @@ import {
   Upload,
   Video,
   Edit,
+  X,
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import {
@@ -70,14 +71,18 @@ function generateVideoThumbnailBlob(file: File): Promise<Blob> {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(video.src);
-        if (blob) {
-          resolve(blob);
-        } else {
-          reject(new Error("Canvas blob generation failed"));
-        }
-      }, "image/jpeg", 0.85);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(video.src);
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Canvas blob generation failed"));
+          }
+        },
+        "image/jpeg",
+        0.85,
+      );
     };
     video.onerror = (e) => {
       URL.revokeObjectURL(video.src);
@@ -91,18 +96,16 @@ function sortAdminPlaylistRows(
 ): AdminCatalogVideoRow[] {
   return [...rows].sort((a, b) => {
     const ma =
-      typeof a.content.playlistPosition === "number" ?
-        a.content.playlistPosition
+      typeof a.content.playlistPosition === "number"
+        ? a.content.playlistPosition
         : 0;
     const mb =
-      typeof b.content.playlistPosition === "number" ?
-        b.content.playlistPosition
+      typeof b.content.playlistPosition === "number"
+        ? b.content.playlistPosition
         : 0;
     if (ma !== mb) return ma - mb;
-    const va =
-      typeof a.playlistPosition === "number" ? a.playlistPosition : 0;
-    const vb =
-      typeof b.playlistPosition === "number" ? b.playlistPosition : 0;
+    const va = typeof a.playlistPosition === "number" ? a.playlistPosition : 0;
+    const vb = typeof b.playlistPosition === "number" ? b.playlistPosition : 0;
     if (va !== vb) return va - vb;
     return a.id - b.id;
   });
@@ -132,16 +135,11 @@ function slugFriendly(label: string): string {
 
 type MetadataInspectTab = "themes" | "levels" | "subs";
 
-function ChipList(props: {
-  tags: string[];
-  emptyLabel: string;
-}) {
+function ChipList(props: { tags: string[]; emptyLabel: string }) {
   const { tags, emptyLabel } = props;
   const list = (tags ?? []).filter((t) => t.trim().length > 0);
   if (list.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">{emptyLabel}</p>
-    );
+    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -177,7 +175,9 @@ export default function AdminVideosPage() {
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editSaving, setEditSaving] = useState(false);
-  const [regenBusy, setRegenBusy] = useState<false | "tags" | "cefr" | "captions">(false);
+  const [regenBusy, setRegenBusy] = useState<
+    false | "tags" | "cefr" | "captions"
+  >(false);
 
   // Обновленный стейт удаления (храним объект видео и режим удаления)
   const [deleteCandidate, setDeleteCandidate] = useState<{
@@ -204,7 +204,9 @@ export default function AdminVideosPage() {
   const [subtitleError, setSubtitleError] = useState<string | null>(null);
 
   const seriesNames = useMemo(() => {
-    const names = videos.map((v) => v.content.category.name.trim()).filter(Boolean);
+    const names = videos
+      .map((v) => v.content.category.name.trim())
+      .filter(Boolean);
     return [...new Set(names)].sort((a, b) => a.localeCompare(b));
   }, [videos]);
 
@@ -249,7 +251,9 @@ export default function AdminVideosPage() {
       })
       .catch((e) => {
         if (!cancelled) {
-          setSubtitleError(e instanceof Error ? e.message : "Could not load subtitles");
+          setSubtitleError(
+            e instanceof Error ? e.message : "Could not load subtitles",
+          );
         }
       })
       .finally(() => {
@@ -467,7 +471,9 @@ export default function AdminVideosPage() {
       if (deleteCandidate.mode === "series") {
         const contentRootId = deleteCandidate.video.content.category.id;
         await deleteAdminCatalogContent(contentRootId);
-        toast.success(`${deleteCandidate.video.videoName} (series) removed from catalog`);
+        toast.success(
+          `${deleteCandidate.video.videoName} (series) removed from catalog`,
+        );
       } else {
         const contentMediaId = deleteCandidate.video.content.id;
         const res = await apiFetch(`/contents/episode/${contentMediaId}`, {
@@ -493,9 +499,7 @@ export default function AdminVideosPage() {
       const orderedContentMediaIds = reorderedRows.map((r) => r.content.id);
       const unique = new Set(orderedContentMediaIds);
       if (unique.size !== orderedContentMediaIds.length) {
-        toast.error(
-          "Cannot reorder when multiple clips share one media slot.",
-        );
+        toast.error("Cannot reorder when multiple clips share one media slot.");
         return;
       }
       setReorderBusy(true);
@@ -516,11 +520,7 @@ export default function AdminVideosPage() {
   );
 
   const moveEpisodeInSeries = useCallback(
-    async (
-      group: AdminVideoSeriesGroup,
-      index: number,
-      delta: -1 | 1,
-    ) => {
+    async (group: AdminVideoSeriesGroup, index: number, delta: -1 | 1) => {
       const next = index + delta;
       if (next < 0 || next >= group.rows.length) return;
       const rows = [...group.rows];
@@ -532,13 +532,16 @@ export default function AdminVideosPage() {
     [applyPlaylistReorder],
   );
 
-  const openAddEpisodeForSeries = useCallback((group: AdminVideoSeriesGroup) => {
-    setAddEpisodeSeries(group);
-    setAddEpisodeTitle("");
-    setAddEpisodeDesc("");
-    setAddEpisodeFile(null);
-    setAddEpisodeOpen(true);
-  }, []);
+  const openAddEpisodeForSeries = useCallback(
+    (group: AdminVideoSeriesGroup) => {
+      setAddEpisodeSeries(group);
+      setAddEpisodeTitle("");
+      setAddEpisodeDesc("");
+      setAddEpisodeFile(null);
+      setAddEpisodeOpen(true);
+    },
+    [],
+  );
 
   const handleAddEpisodeSubmit = async () => {
     if (!addEpisodeSeries) return;
@@ -588,9 +591,9 @@ export default function AdminVideosPage() {
             Videos
           </h1>
           <p className="text-muted-foreground">
-            Catalog from{" "}
-            <code className="text-xs">GET /content-video</code>; upload{" "}
-            <code className="text-xs">POST /contents/create</code>; series order{" "}
+            Catalog from <code className="text-xs">GET /content-video</code>;
+            upload <code className="text-xs">POST /contents/create</code>;
+            series order{" "}
             <code className="text-xs">PATCH /contents/:id/playlist</code>.
           </p>
         </div>
@@ -636,7 +639,9 @@ export default function AdminVideosPage() {
             <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">Browse for MP4</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {uploadFile ? uploadFile.name : "MP4 only (server-enforced max size)"}
+              {uploadFile
+                ? uploadFile.name
+                : "MP4 only (server-enforced max size)"}
             </p>
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -675,8 +680,8 @@ export default function AdminVideosPage() {
         open={addEpisodeOpen}
         onClose={() => !addEpisodeSaving && setAddEpisodeOpen(false)}
         title={
-          addEpisodeSeries ?
-            `Add episode · ${addEpisodeSeries.seriesName}`
+          addEpisodeSeries
+            ? `Add episode · ${addEpisodeSeries.seriesName}`
             : "Add episode"
         }
         footer={
@@ -765,7 +770,10 @@ export default function AdminVideosPage() {
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="admin-edit-vid-name">
+            <label
+              className="text-sm font-medium"
+              htmlFor="admin-edit-vid-name"
+            >
               Video title
             </label>
             <AdminInput
@@ -775,7 +783,10 @@ export default function AdminVideosPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="admin-edit-vid-desc">
+            <label
+              className="text-sm font-medium"
+              htmlFor="admin-edit-vid-desc"
+            >
               Description
             </label>
             <AdminTextarea
@@ -788,11 +799,14 @@ export default function AdminVideosPage() {
           <div className="space-y-2 border-border border-t pt-4">
             <p className="text-sm font-medium">Transcript metadata</p>
             <p className="text-xs text-muted-foreground">
-              <strong>Captions:</strong> the server FFmpeg-decodes speech to WAV, then Deepgram Listen (default{" "}
+              <strong>Captions:</strong> the server FFmpeg-decodes speech to
+              WAV, then Deepgram Listen (default{" "}
               <code className="text-[11px]">nova-3</code>;{" "}
-              <code className="text-[11px]">DEEPGRAM_TRANSCRIBE_MODEL</code>) needs{" "}
-              <code className="text-[11px]">DEEPGRAM_API_KEY</code> plus an audible soundtrack in the MP4.{" "}
-              <strong>Catalog genres</strong> and <strong>CEFR bands</strong> use WebVTT + Gemini afterward (genres must exist in the genres table).
+              <code className="text-[11px]">DEEPGRAM_TRANSCRIBE_MODEL</code>)
+              needs <code className="text-[11px]">DEEPGRAM_API_KEY</code> plus
+              an audible soundtrack in the MP4. <strong>Catalog genres</strong>{" "}
+              and <strong>CEFR bands</strong> use WebVTT + Gemini afterward
+              (genres must exist in the genres table).
             </p>
             <div className="flex flex-wrap gap-2">
               <AdminButton
@@ -843,7 +857,11 @@ export default function AdminVideosPage() {
       <AdminModal
         open={deleteCandidate != null}
         onClose={() => !deleteSaving && setDeleteCandidate(null)}
-        title={deleteCandidate?.mode === "series" ? "Remove series from catalog" : "Remove episode"}
+        title={
+          deleteCandidate?.mode === "series"
+            ? "Remove series from catalog"
+            : "Remove episode"
+        }
         footer={
           <>
             <AdminButton
@@ -865,13 +883,16 @@ export default function AdminVideosPage() {
       >
         {deleteCandidate?.mode === "series" ? (
           <p className="text-sm text-foreground">
-            Delete <strong>{deleteCandidate.video.videoName}</strong> and its catalog entry (
-            series <strong>{deleteCandidate.video.content.category.name}</strong>)?
+            Delete <strong>{deleteCandidate.video.videoName}</strong> and its
+            catalog entry ( series{" "}
+            <strong>{deleteCandidate.video.content.category.name}</strong>)?
             This uses <code>cascade delete</code> from the backend content row.
           </p>
         ) : (
           <p className="text-sm text-foreground">
-            Delete the episode <strong>{deleteCandidate?.video.videoName}</strong> from the series <strong>{deleteCandidate?.video.content.category.name}</strong>?
+            Delete the episode{" "}
+            <strong>{deleteCandidate?.video.videoName}</strong> from the series{" "}
+            <strong>{deleteCandidate?.video.content.category.name}</strong>?
           </p>
         )}
       </AdminModal>
@@ -918,9 +939,7 @@ export default function AdminVideosPage() {
                 size="sm"
                 variant={inspectMeta.tab === "subs" ? "primary" : "outline"}
                 className="gap-1.5"
-                onClick={() =>
-                  setInspectMeta({ ...inspectMeta, tab: "subs" })
-                }
+                onClick={() => setInspectMeta({ ...inspectMeta, tab: "subs" })}
               >
                 <Captions className="h-4 w-4" />
                 Subtitles
@@ -934,7 +953,7 @@ export default function AdminVideosPage() {
                 </p>
                 <ChipList
                   tags={inspectMeta.video.content.stats?.userTags ?? []}
-                  emptyLabel='No genres yet. Edit this video → “Regenerate genres”.'
+                  emptyLabel="No genres yet. Edit this video → “Regenerate genres”."
                 />
               </div>
             ) : null}
@@ -947,14 +966,15 @@ export default function AdminVideosPage() {
                   </p>
                   <ChipList
                     tags={inspectMeta.video.content.stats?.systemTags ?? []}
-                    emptyLabel='No CEFR bands yet. Edit → “Regenerate CEFR”.'
+                    emptyLabel="No CEFR bands yet. Edit → “Regenerate CEFR”."
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
-                    {inspectMeta.video.content.stats?.processingComplexity != null ?
-                      inspectMeta.video.content.stats.processingComplexity
+                    {inspectMeta.video.content.stats?.processingComplexity !=
+                    null
+                      ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
                 </p>
@@ -963,14 +983,13 @@ export default function AdminVideosPage() {
 
             {inspectMeta.tab === "subs" ? (
               <div className="space-y-3">
-                {inspectMeta.video.videoCaption?.subtitlesFileLink ?
+                {inspectMeta.video.videoCaption?.subtitlesFileLink ? (
                   <>
                     <p className="text-xs text-muted-foreground">
                       Loaded via{" "}
                       <code className="text-[11px]">
                         GET /content-video/:id/subtitles
-                      </code>
-                      {" "}
+                      </code>{" "}
                       (same API token as admin).
                     </p>
                     <a
@@ -982,22 +1001,24 @@ export default function AdminVideosPage() {
                       Open raw file on storage
                     </a>
                   </>
-                  : (
-                    <p className="text-sm text-muted-foreground">
-                      No captions row yet. Open Edit → Regenerate captions.
-                    </p>
-                  )}
-                {subtitleLoading ?
-                  <p className="text-sm text-muted-foreground">Loading WebVTT…</p>
-                  : null}
-                {subtitleError ?
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No captions row yet. Open Edit → Regenerate captions.
+                  </p>
+                )}
+                {subtitleLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading WebVTT…
+                  </p>
+                ) : null}
+                {subtitleError ? (
                   <p className="text-sm text-destructive">{subtitleError}</p>
-                  : null}
-                {subtitleText ?
+                ) : null}
+                {subtitleText ? (
                   <pre className="max-h-[min(420px,50vh)] overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] whitespace-pre-wrap break-all">
                     {subtitleText}
                   </pre>
-                  : null}
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1090,12 +1111,24 @@ export default function AdminVideosPage() {
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 opacity-70" />
+
               <AdminInput
-                className="pl-10"
+                className="pl-10 pr-10"
                 placeholder="Search videos…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted/50 flex items-center justify-center"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-3">
               <AdminSelectNative
@@ -1109,6 +1142,7 @@ export default function AdminVideosPage() {
                   </option>
                 ))}
               </AdminSelectNative>
+
               <AdminSelectNative
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
@@ -1146,13 +1180,13 @@ export default function AdminVideosPage() {
                       <p className="text-xs text-muted-foreground">
                         {group.rows.length}{" "}
                         {group.rows.length === 1 ? "episode" : "episodes"}
-                        {group.rows.length > 1 ?
-                          " · use arrows to set playlist order"
+                        {group.rows.length > 1
+                          ? " · use arrows to set playlist order"
                           : null}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {group.friendlyLink ?
+                      {group.friendlyLink ? (
                         <Link
                           to={`/catalog/series/${encodeURIComponent(group.friendlyLink)}`}
                           target="_blank"
@@ -1163,7 +1197,7 @@ export default function AdminVideosPage() {
                           Learner playlist
                           <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                         </Link>
-                        : null}
+                      ) : null}
                       <AdminButton
                         size="sm"
                         variant="outline"
@@ -1198,11 +1232,11 @@ export default function AdminVideosPage() {
                             )}
                             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
                               <AdminBadge variant="accent">catalog</AdminBadge>
-                              {group.rows.length > 1 ?
+                              {group.rows.length > 1 ? (
                                 <AdminBadge variant="secondary">
                                   #{episodeIndex + 1}
                                 </AdminBadge>
-                                : null}
+                              ) : null}
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
                               <a
@@ -1272,13 +1306,18 @@ export default function AdminVideosPage() {
                                 </AdminRowMenuItem>
                                 <AdminRowMenuItem
                                   danger
-                                  onClick={() => setDeleteCandidate({ video, mode: "series" })}
+                                  onClick={() =>
+                                    setDeleteCandidate({
+                                      video,
+                                      mode: "series",
+                                    })
+                                  }
                                 >
                                   <Trash2 className="h-4 w-4" /> Delete series
                                 </AdminRowMenuItem>
                               </AdminRowMenu>
                             </div>
-                            {group.rows.length > 1 ?
+                            {group.rows.length > 1 ? (
                               <div className="mt-2 flex gap-2">
                                 <AdminButton
                                   type="button"
@@ -1318,7 +1357,7 @@ export default function AdminVideosPage() {
                                   Down
                                 </AdminButton>
                               </div>
-                              : null}
+                            ) : null}
                             <div className="mt-3 flex flex-wrap gap-2">
                               <AdminBadge variant="secondary">{lvl}</AdminBadge>
                               <AdminBadge variant="outline">
@@ -1340,7 +1379,9 @@ export default function AdminVideosPage() {
                                 variant="outline"
                                 size="sm"
                                 className="shrink-0 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                onClick={() => setDeleteCandidate({ video, mode: "episode" })}
+                                onClick={() =>
+                                  setDeleteCandidate({ video, mode: "episode" })
+                                }
                                 type="button"
                               >
                                 <Trash2 className="h-4 w-4" />

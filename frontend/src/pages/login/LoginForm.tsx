@@ -6,6 +6,7 @@ import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
+import Turnstile from "react-turnstile";
 import {
   apiFetch,
   getResponseErrorMessage,
@@ -18,7 +19,8 @@ import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
 
 function safeReturnPath(state: unknown): string | undefined {
-  if (!state || typeof state !== "object" || !("from" in state)) return undefined;
+  if (!state || typeof state !== "object" || !("from" in state))
+    return undefined;
   const raw = (state as { from?: unknown }).from;
   if (typeof raw !== "string" || raw.length === 0) return undefined;
   if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
@@ -43,6 +45,9 @@ export default function LoginForm() {
     email: "",
     password: "",
   });
+
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
   const [emptyError, setEmptyError] = useState(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const navigate = useNavigate();
@@ -77,12 +82,21 @@ export default function LoginForm() {
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!captchaToken) {
+      toast.error("Please wait for the captcha verification to complete.");
+      return;
+    }
+
     if (!isEmpty) {
       setEmptyError(false);
       try {
         const response = await apiFetch("/auth/login", {
           method: "POST",
-          body: JSON.stringify(loginData),
+          body: JSON.stringify({
+            ...loginData,
+            captchaToken,
+          }),
         });
 
         if (response.ok) {
@@ -179,13 +193,24 @@ export default function LoginForm() {
           </div>
         </div>
 
+        <div className="flex justify-center py-2">
+          <Turnstile
+            sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+            onVerify={(token) => setCaptchaToken(token)}
+            onExpire={() => setCaptchaToken(null)}
+            onError={() => setCaptchaToken(null)}
+            theme="light"
+          />
+        </div>
+
         {emptyError && (
           <ValidateError>Please fill in all required fields.</ValidateError>
         )}
 
         <Button
           type="submit"
-          className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          disabled={!captchaToken}
+          className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Log in
         </Button>
