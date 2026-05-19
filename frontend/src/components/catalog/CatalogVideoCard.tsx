@@ -40,10 +40,7 @@ export function CatalogVideoCard({
   showProgress,
 }: CatalogVideoCardProps) {
   return (
-    <Link
-      to={`/content/${video.id}`}
-      className="group w-[280px] shrink-0 sm:w-[300px]"
-    >
+    <Link to={`/content/${video.id}`} className="group w-70 shrink-0 sm:w-75">
       <div className="relative mb-3 aspect-video overflow-hidden rounded-xl bg-muted">
         {video.thumbnailUrl ? (
           <img
@@ -61,7 +58,7 @@ export function CatalogVideoCard({
             playsInline
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted to-accent/20" />
+          <div className="absolute inset-0 bg-linear-to-br from-primary/20 via-muted to-accent/20" />
         )}
 
         <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
