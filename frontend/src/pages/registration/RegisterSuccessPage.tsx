@@ -16,20 +16,25 @@ export default function RegisterSuccessPage() {
   const hasStudents = students.length > 0;
 
   return (
-    <div className="bg-background flex min-h-screen flex-col gap-12 p-8 text-foreground lg:flex-row lg:items-center lg:justify-center lg:gap-16">
+    <div className="bg-background font-display flex min-h-screen flex-col gap-12 p-8 text-foreground lg:flex-row lg:items-center lg:justify-center lg:gap-16">
       <div className="mx-auto hidden w-full max-w-sm flex-col items-center text-center lg:flex">
-        <ChameleonMascot size="lg" mood="excited" className="mb-6" />
+        <img src="/ResultHappy.svg" className="w-50 h-50 animate-float mb-3" />
         <h2 className="font-display text-2xl font-bold">Nice work!</h2>
         <p className="mt-3 text-muted-foreground">
           You&apos;re ready to dive into Explys with your freshly minted roster.
         </p>
       </div>
 
-      <div className="border-border bg-card text-card-foreground mx-auto w-full max-w-lg rounded-3xl border p-8 shadow-2xl">
-        <div className="bg-primary/20 text-primary mb-4 inline-flex size-14 items-center justify-center rounded-full text-2xl font-bold" aria-hidden>
+      <div className="bg-card text-card-foreground mx-auto w-full max-w-lg rounded-3xl p-8 shadow-2xl">
+        <div
+          className="bg-primary/20 text-primary mb-4 inline-flex size-14 items-center justify-center rounded-full text-2xl font-bold"
+          aria-hidden
+        >
           ✓
         </div>
-        <h1 className="font-display text-2xl font-bold">Registration successful</h1>
+        <h1 className="font-display text-2xl font-bold">
+          Registration successful
+        </h1>
         <p className="text-muted-foreground mt-2 leading-relaxed">
           {hasStudents
             ? "Your teacher account is ready. Student logins were created for the pupils you listed. Download the Excel file to share credentials securely (store it in a safe place—anyone with the file can sign in as those students)."
@@ -52,7 +57,10 @@ export default function RegisterSuccessPage() {
                 </thead>
                 <tbody>
                   {students.map((s) => (
-                    <tr key={s.email} className="border-border border-t text-foreground">
+                    <tr
+                      key={s.email}
+                      className="border-border border-t text-foreground"
+                    >
                       <td className="px-3 py-2">{s.name}</td>
                       <td className="px-3 py-2 break-all">{s.email}</td>
                       <td className="px-3 py-2 font-mono text-xs">
@@ -68,10 +76,7 @@ export default function RegisterSuccessPage() {
               type="button"
               className="!mt-6"
               onClick={() =>
-                void downloadStudentAccountsExcel(
-                  students,
-                  "student-accounts",
-                )
+                void downloadStudentAccountsExcel(students, "student-accounts")
               }
             >
               Download student accounts (Excel)
@@ -80,7 +85,11 @@ export default function RegisterSuccessPage() {
         )}
 
         <div className="mt-8 flex flex-col gap-2">
-          <Button type="button" className="py-6 text-base font-semibold" onClick={() => navigate("/loginForm")}>
+          <Button
+            type="button"
+            className=" flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            onClick={() => navigate("/loginForm")}
+          >
             Go to sign in
           </Button>
           <Link
