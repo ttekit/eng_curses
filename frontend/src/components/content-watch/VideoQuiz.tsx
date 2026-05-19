@@ -120,14 +120,14 @@ export function VideoQuiz({
     }
 
     return (
-      <div className="py-4 text-center">
-        <img src="/ResultHappy.svg" className="w-40 h-40 mx-23" />
+      <div className="py-4 text-center flex flex-col items-center">
+        <img src="/ResultHappy.svg" className="w-40 h-40 mb-3" />
 
         <h3 className="mb-2 text-xl font-bold text-foreground">
           Quiz complete
         </h3>
 
-        <div className="mb-4 rounded-xl bg-muted p-4">
+        <div className="mb-4 rounded-xl w-full bg-muted p-4">
           <p className="mb-1 text-3xl font-bold text-primary">
             {correctCount}/{mcqTotal}
           </p>

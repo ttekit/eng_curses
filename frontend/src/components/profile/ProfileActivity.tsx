@@ -83,7 +83,7 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
   const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const activityMap = new Map(
-    weeklyActivity.map((item) => [item.day.slice(0, 3), item.minutes > 0])
+    weeklyActivity.map((item) => [item.day.slice(0, 3), item.minutes > 0]),
   );
 
   const streakCalendar = daysOfWeek.map((day) => ({
@@ -110,13 +110,14 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
                     >
                       <div className="absolute left-2 flex size-5 items-center justify-center rounded-full border-2 border-border bg-card">
                         <div
-                          className={`size-2 rounded-full ${activity.type === "achievement" ||
+                          className={`size-2 rounded-full ${
+                            activity.type === "achievement" ||
                             activity.type === "level_up"
-                            ? "bg-primary"
-                            : activity.type === "streak"
-                              ? "bg-orange-500"
-                              : "bg-accent"
-                            }`}
+                              ? "bg-primary"
+                              : activity.type === "streak"
+                                ? "bg-orange-500"
+                                : "bg-accent"
+                          }`}
                         />
                       </div>
                       <div className="flex-1 rounded-xl bg-secondary/30 p-4 transition-colors hover:bg-secondary/50">
@@ -156,14 +157,17 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
             {streakCalendar.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-1">
                 <div
-                  className={`flex size-8 items-center justify-center rounded-lg ${day.active
-                    ? "bg-orange-500 text-white"
-                    : "bg-secondary text-muted-foreground"
-                    }`}
+                  className={`flex size-8 items-center justify-center rounded-lg ${
+                    day.active
+                      ? "bg-orange-500 text-white shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
                 >
                   {day.active ? <Flame className="size-4" /> : null}
                 </div>
-                <span className="text-xs text-muted-foreground">{day.date}</span>
+                <span className="text-xs text-muted-foreground">
+                  {day.date}
+                </span>
               </div>
             ))}
           </div>

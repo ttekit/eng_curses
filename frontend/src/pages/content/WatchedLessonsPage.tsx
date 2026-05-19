@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import {
-  CalendarDays,
-  CalendarRange,
-  Loader2,
-  Target,
-} from "lucide-react";
+import { CalendarDays, CalendarRange, Loader2, Target } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
@@ -85,7 +80,7 @@ function RecapActionCard(props: {
       ? labels.done
       : cooldown
         ? formatMessage(labels.cooldown, { time: cooldown })
-        : status?.reason ?? labels.done;
+        : (status?.reason ?? labels.done);
 
   return (
     <article
@@ -114,8 +109,7 @@ function RecapActionCard(props: {
           })}
         </p>
       ) : null}
-      {typeof status?.lastScorePct === "number" &&
-      status.completedInPeriod ? (
+      {typeof status?.lastScorePct === "number" && status.completedInPeriod ? (
         <p className="mt-1 text-xs font-medium text-foreground">
           {formatMessage(labels.lastScore, {
             score: String(Math.round(status.lastScorePct)),
@@ -125,7 +119,7 @@ function RecapActionCard(props: {
       {available ? (
         <Link
           to={`/watched-lessons/recap/${config.kind}`}
-          className="mt-4 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          className=" flex rounded-[15px] bg-primary px-6 py-3 mt-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
         >
           {ctaLabel}
         </Link>
@@ -153,9 +147,8 @@ export default function WatchedLessonsPage() {
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoadError, setHasLoadError] = useState(false);
-  const [recapStatus, setRecapStatus] = useState<LearnerRecapStatusResponse | null>(
-    null,
-  );
+  const [recapStatus, setRecapStatus] =
+    useState<LearnerRecapStatusResponse | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const recapCards: RecapCardConfig[] = useMemo(
@@ -333,7 +326,11 @@ export default function WatchedLessonsPage() {
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {cards.map((video) => (
-                    <CatalogVideoCard key={video.id} video={video} showProgress />
+                    <CatalogVideoCard
+                      key={video.id}
+                      video={video}
+                      showProgress
+                    />
                   ))}
                 </div>
               )}
@@ -344,4 +341,3 @@ export default function WatchedLessonsPage() {
     </div>
   );
 }
-

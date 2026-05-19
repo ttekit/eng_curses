@@ -591,7 +591,7 @@ export default function VideoPage() {
             <CatalogHero featured={featuredHero} />
 
             {/* Filters */}
-            <div className="px-4 sm:px-6 lg:px-8 space-y-4">
+            <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
                 <div className="flex flex-col gap-1.5 min-w-0">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
@@ -614,7 +614,7 @@ export default function VideoPage() {
                           className={cn(
                             "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
                             selectedLevel === lvl
-                              ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                              ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                               : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
                           )}
                         >
@@ -652,8 +652,8 @@ export default function VideoPage() {
                             className={cn(
                               "ml-0.5 rounded-full px-4 shrink-0 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
                               selectedGenre === gen
-                                ? "bg-accent text-accent-foreground shadow-sm scale-105"
-                                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                                ? "bg-accent text-accent-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground ",
                             )}
                           >
                             {gen}
@@ -671,7 +671,7 @@ export default function VideoPage() {
               className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2"
             >
               {loading ? (
-                <div className="flex h-60 bg-card/30 flex-col items-center border border-border border-t justify-center space-y-4">
+                <div className="flex h-60 bg-card/30 flex-col items-center rounded-[30px] justify-center space-y-4">
                   <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
                   <p className="animate-pulse text-muted-foreground text-sm">
                     {(messages.catalogPage as any)?.loadingCatalog ||
@@ -679,8 +679,8 @@ export default function VideoPage() {
                   </p>
                 </div>
               ) : filteredVideos.length === 0 ? (
-                <div className="border-t border-border bg-card/30 py-15 text-center">
-                  <Frown className="text-foreground/70 justify-center w-10 h-10 pb-2 mx-auto" />
+                <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
+                  <img src="/SadIcon.svg" className="w-25 h-30 mb-3" />
                   <h2 className="font-display text-2xl font-bold">
                     {(messages.catalogPage as any)?.emptyTitle ||
                       "No lessons found"}

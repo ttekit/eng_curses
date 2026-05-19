@@ -430,7 +430,7 @@ export default function LessonSummaryPage() {
             <div className="text-center">
               <img
                 src="/ResultHappy.svg"
-                className="w-50 h-50 mx-55 mb-5 animate-float"
+                className="w-50 h-50 mb-5 animate-float"
               />
               <span className="inline-block rounded bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
                 {display.summary.categoryName}

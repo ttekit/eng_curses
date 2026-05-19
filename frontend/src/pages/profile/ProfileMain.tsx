@@ -109,7 +109,8 @@ export default function ProfileMain() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id || (activeTab !== "overview" && activeTab !== "activity")) return;
+    if (!user?.id || (activeTab !== "overview" && activeTab !== "activity"))
+      return;
     let cancelled = false;
     void (async () => {
       const r = await apiFetch("/auth/profile/learning-stats", {
@@ -148,7 +149,8 @@ export default function ProfileMain() {
 
   const headerModel: ProfileHeaderModel | null = useMemo(() => {
     if (!user) return null;
-    const localStreak = joinMeta?.userId === user.id ? joinMeta.currentStreak : undefined;
+    const localStreak =
+      joinMeta?.userId === user.id ? joinMeta.currentStreak : undefined;
     return {
       name: user.name,
       email: user.email,
@@ -156,7 +158,10 @@ export default function ProfileMain() {
       role: normalizeRole(user.role),
       level: user.englishLevel?.trim() || "—",
       joinDateLabel,
-      streakDays: localStreak !== undefined ? localStreak : ((user as any).currentStreak || 0),
+      streakDays:
+        localStreak !== undefined
+          ? localStreak
+          : (user as any).currentStreak || 0,
     };
   }, [user, joinDateLabel, joinMeta]);
 
@@ -164,7 +169,7 @@ export default function ProfileMain() {
     if (!user) return null;
     const s = learningStats;
     const localXp = joinMeta?.userId === user.id ? joinMeta.xp : undefined;
-    const finalXp = localXp !== undefined ? localXp : (user.xp || 0);
+    const finalXp = localXp !== undefined ? localXp : user.xp || 0;
     return {
       totalWatchTimeMin: s?.totalWatchTimeMin ?? 0,
       videosCompleted: s?.videosCompleted ?? 0,
@@ -182,7 +187,9 @@ export default function ProfileMain() {
 
   const tabs = useMemo(() => {
     if (user?.role === "teacher") {
-      const withoutStudying = LEARNER_TABS.filter((t) => t.id !== "studying-plan");
+      const withoutStudying = LEARNER_TABS.filter(
+        (t) => t.id !== "studying-plan",
+      );
       return [
         withoutStudying[0],
         {
@@ -294,8 +301,8 @@ export default function ProfileMain() {
         <CatalogSidebar
           categories={[]}
           selectedCategory="All"
-          onSelectCategory={() => { }}
-          onSelectLevel={() => { }}
+          onSelectCategory={() => {}}
+          onSelectLevel={() => {}}
           reserveTopNavSpace={false}
           welcomeName={
             user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
@@ -332,7 +339,7 @@ export default function ProfileMain() {
                     className={cn(
                       "inline-flex hover:cursor-pointer flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:flex-none sm:justify-start",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
+                        ? "bg-primary text-primary-foreground shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                     )}
                   >
@@ -357,7 +364,11 @@ export default function ProfileMain() {
               {activeTab === "videos" ? <ProfileTeacherVideos /> : null}
               {activeTab === "progress" ? <ProfileProgress /> : null}
               {activeTab === "achievements" ? <ProfileAchievements /> : null}
-              {activeTab === "activity" ? <ProfileActivity weeklyActivity={learningStats?.weeklyActivity} /> : null}
+              {activeTab === "activity" ? (
+                <ProfileActivity
+                  weeklyActivity={learningStats?.weeklyActivity}
+                />
+              ) : null}
               {activeTab === "settings" ? (
                 <ProfileSettings
                   user={user}
