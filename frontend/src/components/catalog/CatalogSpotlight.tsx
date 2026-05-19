@@ -209,10 +209,7 @@ export function CatalogSpotlight({
           >
             {results.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-                <Clapperboard
-                  className="size-10 text-muted-foreground/50"
-                  aria-hidden
-                />
+                <img src="/SadIcon.svg" className="w-20 h-25" />
                 <p className="text-muted-foreground text-sm">
                   {videos.length === 0
                     ? "No lessons in the catalog yet."

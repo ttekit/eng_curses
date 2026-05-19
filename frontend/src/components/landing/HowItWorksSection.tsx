@@ -21,7 +21,8 @@ export function HowItWorksSection() {
         <div className="mb-16 text-center">
           <h2 className="font-display mb-4 text-balance text-3xl font-bold sm:text-4xl">
             {howItWorks.titleBefore}{" "}
-            <span className="text-primary">{howItWorks.titleBrand}</span>
+            <span className="text-primary">{howItWorks.titleBrand}</span>{" "}
+            {howItWorks.titleAfter}
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
             {howItWorks.subtitle}
