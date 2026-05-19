@@ -55,7 +55,23 @@ export const appEn = {
     emptyHint:
       "Watch at least 75% of a catalog video to count it here.",
     goToCatalog: "Go to catalog",
-    trainingHubTitle: "Training & rerun tests",
+    trainingHubTitle: "Training & summaries",
+    trainingHubSubtitle:
+      "Mixed quizzes from your recent lessons. Each activity has its own cooldown.",
+    workOnMistakesTitle: "Work on mistakes",
+    workOnMistakesBody:
+      "Ten multiple-choice questions focused on grammar and vocabulary you missed recently.",
+    weeklySummaryTitle: "Weekly summary",
+    weeklySummaryBody:
+      "One mixed quiz from lessons you watched this week (Mon–Sun, UTC). Available once per week.",
+    monthlySummaryTitle: "Monthly summary",
+    monthlySummaryBody:
+      "A broader recap from lessons you watched this calendar month (UTC). Available once per month.",
+    recapStartCta: "Start",
+    recapCooldown: "Available again in {time}",
+    recapDonePeriod: "Completed for this period",
+    recapLastScore: "Last score: {score}%",
+    recapLessonsHint: "{count} lessons in range",
     practiceSignInHint: "Sign in so quizzes and rerun sessions match your watched lessons.",
     sectionPracticeTitle: "Practise from your mistakes",
     practicePendingBadge: "Remediation quiz queued",
@@ -117,6 +133,8 @@ export const appEn = {
       "We could not confirm your subscription yet. Try refreshing the page.",
     placementLoadError: "Could not load placement test.",
     loadingCatalog: "Loading catalog…",
+    recommendedTitle: "Recommended videos",
+    recommendedDescription: "Picked for your level and interests",
     emptyTitle: "Nothing here yet",
     emptyNoVideos: "Check back soon for new lessons.",
     emptyFiltered: "Try clearing the category filter.",
@@ -460,6 +478,21 @@ export const appEn = {
     weeklyReviewNeedWatch:
       "Watch at least one lesson this week to unlock the review.",
     weeklyReviewLessonsHint: "Lessons this week: {count}",
+  },
+
+  recapQuizPage: {
+    titleFallback: "Training quiz",
+    backToLessons: "Back to My lessons",
+    lead: "All multiple choice — based on your recent watch history and quiz misses.",
+    loading: "Preparing your quiz…",
+    blockedTitle: "Quiz unavailable",
+    invalidKind: "Unknown quiz type.",
+    generateFailed:
+      "Could not start this quiz. You may be on cooldown or need more lesson activity first.",
+    submitFailed: "Could not submit. Try again.",
+    doneTitle: "Quiz saved",
+    resultLine: "Score: {correct} / {total} ({pct}%).",
+    resultToast: "Saved — {pct}%",
   },
 
   weeklyReviewPage: {

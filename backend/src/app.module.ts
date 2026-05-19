@@ -21,6 +21,7 @@ import { AdminAnalyticsModule } from "./admin-analytics/admin-analytics.module";
 import { AdminUsersModule } from "./admin-users/admin-users.module";
 import { TeacherStudentsModule } from "./teacher-students/teacher-students.module";
 import { BillingModule } from "./billing/billing.module";
+import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { BillingModule } from "./billing/billing.module";
     AdminUsersModule,
     TeacherStudentsModule,
     BillingModule,
+    LearnerRecapModule,
   ],
   controllers: [AppController],
   providers: [

@@ -9,7 +9,6 @@ import {
   Settings,
   Trophy,
   User,
-  CircleUser,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -85,7 +84,7 @@ export function CatalogSidebar({
     <>
       <aside
         className={cn(
-          "fixed  bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-600 lg:flex",
+          "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-600 lg:flex",
           reserveTopNavSpace ? "top-18" : "top-0",
           collapsed ? "w-20" : "w-64 shadow-2xl",
         )}
@@ -102,13 +101,12 @@ export function CatalogSidebar({
             <ChevronLeft className="h-3 w-3" />
           )}
         </button>
-        <div className="overflow-y-auto">
-          <div
-            className={cn(
-              "mx-3 my-3 flex items-center gap-3 rounded-3xl border border-border p-1",
-              collapsed && "justify-center",
-            )}
-          >
+        <div
+          className={cn(
+            "mx-3 my-3 flex shrink-0 items-center gap-3 rounded-3xl border border-border p-1",
+            collapsed && "justify-center",
+          )}
+        >
             <img
               src="/LandingProfile.svg"
               className="w-8 h-8 m-2 hover:cursor-pointer shrink-0"
@@ -125,26 +123,7 @@ export function CatalogSidebar({
             )}
           </div>
 
-        <div
-          className={cn(
-            "mx-3 my-3 flex items-center gap-3 rounded-3xl border border-border p-1 shrink-0",
-            collapsed && "justify-center",
-          )}
-        >
-          <CircleUser className="text-muted-foreground m-3 hover:cursor-pointer shrink-0" />
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-foreground/70">
-                {welcomeName?.trim() ? `Hi, ${welcomeName}` : "Welcome back!"}
-              </p>
-              <p className="text-sm font-semibold text-accent">
-                {englishLevel?.trim() ? `• Level ${englishLevel}` : "Explys"}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex-col space-y-1 p-4">
             {sidebarLinks.map((link) => {
               if (link.label === "Search") {

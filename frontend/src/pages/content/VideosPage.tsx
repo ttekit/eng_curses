@@ -29,6 +29,13 @@ import {
 } from "../../components/catalog/CatalogSpotlight";
 import type { CatalogCardVideo } from "../../components/catalog/CatalogVideoCard";
 import { cn } from "../../lib/utils";
+import {
+  buildClientRecommendedVideos,
+  fetchContentRecommendations,
+  mapRecommendationsToCatalogCards,
+} from "../../lib/contentRecommendations";
+import { appEn } from "../../locales/app/en";
+import { appUk } from "../../locales/app/uk";
 import { Frown, Layers, Tags } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -104,12 +111,15 @@ export default function VideoPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [recommendedCards, setRecommendedCards] = useState<CatalogCardVideo[]>(
+    [],
+  );
   const { user, isLoading: userLoading, refreshProfile } = useUser();
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
 
-  const cb: any = (messages as any).catalogBrowse || {};
+  const cb = locale === "uk" ? appUk.catalogBrowse : appEn.catalogBrowse;
 
   const catalogCheckoutReturn = useMemo(() => {
     return new URLSearchParams(location.search).get("checkout") === "success";
@@ -284,6 +294,62 @@ export default function VideoPage() {
     fetchVideos();
   }, []);
 
+  const thumbnailByVideoId = useMemo(() => {
+    const map = new Map<number, string | undefined>();
+    for (const v of videos) {
+      map.set(v.id, v.thumbnailUrl);
+    }
+    return map;
+  }, [videos]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    if (videos.length === 0) {
+      setRecommendedCards([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const userId = user?.id ? Number.parseInt(user.id, 10) : Number.NaN;
+      let cards: CatalogCardVideo[] = [];
+
+      if (Number.isFinite(userId) && userId > 0) {
+        const data = await fetchContentRecommendations(userId);
+        if (data?.recommendations?.length) {
+          cards = mapRecommendationsToCatalogCards(
+            data.recommendations,
+            thumbnailByVideoId,
+            12,
+          );
+        }
+      }
+
+      if (cards.length === 0) {
+        cards = buildClientRecommendedVideos(videos, user ?? null, 12);
+      }
+
+      if (!cancelled) {
+        setRecommendedCards(cards);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loading,
+    videos,
+    user,
+    user?.id,
+    user?.englishLevel,
+    user?.hobbies,
+    thumbnailByVideoId,
+  ]);
+
   useEffect(() => {
     const raw = location.state as
       | { openSpotlight?: boolean }
@@ -449,6 +515,14 @@ export default function VideoPage() {
       });
   }, [filteredVideos, selectedCategory, selectedLevel, selectedGenre]);
 
+  const visibleRecommended = useMemo(() => {
+    if (recommendedCards.length === 0) {
+      return [];
+    }
+    const allowedIds = new Set(filteredVideos.map((v) => v.id));
+    return recommendedCards.filter((card) => allowedIds.has(card.id));
+  }, [recommendedCards, filteredVideos]);
+
   return (
     <div className="min-h-screen bg-background text-foreground antialiased flex-col">
       {activatingSubscriptionOverlay ? (
@@ -578,15 +652,24 @@ export default function VideoPage() {
                   </p>
                 </div>
               ) : (
-                catalogRows.map((row) => (
-                  <CatalogVideoRow
-                    key={row.title}
-                    title={row.title}
-                    description={row.description}
-                    seriesFriendlyLink={row.seriesFriendlyLink}
-                    videos={row.videos}
-                  />
-                ))
+                <>
+                  {visibleRecommended.length > 0 ? (
+                    <CatalogVideoRow
+                      title={cb.recommendedTitle}
+                      description={cb.recommendedDescription}
+                      videos={visibleRecommended}
+                    />
+                  ) : null}
+                  {catalogRows.map((row) => (
+                    <CatalogVideoRow
+                      key={row.title}
+                      title={row.title}
+                      description={row.description}
+                      seriesFriendlyLink={row.seriesFriendlyLink}
+                      videos={row.videos}
+                    />
+                  ))}
+                </>
               )}
             </div>
           </main>

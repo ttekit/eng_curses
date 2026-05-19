@@ -1,4 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_SUMMARY_RECOMMENDATIONS,
+} from "src/config/ai-prompts.defaults";
+import { buildAiPrompt } from "src/config/ai-prompts";
 
 export type SummaryRecommendationsResult = {
   headline: string;
@@ -39,23 +44,22 @@ export class ContentVideoSummaryRecommendationsGeminiClient {
         ? input.vocabularyTerms.slice(0, 40).join(", ")
         : "(learner has no saved vocabulary list for this context)";
 
-    const prompt = [
-      "You are a supportive English coach. The learner finished a video comprehension and grammar test.",
-      "Return ONLY valid JSON (no markdown) with this exact shape:",
-      `{"headline":"short celebratory or constructive title (max 80 chars)",`,
-      `"summary":"2-3 sentences on how they did overall and what the scores suggest",`,
-      `"focusWords":["3-8","real","vocabulary","or","phrases","to","practise","next"],`,
-      `"nextSteps":["3-5","concrete","actionable","short","items"],`,
-      `"encouragement":"one warm sentence"}`,
-      "focusWords: prefer words that relate to the video theme or the learner’s saved words; if the list is empty, still suggest common useful words for their apparent level.",
-      "nextSteps: mix review of weak areas (grammar vs comprehension) with practical habits (e.g. re-watch a scene, say sentences aloud, flashcards).",
-      `Video: "${input.videoName.replace(/"/g, "'")}"`,
-      `Stated / profile level: ${level}`,
-      `Saved vocabulary the system used in test design (may be empty): ${vocab}`,
-      `Results: ${input.correct}/${input.total} (${input.percentage}%) overall.`,
-      `Comprehension: ${input.comprehension.correct}/${input.comprehension.total}.`,
-      `Grammar: ${input.grammar.correct}/${input.grammar.total}.`,
-    ].join("\n");
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.summaryRecommendations,
+      DEFAULT_PROMPT_SUMMARY_RECOMMENDATIONS,
+      {
+        VIDEO_NAME: input.videoName.replace(/"/g, "'"),
+        LEARNER_CEFR: level,
+        VOCABULARY_TERMS: vocab,
+        CORRECT: String(input.correct),
+        TOTAL: String(input.total),
+        PERCENTAGE: String(input.percentage),
+        COMPREHENSION_CORRECT: String(input.comprehension.correct),
+        COMPREHENSION_TOTAL: String(input.comprehension.total),
+        GRAMMAR_CORRECT: String(input.grammar.correct),
+        GRAMMAR_TOTAL: String(input.grammar.total),
+      },
+    );
 
     try {
       const response = await fetch(apiUrl, {

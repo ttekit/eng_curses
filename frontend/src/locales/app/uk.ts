@@ -55,7 +55,23 @@ export const appUk = {
     emptyHint:
       "Переглянь принаймні 75% відео з каталогу, щоб воно з’явилося тут.",
     goToCatalog: "До каталогу",
-    trainingHubTitle: "Тренування та повторний тест",
+    trainingHubTitle: "Тренування та підсумки",
+    trainingHubSubtitle:
+      "Змішані вікторини з недавніх уроків. У кожної активності свій інтервал очікування.",
+    workOnMistakesTitle: "Працюй над помилками",
+    workOnMistakesBody:
+      "10 питань із варіантами відповіді — граматика й лексика з твоїх недавніх промахів.",
+    weeklySummaryTitle: "Тижневий підсумок",
+    weeklySummaryBody:
+      "Одна змішана вікторина з уроків, які ти дивився цього тижня (пн–нд, UTC). Доступно раз на тиждень.",
+    monthlySummaryTitle: "Місячний підсумок",
+    monthlySummaryBody:
+      "Ширший підсумок з уроків цього календарного місяця (UTC). Доступно раз на місяць.",
+    recapStartCta: "Почати",
+    recapCooldown: "Знову через {time}",
+    recapDonePeriod: "Вже пройдено за цей період",
+    recapLastScore: "Останній результат: {score}%",
+    recapLessonsHint: "Уроків у періоді: {count}",
     practiceSignInHint:
       "Увійди в акаунт, щоб вікторини відповідали твоїм переглянутим урокам.",
     sectionPracticeTitle: "Тренування за твоїми помилками",
@@ -118,6 +134,8 @@ export const appUk = {
       "Поки не вдалося підтвердити підписку. Спробуй оновити сторінку.",
     placementLoadError: "Не вдалося завантажити вхідне тестування.",
     loadingCatalog: "Завантажуємо каталог…",
+    recommendedTitle: "Рекомендовані відео",
+    recommendedDescription: "Підібрано під твій рівень і інтереси",
     emptyTitle: "Поки що тут порожньо",
     emptyNoVideos: "Незабаром з’являться нові уроки — заходь пізніше.",
     emptyFiltered: "Спробуй скинути фільтр категорії.",
@@ -461,6 +479,21 @@ export const appUk = {
     weeklyReviewNeedWatch:
       "Подивись хоча б один урок цього тижня, щоб відкрити підсумок.",
     weeklyReviewLessonsHint: "Уроків цього тижня: {count}",
+  },
+
+  recapQuizPage: {
+    titleFallback: "Тренувальна вікторина",
+    backToLessons: "Назад до моїх уроків",
+    lead: "Лише варіанти відповіді — на основі недавніх переглядів і промахів у вікторинах.",
+    loading: "Готуємо вікторину…",
+    blockedTitle: "Вікторину недоступно",
+    invalidKind: "Невідомий тип вікторини.",
+    generateFailed:
+      "Не вдалося почати. Можливо, ще діє обмеження або потрібно більше активності в уроках.",
+    submitFailed: "Не вдалося надіслати. Спробуй ще раз.",
+    doneTitle: "Вікторину збережено",
+    resultLine: "Рахунок: {correct} / {total} ({pct}%).",
+    resultToast: "Збережено — {pct}%",
   },
 
   weeklyReviewPage: {

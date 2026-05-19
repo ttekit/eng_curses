@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_TRANSCRIPT_TAGS,
+} from 'src/config/ai-prompts.defaults';
+import { buildAiPrompt } from 'src/config/ai-prompts';
+import {
   normalizeComplexity,
   normalizeSystemTags,
   normalizeUserTagsToAllowedGenres,
@@ -49,20 +54,16 @@ export class AlcorythmGeminiTranscriptTagClient {
             '- userTags: 1 to 10 items. Each string MUST be copied exactly from the genre catalog JSON array below (same spelling and punctuation as one of the listed values). Pick genres that best fit the video (film/TV style or overall content). Do not output any label that is not in that catalog. No duplicates.',
             `- Genre catalog (JSON string array, exhaustive allow-list): ${genreCatalogJson}`,
           ];
-    const prompt = [
-      'You describe English learning video content from its transcript only.',
-      'Return ONLY valid JSON with this exact shape (no extra keys):',
-      '{"systemTags":["B1"],"userTags":["Action","Comedy"],"complexity":5}',
-      'Rules:',
-      '- systemTags: 1 to 3 items. Each value MUST be copied exactly from this list (spelling, case): ' +
-        systemList +
-        '. Choose the CEFR level that best matches the language difficulty of what is SPOKEN (vocabulary, grammar, speed).',
-      ...userTagRules,
-      '- complexity: integer 1 to 10 = how hard it is for a typical intermediate learner to *process* the video (density, speed, abstract ideas, accent). 1 = very easy, 10 = very demanding.',
-      `Video title: ${input.videoTitle ?? 'unknown'}`,
-      'Transcript:',
-      transcript,
-    ].join('\n');
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.transcriptTags,
+      DEFAULT_PROMPT_TRANSCRIPT_TAGS,
+      {
+        SYSTEM_LIST: systemList,
+        USER_TAG_RULES: userTagRules.join('\n'),
+        VIDEO_TITLE: input.videoTitle ?? 'unknown',
+        TRANSCRIPT: transcript,
+      },
+    );
 
     try {
       const response = await fetch(apiUrl, {

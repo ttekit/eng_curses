@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_TAG_SCORE,
+} from 'src/config/ai-prompts.defaults';
+import { buildAiPrompt } from 'src/config/ai-prompts';
 import { clamp } from './alcorythm-scoring.util';
 
 type GeminiTagBatchInput = {
@@ -31,24 +36,25 @@ export class AlcorythmGeminiTagScoreClient {
       return null;
     }
 
-    const prompt = [
-      'You are scoring user knowledge for language-learning tags.',
-      'Return ONLY valid JSON object where keys are tag names and values are numbers from 0 to 1.',
-      'Example: {"Greetings":0.4,"Travel":0.8}',
-      `Tags: ${input.tagNames.join(', ')}`,
-      `English level: ${input.englishLevel ?? 'unknown'}`,
-      `Native language: ${input.nativeLanguage ?? 'unknown'}`,
-      `Known languages: ${input.knownLanguages.join(', ') || 'none'}`,
-      `Known language levels: ${
-        input.knownLanguageLevels.length ? JSON.stringify(input.knownLanguageLevels) : 'none'
-      }`,
-      `Education: ${input.education ?? 'unknown'}`,
-      `Work field: ${input.workField ?? 'unknown'}`,
-      `Job: ${input.job ?? 'unknown'}`,
-      `Hobbies: ${input.hobbies.join(', ') || 'none'}`,
-      `Selected topics: ${input.selectedTopicNames.join(', ') || 'none'}`,
-      `Deterministic fallback scores: ${JSON.stringify(input.deterministicScores)}`,
-    ].join('\n');
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.tagScore,
+      DEFAULT_PROMPT_TAG_SCORE,
+      {
+        TAGS: input.tagNames.join(', '),
+        ENGLISH_LEVEL: input.englishLevel ?? 'unknown',
+        NATIVE_LANGUAGE: input.nativeLanguage ?? 'unknown',
+        KNOWN_LANGUAGES: input.knownLanguages.join(', ') || 'none',
+        KNOWN_LANGUAGE_LEVELS: input.knownLanguageLevels.length
+          ? JSON.stringify(input.knownLanguageLevels)
+          : 'none',
+        EDUCATION: input.education ?? 'unknown',
+        WORK_FIELD: input.workField ?? 'unknown',
+        JOB: input.job ?? 'unknown',
+        HOBBIES: input.hobbies.join(', ') || 'none',
+        SELECTED_TOPICS: input.selectedTopicNames.join(', ') || 'none',
+        DETERMINISTIC_SCORES: JSON.stringify(input.deterministicScores),
+      },
+    );
 
     try {
       const response = await fetch(apiUrl, {

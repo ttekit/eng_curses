@@ -1,4 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_VOCABULARY_PERSONALIZE,
+} from "src/config/ai-prompts.defaults";
+import { buildAiPrompt } from "src/config/ai-prompts";
 
 export type VocabularyPersonalizeGeminiRow = {
   word: string;
@@ -29,20 +34,18 @@ export class VocabularyPersonalizeGeminiClient {
       input.nativeLanguageIso !== "en" &&
       input.nativeLanguageLabel;
 
-    const prompt = [
-      "You help English learners understand lesson vocabulary.",
-      'Return ONLY valid JSON: {"items":[{"word":string,"nativeTranslation":string|null,"learnerDescription":string,"pronunciation":string|null}]}',
-      "Rules:",
-      `• learnerDescription: explain the English word IN ENGLISH using vocabulary and grammar suited to CEFR level ${input.learnerCefrBand}. One or two short sentences max (~220 chars each). No phonetic-only descriptions.`,
-      wantNative
-        ? `• nativeTranslation: a short equivalent or gloss IN THE LEARNER'S NATIVE LANGUAGE (${input.nativeLanguageLabel}). For multi-word English items, translate the whole chunk. Use null only if impossible.`
-        : "• nativeTranslation: null (learner native language is English or unknown — leave null).",
-      "• pronunciation: IPA or simple ASCII pronunciation hint if easy; else null.",
-      "• Cover EVERY input word exactly once, same spelling as given (case-insensitive match allowed in 'word' field but must be the same lemma/phrase).",
-      "",
-      "INPUT WORDS:",
-      JSON.stringify(input.words),
-    ].join("\n");
+    const nativeTranslationRule = wantNative
+      ? `• nativeTranslation: a short equivalent or gloss IN THE LEARNER'S NATIVE LANGUAGE (${input.nativeLanguageLabel}). For multi-word English items, translate the whole chunk. Use null only if impossible.`
+      : "• nativeTranslation: null (learner native language is English or unknown — leave null).";
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.vocabularyPersonalize,
+      DEFAULT_PROMPT_VOCABULARY_PERSONALIZE,
+      {
+        LEARNER_CEFR: input.learnerCefrBand,
+        NATIVE_TRANSLATION_RULE: nativeTranslationRule,
+        INPUT_WORDS: JSON.stringify(input.words),
+      },
+    );
 
     try {
       const response = await fetch(apiUrl, {

@@ -59,6 +59,11 @@ model User {
   /// `YYYY-MM-DD` (UTC Monday) when the learner last submitted the weekly review quiz.
   weeklyReviewCompletedWeekStart String? @map("weekly_review_completed_week_start")
   weeklyReviewLastScorePct         Float? @map("weekly_review_last_score_pct")
+  /// `YYYY-MM` (UTC calendar month) when the learner last submitted the monthly recap quiz.
+  monthlyReviewCompletedMonth String? @map("monthly_review_completed_month")
+  monthlyReviewLastScorePct   Float?  @map("monthly_review_last_score_pct")
+  /// Last successful “work on mistakes” recap (30-minute cooldown).
+  mistakesPracticeCompletedAt DateTime? @map("mistakes_practice_completed_at")
   achievements UserAchievement[]
 
   teacherOwnedContents Content[] @relation("TeacherOwnedContent")

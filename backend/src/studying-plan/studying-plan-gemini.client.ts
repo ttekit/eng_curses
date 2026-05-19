@@ -1,4 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_STUDYING_PLAN,
+  DEFAULT_PROMPT_STUDYING_PLAN_TASK_SCHEMA,
+} from "src/config/ai-prompts.defaults";
+import { buildAiPrompt, loadAiPromptTemplate } from "src/config/ai-prompts";
 import { DISTINCT_PASSED_LESSONS_PER_PHASE_STEP } from "./studying-plan.constants";
 import {
   horizonBudgetFromLabel,
@@ -27,16 +33,6 @@ export type StudyingPlanGenerationInput = {
 
 const PHASE_COUNT = 4;
 const WEEKLY_HABITS_COUNT = 3;
-
-const TASK_SCHEMA_HINT = [
-  "Each phase MUST include a non-empty **tasks** array. Each task object MUST have **id** (short slug string) and **kind** one of:",
-  "  distinct_videos_passed: { id, kind, minCount (int >= 1), minScorePct (number 0–100), scope: \"phase\" | \"cumulative\" }",
-  "  streak_days: { id, kind, minConsecutive (int >= 1) }",
-  "  vocabulary_terms_added: { id, kind, minCount (int >= 1), scope: \"phase\" }",
-  "  watch_time_minutes: { id, kind, minMinutes (int >= 1), scope: \"phase\" }",
-  "  min_phase_calendar_days: { id, kind, minDays (int >= 1) }",
-  "Every phase should include at least one **distinct_videos_passed**, **streak_days**, **vocabulary_terms_added**, **watch_time_minutes**, and **min_phase_calendar_days** task matching the numeric hints for that phase.",
-].join("\n");
 
 @Injectable()
 export class StudyingPlanGeminiClient {
@@ -84,29 +80,26 @@ export class StudyingPlanGeminiClient {
       `- **No** calendar-span or phase-duration lines in passConditions (no “at least X days/weeks in this phase”, no “90% of horizon”, no structured-window pacing prose).`,
     ];
 
-    const prompt = [
-      "You write a structured English learning roadmap for one adult learner using video lessons with comprehension checks (multiple choice + short summary).",
-      `Return ONLY valid JSON (no markdown) with this exact top-level shape: { "phases": [ exactly ${PHASE_COUNT} objects ], "weeklyHabits": [ exactly ${WEEKLY_HABITS_COUNT} strings ] }. Use the key name **weeklyHabits** exactly.`,
-      "",
-      `Each phase object MUST have: "title" (string, <= 90 chars), "summary" (string, 1-2 sentences), "actions" (array of 3-5 short actionable strings), "passConditions" (array of 5-7 strings), "tasks" (array of structured task objects — see TASK SCHEMA below).`,
-      "",
-      TASK_SCHEMA_HINT,
-      "",
-      ...timelineBlock,
-      "",
-      ...passBlock,
-      "",
-      "Suggested per-phase floors (meet or exceed; round sensibly but do not go below):",
-      ...phaseHintLines,
-      "",
-      "Phases should progress logically: 1) build habit, 2) stretch input, 3) apply/output, 4) sustain until horizon.",
-      "weeklyHabits: three concrete weekly rhythms (catalog videos, quizzes, vocabulary review), scaled to tier and horizon length.",
-      "",
-      `Learner goal: ${input.learningGoal}`,
-      `Time horizon (verbatim): ${input.timeHorizon}`,
-      `CEFR / level (raw): ${input.englishLevel || "unknown"}`,
-      `Hobbies / interests: ${hobbyLine}`,
-    ].join("\n");
+    const taskSchema = loadAiPromptTemplate(
+      AI_PROMPT_ENV_KEYS.studyingPlanTaskSchema,
+      DEFAULT_PROMPT_STUDYING_PLAN_TASK_SCHEMA,
+    );
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.studyingPlan,
+      DEFAULT_PROMPT_STUDYING_PLAN,
+      {
+        PHASE_COUNT: String(PHASE_COUNT),
+        WEEKLY_HABITS_COUNT: String(WEEKLY_HABITS_COUNT),
+        TASK_SCHEMA: taskSchema,
+        TIMELINE_BLOCK: timelineBlock.join("\n"),
+        PASS_BLOCK: passBlock.join("\n"),
+        PHASE_HINT_LINES: phaseHintLines.join("\n"),
+        LEARNING_GOAL: input.learningGoal,
+        TIME_HORIZON: input.timeHorizon,
+        ENGLISH_LEVEL: input.englishLevel || "unknown",
+        HOBBIES: hobbyLine,
+      },
+    );
 
     try {
       const response = await fetch(apiUrl, {

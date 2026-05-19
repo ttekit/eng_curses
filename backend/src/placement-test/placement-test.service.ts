@@ -34,6 +34,11 @@ import {
   ThemesFile,
 } from "./placement-test.types";
 import { UserRole } from "@generated/prisma/enums";
+import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_PLACEMENT_TEST,
+} from "src/config/ai-prompts.defaults";
+import { buildAiPrompt } from "src/config/ai-prompts";
 import { renderPlacementHtml } from "./placement-html.template";
 
 @Injectable()
@@ -618,24 +623,19 @@ export class PlacementTestService {
     const grammarCount = Math.ceil(target * 0.5);
     const vocabCount = target - grammarCount;
 
-    const prompt = [
-      "You craft a timed multistep placement test rendered in an SPA iframe (one screen per item; options are touch targets). Learner:",
-      `- Display name hint (do not repeat verbatim personal data): ${ctx.name}`,
-      "Output ONLY a JSON object — no prose, fences, BOM, markdown. Shape:",
-      '{"questions":[{"id":"qTEMP","type":"grammar","themeId":"workplace","prompt":"…","options":["…","…","…","…"],"correctIndex":0}]}',
-      "Hard rules:",
-      `- Exactly ${target} questions.`,
-      `- Type counts: ${grammarCount} "grammar", ${vocabCount} "vocabulary" (spell exactly).`,
-      "- Each prompt is one clear standalone item (sentence completion, cloze gap, synonym, collocation, error correction scenario). Prompt must not reveal the letter of the answer.",
-      "- Four options exactly; each ≤ 120 chars; natural English; duplicates forbidden.",
-      '- Do NOT prefix options with letters, numbers like "A." or bullets — plain answer text only.',
-      "- Exactly one objectively correct answer; correctIndex 0..3 references options array.",
-      '- themeId optional string from catalogue snapshot; fallback "daily_life".',
-      "- ids temporarily any short string — server will canonicalize.",
-      `- Calibrate roughly to CEFR prior: ${ctx.cefrHint}.`,
-      `- Theme knowledge tags for tone (generic scenarios only): ${ctx.knowledgeTags.join("; ")}`,
-      `Theme catalogue (JSON): ${themeSummary}`,
-    ].join("\n");
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.placementTest,
+      DEFAULT_PROMPT_PLACEMENT_TEST,
+      {
+        LEARNER_NAME: ctx.name,
+        TARGET_COUNT: String(target),
+        GRAMMAR_COUNT: String(grammarCount),
+        VOCAB_COUNT: String(vocabCount),
+        CEFR_HINT: ctx.cefrHint,
+        KNOWLEDGE_TAGS: ctx.knowledgeTags.join("; "),
+        THEME_CATALOG: themeSummary,
+      },
+    );
 
     try {
       const res = await fetch(apiUrl, {

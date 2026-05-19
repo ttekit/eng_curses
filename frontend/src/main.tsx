@@ -16,6 +16,7 @@ import { UserProvider } from "./context/UserContext";
 import VideoPage from "./pages/content/VideosPage";
 import CatalogSeriesPage from "./pages/content/CatalogSeriesPage";
 import WatchedLessonsPage from "./pages/content/WatchedLessonsPage";
+import LearnerRecapQuizPage from "./pages/content/LearnerRecapQuizPage";
 import LessonSummaryPage from "./pages/content/LessonSummaryPage";
 import RegisterSuccessPage from "./pages/registration/RegisterSuccessPage";
 import LandingPage from "./pages/landing/LandingPage";
@@ -88,6 +89,10 @@ const router = createBrowserRouter([
                 element: <Navigate to="/watched-lessons" replace />,
               },
               { path: "/watched-lessons", element: <WatchedLessonsPage /> },
+              {
+                path: "/watched-lessons/recap/:kind",
+                element: <LearnerRecapQuizPage />,
+              },
               { path: "/profileMain", element: <ProfileMain /> },
               { path: "/profile", element: <ProfileMain /> },
               {

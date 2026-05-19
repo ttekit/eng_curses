@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  AI_PROMPT_ENV_KEYS,
+  DEFAULT_PROMPT_POST_WATCH_SURVEY,
+} from 'src/config/ai-prompts.defaults';
+import { buildAiPrompt } from 'src/config/ai-prompts';
 
 export type PostWatchSurveyQuestion = {
   id: string;
@@ -22,17 +27,14 @@ export class PostWatchSurveyGeminiClient {
       return null;
     }
 
-    const prompt = [
-      'You create a short post-video survey for English language learners.',
-      'Return ONLY valid JSON: {"questions":[...]} with exactly 4 items.',
-      'Each question must be an object: {"id":"q1","type":"likert"|"short_text"|"mcq","prompt":"...","options":[]}',
-      'For type "likert" use 5 options: "Strongly disagree","Disagree","Neutral","Agree","Strongly agree".',
-      'For "mcq" use 3–4 short English options in "options".',
-      'For "short_text" omit options or use empty array [].',
-      'Questions should check understanding and reflection; reference the video theme only in general terms.',
-      `Video title: ${input.videoName}`,
-      `Description: ${input.videoDescription?.trim() || 'N/A'}`,
-    ].join('\n');
+    const prompt = buildAiPrompt(
+      AI_PROMPT_ENV_KEYS.postWatchSurvey,
+      DEFAULT_PROMPT_POST_WATCH_SURVEY,
+      {
+        VIDEO_NAME: input.videoName,
+        VIDEO_DESCRIPTION: input.videoDescription?.trim() || 'N/A',
+      },
+    );
 
     try {
       const response = await fetch(apiUrl, {
