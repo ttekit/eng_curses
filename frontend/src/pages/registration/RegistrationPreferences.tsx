@@ -115,7 +115,11 @@ export default function RegistrationPreferences() {
     e.preventDefault();
 
     try {
-      const result = await registerUser(formData, credentialMsgs, alerts.network);
+      const result = await registerUser(
+        formData,
+        credentialMsgs,
+        alerts.network,
+      );
 
       if (result.success) {
         const token = result.accessToken;
@@ -126,7 +130,9 @@ export default function RegistrationPreferences() {
         setPendingRegistrationLoginWelcome();
         navigate("/subscribe", { replace: true });
       } else {
-        alert(`${alerts.failedPrefix} ${result.message || alerts.failedFallback}`);
+        alert(
+          `${alerts.failedPrefix} ${result.message || alerts.failedFallback}`,
+        );
       }
     } catch (error) {
       console.error("Network or parsing error:", error);
@@ -204,9 +210,12 @@ export default function RegistrationPreferences() {
                   }
                   unitLabels={{
                     day: (lpLearn as any)?.timeToAchieveUnitDays || "Days",
-                    month: (lpLearn as any)?.timeToAchieveUnitMonths || "Months",
+                    month:
+                      (lpLearn as any)?.timeToAchieveUnitMonths || "Months",
                     year: (lpLearn as any)?.timeToAchieveUnitYears || "Years",
-                    unitSelectAria: (lpLearn as any)?.timeToAchieveUnitSelectAria || "Select unit",
+                    unitSelectAria:
+                      (lpLearn as any)?.timeToAchieveUnitSelectAria ||
+                      "Select unit",
                   }}
                 />
               </div>
@@ -216,7 +225,7 @@ export default function RegistrationPreferences() {
           <div className="space-y-3">
             <LabelRegister isRequired={false}>{t.genresLove}</LabelRegister>
             <p className="text-sm text-muted-foreground">{t.genresLoveHint}</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 ">
               {genreOptions.map((genre) => {
                 const inactive = hatedIds.includes(genre.value);
                 const active = favoriteIds.includes(genre.value);
@@ -227,7 +236,7 @@ export default function RegistrationPreferences() {
                     disabled={inactive}
                     onClick={() => toggleFavorite(genre.value)}
                     className={cn(
-                      "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+                      "rounded-lg px-3 py-1.5 text-sm font-medium hover:cursor-pointer transition-colors disabled:cursor-not-allowed disabled:opacity-45",
                       active
                         ? "bg-primary text-primary-foreground"
                         : inactive
@@ -256,7 +265,7 @@ export default function RegistrationPreferences() {
                     disabled={inactive}
                     onClick={() => toggleHated(genre.value)}
                     className={cn(
-                      "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+                      "rounded-lg px-3 py-1.5 text-sm hover:cursor-pointer font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45",
                       active
                         ? "bg-destructive text-destructive-foreground"
                         : inactive

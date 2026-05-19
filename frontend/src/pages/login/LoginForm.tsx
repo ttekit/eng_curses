@@ -18,7 +18,8 @@ import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
 
 function safeReturnPath(state: unknown): string | undefined {
-  if (!state || typeof state !== "object" || !("from" in state)) return undefined;
+  if (!state || typeof state !== "object" || !("from" in state))
+    return undefined;
   const raw = (state as { from?: unknown }).from;
   if (typeof raw !== "string" || raw.length === 0) return undefined;
   if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
@@ -171,9 +172,9 @@ export default function LoginForm() {
               onClick={() => setShowPassword((prev) => !prev)}
             >
               {showPassword ? (
-                <EyeOff className="size-5 opacity-70" />
+                <EyeOff className="hover:cursor-pointer size-5 opacity-70" />
               ) : (
-                <Eye className="size-5 opacity-70" />
+                <Eye className="hover:cursor-pointer size-5 opacity-70" />
               )}
             </button>
           </div>

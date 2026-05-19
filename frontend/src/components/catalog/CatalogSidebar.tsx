@@ -75,9 +75,7 @@ export function CatalogSidebar({
     }
     if (link.label === "Profile") {
       return (
-        pathname === "/profile" &&
-        tab !== "progress" &&
-        tab !== "settings"
+        pathname === "/profile" && tab !== "progress" && tab !== "settings"
       );
     }
     return pathname === link.to;
@@ -87,7 +85,7 @@ export function CatalogSidebar({
     <>
       <aside
         className={cn(
-          "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-600 lg:flex",
+          "fixed  bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-600 lg:flex",
           reserveTopNavSpace ? "top-18" : "top-0",
           collapsed ? "w-20" : "w-64 shadow-2xl",
         )}
@@ -95,7 +93,7 @@ export function CatalogSidebar({
         <button
           type="button"
           onClick={() => onCollapsedChange(!collapsed)}
-          className="absolute top-6 hover:cursor-pointer -right-3 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-muted"
+          className="z-50 absolute top-6 hover:cursor-pointer -right-3 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-muted"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
@@ -104,6 +102,28 @@ export function CatalogSidebar({
             <ChevronLeft className="h-3 w-3" />
           )}
         </button>
+        <div className="overflow-y-auto">
+          <div
+            className={cn(
+              "mx-3 my-3 flex items-center gap-3 rounded-3xl border border-border p-1",
+              collapsed && "justify-center",
+            )}
+          >
+            <img
+              src="/LandingProfile.svg"
+              className="w-8 h-8 m-2 hover:cursor-pointer shrink-0"
+            />
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-foreground/70">
+                  {welcomeName?.trim() ? `Hi, ${welcomeName}` : "Welcome back!"}
+                </p>
+                <p className="text-sm font-semibold text-accent">
+                  {englishLevel?.trim() ? `• Level ${englishLevel}` : "Explys"}
+                </p>
+              </div>
+            )}
+          </div>
 
         <div
           className={cn(
@@ -124,7 +144,6 @@ export function CatalogSidebar({
           )}
         </div>
 
-        {/* Скролбару сховано через класи, залишаючи можливість прокручувати елементи мишкою */}
         <div className="flex-1 overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex-col space-y-1 p-4">
             {sidebarLinks.map((link) => {

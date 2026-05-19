@@ -74,7 +74,11 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
-              <img src="/Icon.svg" className="w-54 h-62 animate-float" alt="" />
+              <img
+                src="/Greeting.svg"
+                className="w-54 h-62 animate-float"
+                alt=""
+              />
             </div>
           </div>
         </div>

@@ -25,7 +25,8 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
           Key vocabulary
         </h3>
         <p className="text-sm text-muted-foreground">
-          No curated words yet — open this lesson after captions are generated, or sign in so we can personalize terms for your level.
+          No curated words yet — open this lesson after captions are generated,
+          or sign in so we can personalize terms for your level.
         </p>
       </div>
     );
@@ -42,7 +43,10 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
         const meaning = item.meaning?.trim() ?? "";
 
         return (
-          <div key={index} className="overflow-hidden rounded-lg border border-border">
+          <div
+            key={index}
+            className="overflow-hidden rounded-lg border border-border"
+          >
             <button
               type="button"
               onClick={() =>
@@ -55,13 +59,13 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
                   className="rounded-full bg-primary/10 p-1.5 transition-colors hover:bg-primary/20"
                   aria-hidden
                 >
-                  <Volume2 className="h-4 w-4 text-primary" />
+                  <Volume2 className="h-4 w-4 hover:cursor-pointer text-primary" />
                 </span>
                 <span className="font-medium text-foreground">{item.word}</span>
               </div>
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 text-muted-foreground transition-transform",
+                  "h-4 w-4 text-muted-foreground hover:cursor-pointer transition-transform",
                   expandedIndex === index && "rotate-180",
                 )}
               />
@@ -70,9 +74,7 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
             {expandedIndex === index ? (
               <div className="space-y-2 px-3 pb-3">
                 <div className="pl-10">
-                  <p className="text-sm text-muted-foreground">
-                    {gray || "—"}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{gray || "—"}</p>
                   <div className="mt-2 rounded-lg bg-muted/50 p-2">
                     <p className="text-sm leading-relaxed text-foreground">
                       {meaning || "—"}

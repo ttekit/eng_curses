@@ -19,7 +19,7 @@ export function CtaSection() {
 
       <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
         <div className="mb-8 flex justify-center">
-          <img src="/Icon.svg" className="w-38 h-46 animate-float" alt="" />
+          <img src="/Greeting.svg" className="w-38 h-46 animate-float" alt="" />
         </div>
 
         <h2 className="font-display mb-6 text-balance text-3xl font-bold sm:text-4xl lg:text-5xl">
@@ -36,7 +36,7 @@ export function CtaSection() {
           <Link to={primaryTo}>
             <button
               type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-[15px] bg-primary px-6 py-7 text-lg font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-[15px] bg-primary px-5 py-5 text-lg font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:w-auto"
             >
               {primaryLabel}
               <ArrowRight className="h-7 w-7 shrink-0 p-0.5" />
@@ -44,7 +44,7 @@ export function CtaSection() {
           </Link>
           <Link
             to={{ pathname: "/", hash: "#how-explys-works" }}
-            className="flex w-full items-center justify-center rounded-[15px] border border-white/20 px-6 py-7 text-lg font-semibold text-foreground/85 backdrop-blur-sm transition-all hover:border-white/35 hover:bg-white/5 hover:text-white sm:w-auto"
+            className="flex text-foreground/70 hover:text-white rounded-[15px] px-5 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-5 text-lg font-semibold transition-colors hover:bg-muted-foreground/10"
           >
             {cta.howItWorks}
           </Link>

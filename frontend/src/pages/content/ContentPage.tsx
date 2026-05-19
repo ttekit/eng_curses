@@ -1,5 +1,12 @@
 import { Link, useNavigate, useParams } from "react-router";
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -12,7 +19,6 @@ import { apiFetch } from "../../lib/api";
 import { captureEvent } from "../../lib/analytics";
 import { cn } from "../../lib/utils";
 import VideoPlayer from "../../components/VideoPlayer";
-import { ChameleonMascot } from "../../components/ChameleonMascot";
 import { VideoVocabulary } from "../../components/content-watch/VideoVocabulary";
 import { VideoTranscript } from "../../components/content-watch/VideoTranscript";
 import { useUser } from "../../context/UserContext";
@@ -58,12 +64,11 @@ function mapApiTestsToQuiz(
 ): QuizQuestion[] {
   return tests.map((t, idx) => {
     const id =
-      typeof t.id === "string" && t.id.trim().length > 0 ?
-        t.id.trim()
+      typeof t.id === "string" && t.id.trim().length > 0
+        ? t.id.trim()
         : `t${idx + 1}`;
 
-    const isOpen =
-      t.questionType === "open" || t.category === "open";
+    const isOpen = t.questionType === "open" || t.category === "open";
 
     if (isOpen) {
       return {
@@ -83,15 +88,18 @@ function mapApiTestsToQuiz(
     while (opts.length < 4) opts.push("—");
     const options = opts.slice(0, 4);
     let ci =
-      typeof t.correctIndex === "number" && Number.isFinite(t.correctIndex) ?
-        Math.floor(t.correctIndex)
+      typeof t.correctIndex === "number" && Number.isFinite(t.correctIndex)
+        ? Math.floor(t.correctIndex)
         : 0;
     ci = Math.max(0, Math.min(options.length - 1, ci));
     const catRaw = t.category;
     const category =
-      catRaw === "grammar" ? ("grammar" as const)
-        : catRaw === "vocabulary" ? ("vocabulary" as const)
-          : catRaw === "comprehension" ? ("comprehension" as const)
+      catRaw === "grammar"
+        ? ("grammar" as const)
+        : catRaw === "vocabulary"
+          ? ("vocabulary" as const)
+          : catRaw === "comprehension"
+            ? ("comprehension" as const)
             : undefined;
 
     return {
@@ -172,7 +180,9 @@ const TRANSCRIPT_VOCAB_STOP = new Set(
 );
 
 /** When the tests API omits keyVocabulary or the request fails — mirror backend token pick. */
-function buildVocabularyFromTranscript(lines: TranscriptLine[]): VocabularyItem[] {
+function buildVocabularyFromTranscript(
+  lines: TranscriptLine[],
+): VocabularyItem[] {
   const text = lines.map((l) => l.text).join(" ");
   if (text.trim().length < 12) return [];
 
@@ -293,15 +303,15 @@ function extractOpenWrittenAnswer(
 }
 
 /** Reads coach text from submit JSON (handles alternate key shapes). */
-function readOpenEndedFeedbackFromSubmit(data: unknown): string | null | undefined {
+function readOpenEndedFeedbackFromSubmit(
+  data: unknown,
+): string | null | undefined {
   if (data == null || typeof data !== "object" || Array.isArray(data)) {
     return undefined;
   }
   const o = data as Record<string, unknown>;
   const raw =
-    o.openEndedFeedback ??
-    o.open_ended_feedback ??
-    o.openSummaryFeedback;
+    o.openEndedFeedback ?? o.open_ended_feedback ?? o.openSummaryFeedback;
   if (raw === null) return null;
   if (typeof raw === "string") {
     const t = raw.trim();
@@ -311,14 +321,14 @@ function readOpenEndedFeedbackFromSubmit(data: unknown): string | null | undefin
 }
 
 /** 1–10 written-summary score when present on submit response. */
-function readWrittenSummaryScoreFromSubmit(data: unknown): number | null | undefined {
+function readWrittenSummaryScoreFromSubmit(
+  data: unknown,
+): number | null | undefined {
   if (data == null || typeof data !== "object" || Array.isArray(data)) {
     return undefined;
   }
   const o = data as Record<string, unknown>;
-  const raw =
-    o.writtenSummaryScore ??
-    o.written_summary_score;
+  const raw = o.writtenSummaryScore ?? o.written_summary_score;
   if (raw === null) return null;
   if (typeof raw === "number" && Number.isFinite(raw)) {
     const r = Math.round(raw);
@@ -362,7 +372,7 @@ function ContentWatchHeader({
           </Link>
 
           <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center">
-            <ChameleonMascot size="sm" mood="happy" animate={false} />
+            <img src="/Icon.svg" className="w-15 h-18" />
             <span className="font-display truncate font-bold text-foreground">
               Explys
             </span>
@@ -372,10 +382,10 @@ function ContentWatchHeader({
             {rightLabel?.trim() ? rightLabel : null}
           </div>
         </div>
-        {playlistRibbon && playlistRibbon.total > 1 ?
+        {playlistRibbon && playlistRibbon.total > 1 ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
             <div className="flex min-w-0 items-center gap-2">
-              {playlistRibbon.prevVideoId != null ?
+              {playlistRibbon.prevVideoId != null ? (
                 <Link
                   to={`/content/${playlistRibbon.prevVideoId}`}
                   className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
@@ -383,7 +393,7 @@ function ContentWatchHeader({
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Link>
-              : (
+              ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-muted-foreground/50">
                   <ChevronLeft className="h-4 w-4" />
                   Previous
@@ -397,7 +407,7 @@ function ContentWatchHeader({
               Series {playlistRibbon.position} / {playlistRibbon.total}
             </Link>
             <div className="flex items-center gap-2">
-              {playlistRibbon.nextVideoId != null ?
+              {playlistRibbon.nextVideoId != null ? (
                 <Link
                   to={`/content/${playlistRibbon.nextVideoId}`}
                   className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
@@ -405,7 +415,7 @@ function ContentWatchHeader({
                   Next
                   <ChevronRight className="h-4 w-4" />
                 </Link>
-              : (
+              ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-muted-foreground/50">
                   Next
                   <ChevronRight className="h-4 w-4" />
@@ -413,7 +423,7 @@ function ContentWatchHeader({
               )}
             </div>
           </div>
-        : null}
+        ) : null}
       </div>
     </header>
   );
@@ -488,7 +498,7 @@ function TabBar({
           type="button"
           onClick={() => onTabChange(tab.id)}
           className={cn(
-            "-mb-px flex flex-1 items-center justify-center gap-2 border-border border-b-2 px-3 py-3 text-sm font-medium transition-colors sm:flex-none sm:px-4",
+            "-mb-px flex flex-1 items-center hover:cursor-pointer justify-center gap-2 border-border border-b-2 px-3 py-3 text-sm font-medium transition-colors sm:flex-none sm:px-4",
             activeTab === tab.id
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground",
@@ -595,9 +605,7 @@ export default function ContentPage() {
     gradingToken: string | null;
   } | null>(null);
   const [sideBundleLoading, setSideBundleLoading] = useState(false);
-  const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>(
-    [],
-  );
+  const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [playbackSec, setPlaybackSec] = useState(0);
   const [vocabularyHintMap, setVocabularyHintMap] = useState<
@@ -739,7 +747,9 @@ export default function ContentPage() {
         }
         const prevEp = idx > 0 ? parsed.episodes[idx - 1] : undefined;
         const nextEp =
-          idx < parsed.episodes.length - 1 ? parsed.episodes[idx + 1] : undefined;
+          idx < parsed.episodes.length - 1
+            ? parsed.episodes[idx + 1]
+            : undefined;
         if (!cancelled) {
           setPlaylistRibbon({
             friendlyLink: fl,
@@ -778,14 +788,14 @@ export default function ContentPage() {
           rawKeyVocabularyFromTestsPayload(body),
         );
         const quizQuestions =
-          Array.isArray(body.tests) && body.tests.length > 0 ?
-            mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+          Array.isArray(body.tests) && body.tests.length > 0
+            ? mapApiTestsToQuiz(
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
-          typeof body.gradingToken === "string" && body.gradingToken.length > 0 ?
-            body.gradingToken
+          typeof body.gradingToken === "string" && body.gradingToken.length > 0
+            ? body.gradingToken
             : null;
         setLessonSideBundle({
           vocabulary,
@@ -984,10 +994,7 @@ export default function ContentPage() {
         if (ready(b)) {
           return b;
         }
-        if (
-          !sideBundleLoadingRef.current &&
-          !ready(b)
-        ) {
+        if (!sideBundleLoadingRef.current && !ready(b)) {
           break;
         }
       }
@@ -1010,14 +1017,16 @@ export default function ContentPage() {
           b.quizQuestions.length > 0,
         );
 
-      let bundle: typeof lessonSideBundle =
-        readyBundle(lessonSideBundle) ? lessonSideBundle : null;
+      let bundle: typeof lessonSideBundle = readyBundle(lessonSideBundle)
+        ? lessonSideBundle
+        : null;
       if (!readyBundle(bundle) && Number.isFinite(vid) && vid > 0) {
         bundle = await waitForLessonSideBundleWithToken();
       }
 
-      const questions =
-        readyBundle(bundle) ? bundle!.quizQuestions : defaultQuizQuestions;
+      const questions = readyBundle(bundle)
+        ? bundle!.quizQuestions
+        : defaultQuizQuestions;
       const writtenSummaryText = extractOpenWrittenAnswer(
         summary.answersById,
         questions,
@@ -1046,7 +1055,7 @@ export default function ContentPage() {
 
           if (r.ok) {
             // ДОДАНО: Примусово оновлюємо дані користувача після відправки тесту
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1109,8 +1118,8 @@ export default function ContentPage() {
         themeTags,
         levelTags,
         quizReview:
-          summary.wrongReview.length > 0 ?
-            { wrong: summary.wrongReview }
+          summary.wrongReview.length > 0
+            ? { wrong: summary.wrongReview }
             : undefined,
         writtenSummaryText,
         writtenSummaryFeedback,
@@ -1144,9 +1153,7 @@ export default function ContentPage() {
         <SEO
           title="Урок"
           description="Интерактивный видеоурок английского на платформе Explys."
-          canonicalUrl={resolveCanonicalUrl(
-            id ? `/content/${id}` : "/catalog",
-          )}
+          canonicalUrl={resolveCanonicalUrl(id ? `/content/${id}` : "/catalog")}
         />
         <LoadingView />
       </>
@@ -1206,40 +1213,41 @@ export default function ContentPage() {
     (!lessonSideBundle?.gradingToken ||
       (lessonSideBundle.quizQuestions?.length ?? 0) === 0);
 
-  const quizPanel: ReactNode =
-    !isVideoComplete ?
-      <VideoQuiz
-        key={`quiz-lock-${id}`}
-        questions={defaultQuizQuestions}
-        isVideoComplete={false}
-        onComplete={handleQuizComplete}
+  const quizPanel: ReactNode = !isVideoComplete ? (
+    <VideoQuiz
+      key={`quiz-lock-${id}`}
+      questions={defaultQuizQuestions}
+      isVideoComplete={false}
+      onComplete={handleQuizComplete}
+    />
+  ) : quizWaitingForServer ? (
+    <div className="py-10 text-center">
+      <div
+        className="border-muted mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-primary border-solid"
+        aria-hidden
       />
-      : quizWaitingForServer ?
-        <div className="py-10 text-center">
-          <div
-            className="border-muted mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-primary border-solid"
-            aria-hidden
-          />
-          <p className="text-sm font-medium text-foreground">Loading your quiz…</p>
-          <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-muted-foreground">
-            Wait until questions from this lesson finish loading — then answers and written
-            feedback will match grading.
-          </p>
-        </div>
-        : quizServerFailed ?
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center text-sm">
-            <p className="font-semibold text-foreground">Quiz couldn’t be loaded.</p>
-            <p className="mt-2 text-muted-foreground">
-              Refresh the page. If the problem continues, the lesson tests service may be
-              unavailable.
-            </p>
-          </div>
-          : <VideoQuiz
-            key={`quiz-${id}-${lessonSideBundle!.gradingToken!.slice(0, 36)}`}
-            questions={lessonSideBundle!.quizQuestions}
-            isVideoComplete={true}
-            onComplete={handleQuizComplete}
-          />;
+      <p className="text-sm font-medium text-foreground">Loading your quiz…</p>
+      <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-muted-foreground">
+        Wait until questions from this lesson finish loading — then answers and
+        written feedback will match grading.
+      </p>
+    </div>
+  ) : quizServerFailed ? (
+    <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center text-sm">
+      <p className="font-semibold text-foreground">Quiz couldn’t be loaded.</p>
+      <p className="mt-2 text-muted-foreground">
+        Refresh the page. If the problem continues, the lesson tests service may
+        be unavailable.
+      </p>
+    </div>
+  ) : (
+    <VideoQuiz
+      key={`quiz-${id}-${lessonSideBundle!.gradingToken!.slice(0, 36)}`}
+      questions={lessonSideBundle!.quizQuestions}
+      isVideoComplete={true}
+      onComplete={handleQuizComplete}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
@@ -1261,7 +1269,7 @@ export default function ContentPage() {
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
-              <div className="overflow-hidden rounded-xl border border-border bg-muted ring-1 ring-border/40">
+              <div className="overflow-hidden rounded-xl mt-5 border border-border bg-muted ring-1 ring-border/40">
                 <VideoPlayer
                   src={videoData.videoLink}
                   onEnded={handleVideoEnded}
@@ -1284,8 +1292,8 @@ export default function ContentPage() {
                     <span className="text-sm text-accent">Watched</span>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      Watch {Math.round(WATCHED_COMPLETED_RATIO * 100)}% to unlock
-                      quiz
+                      Watch {Math.round(WATCHED_COMPLETED_RATIO * 100)}% to
+                      unlock quiz
                     </span>
                   )}
                 </div>
@@ -1322,7 +1330,9 @@ export default function ContentPage() {
                   <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
                   <div className="mt-0 max-h-[min(600px,70vh)] overflow-y-auto rounded-xl border border-border bg-card p-4">
                     <div
-                      className={activeTab === "vocabulary" ? "block" : "hidden"}
+                      className={
+                        activeTab === "vocabulary" ? "block" : "hidden"
+                      }
                       aria-hidden={activeTab !== "vocabulary"}
                     >
                       {sideBundleLoading ? (
@@ -1330,11 +1340,15 @@ export default function ContentPage() {
                           Preparing personalised key vocabulary…
                         </p>
                       ) : (
-                        <VideoVocabulary vocabulary={enrichedDisplayVocabulary} />
+                        <VideoVocabulary
+                          vocabulary={enrichedDisplayVocabulary}
+                        />
                       )}
                     </div>
                     <div
-                      className={activeTab === "transcript" ? "block" : "hidden"}
+                      className={
+                        activeTab === "transcript" ? "block" : "hidden"
+                      }
                       aria-hidden={activeTab !== "transcript"}
                     >
                       <VideoTranscript
