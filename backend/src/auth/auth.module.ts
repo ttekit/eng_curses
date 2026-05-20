@@ -17,6 +17,7 @@ import { MailModule } from "src/common/mail/mail.module";
 import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service";
 import { PasswordRecoveryController } from "./password-recovery/password-recovery.controller";
 import { PasswordRecoveryService } from "./password-recovery/password-recovery.service";
+import { TurnstileGuard } from "./guards/turnstile.guard";
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { PasswordRecoveryService } from "./password-recovery/password-recovery.s
     ApiTokenOnlyGuard,
     JwtAdminGuard,
     UserSelfOrApiGuard,
+    TurnstileGuard,
     UsersService,
     TwoFactorAuthService,
     PasswordRecoveryService,
@@ -58,6 +60,7 @@ import { PasswordRecoveryService } from "./password-recovery/password-recovery.s
     ApiTokenOnlyGuard,
     JwtAdminGuard,
     UserSelfOrApiGuard,
+    TurnstileGuard,
   ],
 })
 export class AuthModule {}
