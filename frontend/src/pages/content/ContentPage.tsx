@@ -558,6 +558,7 @@ function TabPanels({
           loading={transcriptLoading}
           playbackSec={playbackSec}
           onSeek={onSeekTranscript}
+          vocabulary={vocabulary}
         />
       </div>
       <div
@@ -1384,6 +1385,7 @@ export default function ContentPage() {
                         loading={transcriptLoading}
                         playbackSec={playbackSec}
                         onSeek={seekToCue}
+                        vocabulary={enrichedDisplayVocabulary}
                       />
                     </div>
                     <div
