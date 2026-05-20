@@ -18,4 +18,9 @@ export class ProfileController {
         const userId = Number(req.user.id || req.user.sub);
         return this.profileService.getActivityLog(userId);
     }
+    @Get('progress-details')
+    async getProgressDetails(@Request() req) {
+        const userId = Number(req.user.id || req.user.sub);
+        return this.profileService.getProgressDetails(userId);
+    }
 }

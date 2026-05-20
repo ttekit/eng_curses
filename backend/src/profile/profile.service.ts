@@ -155,4 +155,88 @@ export class ProfileService {
         // Убираем rawDate перед отправкой на фронтенд
         return logs.slice(0, 7).map(({ rawDate, ...rest }) => rest);
     }
+
+    async getProgressDetails(userId: number) {
+        if (!userId || Number.isNaN(userId)) {
+            throw new BadRequestException('Invalid user ID');
+        }
+
+        const totalWords = await this.prisma.userVocabulary.count({
+            where: { userId },
+        });
+
+        const masteredWords = await this.prisma.userVocabulary.count({
+            where: {
+                userId,
+                mastery: { gte: 0.8 },
+            },
+        });
+
+        const reviewingWords = Math.max(0, totalWords - masteredWords);
+
+        const vocabularyProgress = {
+            total: Math.max(1000, Math.ceil((totalWords + 1) / 500) * 500),
+            learned: totalWords,
+            mastered: masteredWords,
+            reviewing: reviewingWords,
+        };
+
+        const recentSessions = await this.prisma.watchSession.findMany({
+            where: { userId },
+            orderBy: { endedAt: 'desc' },
+            take: 4,
+            include: { contentVideo: true },
+        });
+
+        const recentVideos = await Promise.all(
+            recentSessions.map(async (session) => {
+                const test = await this.prisma.comprehensionTestAttempt.findFirst({
+                    where: { userId, contentVideoId: session.contentVideoId },
+                    orderBy: { createdAt: 'desc' },
+                });
+
+                return {
+                    id: String(session.id),
+                    title: session.contentVideo?.videoName || 'Video Lesson',
+                    category: 'General',
+                    completed: session.completed,
+                    score: test ? Math.round(test.scorePct) : 0,
+                    progress: session.completed ? 100 : 50,
+                };
+            }),
+        );
+
+        const completedVideosCount = await this.prisma.watchSession.count({
+            where: { userId, completed: true },
+        });
+
+        const learningPaths = [
+            {
+                id: 'business',
+                title: 'Business English',
+                description: 'Professional communication for the workplace',
+                progress: totalWords > 0 ? Math.min(100, Math.round((masteredWords / totalWords) * 100)) : 0,
+                totalVideos: 12,
+                completedVideos: Math.min(12, completedVideosCount),
+                level: 'B2',
+                accentClass: 'bg-primary',
+            },
+            {
+                id: 'travel',
+                title: 'Travel & Conversation',
+                description: 'Essential phrases for traveling abroad',
+                progress: totalWords > 0 ? Math.min(100, Math.round((totalWords / 100) * 100)) : 0,
+                totalVideos: 10,
+                completedVideos: Math.min(10, completedVideosCount),
+                level: 'B1',
+                accentClass: 'bg-accent',
+            },
+        ];
+
+        return {
+            vocabularyProgress,
+            recentVideos,
+            learningPaths,
+        };
+    }
 }

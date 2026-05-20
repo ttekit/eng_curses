@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle, ChevronRight, Lock, PlayCircle } from "lucide-react";
+import { CheckCircle, ChevronRight, Lock, PlayCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { cn } from "../../lib/utils";
 import { apiFetch } from "../../lib/api";
@@ -16,81 +16,39 @@ type KnowledgeTagRow = {
   topicCount: number;
 };
 
-const learningPaths = [
-  {
-    id: "business",
-    title: "Business English",
-    description: "Professional communication for the workplace",
-    progress: 65,
-    totalVideos: 24,
-    completedVideos: 16,
-    level: "B2",
-    accentClass: "bg-primary",
-  },
-  {
-    id: "travel",
-    title: "Travel & Conversation",
-    description: "Essential phrases for traveling abroad",
-    progress: 40,
-    totalVideos: 18,
-    completedVideos: 7,
-    level: "B1",
-    accentClass: "bg-accent",
-  },
-  {
-    id: "academic",
-    title: "Academic English",
-    description: "Writing and presentation skills",
-    progress: 20,
-    totalVideos: 30,
-    completedVideos: 6,
-    level: "C1",
-    accentClass: "bg-primary/70",
-  },
-] as const;
-
-const recentVideos = [
-  {
-    id: "1",
-    title: "The Office — Business Meeting",
-    category: "Business",
-    completed: true,
-    score: 85,
-  },
-  {
-    id: "2",
-    title: "TED Talk: The Power of Vulnerability",
-    category: "Motivation",
-    completed: true,
-    score: 92,
-  },
-  {
-    id: "3",
-    title: "Friends — The One with the Interview",
-    category: "Casual",
-    completed: false,
-    progress: 80,
-  },
-  {
-    id: "4",
-    title: "Breaking Bad — Chemistry Lesson",
-    category: "Drama",
-    completed: false,
-    progress: 0,
-  },
-] as const;
-
-const vocabularyProgress = {
-  total: 1250,
-  learned: 847,
-  mastered: 523,
-  reviewing: 324,
+type ProgressDetails = {
+  vocabularyProgress: {
+    total: number;
+    learned: number;
+    mastered: number;
+    reviewing: number;
+  };
+  recentVideos: {
+    id: string;
+    title: string;
+    category: string;
+    completed: boolean;
+    score: number;
+    progress?: number;
+  }[];
+  learningPaths: {
+    id: string;
+    title: string;
+    description: string;
+    progress: number;
+    totalVideos: number;
+    completedVideos: number;
+    level: string;
+    accentClass: string;
+  }[];
 };
 
 export function ProfileProgress() {
   const { user } = useUser();
   const [tagRows, setTagRows] = useState<KnowledgeTagRow[] | null>(null);
   const [tagsError, setTagsError] = useState<string | null>(null);
+  const [isTagsExpanded, setIsTagsExpanded] = useState(false);
+  const [details, setDetails] = useState<ProgressDetails | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -144,6 +102,24 @@ export function ProfileProgress() {
     };
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    void (async () => {
+      const r = await apiFetch("/profile/progress-details", {
+        method: "GET",
+      });
+      if (!r.ok || cancelled) return;
+      const data = await r.json();
+      setDetails(data as ProgressDetails);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const visibleTags = tagRows ? (isTagsExpanded ? tagRows : tagRows.slice(0, 4)) : [];
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -170,59 +146,77 @@ export function ProfileProgress() {
             .
           </p>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-1">
-            {tagRows.map((row) => (
-              <li
-                key={row.name}
-                className="rounded-xl border border-border/40 bg-secondary/25 p-4"
-              >
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground">{row.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Averaged over {row.topicCount}{" "}
-                      {row.topicCount === 1 ? "topic" : "topics"}
-                    </p>
+          <div className="space-y-4">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-1">
+              {visibleTags.map((row) => (
+                <li
+                  key={row.name}
+                  className="rounded-xl border border-border/40 bg-secondary/25 p-4"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">{row.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Averaged over {row.topicCount}{" "}
+                        {row.topicCount === 1 ? "topic" : "topics"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-primary">
+                      {pct01(row.score)}%
+                    </span>
                   </div>
-                  <span className="shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-primary">
-                    {pct01(row.score)}%
-                  </span>
-                </div>
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Overall
-                </p>
-                <div className="mb-3 h-2 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${pct01(row.score)}%` }}
-                  />
-                </div>
-                <div className="space-y-2.5 pt-1">
-                  <SkillBar
-                    label="Listening"
-                    value={row.listening}
-                    barClass="bg-sky-500/80 dark:bg-sky-400/90"
-                  />
-                  <SkillBar
-                    label="Vocabulary"
-                    value={row.vocabulary}
-                    barClass="bg-violet-500/80 dark:bg-violet-400/85"
-                  />
-                  <SkillBar
-                    label="Grammar"
-                    value={row.grammar}
-                    barClass="bg-amber-500/75 dark:bg-amber-400/80"
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Overall
+                  </p>
+                  <div className="mb-3 h-2 overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${pct01(row.score)}%` }}
+                    />
+                  </div>
+                  <div className="space-y-2.5 pt-1">
+                    <SkillBar
+                      label="Listening"
+                      value={row.listening}
+                      barClass="bg-sky-500/80 dark:bg-sky-400/90"
+                    />
+                    <SkillBar
+                      label="Vocabulary"
+                      value={row.vocabulary}
+                      barClass="bg-violet-500/80 dark:bg-violet-400/85"
+                    />
+                    <SkillBar
+                      label="Grammar"
+                      value={row.grammar}
+                      barClass="bg-amber-500/75 dark:bg-amber-400/80"
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {tagRows.length > 4 && (
+              <button
+                onClick={() => setIsTagsExpanded((prev) => !prev)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/40 bg-secondary/20 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary/50"
+              >
+                {isTagsExpanded ? (
+                  <>
+                    Show less <ChevronUp className="size-4" />
+                  </>
+                ) : (
+                  <>
+                    Show all {tagRows.length} tags <ChevronDown className="size-4" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         )}
       </ProfileCard>
 
       <ProfileCard title="Learning paths">
         <div className="space-y-4">
-          {learningPaths.map((path) => (
+          {(details?.learningPaths || []).map((path) => (
             <div
               key={path.id}
               className="rounded-xl bg-secondary/30 p-4 transition-colors hover:bg-secondary/50"
@@ -282,7 +276,7 @@ export function ProfileProgress() {
         }
       >
         <div className="space-y-3">
-          {recentVideos.map((video) => (
+          {(details?.recentVideos || []).map((video) => (
             <div
               key={video.id}
               className="flex items-center gap-4 rounded-lg p-3 transition-colors hover:bg-secondary/30"
@@ -292,14 +286,14 @@ export function ProfileProgress() {
                   "flex size-10 shrink-0 items-center justify-center rounded-lg",
                   video.completed
                     ? "bg-accent/20"
-                    : video.progress > 0
+                    : (video.progress ?? 0) > 0
                       ? "bg-primary/20"
                       : "bg-secondary",
                 )}
               >
                 {video.completed ? (
                   <CheckCircle className="size-5 text-accent" />
-                ) : video.progress > 0 ? (
+                ) : (video.progress ?? 0) > 0 ? (
                   <PlayCircle className="size-5 text-primary" />
                 ) : (
                   <Lock className="size-5 text-muted-foreground" />
@@ -318,7 +312,7 @@ export function ProfileProgress() {
                   <span className="rounded-md bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
                     Score: {video.score}%
                   </span>
-                ) : video.progress > 0 ? (
+                ) : (video.progress ?? 0) > 0 ? (
                   <span className="text-sm text-muted-foreground">
                     {video.progress}%
                   </span>
@@ -334,72 +328,73 @@ export function ProfileProgress() {
       </ProfileCard>
 
       <ProfileCard title="Vocabulary progress">
-        <div className="mb-6 grid grid-cols-2 gap-4">
-          <div className="rounded-xl bg-secondary/30 p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">
-              {vocabularyProgress.total}
-            </p>
-            <p className="text-sm text-muted-foreground">Total words</p>
-          </div>
-          <div className="rounded-xl bg-primary/10 p-4 text-center">
-            <p className="text-3xl font-bold text-primary">
-              {vocabularyProgress.learned}
-            </p>
-            <p className="text-sm text-muted-foreground">Learned</p>
-          </div>
-          <div className="rounded-xl bg-accent/10 p-4 text-center">
-            <p className="text-3xl font-bold text-accent">
-              {vocabularyProgress.mastered}
-            </p>
-            <p className="text-sm text-muted-foreground">Mastered</p>
-          </div>
-          <div className="rounded-xl bg-muted/50 p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">
-              {vocabularyProgress.reviewing}
-            </p>
-            <p className="text-sm text-muted-foreground">Reviewing</p>
-          </div>
-        </div>
+        {details?.vocabularyProgress && (
+          <>
+            <div className="mb-6 grid grid-cols-2 gap-4">
+              <div className="rounded-xl bg-secondary/30 p-4 text-center">
+                <p className="text-3xl font-bold text-foreground">
+                  {details.vocabularyProgress.total}
+                </p>
+                <p className="text-sm text-muted-foreground">Total words</p>
+              </div>
+              <div className="rounded-xl bg-primary/10 p-4 text-center">
+                <p className="text-3xl font-bold text-primary">
+                  {details.vocabularyProgress.learned}
+                </p>
+                <p className="text-sm text-muted-foreground">Learned</p>
+              </div>
+              <div className="rounded-xl bg-accent/10 p-4 text-center">
+                <p className="text-3xl font-bold text-accent">
+                  {details.vocabularyProgress.mastered}
+                </p>
+                <p className="text-sm text-muted-foreground">Mastered</p>
+              </div>
+              <div className="rounded-xl bg-muted/50 p-4 text-center">
+                <p className="text-3xl font-bold text-foreground">
+                  {details.vocabularyProgress.reviewing}
+                </p>
+                <p className="text-sm text-muted-foreground">Reviewing</p>
+              </div>
+            </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Overall progress</span>
-            <span className="font-medium text-foreground">
-              {Math.round(
-                (vocabularyProgress.learned / vocabularyProgress.total) * 100,
-              )}
-              %
-            </span>
-          </div>
-          <div className="flex h-4 overflow-hidden rounded-full bg-secondary">
-            <div
-              className="h-full bg-accent"
-              style={{
-                width: `${(vocabularyProgress.mastered / vocabularyProgress.total) * 100}%`,
-              }}
-            />
-            <div
-              className="h-full bg-primary"
-              style={{
-                width: `${((vocabularyProgress.learned - vocabularyProgress.mastered) / vocabularyProgress.total) * 100}%`,
-              }}
-            />
-          </div>
-          <div className="flex gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-accent" /> Mastered
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-primary" /> Learning
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-secondary" /> Remaining
-            </span>
-          </div>
-        </div>
-        <p className="mt-4 text-xs text-muted-foreground">
-          Sample data — vocabulary stats will connect to your saved words.
-        </p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Overall progress</span>
+                <span className="font-medium text-foreground">
+                  {Math.round(
+                    (details.vocabularyProgress.learned / details.vocabularyProgress.total) * 100,
+                  )}
+                  %
+                </span>
+              </div>
+              <div className="flex h-4 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full bg-accent"
+                  style={{
+                    width: `${(details.vocabularyProgress.mastered / details.vocabularyProgress.total) * 100}%`,
+                  }}
+                />
+                <div
+                  className="h-full bg-primary"
+                  style={{
+                    width: `${((details.vocabularyProgress.learned - details.vocabularyProgress.mastered) / details.vocabularyProgress.total) * 100}%`,
+                  }}
+                />
+              </div>
+              <div className="flex gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="size-2 rounded-full bg-accent" /> Mastered
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="size-2 rounded-full bg-primary" /> Learning
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="size-2 rounded-full bg-secondary" /> Remaining
+                </span>
+              </div>
+            </div>
+          </>
+        )}
       </ProfileCard>
     </div>
   );
