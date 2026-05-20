@@ -81,8 +81,8 @@ export class ProfileService {
         const processDate = (dateToProcess: Date | null | undefined) => {
             if (!dateToProcess) return;
             const utcDow = dateToProcess.getUTCDay();
-            const idx = utcDow === 0 ? 6 : utcDow - 1; // Превращаем 0 (Вс) в 6, остальные сдвигаем
-            minutesMonSun[idx] += 1; // Записываем условную "1 минуту", чтобы огонек загорелся
+            const idx = utcDow === 0 ? 6 : utcDow - 1;
+            minutesMonSun[idx] += 1;
         };
 
         weekSessions.forEach(s => processDate(s.endedAt));
@@ -93,9 +93,17 @@ export class ProfileService {
             minutes: minutesMonSun[i],
         }));
 
+        const watchSum = await this.prisma.watchSession.aggregate({
+            where: { userId },
+            _sum: { secondsWatched: true },
+        });
+
+
+
+        const totalSeconds = Number(watchSum?._sum?.secondsWatched ?? 0);
+
         return {
-            totalWatchTimeMin: 0,
-            videosCompleted: watchedVideosCount,
+            totalWatchTimeMin: Math.floor(totalSeconds / 60), videosCompleted: watchedVideosCount,
             testsCompleted: testsCompleted,
             averageScore: averageScore,
             weeklyActivity,

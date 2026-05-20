@@ -636,49 +636,44 @@ export class AuthService {
       throw new ForbiddenException("Account suspended");
     }
 
-    const [watchSum, distinctVideos, quizAgg, weekSessions] = await Promise.all(
-      [
-        this.prisma.watchSession.aggregate({
-          where: { userId },
-          _sum: { secondsWatched: true },
-        }),
-        this.prisma.watchSession.findMany({
-          where: { userId, completed: true },
-          select: { contentVideoId: true },
-          distinct: ["contentVideoId"],
-        }),
-        this.prisma.comprehensionTestAttempt.aggregate({
-          where: { userId },
-          _avg: { scorePct: true },
-          _count: { _all: true },
-        }),
-        (() => {
-          const { weekStart, weekEndExclusive } = this.utcWeekRange();
-          return this.prisma.watchSession.findMany({
-            where: {
-              userId,
-              endedAt: {
-                gte: weekStart,
-                lt: weekEndExclusive,
-              },
-            },
-            select: { endedAt: true, secondsWatched: true },
-          });
-        })(),
-      ],
-    );
+    const [watchSum, distinctVideos, quizAgg, weekSessions] = await Promise.all([
+      this.prisma.watchSession.aggregate({
+        where: { userId },
+        _sum: { secondsWatched: true },
+      }),
+      this.prisma.watchSession.findMany({
+        where: { userId, completed: true },
+        select: { contentVideoId: true },
+        distinct: ["contentVideoId"],
+      }),
+      this.prisma.comprehensionTestAttempt.aggregate({
+        where: { userId },
+        _avg: { scorePct: true },
+        _count: { _all: true },
+      }),
+      (() => {
+        const { weekStart, weekEndExclusive } = this.utcWeekRange();
+        return this.prisma.watchSession.findMany({
+          where: {
+            userId,
+            endedAt: { gte: weekStart, lt: weekEndExclusive },
+          },
+          select: { endedAt: true, secondsWatched: true },
+        });
+      })(),
+    ]);
 
-    const totalSeconds = watchSum?._sum?.secondsWatched ?? 0;
-    const totalWatchTimeMin = Math.round(Number(totalSeconds) / 60);
-    const videosCompleted = Array.isArray(distinctVideos)
-      ? distinctVideos.length
-      : 0;
+    const totalSeconds = Number(watchSum?._sum?.secondsWatched ?? 0);
+
+    const totalWatchTimeMin = Math.floor(totalSeconds / 60)
+    // const totalWatchTimeSec = totalSeconds;
+
+    const videosCompleted = Array.isArray(distinctVideos) ? distinctVideos.length : 0;
     const testsCompleted = quizAgg?._count?._all ?? 0;
     const rawAvg = quizAgg?._avg?.scorePct;
-    const averageScore =
-      typeof rawAvg === "number" && Number.isFinite(rawAvg)
-        ? Math.round(rawAvg)
-        : null;
+    const averageScore = typeof rawAvg === "number" && Number.isFinite(rawAvg)
+      ? Math.round(rawAvg)
+      : null;
 
     const minutesMonSun = [0, 0, 0, 0, 0, 0, 0];
     const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -697,6 +692,7 @@ export class AuthService {
 
     return {
       totalWatchTimeMin,
+      // totalWatchTimeSec,
       videosCompleted,
       testsCompleted,
       averageScore,
