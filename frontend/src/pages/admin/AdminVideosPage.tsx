@@ -636,7 +636,10 @@ export default function AdminVideosPage() {
             <code className="text-xs">PATCH /contents/:id/playlist</code>.
           </p>
         </div>
-        <AdminButton className="gap-2" onClick={() => setUploadOpen(true)}>
+        <AdminButton
+          className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          onClick={() => setUploadOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Upload video
         </AdminButton>
