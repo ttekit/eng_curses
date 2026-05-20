@@ -675,9 +675,6 @@ export class AuthService {
       : 0;
     const testsCompleted = quizAgg?._count?._all ?? 0;
     const rawAvg = quizAgg?._avg?.scorePct;
-
-    // Принудительно превращаем в число, если там строка или undefined
-    const scoreNum = parseFloat(String(rawAvg));
     const averageScore =
       typeof rawAvg === "number" && Number.isFinite(rawAvg)
         ? Math.round(rawAvg)
@@ -855,14 +852,22 @@ export class AuthService {
       console.error(e);
     }
 
+    const businessCount = await this.prisma.watchSession.count({
+      where: { userId, completed: true, contentVideo: { content: { category: { name: "Business English" } } } },
+    });
+
+    const travelCount = await this.prisma.watchSession.count({
+      where: { userId, completed: true, contentVideo: { content: { category: { name: "Travel & Conversation" } } } },
+    });
+
     const learningPaths = [
       {
         id: 'business',
         title: 'Business English',
         description: 'Professional communication for the workplace',
-        progress: totalWords > 0 ? Math.min(100, Math.round((masteredWords / totalWords) * 100)) : 0,
+        progress: Math.min(100, Math.round((businessCount / 12) * 100)),
         totalVideos: 12,
-        completedVideos: Math.min(12, completedVideosCount),
+        completedVideos: businessCount,
         level: 'B2',
         accentClass: 'bg-primary',
       },
@@ -870,9 +875,9 @@ export class AuthService {
         id: 'travel',
         title: 'Travel & Conversation',
         description: 'Essential phrases for traveling abroad',
-        progress: totalWords > 0 ? Math.min(100, Math.round((learnedWords / totalWords) * 100)) : 0,
+        progress: Math.min(100, Math.round((travelCount / 10) * 100)),
         totalVideos: 10,
-        completedVideos: Math.min(10, completedVideosCount),
+        completedVideos: travelCount,
         level: 'B1',
         accentClass: 'bg-accent',
       },

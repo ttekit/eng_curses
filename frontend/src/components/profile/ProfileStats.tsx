@@ -147,8 +147,8 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* График активности */}
         <ProfileCard title="Weekly activity">
-          <div className="h-[200px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[200px] w-full mt-4 overflow-hidden">
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <AreaChart data={weeklyActivity}>
                 <defs>
                   <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
