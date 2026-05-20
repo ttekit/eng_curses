@@ -371,8 +371,7 @@ export default function AdminVideosPage() {
     }
     setEditSeriesSaving(true);
     try {
-      // ВАЖНО: Если на бэкенде роут для обновления категории называется иначе, поменяй URL здесь.
-      // Например: `/contents/category/${editSeriesGroup.contentRootId}`
+
       const res = await apiFetch(`/contents/${editSeriesGroup.contentRootId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

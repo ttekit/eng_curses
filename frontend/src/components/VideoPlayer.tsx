@@ -194,7 +194,7 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.setPointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
     evaluatePosition(e.clientX);
   };
@@ -209,7 +209,7 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
     if (videoRef.current) {
       videoRef.current.currentTime = currentTime;
@@ -282,14 +282,36 @@ export default function VideoPlayer({
     videoRef.current.playbackRate = speed;
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      void containerRef.current.requestFullscreen();
+      try {
+        await containerRef.current.requestFullscreen();
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape").catch(() => { });
+        }
+      } catch (err) { }
     } else {
-      void document.exitFullscreen();
+      try {
+        await document.exitFullscreen();
+      } catch (err) { }
     }
   };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
