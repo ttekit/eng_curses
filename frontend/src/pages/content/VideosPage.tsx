@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   apiFetch,
@@ -27,7 +27,7 @@ import {
   CatalogSpotlight,
   type CatalogSpotlightItem,
 } from "../../components/catalog/CatalogSpotlight";
-import type { CatalogCardVideo } from "../../components/catalog/CatalogVideoCard";
+import { CatalogVideoCard, type CatalogCardVideo } from "../../components/catalog/CatalogVideoCard";
 import { cn } from "../../lib/utils";
 import {
   buildClientRecommendedVideos,
@@ -36,7 +36,7 @@ import {
 } from "../../lib/contentRecommendations";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
-import { Layers } from "lucide-react";
+import { Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ContentVideo {
@@ -118,6 +118,21 @@ export default function VideoPage() {
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
+
+  const levelScrollRef = useRef<HTMLDivElement>(null);
+  const genreScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollContainer = useCallback(
+    (ref: React.RefObject<HTMLDivElement | null>, dir: "left" | "right") => {
+      if (ref.current) {
+        ref.current.scrollBy({
+          left: dir === "left" ? -250 : 250,
+          behavior: "smooth",
+        });
+      }
+    },
+    []
+  );
 
   const cb = locale === "uk" ? appUk.catalogBrowse : appEn.catalogBrowse;
 
@@ -451,13 +466,14 @@ export default function VideoPage() {
       : null;
   }, [featured]);
 
+  const hasFilters =
+    selectedCategory !== "All" ||
+    selectedLevel !== "All" ||
+    selectedGenre !== "All";
+
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
-    if (
-      selectedCategory !== "All" ||
-      selectedLevel !== "All" ||
-      selectedGenre !== "All"
-    ) {
+    if (hasFilters) {
       const sorted = [...filteredVideos].sort((a, b) => {
         const ma =
           typeof a.content.playlistPosition === "number"
@@ -526,7 +542,7 @@ export default function VideoPage() {
           videos: sorted.map(toCardVideo),
         };
       });
-  }, [filteredVideos, selectedCategory, selectedLevel, selectedGenre]);
+  }, [filteredVideos, selectedCategory, selectedLevel, selectedGenre, hasFilters]);
 
   const visibleRecommended = useMemo(() => {
     if (recommendedCards.length === 0) {
@@ -587,17 +603,26 @@ export default function VideoPage() {
           >
             <CatalogHero featured={featuredHero} />
 
-            {/* Filters */}
             <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
-                <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
                     <Layers className="size-3.5" /> Level
                   </span>
-                  <div className="relative">
+                  <div className="relative group/level flex w-full items-center">
                     <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+
+                    <button
+                      type="button"
+                      onClick={() => scrollContainer(levelScrollRef, "left")}
+                      className="absolute left-0 z-20 hidden h-7 w-7 -translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/level:flex hover:bg-muted"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
                     <div
-                      className="flex gap-1.5 overflow-x-auto pb-1"
+                      ref={levelScrollRef}
+                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full"
                       style={{
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
@@ -619,11 +644,19 @@ export default function VideoPage() {
                         </button>
                       ))}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => scrollContainer(levelScrollRef, "right")}
+                      className="absolute right-0 z-20 hidden h-7 w-7 translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/level:flex hover:bg-muted"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
 
                 {genreNames.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                     <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
                       <img
                         src="/Icon.svg"
@@ -632,10 +665,20 @@ export default function VideoPage() {
                       />{" "}
                       Genre
                     </span>
-                    <div className="relative">
+                    <div className="relative group/genre flex w-full items-center">
                       <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+
+                      <button
+                        type="button"
+                        onClick={() => scrollContainer(genreScrollRef, "left")}
+                        className="absolute left-0 z-20 hidden h-7 w-7 -translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/genre:flex hover:bg-muted"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
                       <div
-                        className="flex gap-1.5 overflow-x-auto pb-1"
+                        ref={genreScrollRef}
+                        className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full"
                         style={{
                           scrollbarWidth: "none",
                           msOverflowStyle: "none",
@@ -657,6 +700,14 @@ export default function VideoPage() {
                           </button>
                         ))}
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => scrollContainer(genreScrollRef, "right")}
+                        className="absolute right-0 z-20 hidden h-7 w-7 translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/genre:flex hover:bg-muted"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -689,6 +740,19 @@ export default function VideoPage() {
                       : (messages.catalogPage as any)?.emptyFiltered ||
                       "No videos match your filters."}
                   </p>
+                </div>
+              ) : hasFilters ? (
+                <div className="space-y-6">
+                  <h2 className="font-display text-xl font-bold text-foreground">
+                    Filtered Results
+                    {selectedLevel !== "All" ? ` - ${selectedLevel}` : ""}
+                    {selectedGenre !== "All" ? ` - ${selectedGenre}` : ""}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                    {filteredVideos.map((video) => (
+                      <CatalogVideoCard key={video.id} video={toCardVideo(video)} />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
