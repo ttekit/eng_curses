@@ -171,6 +171,7 @@ export default function AdminVideosPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
 
+  // Стейты для редактирования видео
   const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -179,7 +180,11 @@ export default function AdminVideosPage() {
     false | "tags" | "cefr" | "captions"
   >(false);
 
-  // Обновленный стейт удаления (храним объект видео и режим удаления)
+  // Стейты для редактирования названия серии (плейлиста)
+  const [editSeriesGroup, setEditSeriesGroup] = useState<AdminVideoSeriesGroup | null>(null);
+  const [editSeriesName, setEditSeriesName] = useState("");
+  const [editSeriesSaving, setEditSeriesSaving] = useState(false);
+
   const [deleteCandidate, setDeleteCandidate] = useState<{
     video: AdminCatalogVideoRow;
     mode: "series" | "episode";
@@ -349,6 +354,40 @@ export default function AdminVideosPage() {
       toast.error(e instanceof Error ? e.message : "Update failed");
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  const openEditSeries = useCallback((group: AdminVideoSeriesGroup) => {
+    setEditSeriesGroup(group);
+    setEditSeriesName(group.seriesName);
+  }, []);
+
+  const handleSaveSeriesEdit = async () => {
+    if (!editSeriesGroup) return;
+    const name = editSeriesName.trim();
+    if (name.length < 2) {
+      toast.error("Series name must be at least 2 characters");
+      return;
+    }
+    setEditSeriesSaving(true);
+    try {
+      // ВАЖНО: Если на бэкенде роут для обновления категории называется иначе, поменяй URL здесь.
+      // Например: `/contents/category/${editSeriesGroup.contentRootId}`
+      const res = await apiFetch(`/contents/${editSeriesGroup.contentRootId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update series name");
+
+      toast.success("Series name updated");
+      setEditSeriesGroup(null);
+      await loadVideos();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    } finally {
+      setEditSeriesSaving(false);
     }
   };
 
@@ -854,6 +893,43 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
+      {/* Новая модалка для редактирования названия плейлиста (серии) */}
+      <AdminModal
+        open={editSeriesGroup != null}
+        onClose={() => !editSeriesSaving && setEditSeriesGroup(null)}
+        title="Edit series name"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setEditSeriesGroup(null)}
+              disabled={editSeriesSaving}
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton
+              disabled={editSeriesSaving}
+              onClick={() => void handleSaveSeriesEdit()}
+            >
+              {editSeriesSaving ? "Saving…" : "Save"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="admin-edit-series-name">
+              Playlist (Series) Name
+            </label>
+            <AdminInput
+              id="admin-edit-series-name"
+              value={editSeriesName}
+              onChange={(e) => setEditSeriesName(e.target.value)}
+            />
+          </div>
+        </div>
+      </AdminModal>
+
       <AdminModal
         open={deleteCandidate != null}
         onClose={() => !deleteSaving && setDeleteCandidate(null)}
@@ -973,7 +1049,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                    null
+                      null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
@@ -1174,9 +1250,20 @@ export default function AdminVideosPage() {
                 <div key={group.contentRootId} className="space-y-4">
                   <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="font-display text-lg font-semibold text-foreground">
-                        {group.seriesName}
-                      </h3>
+                      {/* Кнопка редактирования добавлена сюда */}
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display text-lg font-semibold text-foreground">
+                          {group.seriesName}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => openEditSeries(group)}
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                          title="Edit playlist name"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {group.rows.length}{" "}
                         {group.rows.length === 1 ? "episode" : "episodes"}
