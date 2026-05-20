@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import {
-  Link,
-  useNavigate,
-  useSearchParams,
-} from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import toast from "react-hot-toast";
 import PricingCards from "../../components/pricing/PricingCards";
 import { usePricingCheckout } from "../../hooks/usePricingCheckout";
@@ -26,7 +22,9 @@ export default function SubscribePage() {
   const { startCheckout, checkoutLoading } = usePricingCheckout();
   const { locale, messages } = useLandingLocale();
   const sub: any = messages.subscription || {};
-  const toastAccountCreated = (messages.auth as any)?.login?.toastAccountCreated || "Account created successfully";
+  const toastAccountCreated =
+    (messages.auth as any)?.login?.toastAccountCreated ||
+    "Account created successfully";
 
   const devSkip = subscriptionEnforcementDisabled();
   const devSkipBannerDetail = (() => {
@@ -89,7 +87,7 @@ export default function SubscribePage() {
               {sub?.subtitle || "Unlock all features"}
             </p>
           </div>
-          {devSkip ?
+          {devSkip ? (
             <p
               className="mx-auto max-w-lg rounded-xl border border-primary/35 bg-primary/10 px-4 py-3 text-primary text-sm"
               role="status"
@@ -98,14 +96,15 @@ export default function SubscribePage() {
                 env: devSkipBannerDetail,
               })}
             </p>
-            : null}
+          ) : null}
         </div>
 
-        {!devSkip ?
+        {!devSkip ? (
           <>
             <PricingCards
               onSelectConsumerPlan={(id) =>
-                void startCheckout(id, { isLoggedIn: !!user })}
+                void startCheckout(id, { isLoggedIn: !!user })
+              }
               checkoutDisabled={checkoutLoading}
               className="mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"
             />
@@ -120,17 +119,17 @@ export default function SubscribePage() {
               {sub?.teacherPlanNote || ""}
             </p>
           </>
-          : (
-            <Link
-              to="/catalog"
-              className="mx-auto rounded-xl bg-primary px-8 py-3 font-semibold text-primary-foreground"
-            >
-              {sub?.continueCatalog || "Continue to Catalog"}
-            </Link>
-          )}
+        ) : (
+          <Link
+            to="/catalog"
+            className=" flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          >
+            {sub?.continueCatalog || "Continue to Catalog"}
+          </Link>
+        )}
 
         <div className="mt-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-12 text-muted-foreground text-sm">
-          {user && !userMayUseLearnerApp(user) ?
+          {user && !userMayUseLearnerApp(user) ? (
             <button
               type="button"
               className="hover:text-foreground underline-offset-4 hover:underline"
@@ -141,7 +140,7 @@ export default function SubscribePage() {
             >
               {sub?.signOut || "Sign Out"}
             </button>
-            : null}
+          ) : null}
           <Link
             to="/pricing"
             className="underline-offset-4 hover:text-foreground hover:underline"

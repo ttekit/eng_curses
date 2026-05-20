@@ -36,7 +36,7 @@ import {
 } from "../../lib/contentRecommendations";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
-import { Frown, Layers, Tags } from "lucide-react";
+import { Frown, Layers } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ContentVideo {
@@ -420,9 +420,17 @@ export default function VideoPage() {
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-      const matchCategory = selectedCategory === "All" || v.content.category.name === selectedCategory;
-      const matchLevel = selectedLevel === "All" || (v.content.stats?.systemTags && v.content.stats.systemTags.includes(selectedLevel));
-      const matchGenre = selectedGenre === "All" || (v.content.stats?.userTags && v.content.stats.userTags.includes(selectedGenre));
+      const matchCategory =
+        selectedCategory === "All" ||
+        v.content.category.name === selectedCategory;
+      const matchLevel =
+        selectedLevel === "All" ||
+        (v.content.stats?.systemTags &&
+          v.content.stats.systemTags.includes(selectedLevel));
+      const matchGenre =
+        selectedGenre === "All" ||
+        (v.content.stats?.userTags &&
+          v.content.stats.userTags.includes(selectedGenre));
       return matchCategory && matchLevel && matchGenre;
     });
   }, [videos, selectedCategory, selectedLevel, selectedGenre]);
@@ -431,21 +439,25 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
-    if (selectedCategory !== "All" || selectedLevel !== "All" || selectedGenre !== "All") {
+    if (
+      selectedCategory !== "All" ||
+      selectedLevel !== "All" ||
+      selectedGenre !== "All"
+    ) {
       const sorted = [...filteredVideos].sort((a, b) => {
         const ma =
           typeof a.content.playlistPosition === "number"
@@ -465,7 +477,8 @@ export default function VideoPage() {
       });
       const link = sorted[0]?.content.category.friendlyLink?.trim() ?? "";
 
-      let dynamicTitle = selectedCategory !== "All" ? selectedCategory : "Filtered Results";
+      let dynamicTitle =
+        selectedCategory !== "All" ? selectedCategory : "Filtered Results";
       if (selectedLevel !== "All") dynamicTitle += ` - ${selectedLevel}`;
       if (selectedGenre !== "All") dynamicTitle += ` - ${selectedGenre}`;
 
@@ -524,7 +537,7 @@ export default function VideoPage() {
   }, [recommendedCards, filteredVideos]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased flex-col">
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex-col">
       {activatingSubscriptionOverlay ? (
         <div
           className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm"
@@ -569,67 +582,96 @@ export default function VideoPage() {
               "flex-1 pb-24 transition-all duration-300 font-display lg:pb-8",
               sidebarCollapsed ? "lg:ml-20" : "lg:ml-64",
             )}
+            style={{
+              maxWidth: sidebarCollapsed
+                ? "calc(100vw - 5rem)"
+                : "calc(100vw - 16rem)",
+            }}
           >
             <CatalogHero featured={featuredHero} />
 
             {/* Filters */}
-            <div className="px-4 sm:px-6 lg:px-8 space-y-4">
+            <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
-
                 <div className="flex flex-col gap-1.5 min-w-0">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
                     <Layers className="size-3.5" /> Level
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {LEVELS_LIST.map((lvl) => (
-                      <button
-                        key={lvl}
-                        type="button"
-                        onClick={() => setSelectedLevel(lvl)}
-                        className={cn(
-                          "rounded-full px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
-                          selectedLevel === lvl
-                            ? "bg-primary text-primary-foreground shadow-sm scale-105"
-                            : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
-                        )}
-                      >
-                        {lvl}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {genreNames.length > 0 && (
-                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                      <img src="/Icon.svg" className="size-3.5 grayscale opacity-70" alt="" /> Genre
-                    </span>
-                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-2">
-                      {sortedGenres.map((gen) => (
+                  <div className="relative">
+                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+                    <div
+                      className="flex gap-1.5 overflow-x-auto pb-1"
+                      style={{
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                      }}
+                    >
+                      {LEVELS_LIST.map((lvl) => (
                         <button
-                          key={gen}
+                          key={lvl}
                           type="button"
-                          onClick={() => setSelectedGenre(gen)}
+                          onClick={() => setSelectedLevel(lvl)}
                           className={cn(
-                            "rounded-full px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
-                            selectedGenre === gen
-                              ? "bg-accent text-accent-foreground shadow-sm scale-105"
+                            "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                            selectedLevel === lvl
+                              ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                               : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
                           )}
                         >
-                          {gen}
+                          {lvl}
                         </button>
                       ))}
                     </div>
                   </div>
-                )}
+                </div>
 
+                {genreNames.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                      <img
+                        src="/Icon.svg"
+                        className="size-3.5 grayscale opacity-70"
+                        alt=""
+                      />{" "}
+                      Genre
+                    </span>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+                      <div
+                        className="flex gap-1.5 overflow-x-auto pb-1"
+                        style={{
+                          scrollbarWidth: "none",
+                          msOverflowStyle: "none",
+                        }}
+                      >
+                        {sortedGenres.map((gen) => (
+                          <button
+                            key={gen}
+                            type="button"
+                            onClick={() => setSelectedGenre(gen)}
+                            className={cn(
+                              "ml-0.5 rounded-full px-4 shrink-0 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                              selectedGenre === gen
+                                ? "bg-accent text-accent-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground ",
+                            )}
+                          >
+                            {gen}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div id="catalog-library" className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2">
+            <div
+              id="catalog-library"
+              className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2"
+            >
               {loading ? (
-                <div className="flex h-60 bg-card/30 flex-col items-center border border-border border-t justify-center space-y-4">
+                <div className="flex h-60 bg-card/30 flex-col items-center rounded-[30px] justify-center space-y-4">
                   <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
                   <p className="animate-pulse text-muted-foreground text-sm">
                     {(messages.catalogPage as any)?.loadingCatalog ||
@@ -637,8 +679,8 @@ export default function VideoPage() {
                   </p>
                 </div>
               ) : filteredVideos.length === 0 ? (
-                <div className="border-t border-border bg-card/30 py-15 text-center">
-                  <Frown className="text-foreground/70 justify-center w-10 h-10 pb-2 mx-auto" />
+                <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
+                  <img src="/SadIcon.svg" className="w-25 h-30 mb-3" />
                   <h2 className="font-display text-2xl font-bold">
                     {(messages.catalogPage as any)?.emptyTitle ||
                       "No lessons found"}
@@ -815,4 +857,4 @@ export default function VideoPage() {
       ) : null}
     </div>
   );
-}  
+}

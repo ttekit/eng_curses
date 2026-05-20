@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import {
-  CheckCircle,
-  ChevronRight,
-  Lock,
-  PlayCircle,
-} from "lucide-react";
+import { CheckCircle, ChevronRight, Lock, PlayCircle } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { cn } from "../../lib/utils";
 import { apiFetch } from "../../lib/api";
@@ -166,13 +161,16 @@ export function ProfileProgress() {
             No tag scores yet. Finish registration details, complete the entry
             test if prompted, and watch videos with quizzes so your strengths
             can be estimated. Then check the{" "}
-            <Link to="/catalog" className="text-primary underline-offset-4 hover:underline">
+            <Link
+              to="/catalog"
+              className="text-primary underline-offset-4 hover:underline"
+            >
               catalog
             </Link>
             .
           </p>
         ) : (
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-1">
             {tagRows.map((row) => (
               <li
                 key={row.name}
@@ -311,7 +309,9 @@ export function ProfileProgress() {
                 <p className="truncate font-medium text-foreground">
                   {video.title}
                 </p>
-                <p className="text-sm text-muted-foreground">{video.category}</p>
+                <p className="text-sm text-muted-foreground">
+                  {video.category}
+                </p>
               </div>
               <div className="shrink-0 text-right">
                 {video.completed ? (
@@ -334,7 +334,7 @@ export function ProfileProgress() {
       </ProfileCard>
 
       <ProfileCard title="Vocabulary progress">
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-4">
           <div className="rounded-xl bg-secondary/30 p-4 text-center">
             <p className="text-3xl font-bold text-foreground">
               {vocabularyProgress.total}

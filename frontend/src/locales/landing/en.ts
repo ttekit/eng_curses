@@ -18,7 +18,7 @@ export const landingEn = {
       errorGenres: "Please select at least one genre.",
       saveErrorToast: "Failed to save preferences.",
       saving: "Saving...",
-      continueCta: "Continue"
+      continueCta: "Continue",
     },
     adult: {
       formIntro: "Tell us a bit about yourself.",
@@ -31,8 +31,8 @@ export const landingEn = {
       nativeLanguagePlaceholder: "e.g. Ukrainian",
       errorJob: "Please enter your profession.",
       errorEducation: "Please enter your education.",
-      errorNativeLanguage: "Please enter your native language."
-    }
+      errorNativeLanguage: "Please enter your native language.",
+    },
   },
   seo: {
     title: "Explys — Learn English with video lessons",
@@ -71,8 +71,7 @@ export const landingEn = {
     badge: "Personalized learning",
     titleBefore: "Learn English",
     titleAccent: "your way",
-    lead:
-      "Adaptive video lessons that match your interests, level, and learning style — like a chameleon adapting to its environment, we adapt to you.",
+    lead: "Adaptive video lessons that match your interests, level, and learning style — like a chameleon adapting to its environment, we adapt to you.",
     ctaPrimary: "Start learning free",
     ctaSecondary: "Browse content",
   },
@@ -120,6 +119,7 @@ export const landingEn = {
   howItWorks: {
     titleBefore: "How",
     titleBrand: "Explys",
+    titleAfter: "works?",
     subtitle:
       "Create an account, finish placement when you first open the catalog, then follow your student learning plan with video lessons and quizzes.",
     stepPrefix: "Step",
@@ -157,7 +157,6 @@ export const landingEn = {
       "From essentials to adaptive AI and family plans — plus solutions for schools.",
     fullPageLink: "Full pricing page",
   },
-  
 
   releaseCountdown: {
     titleAccent: "Launch",
@@ -301,13 +300,10 @@ export const landingEn = {
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",
-        passwordUpper:
-          "Password must contain at least one uppercase letter.",
-        passwordLower:
-          "Password must contain at least one lowercase letter.",
+        passwordUpper: "Password must contain at least one uppercase letter.",
+        passwordLower: "Password must contain at least one lowercase letter.",
         passwordNumber: "Password must contain at least one number.",
-        passwordSpecial:
-          "Password must contain at least one of: @ $ ! % * ? &",
+        passwordSpecial: "Password must contain at least one of: @ $ ! % * ? &",
         passwordsNoMatch: "Passwords do not match.",
         emailInvalid: "Invalid email format.",
         fillRequired: "Please fill in all required fields.",
@@ -328,14 +324,12 @@ export const landingEn = {
         "Network error. Please check if your backend server is running.",
       step2: {
         rightTitle: "Who are you?",
-        rightSubtitle:
-          "Tell us your role so we can customize your experience.",
+        rightSubtitle: "Tell us your role so we can customize your experience.",
         back: "Back",
         title: "How will you use Explys?",
         lead: "Pick the option that fits you best—we'll tailor the setup.",
         teacherTitle: "Teacher profile",
-        teacherLead:
-          "Grades you teach, optional topics, and your class list.",
+        teacherLead: "Grades you teach, optional topics, and your class list.",
         studentGrades: "Student grades",
         learningTopics: "Learning topics",
         topicsPlaceholderUnavailable:
@@ -374,18 +368,15 @@ export const landingEn = {
       roles: {
         teacher: {
           title: "Teacher",
-          description:
-            "Create and manage learning content for your students",
+          description: "Create and manage learning content for your students",
         },
         student: {
           title: "Student",
-          description:
-            "Learn English through personalized video lessons",
+          description: "Learn English through personalized video lessons",
         },
         adult: {
           title: "Adult learner",
-          description:
-            "Improve your English for career or personal growth",
+          description: "Improve your English for career or personal growth",
         },
       },
       step3: {
@@ -405,11 +396,9 @@ export const landingEn = {
         placeholderGoal: "e.g. Travel to the UK",
         placeholderTime: "e.g. 3 months",
         genresLove: "Genres you love",
-        genresLoveHint:
-          "We'll recommend more from genres you pick here.",
+        genresLoveHint: "We'll recommend more from genres you pick here.",
         genresAvoid: "Genres to avoid",
-        genresAvoidHint:
-          "We'll filter out selections from these buckets.",
+        genresAvoidHint: "We'll filter out selections from these buckets.",
         register: "Register",
         continueToPlans: "Continue to plans",
       },
@@ -426,8 +415,7 @@ export const landingEn = {
         title: "Registration successful",
         withStudents:
           "Your teacher account is ready. Student logins were created for the pupils you listed. Download the Excel file to share credentials securely (store it in a safe place—anyone with the file can sign in as those students).",
-        solo:
-          "Your account is ready. You can sign in with the email and password you chose.",
+        solo: "Your account is ready. You can sign in with the email and password you chose.",
         studentAccounts: "Student accounts (COUNT)",
         colName: "Name",
         colEmail: "Email",

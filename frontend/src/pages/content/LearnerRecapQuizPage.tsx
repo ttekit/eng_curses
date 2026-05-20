@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { Link, useParams } from "react-router";
 import toast from "react-hot-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -108,7 +114,11 @@ export default function LearnerRecapQuizPage() {
         setLoading(false);
         return;
       }
-      if (!data?.gradingToken || !Array.isArray(data.tests) || data.tests.length === 0) {
+      if (
+        !data?.gradingToken ||
+        !Array.isArray(data.tests) ||
+        data.tests.length === 0
+      ) {
         setBlocked(R.generateFailed);
         setLoading(false);
         return;
@@ -164,18 +174,27 @@ export default function LearnerRecapQuizPage() {
       onCollapsedChange={setSidebarCollapsed}
       title={pageTitle}
     >
-      <RecapHeader title={pageTitle} backLabel={R.backToLessons} lead={R.lead} />
+      <RecapHeader
+        title={pageTitle}
+        backLabel={R.backToLessons}
+        lead={R.lead}
+      />
 
       <RecapBody>
         {loading ? (
           <div className="flex flex-col items-center gap-3 py-16">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
+            <Loader2
+              className="h-10 w-10 animate-spin text-primary"
+              aria-hidden
+            />
             <p className="text-sm text-muted-foreground">{R.loading}</p>
           </div>
         ) : blocked ? (
           <CenterBlock>
             <p className="font-medium text-foreground">{R.blockedTitle}</p>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">{blocked}</p>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              {blocked}
+            </p>
             <Link
               to="/watched-lessons"
               className="mt-6 text-sm font-medium text-primary hover:underline"
@@ -185,6 +204,7 @@ export default function LearnerRecapQuizPage() {
           </CenterBlock>
         ) : result ? (
           <CenterBlock>
+            <img src="/Icon.svg" className="w-20 h-25 mb-3"></img>
             <p className="font-display text-xl font-semibold">{R.doneTitle}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {formatMessage(R.resultLine, {
@@ -195,7 +215,7 @@ export default function LearnerRecapQuizPage() {
             </p>
             <Link
               to="/watched-lessons"
-              className="mt-6 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              className="mt-4 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             >
               {R.backToLessons}
             </Link>
@@ -298,14 +318,14 @@ function RecapHeader(props: {
 }
 
 function RecapBody({ children }: { children: ReactNode }) {
-  return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">{children}</div>
-  );
+  return <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">{children}</div>;
 }
 
 function CenterBlock({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col items-center py-16 text-center">{children}</div>
+    <div className="flex flex-col items-center py-16 text-center">
+      {children}
+    </div>
   );
 }
 

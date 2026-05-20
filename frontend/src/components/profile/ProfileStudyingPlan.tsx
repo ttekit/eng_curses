@@ -26,11 +26,13 @@ import { canonicalTimeToAchieveFromProfile } from "../../lib/timeToAchieve";
 function renderIntroMarkdownish(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g);
   return parts.map((chunk, i) =>
-    i % 2 === 1 ?
+    i % 2 === 1 ? (
       <strong key={i} className="font-semibold text-foreground">
         {chunk}
       </strong>
-      : <span key={i}>{chunk}</span>,
+    ) : (
+      <span key={i}>{chunk}</span>
+    ),
   );
 }
 
@@ -67,7 +69,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
   const goalHorizonUnchanged =
     learningGoal.trim() === (user.learningGoal ?? "").trim() &&
     canonicalTimeToAchieveFromProfile(timeToAchieve) ===
-    canonicalTimeToAchieveFromProfile(user.timeToAchieve);
+      canonicalTimeToAchieveFromProfile(user.timeToAchieve);
 
   async function saveGoalAndHorizon(): Promise<void> {
     const trimmedGoal = learningGoal.trim();
@@ -87,20 +89,17 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
         toast.error(await getResponseErrorMessage(res));
         return;
       }
-      const regRes = await apiFetch(
-        "/auth/profile/regenerate-studying-plan",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ locale }),
-        },
-      );
+      const regRes = await apiFetch("/auth/profile/regenerate-studying-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale }),
+      });
       if (!regRes.ok) {
         const serverMsg = (await getResponseErrorMessage(regRes)).trim();
         toast.error(
-          serverMsg ?
-            `${serverMsg} — ${lp.profileGoalSavedPlanRegenerateFailedToast || ""}`
-            : (lp.profileGoalSavedPlanRegenerateFailedToast || ""),
+          serverMsg
+            ? `${serverMsg} — ${lp.profileGoalSavedPlanRegenerateFailedToast || ""}`
+            : lp.profileGoalSavedPlanRegenerateFailedToast || "",
         );
         await refreshProfile();
         return;
@@ -110,7 +109,9 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
     } catch (err) {
       console.error(err);
       toast.error(
-        err instanceof Error ? err.message : (lp.profileGoalHorizonSaveError || "Error"),
+        err instanceof Error
+          ? err.message
+          : lp.profileGoalHorizonSaveError || "Error",
       );
     } finally {
       setSavingGoalHorizon(false);
@@ -125,12 +126,14 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
             {lp.title || "Learning Plan"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {lp.profileIncompleteLead || "Please complete your profile configuration first."}
+            {lp.profileIncompleteLead ||
+              "Please complete your profile configuration first."}
           </p>
         </div>
         <div className="rounded-2xl border border-border bg-card/60 p-6">
           <p className="text-sm text-muted-foreground">
-            {lp.profileIncompleteBody || "You need to complete placement diagnostics to unlock your structured track."}
+            {lp.profileIncompleteBody ||
+              "You need to complete placement diagnostics to unlock your structured track."}
           </p>
           <Link
             to="/catalog"
@@ -215,15 +218,16 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
             type="button"
             onClick={() => void saveGoalAndHorizon()}
             disabled={savingGoalHorizon || goalHorizonUnchanged}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+            className="flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           >
-            {savingGoalHorizon ?
-              <Loader2 className="size-4 animate-spin" aria-hidden
-              />
-              : <Save className="size-4" aria-hidden />}
-            {savingGoalHorizon ?
-              (lp.profileSavingGoalHorizon || "Saving...")
-              : (lp.profileSaveGoalHorizonCta || "Save Targets")}
+            {savingGoalHorizon ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="size-4" aria-hidden />
+            )}
+            {savingGoalHorizon
+              ? lp.profileSavingGoalHorizon || "Saving..."
+              : lp.profileSaveGoalHorizonCta || "Save Targets"}
           </button>
         </div>
       </div>
@@ -270,7 +274,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
 
       <Link
         to="/catalog"
-        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+        className="flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
       >
         {lp.continueInCatalog || "Continue in Catalog"}
         <ArrowRight className="size-4" />

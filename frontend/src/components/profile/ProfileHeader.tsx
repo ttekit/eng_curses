@@ -26,16 +26,19 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
   const h: any = (messages as any).profileHeader || {};
   const initials = initialsFromName(user.name);
   const roleLabel =
-    user.role === "teacher" ? (h.roleTeacher || "Teacher")
-      : user.role === "student" ? (h.roleStudent || "Student")
-        : user.role === "admin" ? (h.roleAdmin || "Admin")
-          : (h.roleAdult || "Learner");
+    user.role === "teacher"
+      ? h.roleTeacher || "Teacher"
+      : user.role === "student"
+        ? h.roleStudent || "Student"
+        : user.role === "admin"
+          ? h.roleAdmin || "Admin"
+          : h.roleAdult || "Learner";
 
   return (
     <div className="relative">
-      <div className="absolute inset-0 h-48 rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+      <div className="absolute inset-0 rounded-2xl bg-linear-to-r from-primary/20 via-primary/10 to-accent/20" />
 
-      <div className="relative px-4 pb-6 pt-8 sm:px-6">
+      <div className="relative px-4 pb-6 pt-8 sm:px-6 sm:h-fit">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-end">
           <div className="relative shrink-0">
             <div className="relative size-28 overflow-hidden rounded-full border-4 border-background shadow-xl">
@@ -67,7 +70,9 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <span className="rounded-md border-0 bg-primary/20 px-2.5 py-0.5 text-sm font-medium text-primary">
-                  {formatMessage(h.levelLine || "Level: {level}", { level: user.level || "—" })}
+                  {formatMessage(h.levelLine || "Level: {level}", {
+                    level: user.level || "—",
+                  })}
                 </span>
                 <span className="rounded-md border border-accent px-2.5 py-0.5 text-sm text-accent">
                   {roleLabel}
@@ -93,9 +98,9 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
                 <span className="font-medium text-foreground">
                   {user.streakDays
                     ? formatMessage(h.streakLine || "{count} day streak", {
-                      count: String(user.streakDays),
-                    })
-                    : (h.streakStart || "Start your streak!")}
+                        count: String(user.streakDays),
+                      })
+                    : h.streakStart || "Start your streak!"}
                 </span>
               </div>
             </div>

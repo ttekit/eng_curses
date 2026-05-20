@@ -1,10 +1,7 @@
 import { useRef } from "react";
 import { Link } from "react-router";
 import { ChevronLeft, ChevronRight, ListVideo } from "lucide-react";
-import {
-  CatalogVideoCard,
-  type CatalogCardVideo,
-} from "./CatalogVideoCard";
+import { CatalogVideoCard, type CatalogCardVideo } from "./CatalogVideoCard";
 
 interface CatalogVideoRowProps {
   title: string;
@@ -37,7 +34,7 @@ export function CatalogVideoRow({
   if (videos.length === 0) return null;
 
   return (
-    <section>
+    <section className="w-full">
       <div className="mb-4 flex items-end justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-foreground sm:text-2xl">
@@ -48,8 +45,8 @@ export function CatalogVideoRow({
           ) : null}
         </div>
 
-        <div className="hidden items-center gap-2 sm:flex">
-          {seriesFriendlyLink?.trim() && videos.length > 0 ?
+        <div className="hidden items-center gap-2 sm:flex ">
+          {seriesFriendlyLink?.trim() && videos.length > 0 ? (
             <Link
               to={`/catalog/series/${encodeURIComponent(seriesFriendlyLink.trim())}`}
               className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-primary transition-colors hover:bg-primary/10"
@@ -57,7 +54,7 @@ export function CatalogVideoRow({
               <ListVideo className="h-4 w-4" aria-hidden />
               Playlist
             </Link>
-          : null}
+          ) : null}
           <button
             type="button"
             aria-label="Scroll left"
@@ -77,19 +74,23 @@ export function CatalogVideoRow({
         </div>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 scrollbar-hide sm:mx-0 sm:px-0"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {videos.map((video) => (
-          <CatalogVideoCard
-            key={video.id}
-            video={video}
-            showProgress={showProgress}
-          />
-        ))}
+      <div className="flex shrink-0 overflow-x-auto">
+        <div
+          ref={scrollRef}
+          className="flex gap-4 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {videos.map((video) => (
+            <CatalogVideoCard
+              key={video.id}
+              video={video}
+              showProgress={showProgress}
+            />
+          ))}
+        </div>
       </div>
+
+      <div className="mt-1 border-t border-border" />
     </section>
   );
 }
