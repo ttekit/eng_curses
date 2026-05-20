@@ -47,9 +47,10 @@ export default function LoginForm() {
   });
 
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-
+  const [captchaKey, setCaptchaKey] = useState<number>(0); // Ключ для надежного сброса капчи
   const [emptyError, setEmptyError] = useState(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useUser();
@@ -119,11 +120,19 @@ export default function LoginForm() {
         } else {
           const message = await getResponseErrorMessage(response);
           toast.error(message);
+
+          // При неверном пароле или ошибке — сбрасываем капчу
+          setCaptchaToken(null);
+          setCaptchaKey((prev) => prev + 1);
         }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not sign in";
         toast.error(message);
+
+        // При ошибке сети — тоже сбрасываем капчу
+        setCaptchaToken(null);
+        setCaptchaKey((prev) => prev + 1);
       }
     } else {
       setEmptyError(true);
@@ -136,7 +145,7 @@ export default function LoginForm() {
       rightSubtitle="Pick up right where you left off with your personalized learning path."
     >
       <div className="mb-2 flex items-center gap-3">
-        <img src="/Icon.svg" className="w-12 h-15" />
+        <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
         <h1 className="font-display text-2xl font-bold">Welcome back</h1>
       </div>
       <p className="mb-8 text-muted-foreground">
@@ -195,10 +204,17 @@ export default function LoginForm() {
 
         <div className="flex justify-center py-2">
           <Turnstile
+            key={captchaKey}
             sitekey="0x4AAAAAADSk3etSiWLwGH5-"
             onVerify={(token) => setCaptchaToken(token)}
-            onExpire={() => setCaptchaToken(null)}
-            onError={() => setCaptchaToken(null)}
+            onExpire={() => {
+              setCaptchaToken(null);
+              setCaptchaKey((prev) => prev + 1);
+            }}
+            onError={() => {
+              setCaptchaToken(null);
+              setCaptchaKey((prev) => prev + 1);
+            }}
             theme="light"
           />
         </div>
