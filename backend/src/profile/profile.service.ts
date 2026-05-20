@@ -48,15 +48,50 @@ export class ProfileService {
             },
         });
 
-        const weeklyActivity = [
-            { day: 'Monday', minutes: 15 },
-            { day: 'Tuesday', minutes: 0 },
-            { day: 'Wednesday', minutes: 20 },
-            { day: 'Thursday', minutes: 0 },
-            { day: 'Friday', minutes: 30 },
-            { day: 'Saturday', minutes: 0 },
-            { day: 'Sunday', minutes: 10 },
-        ];
+        // 1. Вычисляем начало текущей недели (Понедельник) и конец (Воскресенье)
+        const now = new Date();
+        const dayOfWeek = now.getUTCDay(); // 0 это Воскресенье, 1 это Понедельник
+        const offset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+        // 2. Ищем все просмотры видео за эту неделю
+        const weekSessions = await this.prisma.watchSession.findMany({
+            where: {
+                userId: userId,
+                endedAt: { gte: weekStart, lt: weekEnd },
+            },
+            select: { endedAt: true },
+        });
+
+        // 3. Ищем все пройденные тесты за эту неделю
+        const weekTests = await this.prisma.comprehensionTestAttempt.findMany({
+            where: {
+                userId: userId,
+                createdAt: { gte: weekStart, lt: weekEnd },
+            },
+            select: { createdAt: true },
+        });
+
+        // 4. Считаем активность по дням (индекс 0 - Понедельник, 6 - Воскресенье)
+        const minutesMonSun = [0, 0, 0, 0, 0, 0, 0];
+        const DAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+        const processDate = (dateToProcess: Date | null | undefined) => {
+            if (!dateToProcess) return;
+            const utcDow = dateToProcess.getUTCDay();
+            const idx = utcDow === 0 ? 6 : utcDow - 1; // Превращаем 0 (Вс) в 6, остальные сдвигаем
+            minutesMonSun[idx] += 1; // Записываем условную "1 минуту", чтобы огонек загорелся
+        };
+
+        weekSessions.forEach(s => processDate(s.endedAt));
+        weekTests.forEach(t => processDate(t.createdAt));
+
+        const weeklyActivity = DAY_LABELS.map((day, i) => ({
+            day,
+            minutes: minutesMonSun[i],
+        }));
 
         return {
             totalWatchTimeMin: 0,
