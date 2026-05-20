@@ -84,7 +84,7 @@ export default function AdminLayout() {
             collapsed && "justify-center",
           )}
         >
-          <ChameleonMascot size="sm" mood="happy" animate={false} />
+          <img src="/Icon.svg" className="w-10 h-13" />
           {!collapsed && (
             <div className="min-w-0">
               <span className="font-display text-xl font-bold">Explys</span>
@@ -98,7 +98,7 @@ export default function AdminLayout() {
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-20 -right-3 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-muted"
+          className="absolute top-20 hover:cursor-pointer -right-3 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card transition-colors hover:bg-muted"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (

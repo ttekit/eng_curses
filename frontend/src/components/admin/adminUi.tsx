@@ -23,7 +23,10 @@ export function AdminCardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("font-display text-lg leading-none font-semibold", className)}
+      className={cn(
+        "font-display text-lg leading-none font-semibold",
+        className,
+      )}
       {...p}
     />
   );
@@ -168,7 +171,10 @@ export function AdminProgress({
   const v = Math.min(100, Math.max(0, value));
   return (
     <div
-      className={cn("h-1.5 w-full overflow-hidden rounded-full bg-muted", className)}
+      className={cn(
+        "h-1.5 w-full overflow-hidden rounded-full bg-muted",
+        className,
+      )}
     >
       <div
         className="h-full rounded-full bg-primary transition-all"
@@ -193,10 +199,10 @@ export function AdminModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed h-full inset-0 z-[100] flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        className="absolute inset-0 hover:cursor-hover bg-background/80 backdrop-blur-sm"
         aria-label="Close dialog"
         onClick={onClose}
       />
@@ -207,10 +213,18 @@ export function AdminModal({
         aria-labelledby="admin-modal-title"
       >
         <div className="flex items-center justify-between border-border border-b px-6 py-4">
-          <h2 id="admin-modal-title" className="font-display text-lg font-semibold">
+          <h2
+            id="admin-modal-title"
+            className="font-display text-lg font-semibold"
+          >
             {title}
           </h2>
-          <AdminButton variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+          <AdminButton
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+          >
             ×
           </AdminButton>
         </div>

@@ -171,15 +171,24 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <div className="hidden gap-3 md:flex">
-          <AdminButton variant="outline">Export report</AdminButton>
-          <AdminButton>Add video</AdminButton>
+          <AdminButton
+            variant="outline"
+            className="flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-3 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
+          >
+            Export report
+          </AdminButton>
+          <AdminButton className=" flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]">
+            Add video
+          </AdminButton>
         </div>
       </div>
 
       {error ? (
         <AdminCard className="border-destructive/40">
           <AdminCardContent className="space-y-2 p-6 text-sm">
-            <p className="font-medium text-destructive">Analytics unavailable</p>
+            <p className="font-medium text-destructive">
+              Analytics unavailable
+            </p>
             <p className="text-muted-foreground">{error}</p>
             <p className="text-xs text-muted-foreground">
               Set matching <strong>VITE_API_TOKEN</strong> and{" "}
@@ -205,13 +214,13 @@ export default function AdminDashboardPage() {
                   ) : (
                     <ArrowDownRight className="h-4 w-4" />
                   )}
-                  <span title="Period-over-period trend not wired yet">
-                    —
-                  </span>
+                  <span title="Period-over-period trend not wired yet">—</span>
                 </div>
               </div>
               <div className="mt-4">
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stat.value}
+                </p>
                 <p className="text-sm text-muted-foreground">{stat.title}</p>
               </div>
             </AdminCardContent>
@@ -336,7 +345,9 @@ export default function AdminDashboardPage() {
         <AdminCard className="lg:col-span-2">
           <AdminCardHeader className="flex flex-row items-center justify-between border-border border-b">
             <AdminCardTitle>Recent activity</AdminCardTitle>
-            <AdminBadge variant="outline">{activity.length || 0} items</AdminBadge>
+            <AdminBadge variant="outline">
+              {activity.length || 0} items
+            </AdminBadge>
           </AdminCardHeader>
           <AdminCardContent className="space-y-4 p-6">
             {activity.length === 0 ? (
@@ -348,29 +359,31 @@ export default function AdminDashboardPage() {
               activity.map((item, idx) => {
                 const viz = activityVisual(item.kind);
                 return (
-              <div
-                key={`${item.kind}-${item.userId}-${item.at}-${idx}`}
-                className="flex items-center gap-4 rounded-lg bg-muted/50 p-3"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  {viz === "video" ? (
-                    <Play className="h-5 w-5 text-primary" />
-                  ) : viz === "user" ? (
-                    <Users className="h-5 w-5 text-primary" />
-                  ) : (
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-foreground">
-                    <span className="font-medium">{item.userLabel}</span>
-                  </p>
-                  <p className="text-sm text-muted-foreground">{item.detail}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {relativeTimeShort(item.at)}
-                  </p>
-                </div>
-              </div>
+                  <div
+                    key={`${item.kind}-${item.userId}-${item.at}-${idx}`}
+                    className="flex items-center gap-4 rounded-lg bg-muted/50 p-3"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      {viz === "video" ? (
+                        <Play className="h-5 w-5 text-primary" />
+                      ) : viz === "user" ? (
+                        <Users className="h-5 w-5 text-primary" />
+                      ) : (
+                        <BookOpen className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">{item.userLabel}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.detail}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {relativeTimeShort(item.at)}
+                      </p>
+                    </div>
+                  </div>
                 );
               })
             )}
@@ -388,18 +401,25 @@ export default function AdminDashboardPage() {
               <>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Watch completions</span>
-                    <span className="font-medium">{overview.watchCompletionsInRange}</span>
+                    <span className="text-muted-foreground">
+                      Watch completions
+                    </span>
+                    <span className="font-medium">
+                      {overview.watchCompletionsInRange}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Distinct watchers</span>
+                    <span className="text-muted-foreground">
+                      Distinct watchers
+                    </span>
                     <span className="font-medium">
                       {overview.distinctWatchLearnersInRange}
                     </span>
                   </div>
                   <AdminProgress value={surveyPctValue} />
                   <p className="text-xs text-muted-foreground">
-                    Post-watch survey submits vs. surveys issued (completion proxy).
+                    Post-watch survey submits vs. surveys issued (completion
+                    proxy).
                   </p>
                 </div>
               </>
@@ -410,12 +430,12 @@ export default function AdminDashboardPage() {
 
       <AdminCard className="border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10">
         <AdminCardContent className="flex items-start gap-4 p-6 sm:items-center">
-          <ChameleonMascot size="md" mood="thinking" />
+          <img src="/Icon.svg" className="w-20 h-25 animate-float" />
           <div>
             <h3 className="font-semibold text-foreground">Pro tip</h3>
             <p className="text-sm text-muted-foreground">
-              Shorter clips under ~10 minutes often see stronger completion rates.
-              Chunk longer content when you publish.
+              Shorter clips under ~10 minutes often see stronger completion
+              rates. Chunk longer content when you publish.
             </p>
           </div>
         </AdminCardContent>
