@@ -106,7 +106,7 @@ export function ProfileProgress() {
     if (!user?.id) return;
     let cancelled = false;
     void (async () => {
-      const r = await apiFetch("/profile/progress-details", {
+      const r = await apiFetch("/auth/profile/progress-details", {
         method: "GET",
       });
       if (!r.ok || cancelled) return;
@@ -362,7 +362,7 @@ export function ProfileProgress() {
                 <span className="text-muted-foreground">Overall progress</span>
                 <span className="font-medium text-foreground">
                   {Math.round(
-                    (details.vocabularyProgress.learned / details.vocabularyProgress.total) * 100,
+                    (details.vocabularyProgress.learned / Math.max(details.vocabularyProgress.total, 1)) * 100,
                   )}
                   %
                 </span>
@@ -371,13 +371,13 @@ export function ProfileProgress() {
                 <div
                   className="h-full bg-accent"
                   style={{
-                    width: `${(details.vocabularyProgress.mastered / details.vocabularyProgress.total) * 100}%`,
+                    width: `${(details.vocabularyProgress.mastered / Math.max(details.vocabularyProgress.total, 1)) * 100}%`,
                   }}
                 />
                 <div
                   className="h-full bg-primary"
                   style={{
-                    width: `${((details.vocabularyProgress.learned - details.vocabularyProgress.mastered) / details.vocabularyProgress.total) * 100}%`,
+                    width: `${((details.vocabularyProgress.learned - details.vocabularyProgress.mastered) / Math.max(details.vocabularyProgress.total, 1)) * 100}%`,
                   }}
                 />
               </div>

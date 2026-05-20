@@ -139,7 +139,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
         <StatTile
           icon={Target}
           iconWrapClass="bg-secondary text-muted-foreground"
-          value={user.averageScore != null ? `${user.averageScore}%` : "—"}
+          value={user.averageScore !== null ? `${Math.round(user.averageScore)}%` : "—"}
           label="Avg. Score"
         />
       </div>

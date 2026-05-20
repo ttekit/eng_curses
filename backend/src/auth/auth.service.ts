@@ -24,7 +24,6 @@ import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
 import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
 
-// Экспортируем интерфейс, чтобы контроллер мог его видеть
 export interface GeneratedStudent {
   name: string;
   email: string;
@@ -169,19 +168,16 @@ export class AuthService {
 
     const generatedStudents: GeneratedStudent[] = [];
 
-    // 2. Генерация аккаунтов для учеников
-    // 2. Генерация аккаунтов для учеников
     if (dto.role === "teacher" && Array.isArray(dto.studentNames)) {
       for (const pupil of dto.studentNames) {
         const randomId = Math.floor(1000 + Math.random() * 9000);
 
-        // Безопасно достаем данные, даже если это объект или строка
         let firstName = "student";
         let lastName = randomId.toString();
 
         if (typeof pupil === "object" && pupil !== null) {
-          firstName = pupil.name || "student";
-          lastName = pupil.surname || randomId.toString();
+          firstName = (pupil as any).name || "student";
+          lastName = (pupil as any).surname || randomId.toString();
         } else if (typeof pupil === "string") {
           const parts = pupil.split(" ");
           firstName = parts[0] || "student";
@@ -219,8 +215,6 @@ export class AuthService {
 
     const payload = { sub: mainUser.id, email: mainUser.email };
 
-    //await this.saveSession(req, mainUser);
-
     if (!outboundMailDisabled) {
       await this.emailConfirmationService.sendVerificationToken(mainUser);
     }
@@ -232,7 +226,6 @@ export class AuthService {
         email: mainUser.email,
         name: mainUser.name,
       },
-      // Возвращаем данные учеников учителю
       generatedStudents:
         generatedStudents.length > 0 ? generatedStudents : undefined,
       message: outboundMailDisabled
@@ -242,21 +235,18 @@ export class AuthService {
   }
 
   public async confirmEmail(token: string) {
-    // 1. Ищем токен в правильной таблице (Token), а не в User
     const existingToken = await this.prisma.token.findUnique({
       where: {
         token: token,
       },
     });
 
-    // 2. Если токен не найден в базе
     if (!existingToken) {
       throw new BadRequestException(
         "Невірний або прострочений токен підтвердження",
       );
     }
 
-    // 3. Ищем пользователя по email, который привязан к этому токену
     const user = await this.prisma.user.findUnique({
       where: {
         email: existingToken.email,
@@ -267,16 +257,13 @@ export class AuthService {
       throw new BadRequestException("Користувача не знайдено");
     }
 
-    // 4. Обновляем статус пользователя на "Подтвержденный"
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         isVerified: true,
-        // verificationToken: null убрали, так как такого поля в User нет
       },
     });
 
-    // 5. Удаляем сам токен из таблицы Token, чтобы его нельзя было юзать дважды
     await this.prisma.token.delete({
       where: { id: existingToken.id },
     });
@@ -284,7 +271,6 @@ export class AuthService {
     return { message: "Email успішно підтверджено" };
   }
   public async resendConfirmationEmail(email: string) {
-    // 1. Шукаємо користувача в базі за email
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
@@ -293,7 +279,6 @@ export class AuthService {
       throw new NotFoundException("Користувача з таким email не знайдено");
     }
 
-    // 2. Перевіряємо, можливо він вже підтвердив пошту
     if (user.isVerified) {
       throw new BadRequestException(
         "Цей email вже підтверджено. Ви можете увійти в систему.",
@@ -306,8 +291,6 @@ export class AuthService {
       );
     }
 
-    // 3. Генеруємо новий токен і відправляємо лист
-    // (використовуємо той самий сервіс, що і при реєстрації)
     await this.emailConfirmationService.sendVerificationToken(user);
 
     return { message: "Новий лист підтвердження надіслано успішно" };
@@ -319,20 +302,6 @@ export class AuthService {
         email: dto.email.toLowerCase(),
       },
     });
-    // const user = await this.prisma.user.findUnique({
-    //   where: { email: dto.email },
-    //   select: {
-    //     id: true,
-    //     email: true,
-    //     name: true,
-    //     password: true,
-    //     isVerified: true,
-    //     isTwoFactorEnable: true,
-    //     role: true,
-    //     hasCompletedPlacement: true,
-    //     isSuspended: true,
-    //   },
-    // });
 
     if (!user || !user.password) {
       throw new UnauthorizedException("Invalid credentials");
@@ -421,7 +390,6 @@ export class AuthService {
     return { message: "Password successfully updated" };
   }
   async updateEmail(userId: number, dto: UpdateEmailDto) {
-    // Проверяем, не занята ли почта
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.newEmail },
     });
@@ -544,6 +512,33 @@ export class AuthService {
     });
   }
 
+  async saveWordToVocabulary(userId: number, body: any) {
+    if (!body.term) {
+      throw new BadRequestException("Term is required");
+    }
+    const language = body.language || "en";
+    const term = body.term.trim();
+
+    return this.prisma.userVocabulary.upsert({
+      where: {
+        userId_language_term: {
+          userId,
+          language,
+          term,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        language,
+        term,
+        source: "video",
+        nativeTranslation: body.translation || body.meaning || null,
+        learnerDescription: body.meaning || null,
+      },
+    });
+  }
+
   async getProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -611,11 +606,9 @@ export class AuthService {
       subscriptionPlan: user.subscriptionPlan ?? "",
       subscriptionStatus: user.subscriptionStatus ?? "",
       stripeSubscriptionId: user.stripeSubscriptionId ?? "",
-
     };
   }
 
-  /** Monday 00:00 UTC through Sunday (current ISO week). */
   private utcWeekRange(): { weekStart: Date; weekEndExclusive: Date } {
     const now = new Date();
     const day = (d: Date) => d.getUTCDay();
@@ -631,9 +624,6 @@ export class AuthService {
     return { weekStart: x, weekEndExclusive };
   }
 
-  /**
-   * Dashboard numbers + weekly watch minutes (Mon–Sun, UTC week containing today).
-   */
   async getLearningStats(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -685,9 +675,12 @@ export class AuthService {
       : 0;
     const testsCompleted = quizAgg?._count?._all ?? 0;
     const rawAvg = quizAgg?._avg?.scorePct;
+
+    // Принудительно превращаем в число, если там строка или undefined
+    const scoreNum = parseFloat(String(rawAvg));
     const averageScore =
       typeof rawAvg === "number" && Number.isFinite(rawAvg)
-        ? Math.round(rawAvg * 10) / 10
+        ? Math.round(rawAvg)
         : null;
 
     const minutesMonSun = [0, 0, 0, 0, 0, 0, 0];
@@ -714,10 +707,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Per-tag knowledge from `UserLanguageData`: each tag gets mean scores across
-   * linked topics (listening, vocabulary, grammar, and aggregate `score`).
-   */
   async getKnowledgeTagProgress(userId: number): Promise<{
     tags: Array<{
       name: string;
@@ -782,5 +771,117 @@ export class AuthService {
       .sort((a, b) => b.score - a.score);
 
     return { tags };
+  }
+
+  async getProgressDetails(userId: number) {
+    if (!userId || Number.isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    let totalWords = 0;
+    let learnedWords = 0;
+    let masteredWords = 0;
+
+    try {
+      totalWords = await this.prisma.userVocabulary.count({
+        where: { userId },
+      });
+
+      learnedWords = await this.prisma.userVocabulary.count({
+        where: {
+          userId,
+          mastery: { gt: 0 },
+        },
+      });
+
+      masteredWords = await this.prisma.userVocabulary.count({
+        where: {
+          userId,
+          mastery: { gte: 0.8 },
+        },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    const vocabularyProgress = {
+      total: totalWords,
+      learned: learnedWords,
+      mastered: masteredWords,
+      reviewing: Math.max(0, totalWords - masteredWords),
+    };
+
+    let recentSessions: any[] = [];
+    try {
+      recentSessions = await this.prisma.watchSession.findMany({
+        where: { userId },
+        orderBy: { endedAt: 'desc' },
+        take: 4,
+        include: { contentVideo: true },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    const recentVideos = await Promise.all(
+      recentSessions.map(async (session: any) => {
+        let test: any = null;
+        try {
+          test = await this.prisma.comprehensionTestAttempt.findFirst({
+            where: { userId, contentVideoId: session.contentVideoId },
+            orderBy: { createdAt: 'desc' },
+          });
+        } catch (e) {
+          console.error(e);
+        }
+
+        return {
+          id: String(session.id),
+          title: session.contentVideo?.videoName || 'Video Lesson',
+          category: 'General',
+          completed: !!session.completed,
+          score: test ? Math.round(test.scorePct) : 0,
+          progress: session.completed ? 100 : 50,
+        };
+      }),
+    );
+
+    let completedVideosCount = 0;
+    try {
+      completedVideosCount = await this.prisma.watchSession.count({
+        where: { userId, completed: true },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    const learningPaths = [
+      {
+        id: 'business',
+        title: 'Business English',
+        description: 'Professional communication for the workplace',
+        progress: totalWords > 0 ? Math.min(100, Math.round((masteredWords / totalWords) * 100)) : 0,
+        totalVideos: 12,
+        completedVideos: Math.min(12, completedVideosCount),
+        level: 'B2',
+        accentClass: 'bg-primary',
+      },
+      {
+        id: 'travel',
+        title: 'Travel & Conversation',
+        description: 'Essential phrases for traveling abroad',
+        progress: totalWords > 0 ? Math.min(100, Math.round((learnedWords / totalWords) * 100)) : 0,
+        totalVideos: 10,
+        completedVideos: Math.min(10, completedVideosCount),
+        level: 'B1',
+        accentClass: 'bg-accent',
+      },
+    ];
+
+    return {
+      vocabularyProgress,
+      recentVideos,
+      learningPaths,
+    };
   }
 }

@@ -23,4 +23,9 @@ export class ProfileController {
         const userId = Number(req.user.id || req.user.sub);
         return this.profileService.getProgressDetails(userId);
     }
+
+    @Get('vocabulary-stats')
+    async getVocabularyStats(@Request() req: any) {
+        return this.profileService.getVocabularyStats(req.user.sub);
+    }
 }

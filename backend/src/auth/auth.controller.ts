@@ -7,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   Req,
-  Request as ReqDecorator,
   Param,
   Res,
   Query,
@@ -41,7 +40,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
 
   @Post("register")
@@ -85,11 +84,8 @@ export class AuthController {
   @ApiQuery({ name: "token", type: "string" })
   async confirmEmail(
     @Query("token") token: string,
-    //@Res() res: Response
   ) {
     await this.authService.confirmEmail(token);
-    // const frontendUrl = this.configService.get<string>("FRONTEND_URL") || "http://localhost:5173";
-    // return res.redirect(`${frontendUrl}/email-success`);
     return {
       success: true,
       message: "Email successfully confirmed",
@@ -107,6 +103,14 @@ export class AuthController {
   @Post("update-email")
   async updateEmail(@Req() req: any, @Body() dto: UpdateEmailDto) {
     return this.authService.updateEmail(req.user.sub, dto);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Post("vocabulary")
+  @ApiOperation({ summary: "Save a word from video to vocabulary" })
+  async saveWord(@Req() req: any, @Body() body: any) {
+    return this.authService.saveWordToVocabulary(Number(req.user.sub), body);
   }
 
   @UseGuards(AuthGuard)
@@ -147,6 +151,16 @@ export class AuthController {
   getKnowledgeTags(@Req() req: any) {
     const userId = Number(req.user.sub);
     return this.authService.getKnowledgeTagProgress(userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Get("profile/progress-details")
+  @ApiOperation({ summary: "Get aggregated profile metrics for dashboard progress charts" })
+  @ApiResponse({ status: 200, description: "Detailed summary data objects returned successfully." })
+  getProgressDetails(@Req() req: any) {
+    const userId = Number(req.user.sub);
+    return this.authService.getProgressDetails(userId);
   }
 
   @Get("/oauth/callback/:provider")

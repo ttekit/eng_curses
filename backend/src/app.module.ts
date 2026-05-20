@@ -46,7 +46,7 @@ import { ProfileModule } from "./profile/profile.module";
     TeacherStudentsModule,
     BillingModule,
     LearnerRecapModule,
-    ProfileModule,  
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [
