@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Inject } from "@nestjs/common";
 import { generateContentVideoIframe } from "src/common/content-video-iframe.util";
 import { PrismaService } from "src/prisma.service";
 import { CreateContentVideoDto } from "./dto/create-content-video.dto";
 import { UpdateContentVideoDto } from "./dto/update-content-video.dto";
+import { Redis } from "ioredis";
 
-/** Catalog / playlist ordering: series → media slot → clip. */
 export function compareContentVideosPlaylistOrder(
   a: {
     id: number;
@@ -30,7 +30,10 @@ export const CATALOG_CONTENT_VISIBILITY_PUBLIC = "public" as const;
 
 @Injectable()
 export class ContentVideoService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis
+  ) { }
 
   async create(createContentVideoDto: CreateContentVideoDto) {
     const maxRow = await this.prisma.contentVideo.aggregate({
@@ -38,13 +41,20 @@ export class ContentVideoService {
       _max: { playlistPosition: true },
     });
     const playlistPosition = (maxRow._max.playlistPosition ?? -1) + 1;
-    return this.prisma.contentVideo.create({
+    const newVideo = await this.prisma.contentVideo.create({
       data: { ...createContentVideoDto, playlistPosition },
     });
+    await this.redis.del('catalog:videos');
+    return newVideo;
   }
 
   async findAll() {
-    return this.prisma.contentVideo.findMany({
+    const cachedVideos = await this.redis.get('catalog:videos');
+    if (cachedVideos) {
+      return JSON.parse(cachedVideos);
+    }
+
+    const videos = await this.prisma.contentVideo.findMany({
       where: {
         content: {
           category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
@@ -72,6 +82,9 @@ export class ContentVideoService {
         },
       },
     });
+
+    await this.redis.set('catalog:videos', JSON.stringify(videos), 'EX', 300);
+    return videos;
   }
 
   async findWatchedByUser(userId: number) {
@@ -142,10 +155,12 @@ export class ContentVideoService {
     if (!contentVideo) {
       throw new NotFoundException(`ContentVideo with ID ${id} not found`);
     }
-    return this.prisma.contentVideo.update({
+    const updatedVideo = await this.prisma.contentVideo.update({
       where: { id },
       data: updateContentVideoDto,
     });
+    await this.redis.del('catalog:videos');
+    return updatedVideo;
   }
 
   async remove(id: number) {
@@ -156,6 +171,8 @@ export class ContentVideoService {
     if (!contentVideo) {
       throw new NotFoundException(`ContentVideo with ID ${id} not found`);
     }
-    return this.prisma.contentVideo.delete({ where: { id } });
+    const deletedVideo = await this.prisma.contentVideo.delete({ where: { id } });
+    await this.redis.del('catalog:videos');
+    return deletedVideo;
   }
 }

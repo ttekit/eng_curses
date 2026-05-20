@@ -23,6 +23,7 @@ import { TeacherStudentsModule } from "./teacher-students/teacher-students.modul
 import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
 import { ProfileModule } from "./profile/profile.module";
+import { RedisModule } from "./redis/redis.module";
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ProfileModule } from "./profile/profile.module";
     BillingModule,
     LearnerRecapModule,
     ProfileModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [
