@@ -68,7 +68,9 @@ function coerceHasCompletedPlacement(raw: unknown): boolean {
 }
 
 function normalizeLearnerRole(raw: unknown): string {
-  const s = String(raw ?? "adult").trim().toLowerCase();
+  const s = String(raw ?? "adult")
+    .trim()
+    .toLowerCase();
   return s.length > 0 ? s : "adult";
 }
 
@@ -99,22 +101,19 @@ function normalizeProfile(raw: unknown): UserData | null {
       const n = typeof v === "number" ? v : Number(v);
       return Number.isFinite(n) ? n : null;
     })(),
-    videoQuality:
-      typeof r.videoQuality === "string" ? r.videoQuality : "",
-    learningGoal:
-      typeof r.learningGoal === "string" ? r.learningGoal : "",
-    timeToAchieve:
-      typeof r.timeToAchieve === "string" ? r.timeToAchieve : "",
+    videoQuality: typeof r.videoQuality === "string" ? r.videoQuality : "",
+    learningGoal: typeof r.learningGoal === "string" ? r.learningGoal : "",
+    timeToAchieve: typeof r.timeToAchieve === "string" ? r.timeToAchieve : "",
     studyingPlanPhases:
       r.studyingPlanPhases !== undefined && r.studyingPlanPhases !== null
         ? r.studyingPlanPhases
         : undefined,
     activePhaseEnteredAt:
-      typeof r.activePhaseEnteredAt === "string" ?
-        r.activePhaseEnteredAt
-      : r.activePhaseEnteredAt === null ?
-        null
-      : undefined,
+      typeof r.activePhaseEnteredAt === "string"
+        ? r.activePhaseEnteredAt
+        : r.activePhaseEnteredAt === null
+          ? null
+          : undefined,
     activeStudyingPhaseIndex: (() => {
       const v = r.activeStudyingPhaseIndex;
       if (v === null || v === undefined) return undefined;
@@ -158,15 +157,29 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshProfile = useCallback(async (): Promise<UserData | null> => {
-    const response = await apiFetch("/auth/profile", { method: "GET" });
-    if (!response.ok) {
-      setUser(null);
+    try {
+      const response = await apiFetch("/auth/profile", { method: "GET" });
+
+      if (response.status === 404) {
+        console.warn(
+          "[UserContext] Profile not initialized yet (normal during onboarding).",
+        );
+        return null;
+      }
+
+      if (!response.ok) {
+        setUser(null);
+        return null;
+      }
+
+      const data: unknown = await response.json();
+      const next = normalizeProfile(data);
+      setUser(next);
+      return next;
+    } catch (err) {
+      console.error("[UserContext] Failed to fetch profile:", err);
       return null;
     }
-    const data: unknown = await response.json();
-    const next = normalizeProfile(data);
-    setUser(next);
-    return next;
   }, []);
 
   const login = (data: UserData) => {

@@ -42,9 +42,11 @@ export class AuthService {
     private readonly providerService: ProviderService,
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
-  ) { }
+  ) {}
 
-  private async filterExistingGenreIds(ids: number[] | undefined): Promise<number[]> {
+  private async filterExistingGenreIds(
+    ids: number[] | undefined,
+  ): Promise<number[]> {
     if (!ids?.length) {
       return [];
     }
@@ -121,6 +123,7 @@ export class AuthService {
       learningGoal: trimmedLearningGoal || null,
       timeToAchieve: trimmedTimeToAchieve || null,
     };
+
     const allowedRegisterRoles = new Set(["ADULT", "STUDENT", "TEACHER"]);
     const requestedRole = String(dto.role ?? "")
       .trim()
@@ -128,6 +131,17 @@ export class AuthService {
     const roleLabel = allowedRegisterRoles.has(requestedRole)
       ? requestedRole
       : "ADULT";
+
+    // --- ГЕНЕРАЦИЯ 6-ЗНАЧНОГО OTP КОДА ---
+    let otpCode: string | null = null;
+    let otpExpires: Date | null = null;
+
+    if (!outboundMailDisabled) {
+      // Генерируем 6 случайных цифр в виде строки (чтобы не терялись нули в начале, например "012345")
+      otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      otpExpires = new Date(Date.now() + 15 * 60 * 1000); // Код действителен 15 минут
+    }
+
     const mainUser = await prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
@@ -135,7 +149,9 @@ export class AuthService {
         name: dto.name,
         role: roleLabel as any,
         method: "CREDENTIALS",
-        isVerified: outboundMailDisabled,
+        isVerified: outboundMailDisabled, // Если почта отключена, сразу true, иначе false
+        verificationCode: otpCode, // Записываем код в БД
+        verificationCodeExpires: otpExpires, // Записываем срок жизни
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
             string,
@@ -147,8 +163,10 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        verificationCode: true,
       },
     });
+
     if (favoriteGenreIds.length > 0 || hatedGenreIds.length > 0) {
       const genreUpdate: Record<string, unknown> = {};
       if (favoriteGenreIds.length > 0) {
@@ -169,13 +187,10 @@ export class AuthService {
 
     const generatedStudents: GeneratedStudent[] = [];
 
-    // 2. Генерация аккаунтов для учеников
-    // 2. Генерация аккаунтов для учеников
     if (dto.role === "teacher" && Array.isArray(dto.studentNames)) {
       for (const pupil of dto.studentNames) {
         const randomId = Math.floor(1000 + Math.random() * 9000);
 
-        // Безопасно достаем данные, даже если это объект или строка
         let firstName = "student";
         let lastName = randomId.toString();
 
@@ -215,48 +230,96 @@ export class AuthService {
         });
       }
     }
+
     await this.alcorythmService.analyzeUserLevel(mainUser.id);
-
-    const payload = { sub: mainUser.id, email: mainUser.email };
-
-    //await this.saveSession(req, mainUser);
 
     if (!outboundMailDisabled) {
       await this.emailConfirmationService.sendVerificationToken(mainUser);
     }
 
+    const payload = { sub: mainUser.id, email: mainUser.email };
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: outboundMailDisabled
+        ? await this.jwtService.signAsync(payload)
+        : null,
+      isVerified: outboundMailDisabled, // Фронтенд поймет по этому флагу, нужно ли открывать страницу ввода OTP
       user: {
         id: mainUser.id,
         email: mainUser.email,
         name: mainUser.name,
       },
-      // Возвращаем данные учеников учителю
       generatedStudents:
         generatedStudents.length > 0 ? generatedStudents : undefined,
       message: outboundMailDisabled
         ? "You have successfully registered."
-        : "You have successfully registered. Please confirm your email. A message has been sent to your mailing address.",
+        : "Please verify your email. A 6-digit confirmation code has been sent to your email address.",
+    };
+  }
+
+  async verifyEmailCode(email: string, code: string) {
+    const prisma = this.prisma as any;
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new BadRequestException("User with this email does not exist.");
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException("This account is already verified.");
+    }
+
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException("Invalid confirmation code.");
+    }
+
+    if (
+      !user.verificationCodeExpires ||
+      new Date() > new Date(user.verificationCodeExpires)
+    ) {
+      throw new BadRequestException(
+        "Verification code has expired. Please request a new one.",
+      );
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
+    });
+
+    const payload = { sub: updatedUser.id, email: updatedUser.email };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+      },
+      message: "Email successfully verified. Welcome!",
     };
   }
 
   public async confirmEmail(token: string) {
-    // 1. Ищем токен в правильной таблице (Token), а не в User
     const existingToken = await this.prisma.token.findUnique({
       where: {
         token: token,
       },
     });
 
-    // 2. Если токен не найден в базе
     if (!existingToken) {
       throw new BadRequestException(
         "Невірний або прострочений токен підтвердження",
       );
     }
 
-    // 3. Ищем пользователя по email, который привязан к этому токену
     const user = await this.prisma.user.findUnique({
       where: {
         email: existingToken.email,
@@ -267,22 +330,37 @@ export class AuthService {
       throw new BadRequestException("Користувача не знайдено");
     }
 
-    // 4. Обновляем статус пользователя на "Подтвержденный"
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
         isVerified: true,
-        // verificationToken: null убрали, так как такого поля в User нет
       },
     });
 
-    // 5. Удаляем сам токен из таблицы Token, чтобы его нельзя было юзать дважды
     await this.prisma.token.delete({
       where: { id: existingToken.id },
     });
 
     return { message: "Email успішно підтверджено" };
   }
+  async updateUserPreferences(userId: number, data: any) {
+    // Обновляем данные пользователя в Prisma
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        // Убедись, что эти поля есть в твоей схеме schema.prisma
+        // Если они в другой таблице, напиши мне, я поправлю
+        additionalUserData: {
+          update: {
+            hobbies: data.hobbies,
+            knownLanguages: data.knownLanguages,
+            // ... добавь остальные поля, которые ты шлешь с фронта
+          },
+        },
+      },
+    });
+  }
+
   public async resendConfirmationEmail(email: string) {
     // 1. Шукаємо користувача в базі за email
     const user = await this.prisma.user.findUnique({
@@ -421,7 +499,6 @@ export class AuthService {
     return { message: "Password successfully updated" };
   }
   async updateEmail(userId: number, dto: UpdateEmailDto) {
-    // Проверяем, не занята ли почта
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.newEmail },
     });
@@ -611,9 +688,9 @@ export class AuthService {
       subscriptionPlan: user.subscriptionPlan ?? "",
       subscriptionStatus: user.subscriptionStatus ?? "",
       stripeSubscriptionId: user.stripeSubscriptionId ?? "",
-
     };
   }
+  
 
   /** Monday 00:00 UTC through Sunday (current ISO week). */
   private utcWeekRange(): { weekStart: Date; weekEndExclusive: Date } {

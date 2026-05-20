@@ -13,6 +13,7 @@ import {
   Query,
   BadRequestException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -29,10 +30,11 @@ import {
 import { AuthProviderGuard } from "./guards/provider.guard";
 import { ProviderService } from "./provider/provider.service";
 import { ConfigService } from "@nestjs/config";
-import type { Request, Response } from "express";
+import { type Request, type Response } from "express";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
 import { TurnstileGuard } from "./guards/turnstile.guard";
+import { UsersService } from "src/users/users.service";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -41,8 +43,8 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
+    private readonly userService: UsersService,
   ) {}
-
 
   @Post("register")
   @UseGuards(TurnstileGuard)
@@ -69,6 +71,25 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(@Body() loginDto: LoginDto) {
     return await this.authService.login(loginDto);
+  }
+  @Post("verify-email")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify user email using 6-digit OTP code" })
+  @ApiResponse({
+    status: 200,
+    description: "Email successfully verified. Returns access token.",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Invalid or expired verification code.",
+  })
+  async verifyEmail(@Body() body: { email: string; code: string }) {
+    if (!body.email || !body.code) {
+      throw new BadRequestException(
+        "Email and verification code are required.",
+      );
+    }
+    return await this.authService.verifyEmailCode(body.email, body.code);
   }
 
   @Post("resend-confirmation")
@@ -97,6 +118,21 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
+  @Post("update-preferences")
+  async updatePreferences(@ReqDecorator() req: any, @Body() body: any) {
+    const userId = req.user?.id || req.user?.sub;
+
+    if (!userId) {
+      console.error("DEBUG: ID пользователя не найден в req.user:", req.user);
+      throw new UnauthorizedException(
+        "Авторизація не вдалася: ID користувача відсутній",
+      );
+    }
+
+    return this.authService.updateUserPreferences(userId, body);
+  }
+
+  @UseGuards(AuthGuard)
   @Post("update-password")
   async updatePassword(@Req() req: any, @Body() dto: UpdatePasswordDto) {
     console.log("Расшифрованный токен:", req.user);
@@ -111,7 +147,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
-  @Get("profile")
+  @Post("profile")
   @ApiOperation({ summary: "Get user profile (requires authentication)" })
   @ApiResponse({
     status: 200,
@@ -119,8 +155,19 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   getProfile(@Req() req: any) {
-    const userId = Number(req.user.sub);
-    return this.authService.getProfile(userId);
+    const userId = req.user?.id || req.user?.sub;
+
+    if (!userId || isNaN(Number(userId))) {
+      console.error(
+        "DEBUG PROFILE: Неверный или отсутствующий ID в req.user:",
+        req.user,
+      );
+      throw new UnauthorizedException(
+        "Не удалось определить профиль пользователя",
+      );
+    }
+
+    return this.authService.getProfile(Number(userId));
   }
 
   @UseGuards(AuthGuard)

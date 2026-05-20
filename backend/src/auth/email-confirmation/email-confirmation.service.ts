@@ -18,25 +18,16 @@ export class EmailConfirmationService {
     private readonly mail: MailService,
   ) {}
 
-  async sendVerificationToken(user: Pick<User, "email">): Promise<void> {
+  async sendVerificationToken(user: { email: string; verificationCode?: string | null }): Promise<void> {
     const email = user.email.toLowerCase();
-    const token = randomBytes(32).toString("hex");
-    const expiresIn = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await this.prisma.token.upsert({
-      where: { email },
-      create: {
-        email,
-        token,
-        type: TokenType.VERIFICATION,
-        expiresIn,
-      },
-      update: {
-        token,
-        type: TokenType.VERIFICATION,
-        expiresIn,
-      },
-    });
-    await this.mail.sendConfirmationEmail(email, token);
+    
+    const code = user.verificationCode;
+
+    if (!code) {
+      throw new BadRequestException("Код верифікації не знайдено для цього користувача.");
+    }
+
+    await this.mail.sendConfirmationEmail(email, code);
   }
 
   async newVerification(

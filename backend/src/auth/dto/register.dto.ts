@@ -79,4 +79,8 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   timeToAchieve?: string;
+
+  @IsOptional()
+  @IsString()
+  captchaToken?: string;
 }

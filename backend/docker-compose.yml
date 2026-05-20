@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,6 +23,16 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: explys-mailpit
+    ports:
+      - "1025:1025" # Порт для приема SMTP писем от NestJS
+      - "8025:8025" # Порт для Web-интерфейса (откроем в браузере)
+    environment:
+      - MP_MAX_MESSAGES=500 # Чтобы память не забивалась, храним последние 500 писем
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -19,9 +19,7 @@ export type RegisterResult =
   | { success: false; message: string };
 
 /** Matches backend `@IsEmail` + `@MinLength(6)`; returns a user-facing error or `null`. */
-export function getRegisterCredentialsError(
-  formData: FormData,
-): string | null {
+export function getRegisterCredentialsError(formData: FormData): string | null {
   const email = formData.email.trim();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return "Your email from step 1 is missing or invalid. Use Back, then re-enter your account email and password on page 1.";
@@ -53,6 +51,7 @@ export function buildRegisterBody(formData: FormData): Record<string, unknown> {
     name: formData.name.trim(),
     email: formData.email.trim(),
     password: formData.password,
+    captchaToken: formData.token,
   };
 
   if (formData.role && formData.role !== CHOOSE) {
@@ -96,12 +95,18 @@ export function buildRegisterBody(formData: FormData): Record<string, unknown> {
   return body;
 }
 
-export async function registerUser(formData: FormData): Promise<RegisterResult> {
+export async function registerUser(
+  formData: FormData,
+): Promise<RegisterResult> {
   const creds = getRegisterCredentialsError(formData);
   if (creds) {
     return { success: false, message: creds };
   }
+
   const body = buildRegisterBody(formData);
+
+  console.log("FINAL BODY SENT TO BACKEND:", body);
+
   let response: Response;
   try {
     response = await apiFetch("/auth/register", {

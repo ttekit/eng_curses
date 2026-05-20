@@ -38,6 +38,7 @@ import RequireAuth from "./components/RequireAuth";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireSubscriberAccess from "./components/RequireSubscriberAccess";
 import SubscribePage from "./pages/subscription/SubscribePage";
+import { EmailVerification } from "./pages/registration/EmailVerification";
 
 const router = createBrowserRouter([
   {
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
         element: <RegistrationPreferences />,
       },
       { path: "/registrationSuccess", element: <RegisterSuccessPage /> },
+      { path: "/verify-email", element: <EmailVerification /> },
       { path: "/loginForm", element: <LoginForm /> },
       { path: "/pricing", element: <PricingPage /> },
       {

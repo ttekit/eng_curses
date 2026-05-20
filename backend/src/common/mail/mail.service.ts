@@ -18,20 +18,23 @@ export class MailService {
     private readonly configService: ConfigService,
   ) {}
 
-  public async sendConfirmationEmail(email: string, token: string) {
+  public async sendConfirmationEmail(email: string, code: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping confirmation to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping confirmation to ${email}`,
+      );
       return;
     }
-    const domain = this.configService.getOrThrow<string>("FRONTEND_URL");
-    const html = await render(ConfirmationTemplate({ domain, token }));
+    const html = await render(ConfirmationTemplate({ code }));
 
-    return this.sendMail(email, "Email confirmation", html);
+    return this.sendMail(email, "Код підтвердження реєстрації — Explys", html);
   }
 
   public async sendPasswordResetEmail(email: string, token: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping password reset to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping password reset to ${email}`,
+      );
       return;
     }
     const domain = this.configService.getOrThrow<string>("FRONTEND_URL");
@@ -42,7 +45,9 @@ export class MailService {
 
   public async sendTwoFactorTokenEmail(email: string, token: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping 2FA mail to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping 2FA mail to ${email}`,
+      );
       return;
     }
     const html = await render(TwoFactorAuthTemplate({ token }));
@@ -68,7 +73,9 @@ export class MailService {
 
   async sendPasswordChangedNotification(email: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping password-changed notice to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping password-changed notice to ${email}`,
+      );
       return;
     }
     try {
@@ -81,7 +88,10 @@ export class MailService {
         html: emailHtml,
       });
     } catch (error) {
-      this.logger.error(`Password-changed mail failed for ${email}`, error as Error);
+      this.logger.error(
+        `Password-changed mail failed for ${email}`,
+        error as Error,
+      );
       throw error;
     }
   }

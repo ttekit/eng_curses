@@ -18,9 +18,7 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { cn } from "../../lib/utils";
-import { registerUser } from "../../lib/registerUser";
-import { apiFetch, setStoredAccessToken } from "../../lib/api";
-import { setPendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
+import { apiFetch } from "../../lib/api";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useUser } from "../../context/UserContext";
 
@@ -110,39 +108,46 @@ export default function RegistrationPreferences() {
       favoriteGenres: favoriteIds.filter((f) => !next.includes(f)),
     } as Partial<FormData>);
   };
+  // const result = await registerUser(
+  //   formData,
+  //   credentialMsgs,
+  //   alerts.network,
+  // );
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      const result = await registerUser(
-        formData,
-        credentialMsgs,
-        alerts.network,
-      );
+      const accessToken = localStorage.getItem("access_token");
 
-      if (result.success) {
-        const token = result.accessToken;
-        if (token) {
-          setStoredAccessToken(token);
-          await refreshProfile();
-        }
-        setPendingRegistrationLoginWelcome();
+      const response = await apiFetch("/auth/update-preferences", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          favoriteGenres: formData.favoriteGenres,
+          hatedGenres: formData.hatedGenres,
+          learningGoal: formData.learningGoal,
+          timeToAchieve: formData.timeToAchieve,
+        }),
+      });
+
+      if (response.ok) {
+        await refreshProfile();
         navigate("/subscribe", { replace: true });
       } else {
+        const errorData = await response.json();
         alert(
-          `${alerts.failedPrefix} ${result.message || alerts.failedFallback}`,
+          `${alerts.failedPrefix} ${errorData.message || alerts.failedFallback}`,
         );
       }
     } catch (error) {
-      console.error("Network or parsing error:", error);
+      console.error("Error updating preferences:", error);
       alert(alerts.network);
     }
   };
-
-  if (isTeacher) {
-    return null;
-  }
 
   return (
     <div lang={locale === "uk" ? "uk" : "en"}>
