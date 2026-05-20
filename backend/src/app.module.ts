@@ -22,6 +22,7 @@ import { AdminUsersModule } from "./admin-users/admin-users.module";
 import { TeacherStudentsModule } from "./teacher-students/teacher-students.module";
 import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
+import { ProfileModule } from "./profile/profile.module";
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
     TeacherStudentsModule,
     BillingModule,
     LearnerRecapModule,
+    ProfileModule,  
   ],
   controllers: [AppController],
   providers: [

@@ -26,7 +26,7 @@ import {
 import { ProfileStats } from "../../components/profile/ProfileStats";
 import { ProfileProgress } from "../../components/profile/ProfileProgress";
 import { ProfileAchievements } from "../../components/profile/ProfileAchievements";
-import { ProfileActivity } from "../../components/profile/ProfileActivity";
+import { ProfileActivity, type ActivityLogItem } from "../../components/profile/ProfileActivity";
 import { ProfileSettings } from "../../components/profile/ProfileSettings";
 import { ProfileTeacherStudents } from "../../components/profile/ProfileTeacherStudents";
 import { ProfileTeacherVideos } from "../../components/profile/ProfileTeacherVideos";
@@ -66,15 +66,14 @@ export default function ProfileMain() {
   const { user, isLoading, isLoggedIn, refreshProfile } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // icon-only rail until expanded
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [joinMeta, setJoinMeta] = useState<{
     userId: string;
     label: string;
-    xp: number;
-    currentStreak: number;
   } | null>(null);
   const [learningStats, setLearningStats] =
     useState<LearningStatsPayload | null>(null);
+  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -88,8 +87,6 @@ export default function ProfileMain() {
       const j: unknown = await r.json();
       if (!j || typeof j !== "object") return;
       const createdAt = (j as { createdAt?: unknown }).createdAt;
-      const xp = Number((j as any).xp) || 0;
-      const currentStreak = Number((j as any).currentStreak) || 0;
       if (typeof createdAt !== "string") return;
       const d = new Date(createdAt);
       if (Number.isNaN(d.getTime()) || cancelled) return;
@@ -99,8 +96,6 @@ export default function ProfileMain() {
           month: "long",
           year: "numeric",
         }),
-        xp,
-        currentStreak,
       });
     })();
     return () => {
@@ -109,35 +104,45 @@ export default function ProfileMain() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id || (activeTab !== "overview" && activeTab !== "activity"))
-      return;
+    if (!user?.id || (activeTab !== "overview" && activeTab !== "activity")) return;
     let cancelled = false;
     void (async () => {
-      const r = await apiFetch("/auth/profile/learning-stats", {
-        method: "GET",
-      });
-      if (!r.ok || cancelled) {
-        if (!cancelled) setLearningStats(null);
-        return;
-      }
-      const raw: unknown = await r.json();
-      if (!raw || typeof raw !== "object" || cancelled) return;
-      const o = raw as Record<string, unknown>;
-      const weekly = o.weeklyActivity;
-      setLearningStats({
-        totalWatchTimeMin: Number(o.totalWatchTimeMin ?? 0) || 0,
-        videosCompleted: Number(o.videosCompleted ?? 0) || 0,
-        testsCompleted: Number(o.testsCompleted ?? 0) || 0,
-        averageScore:
-          o.averageScore === null || o.averageScore === undefined
-            ? null
-            : Number(o.averageScore),
-        weeklyActivity: Array.isArray(weekly)
-          ? (weekly as { day: string; minutes: number }[])
-          : [...DEFAULT_WEEKLY_ACTIVITY],
-      });
+      try {
+        const [statsRes, logsRes] = await Promise.all([
+          apiFetch("/profile/learning-stats", { method: "GET" }),
+          activeTab === "activity"
+            ? apiFetch("/profile/activity-log", { method: "GET" })
+            : Promise.resolve(null),
+        ]);
 
-      console.log("LEARNING STATS FROM BACKEND:", o);
+        if (!cancelled) {
+          if (statsRes.ok) {
+            const o = (await statsRes.json()) as Record<string, unknown>;
+            const weekly = o.weeklyActivity;
+            setLearningStats({
+              totalWatchTimeMin: Number(o.totalWatchTimeMin ?? 0) || 0,
+              videosCompleted: Number(o.videosCompleted ?? 0) || 0,
+              testsCompleted: Number(o.testsCompleted ?? 0) || 0,
+              averageScore:
+                o.averageScore === null || o.averageScore === undefined
+                  ? null
+                  : Number(o.averageScore),
+              weeklyActivity: Array.isArray(weekly)
+                ? (weekly as { day: string; minutes: number }[])
+                : [...DEFAULT_WEEKLY_ACTIVITY],
+            });
+          }
+
+          if (logsRes && logsRes.ok) {
+            const logsData = await logsRes.json();
+            if (Array.isArray(logsData)) {
+              setActivityLogs(logsData);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile stats/logs", err);
+      }
     })();
     return () => {
       cancelled = true;
@@ -149,8 +154,6 @@ export default function ProfileMain() {
 
   const headerModel: ProfileHeaderModel | null = useMemo(() => {
     if (!user) return null;
-    const localStreak =
-      joinMeta?.userId === user.id ? joinMeta.currentStreak : undefined;
     return {
       name: user.name,
       email: user.email,
@@ -158,18 +161,13 @@ export default function ProfileMain() {
       role: normalizeRole(user.role),
       level: user.englishLevel?.trim() || "—",
       joinDateLabel,
-      streakDays:
-        localStreak !== undefined
-          ? localStreak
-          : (user as any).currentStreak || 0,
+      streakDays: (user as any).currentStreak || 0,
     };
-  }, [user, joinDateLabel, joinMeta]);
+  }, [user, joinDateLabel]);
 
   const statsModel: ProfileStatsModel | null = useMemo(() => {
     if (!user) return null;
     const s = learningStats;
-    const localXp = joinMeta?.userId === user.id ? joinMeta.xp : undefined;
-    const finalXp = localXp !== undefined ? localXp : user.xp || 0;
     return {
       totalWatchTimeMin: s?.totalWatchTimeMin ?? 0,
       videosCompleted: s?.videosCompleted ?? 0,
@@ -180,16 +178,14 @@ export default function ProfileMain() {
           : null,
       weeklyActivity: s?.weeklyActivity ?? [...DEFAULT_WEEKLY_ACTIVITY],
       levelLabel: user.englishLevel?.trim() || "A1",
-      xp: finalXp,
-      appLevel: Math.floor(finalXp / 1000) + 1,
+      xp: user.xp || 0,
+      appLevel: Math.floor((user.xp || 0) / 1000) + 1,
     };
-  }, [user, learningStats, joinMeta]);
+  }, [user, learningStats]);
 
   const tabs = useMemo(() => {
     if (user?.role === "teacher") {
-      const withoutStudying = LEARNER_TABS.filter(
-        (t) => t.id !== "studying-plan",
-      );
+      const withoutStudying = LEARNER_TABS.filter((t) => t.id !== "studying-plan");
       return [
         withoutStudying[0],
         {
@@ -283,6 +279,7 @@ export default function ProfileMain() {
     );
   }
 
+  // eslint-disable-next-line no-inner-declarations
   function selectTab(id: TabId) {
     setActiveTab(id);
     if (id === "overview") setSearchParams({}, { replace: true });
@@ -301,8 +298,8 @@ export default function ProfileMain() {
         <CatalogSidebar
           categories={[]}
           selectedCategory="All"
-          onSelectCategory={() => {}}
-          onSelectLevel={() => {}}
+          onSelectCategory={() => { }}
+          onSelectLevel={() => { }}
           reserveTopNavSpace={false}
           welcomeName={
             user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
@@ -339,7 +336,7 @@ export default function ProfileMain() {
                     className={cn(
                       "inline-flex hover:cursor-pointer flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:flex-none sm:justify-start",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                     )}
                   >
@@ -367,6 +364,10 @@ export default function ProfileMain() {
               {activeTab === "activity" ? (
                 <ProfileActivity
                   weeklyActivity={learningStats?.weeklyActivity}
+                  videosWatched={learningStats?.videosCompleted}
+                  testsCompleted={learningStats?.testsCompleted}
+                  averageScore={learningStats?.averageScore}
+                  activityLogs={activityLogs}
                 />
               ) : null}
               {activeTab === "settings" ? (

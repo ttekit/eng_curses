@@ -8,78 +8,76 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
+import type { ElementType } from "react";
 
-const activityHistory = [
+export type ActivityLogType =
+  | "video_completed"
+  | "achievement"
+  | "streak"
+  | "video_started"
+  | "vocabulary"
+  | "level_up"
+  | string;
+
+export interface ActivityLogItem {
+  id: string | number;
+  type: ActivityLogType;
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
+const fallbackHistory: ActivityLogItem[] = [
   {
-    id: "1",
+    id: "fallback-1",
     type: "video_completed",
     title: "Completed: The Office — Business Meeting",
     description: "Scored 85% on the quiz",
     timestamp: "2 hours ago",
-    icon: CheckCircle,
-    color: "text-accent",
   },
   {
-    id: "2",
+    id: "fallback-2",
     type: "achievement",
     title: "Achievement Unlocked: Perfect Score",
     description: "Got 100% on TED Talk quiz",
     timestamp: "5 hours ago",
-    icon: Trophy,
-    color: "text-primary",
   },
-  {
-    id: "3",
-    type: "streak",
-    title: "Streak Extended!",
-    description: "You are now on a 12-day streak",
-    timestamp: "Today",
-    icon: Flame,
-    color: "text-orange-500",
-  },
-  {
-    id: "4",
-    type: "video_started",
-    title: "Started: Friends — The One with the Interview",
-    description: "Category: Casual Conversation",
-    timestamp: "Yesterday",
-    icon: PlayCircle,
-    color: "text-primary",
-  },
-  {
-    id: "5",
-    type: "vocabulary",
-    title: "New Words Learned",
-    description: "Added 15 words to your vocabulary",
-    timestamp: "Yesterday",
-    icon: BookOpen,
-    color: "text-muted-foreground",
-  },
-  {
-    id: "6",
-    type: "video_completed",
-    title: "Completed: TED Talk — The Power of Vulnerability",
-    description: "Scored 92% on the quiz",
-    timestamp: "2 days ago",
-    icon: CheckCircle,
-    color: "text-accent",
-  },
-  {
-    id: "7",
-    type: "level_up",
-    title: "Level Up!",
-    description: "Advanced from A2 to B1",
-    timestamp: "3 days ago",
-    icon: TrendingUp,
-    color: "text-primary",
-  },
-] as const;
+];
+
+const getActivityStyles = (type: string): { icon: ElementType; color: string; dotColor: string } => {
+  switch (type) {
+    case "video_completed":
+      return { icon: CheckCircle, color: "text-accent", dotColor: "bg-accent" };
+    case "achievement":
+      return { icon: Trophy, color: "text-primary", dotColor: "bg-primary" };
+    case "streak":
+      return { icon: Flame, color: "text-orange-500", dotColor: "bg-orange-500" };
+    case "video_started":
+      return { icon: PlayCircle, color: "text-primary", dotColor: "bg-primary" };
+    case "vocabulary":
+      return { icon: BookOpen, color: "text-muted-foreground", dotColor: "bg-muted-foreground" };
+    case "level_up":
+      return { icon: TrendingUp, color: "text-primary", dotColor: "bg-primary" };
+    default:
+      return { icon: CheckCircle, color: "text-muted-foreground", dotColor: "bg-muted-foreground" };
+  }
+};
 
 interface ProfileActivityProps {
   weeklyActivity?: { day: string; minutes: number }[];
+  videosWatched?: number;
+  testsCompleted?: number;
+  averageScore?: number | null;
+  activityLogs?: ActivityLogItem[];
 }
 
-export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
+export function ProfileActivity({
+  weeklyActivity = [],
+  videosWatched = 0,
+  testsCompleted = 0,
+  averageScore = null,
+  activityLogs = [],
+}: ProfileActivityProps) {
   const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const activityMap = new Map(
@@ -93,6 +91,8 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
 
   const activeDaysCount = streakCalendar.filter((d) => d.active).length;
 
+  const displayLogs = activityLogs.length > 0 ? activityLogs : fallbackHistory;
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
@@ -101,29 +101,20 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
             <div className="relative">
               <div className="absolute bottom-0 left-4 top-0 w-0.5 bg-border" />
               <div className="space-y-6">
-                {activityHistory.map((activity) => {
-                  const Icon = activity.icon;
+                {displayLogs.map((activity) => {
+                  const { icon: Icon, color, dotColor } = getActivityStyles(activity.type);
                   return (
                     <div
                       key={activity.id}
                       className="relative flex gap-4 pl-10"
                     >
                       <div className="absolute left-2 flex size-5 items-center justify-center rounded-full border-2 border-border bg-card">
-                        <div
-                          className={`size-2 rounded-full ${
-                            activity.type === "achievement" ||
-                            activity.type === "level_up"
-                              ? "bg-primary"
-                              : activity.type === "streak"
-                                ? "bg-orange-500"
-                                : "bg-accent"
-                          }`}
-                        />
+                        <div className={`size-2 rounded-full ${dotColor}`} />
                       </div>
                       <div className="flex-1 rounded-xl bg-secondary/30 p-4 transition-colors hover:bg-secondary/50">
                         <div className="flex items-start gap-3">
                           <div className="rounded-lg bg-background/50 p-2">
-                            <Icon className={`size-4 ${activity.color}`} />
+                            <Icon className={`size-4 ${color}`} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-foreground">
@@ -144,10 +135,11 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
               </div>
             </div>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Sample timeline — your real events will show here as we connect
-            activity tracking.
-          </p>
+          {activityLogs.length === 0 && (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Sample timeline — complete videos or quizzes to see your real activity here.
+            </p>
+          )}
         </ProfileCard>
       </div>
 
@@ -157,11 +149,10 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
             {streakCalendar.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-1">
                 <div
-                  className={`flex size-8 items-center justify-center rounded-lg ${
-                    day.active
-                      ? "bg-orange-500 text-white shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                      : "bg-secondary text-muted-foreground"
-                  }`}
+                  className={`flex size-8 items-center justify-center rounded-lg ${day.active
+                    ? "bg-orange-500 text-white shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                    : "bg-secondary text-muted-foreground"
+                    }`}
                 >
                   {day.active ? <Flame className="size-4" /> : null}
                 </div>
@@ -185,7 +176,7 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
                   Videos watched
                 </span>
               </div>
-              <span className="font-semibold text-foreground">8</span>
+              <span className="font-semibold text-foreground">{videosWatched}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -194,7 +185,7 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
                   Quizzes passed
                 </span>
               </div>
-              <span className="font-semibold text-foreground">6</span>
+              <span className="font-semibold text-foreground">{testsCompleted}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -203,7 +194,7 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
                   Words learned
                 </span>
               </div>
-              <span className="font-semibold text-foreground">42</span>
+              <span className="font-semibold text-foreground">0</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -212,27 +203,12 @@ export function ProfileActivity({ weeklyActivity = [] }: ProfileActivityProps) {
                   Average score
                 </span>
               </div>
-              <span className="font-semibold text-foreground">85%</span>
-            </div>
-          </div>
-        </ProfileCard>
-
-        <div className="rounded-xl border border-border/50 bg-gradient-to-br from-primary/20 to-accent/20 p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary/20 p-2">
-              <Trophy className="size-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Best performance</p>
-              <p className="font-semibold text-foreground">
-                TED Talk: Vulnerability
-              </p>
-              <span className="mt-1 inline-block rounded-md bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
-                92% score (sample)
+              <span className="font-semibold text-foreground">
+                {averageScore !== null ? `${Math.round(averageScore)}%` : "—"}
               </span>
             </div>
           </div>
-        </div>
+        </ProfileCard>
       </div>
     </div>
   );
