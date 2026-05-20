@@ -42,7 +42,7 @@ export class AuthService {
     private readonly providerService: ProviderService,
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
-  ) {}
+  ) { }
 
   private async filterExistingGenreIds(ids: number[] | undefined): Promise<number[]> {
     if (!ids?.length) {
@@ -559,6 +559,7 @@ export class AuthService {
         subscriptionStatus: true,
         stripeSubscriptionId: true,
         currentStreak: true,
+        xp: true,
         settings: {
           select: {
             playbackSpeed: true,
@@ -593,6 +594,7 @@ export class AuthService {
       email: user.email,
       isVerified: user.isVerified,
       role: user.role,
+      xp: user.xp,
       hasCompletedPlacement: user.hasCompletedPlacement,
       currentStreak: user.currentStreak ?? 0,
       englishLevel: extra?.englishLevel ?? "",
@@ -609,6 +611,7 @@ export class AuthService {
       subscriptionPlan: user.subscriptionPlan ?? "",
       subscriptionStatus: user.subscriptionStatus ?? "",
       stripeSubscriptionId: user.stripeSubscriptionId ?? "",
+
     };
   }
 
