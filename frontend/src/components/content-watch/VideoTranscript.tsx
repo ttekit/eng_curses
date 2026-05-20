@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import type { TranscriptLine, VocabularyItem } from "./defaultLessonSides";
+import { X } from "lucide-react";
 
 interface VideoTranscriptProps {
   transcript: TranscriptLine[];
@@ -10,7 +11,6 @@ interface VideoTranscriptProps {
   playbackSec?: number;
   /** Click a cue to jump the lesson player to this subtitle time. */
   onSeek?: (seconds: number) => void;
-  /** Dictionary words to highlight in the transcript */
   vocabulary?: VocabularyItem[];
 }
 
@@ -34,26 +34,30 @@ function activeCueIndex(
   return -1;
 }
 
-// Экранируем спецсимволы для регулярки
 function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Компонент для подсветки слов
-function HighlightedText({ text, words }: { text: string; words: string[] }) {
-  if (!words || words.length === 0) return <>{text}</>;
+function HighlightedText({
+  text,
+  vocabulary,
+  onWordClick,
+}: {
+  text: string;
+  vocabulary: VocabularyItem[];
+  onWordClick: (word: VocabularyItem) => void;
+}) {
+  if (!vocabulary || vocabulary.length === 0) return <>{text}</>;
 
   const pattern = useMemo(() => {
-    // Сортируем по длине (сначала длинные), чтобы фразы типа "get up" находились раньше чем "get"
-    const escaped = words
-      .map((w) => escapeRegExp(w.trim()))
+    const escaped = vocabulary
+      .map((v) => escapeRegExp(v.word.trim()))
       .filter((w) => w.length > 0)
       .sort((a, b) => b.length - a.length);
 
     if (!escaped.length) return null;
-    // Ищем точные совпадения слов (\b - границы слова), игнорируя регистр (gi)
     return new RegExp(`\\b(${escaped.join("|")})\\b`, "gi");
-  }, [words]);
+  }, [vocabulary]);
 
   if (!pattern) return <>{text}</>;
 
@@ -62,15 +66,22 @@ function HighlightedText({ text, words }: { text: string; words: string[] }) {
   return (
     <>
       {parts.map((part, i) => {
-        // split с группой захвата (capture group) помещает совпадения на нечетные индексы
         if (i % 2 === 1) {
+          const matchedWord = vocabulary.find(
+            (v) => v.word.toLowerCase() === part.toLowerCase()
+          );
           return (
-            <span
+            <button
               key={i}
-              className="rounded bg-green-500/15 px-0.5 font-semibold text-green-500"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (matchedWord) onWordClick(matchedWord);
+              }}
+              className="rounded bg-green-500/15 px-0.5 font-semibold text-green-500 transition-colors hover:bg-green-500/30 cursor-pointer"
             >
               {part}
-            </span>
+            </button>
           );
         }
         return <span key={i}>{part}</span>;
@@ -87,15 +98,11 @@ export function VideoTranscript({
   vocabulary = [],
 }: VideoTranscriptProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [selectedWord, setSelectedWord] = useState<VocabularyItem | null>(null);
+
   const activeIndex = useMemo(
     () => activeCueIndex(transcript, playbackSec),
     [transcript, playbackSec],
-  );
-
-  // Вытягиваем только сами слова для подсветки
-  const vocabWords = useMemo(
-    () => vocabulary.map((v) => v.word),
-    [vocabulary],
   );
 
   useEffect(() => {
@@ -140,10 +147,10 @@ export function VideoTranscript({
   const seeks = typeof onSeek === "function";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
       <h3 className="mb-4 text-lg font-semibold text-foreground">Transcript</h3>
 
-      <div ref={listRef} className="space-y-2">
+      <div ref={listRef} className="space-y-2 relative">
         {transcript.map((line, index) => {
           const canSeek = seeks && typeof line.startSec === "number";
           const highlighted = activeIndex === index;
@@ -156,7 +163,7 @@ export function VideoTranscript({
               title={canSeek ? "Seek to this line" : undefined}
               onClick={() => canSeek && onSeek!(line.startSec!)}
               className={cn(
-                "flex w-full cursor-default gap-3 rounded-lg p-2 text-left transition-colors",
+                "flex w-full cursor-default gap-3 rounded-lg p-2 text-left transition-colors relative",
                 canSeek && "cursor-pointer hover:bg-muted/50",
                 highlighted && "bg-primary/15 ring-2 ring-primary/25",
               )}
@@ -165,12 +172,47 @@ export function VideoTranscript({
                 {line.time}
               </span>
               <p className="min-w-0 flex-1 text-sm leading-relaxed text-foreground">
-                <HighlightedText text={line.text} words={vocabWords} />
+                <HighlightedText
+                  text={line.text}
+                  vocabulary={vocabulary}
+                  onWordClick={setSelectedWord}
+                />
               </p>
             </button>
           );
         })}
       </div>
+
+      {selectedWord && (
+        <div className="sticky bottom-4 left-0 right-0 z-10 mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+          <div className="p-4">
+            <div className="flex items-start justify-between">
+              <h4 className="text-lg font-bold text-foreground">
+                {selectedWord.word}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setSelectedWord(null)}
+                className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              {[selectedWord.translation?.trim(), selectedWord.pronunciation?.trim()]
+                .filter(Boolean)
+                .join(" · ") || "—"}
+            </p>
+
+            <div className="mt-3 rounded-lg bg-muted/50 p-3">
+              <p className="text-sm leading-relaxed text-foreground">
+                {selectedWord.meaning || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {onSeek !== undefined &&
         transcript.some((l) => typeof l.startSec === "number") ? (
