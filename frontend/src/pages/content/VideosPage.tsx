@@ -36,7 +36,7 @@ import {
 } from "../../lib/contentRecommendations";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
-import { Frown, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ContentVideo {
@@ -439,15 +439,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
@@ -579,14 +579,11 @@ export default function VideoPage() {
 
           <main
             className={cn(
-              "flex-1 pb-24 transition-all duration-300 font-display lg:pb-8",
-              sidebarCollapsed ? "lg:ml-20" : "lg:ml-64",
+              "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8",
+              sidebarCollapsed
+                ? "lg:ml-20 lg:max-w-[calc(100vw-5rem)]"
+                : "lg:ml-64 lg:max-w-[calc(100vw-16rem)]"
             )}
-            style={{
-              maxWidth: sidebarCollapsed
-                ? "calc(100vw - 5rem)"
-                : "calc(100vw - 16rem)",
-            }}
           >
             <CatalogHero featured={featuredHero} />
 
@@ -688,9 +685,9 @@ export default function VideoPage() {
                   <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
                       ? (messages.catalogPage as any)?.emptyNoVideos ||
-                        "There are no videos in the catalog yet."
+                      "There are no videos in the catalog yet."
                       : (messages.catalogPage as any)?.emptyFiltered ||
-                        "No videos match your filters."}
+                      "No videos match your filters."}
                   </p>
                 </div>
               ) : (
@@ -757,7 +754,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>
