@@ -46,8 +46,12 @@ export default function LoginForm() {
     password: "",
   });
 
+  const [show2FA, setShow2FA] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  
+
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaKey, setCaptchaKey] = useState<number>(0); // Ключ для надежного сброса капчи
+  const [captchaKey, setCaptchaKey] = useState<number>(0);
   const [emptyError, setEmptyError] = useState(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -72,9 +76,9 @@ export default function LoginForm() {
     });
   }, [location.state, navigate]);
 
-  const isEmpty = [loginData.email, loginData.password].some(
-    (value) => value.trim() === "",
-  );
+  const isEmpty = !show2FA
+    ? [loginData.email, loginData.password].some((value) => value.trim() === "")
+    : twoFactorCode.length !== 6;
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -92,20 +96,37 @@ export default function LoginForm() {
     if (!isEmpty) {
       setEmptyError(false);
       try {
+        const bodyPayload: Record<string, string> = {
+          ...loginData,
+          captchaToken,
+        };
+
+        if (show2FA) {
+          bodyPayload.code = twoFactorCode;
+        }
+
         const response = await apiFetch("/auth/login", {
           method: "POST",
-          body: JSON.stringify({
-            ...loginData,
-            captchaToken,
-          }),
+          body: JSON.stringify(bodyPayload),
         });
 
         if (response.ok) {
           const data = (await response.json()) as {
             access_token?: string;
+            requiresTwoFactor?: boolean;
           };
+
+          if (data.requiresTwoFactor) {
+            setShow2FA(true);
+            toast.success("Verification code sent to your email.");
+            setCaptchaToken(null);
+            setCaptchaKey((prev) => prev + 1);
+            return;
+          }
+
           const token = data.access_token;
           const fromState = safeReturnPath(location.state);
+
           if (!token) {
             const next = postLoginNavigateTarget(fromState, null);
             toast.success("Signed in successfully.");
@@ -121,7 +142,6 @@ export default function LoginForm() {
           const message = await getResponseErrorMessage(response);
           toast.error(message);
 
-          // При неверном пароле или ошибке — сбрасываем капчу
           setCaptchaToken(null);
           setCaptchaKey((prev) => prev + 1);
         }
@@ -130,7 +150,6 @@ export default function LoginForm() {
           error instanceof Error ? error.message : "Could not sign in";
         toast.error(message);
 
-        // При ошибке сети — тоже сбрасываем капчу
         setCaptchaToken(null);
         setCaptchaKey((prev) => prev + 1);
       }
@@ -153,55 +172,103 @@ export default function LoginForm() {
       </p>
 
       <form onSubmit={handleLogin} tabIndex={0} className="space-y-5">
-        <div className="space-y-2">
-          <LabelRegister isRequired={true}>Email</LabelRegister>
-          <InputText
-            name="email"
-            value={loginData.email}
-            onChange={handleChange}
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
-        </div>
+        {/* КРОК 1: Ввод логина и пароля */}
+        {!show2FA ? (
+          <>
+            <div className="space-y-2">
+              <LabelRegister isRequired={true}>Email</LabelRegister>
+              <InputText
+                name="email"
+                value={loginData.email}
+                onChange={handleChange}
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <LabelRegister isRequired={true}>Password</LabelRegister>
-            <Link
-              to="#"
-              className="text-sm text-primary hover:underline"
-              onClick={(e) => e.preventDefault()}
-            >
-              Forgot password?
-            </Link>
-          </div>
-          <div className="relative">
-            <InputText
-              name="password"
-              value={loginData.password}
-              onChange={handleChange}
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              className="pr-12"
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              aria-pressed={showPassword}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setShowPassword((prev) => !prev)}
-            >
-              {showPassword ? (
-                <EyeOff className="hover:cursor-pointer size-5 opacity-70" />
-              ) : (
-                <Eye className="hover:cursor-pointer size-5 opacity-70" />
-              )}
-            </button>
-          </div>
-        </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <LabelRegister isRequired={true}>Password</LabelRegister>
+                <Link
+                  to="#"
+                  className="text-sm text-primary hover:underline"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <InputText
+                  name="password"
+                  value={loginData.password}
+                  onChange={handleChange}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="pr-12"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="hover:cursor-pointer size-5 opacity-70" />
+                  ) : (
+                    <Eye className="hover:cursor-pointer size-5 opacity-70" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* КРОК 2: Ввод кода 2FA */
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <p className="text-sm text-muted-foreground">
+                We sent a 6-digit code to <br />
+                <span className="font-medium text-primary">
+                  {loginData.email}
+                </span>
+              </p>
+            </div>
 
+            <div className="space-y-2">
+              <LabelRegister isRequired={true}>Verification Code</LabelRegister>
+              <InputText
+                name="twoFactorCode"
+                value={twoFactorCode}
+                onChange={(e) =>
+                  setTwoFactorCode(
+                    e.target.value.replace(/\D/g, "").slice(0, 6),
+                  )
+                }
+                type="text"
+                placeholder="000000"
+                className="text-center text-2xl tracking-[0.5em]"
+                autoComplete="one-time-code"
+              />
+            </div>
+
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShow2FA(false);
+                  setTwoFactorCode("");
+                }}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                ← Back to login
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Капча остается на обоих экранах */}
         <div className="flex justify-center py-2">
           <Turnstile
             key={captchaKey}
@@ -220,27 +287,33 @@ export default function LoginForm() {
         </div>
 
         {emptyError && (
-          <ValidateError>Please fill in all required fields.</ValidateError>
+          <ValidateError>
+            {show2FA
+              ? "Please enter the 6-digit code."
+              : "Please fill in all required fields."}
+          </ValidateError>
         )}
 
         <Button
           type="submit"
-          disabled={!captchaToken}
+          disabled={!captchaToken || (show2FA && twoFactorCode.length !== 6)}
           className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Log in
+          {show2FA ? "Verify Code" : "Log in"}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link
-          to="/registrationMain"
-          className="font-medium text-primary hover:underline"
-        >
-          Sign up
-        </Link>
-      </p>
+      {!show2FA && (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link
+            to="/registrationMain"
+            className="font-medium text-primary hover:underline"
+          >
+            Sign up
+          </Link>
+        </p>
+      )}
 
       <Link
         to="/"

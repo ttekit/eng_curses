@@ -21,10 +21,6 @@ import {
   type LearningTopicOption,
 } from "../../lib/learningTopicsApi";
 import type { GroupBase, MultiValue } from "react-select";
-import {
-  getRegisterCredentialsError,
-  registerUser,
-} from "../../lib/registerUser";
 import { ArrowLeft } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import {
@@ -59,13 +55,22 @@ export default function RegistrationDetails() {
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    const token = localStorage.getItem("exply_access_token");
+    if (!token) return;
+
     let cancelled = false;
+    setTopicsLoading(true);
+
     fetchLearningTopicGroups()
       .then((groups) => {
-        if (!cancelled) setLearningTopicGroups(groups);
+        if (!cancelled) {
+          setLearningTopicGroups(groups);
+          setTopicsLoadError(null);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
+          console.error("Ошибка загрузки:", err);
           setTopicsLoadError(
             err instanceof Error ? err.message : "Could not load topics",
           );
@@ -74,6 +79,7 @@ export default function RegistrationDetails() {
       .finally(() => {
         if (!cancelled) setTopicsLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -160,42 +166,95 @@ export default function RegistrationDetails() {
   const handleNext = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError(null);
-    if (formData.role === "choose") {
+
+    if (formData.role === "choose" || !formData.role) {
       setEmptyError(true);
       return;
     }
     setEmptyError(false);
-
-    const credsErr = getRegisterCredentialsError(formData);
-    if (credsErr) {
-      setFormError(credsErr);
-      return;
-    }
 
     if (formData.role === "teacher") {
       if (formData.teacherGrades === "choose" || !formData.teacherGrades) {
         setFormError("Please select the student grades you teach.");
         return;
       }
-      setIsSubmitting(true);
-      const result = await registerUser(formData);
-      setIsSubmitting(false);
-      if (result.success) {
-        const students = result.generatedStudents;
-        if (students?.length) {
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formattedTopics =
+        Array.isArray(formData.teacherTopics) &&
+        formData.teacherTopics.length > 0
+          ? formData.teacherTopics.map((t: string) => {
+              const num = parseInt(t.replace("topic:", ""), 10);
+              return isNaN(num) ? t : num;
+            })
+          : undefined;
+
+      const userEmail = formData.email || localStorage.getItem("temp_email");
+      const registrationPayload = {
+        name: formData.name,
+        email: userEmail,
+        password: formData.password,
+        role: formData.role.toUpperCase(),
+
+        teacherGrades:
+          formData.role === "teacher" ? formData.teacherGrades : undefined,
+        teacherTopics:
+          formData.role === "teacher" ? formattedTopics : undefined,
+        studentNames:
+          formData.role === "teacher" ? formData.studentNames : undefined,
+      };
+
+      const cleanPayload = Object.fromEntries(
+        Object.entries(registrationPayload).filter(([, v]) => v !== undefined),
+      );
+
+      const accessToken = localStorage.getItem("exply_access_token");
+
+      const response = await fetch(
+        "http://localhost:4200/auth/update-preferences",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(cleanPayload),
+        },
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem("temp_email", formData.email);
+
+        const userRole = formData.role;
+        const students = result.generatedStudents || result.students || [];
+
+        if (result.access_token) {
+          localStorage.setItem("exply_access_token", result.access_token);
+        }
+
+        if (userRole === "teacher") {
           navigate("/registrationSuccess", {
             state: { generatedStudents: students },
           });
         } else {
-          navigate("/loginForm");
+          navigate("/registrationPreferences");
         }
       } else {
-        setFormError(result.message);
+        setFormError(
+          result.message || "Registration failed. Please try again.",
+        );
       }
-      return;
+    } catch (err) {
+      console.error("Error during registration:", err);
+      setFormError("Network error. Please check your connection.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate("/registrationPreferences");
   };
 
   return (

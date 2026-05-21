@@ -9,10 +9,14 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import Turnstile from "react-turnstile";
+import { registerUser } from "../../lib/registerUser";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
   if (!context) throw new Error("RegistrationContext is not available");
+
+  const [captchaToken, setCaptchaToken] = useState<string>("");
 
   const { formData, updateFormData } = context;
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -97,68 +101,70 @@ export default function RegistrationMain() {
     }
   };
 
-  const handleNext = (e: FormEvent<HTMLFormElement>) => {
+  const handleNext = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     const formEl = e.currentTarget;
     const fd = new FormData(formEl);
     const name = String(fd.get("name") ?? "").trim();
     const email = String(fd.get("email") ?? "").trim();
     const password = String(fd.get("password") ?? "");
     const confirmPassword = String(fd.get("confirmPassword") ?? "");
-    updateFormData({ name, email, password, confirmPassword });
 
     if (!name) {
       setErrorText("Username is required.");
       return;
     }
-    if (!email) {
-      setErrorText("Email is required.");
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       setErrorText("Invalid email format.");
       return;
     }
-    if (!password) {
-      setErrorText("Password is required.");
-      return;
-    }
-    if (!isValidPassword(password)) {
-      if (password.length < 8) {
-        setErrorText("Password must be at least 8 characters.");
-        return;
-      }
-      if (!/[A-Z]/.test(password)) {
-        setErrorText("Password must contain at least one uppercase letter.");
-        return;
-      }
-      if (!/[a-z]/.test(password)) {
-        setErrorText("Password must contain at least one lowercase letter.");
-        return;
-      }
-      if (!/\d/.test(password)) {
-        setErrorText("Password must contain at least one number.");
-        return;
-      }
-      if (!/[@$!%*?&]/.test(password)) {
-        setErrorText("Password must contain at least one of: @ $ ! % * ? &");
-        return;
-      }
-      setErrorText("Password does not meet the requirements.");
-      return;
-    }
-    if (!confirmPassword) {
-      setErrorText("Please confirm your password.");
+    if (!password || !isValidPassword(password)) {
+      setErrorText("Password does not meet requirements.");
       return;
     }
     if (password !== confirmPassword) {
       setErrorText("Passwords do not match.");
       return;
     }
-    setErrorText(null);
-    navigate("/registrationDetails");
-  };
+    if (!captchaToken) {
+      setErrorText("Please complete the CAPTCHA.");
+      return;
+    }
 
+    setErrorText(null);
+
+    try {
+      localStorage.setItem("temp_email", email);
+
+      // 🚀 Передаем капчу под обоими ключами, чтобы задобрить и фронтенд-функцию, и бэкенд-валидатор!
+      const result = (await registerUser({
+        name,
+        email,
+        password,
+        confirmPassword,
+        token: captchaToken, // Для внутренней логики функции registerUser
+        captchaToken: captchaToken, // Для RegisterDto бэкенда
+        role: "ADULT",
+      } as any)) as any;
+
+      if (result.success) {
+        if (result.isVerified) {
+          navigate("/registrationDetails");
+        } else {
+          // ✉️ ОТПРАВЛЯЕМ НА ПОДТВЕРЖДЕНИЕ ПОЧТЫ
+          navigate("/verify-email", {
+            state: { email },
+          });
+        }
+      } else {
+        setErrorText(result.message || "Registration failed.");
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      setErrorText("Network error.");
+    }
+  };
   const handleBack = () => {
     updateFormData({
       name: "",
@@ -283,9 +289,19 @@ export default function RegistrationMain() {
 
           {errorText && <ValidateError>{errorText}</ValidateError>}
 
+          <div className="flex justify-center my-2">
+            <Turnstile
+              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+              onVerify={(token) => {
+                setCaptchaToken(token);
+                (window as any).turnstileToken = token;
+              }}
+            />
+          </div>
+
           <Button
             type="submit"
-            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] w-full flex items-center justify-center gap-2"
           >
             Continue
             <ArrowRight className="size-4" />

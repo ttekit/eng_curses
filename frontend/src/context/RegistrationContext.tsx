@@ -15,6 +15,7 @@ export interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
+  token?: string | null;
   role: string;
   teacherGrades: string;
   teacherTopics: string[];
@@ -31,6 +32,7 @@ export interface FormData {
   learningGoal: string;
   /** Adult: target horizon (e.g. 3m). */
   timeToAchieve: string;
+
 }
 
 const defaultFormData: FormData = {
@@ -52,6 +54,7 @@ const defaultFormData: FormData = {
   hatedGenres: [],
   learningGoal: "",
   timeToAchieve: "",
+  token: "",
 };
 
 function isRecord(x: unknown): x is Record<string, unknown> {

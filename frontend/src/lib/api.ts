@@ -175,7 +175,9 @@ export async function apiFetch(
   path: string,
   init: FetchOpts = {},
 ): Promise<Response> {
-  const { token, ...rest } = init;
+  const token = init.token ?? getStoredAccessToken();
+
+  const { token: _t, ...rest } = init;
   const headers = mergeApiAuthHeaders(rest.headers, token);
   if (
     rest.body != null &&

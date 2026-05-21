@@ -1,5 +1,10 @@
 import { MailerService } from "@nestjs-modules/mailer";
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { render } from "@react-email/components";
@@ -8,6 +13,9 @@ import { ResetPasswordTemplate } from "./templates/reset-password.template";
 import { TwoFactorAuthTemplate } from "./templates/two-factor-auth.template";
 import { PasswordChangedTemplate } from "./templates/password-change-notification.template";
 import * as React from "react";
+import EmailChangeTemplate from "./templates/email-change";
+import { PrismaService } from "src/prisma.service";
+import AccountDeletedTemplate from "./templates/account-deleted";
 
 @Injectable()
 export class MailService {
@@ -16,22 +24,28 @@ export class MailService {
   public constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly prisma: PrismaService,
+  ) { }
 
-  public async sendConfirmationEmail(email: string, token: string) {
+  public async sendConfirmationEmail(email: string, code: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping confirmation to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping confirmation to ${email}`,
+      );
       return;
     }
-    const domain = this.configService.getOrThrow<string>("FRONTEND_URL");
-    const html = await render(ConfirmationTemplate({ domain, token }));
+    const html = await render(
+      React.createElement(ConfirmationTemplate, { code }),
+    );
 
-    return this.sendMail(email, "Email confirmation", html);
+    return this.sendMail(email, "Код підтвердження реєстрації — Explys", html);
   }
 
   public async sendPasswordResetEmail(email: string, token: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping password reset to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping password reset to ${email}`,
+      );
       return;
     }
     const domain = this.configService.getOrThrow<string>("FRONTEND_URL");
@@ -42,12 +56,34 @@ export class MailService {
 
   public async sendTwoFactorTokenEmail(email: string, token: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping 2FA mail to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping 2FA mail to ${email}`,
+      );
       return;
     }
-    const html = await render(TwoFactorAuthTemplate({ token }));
+    const html = await render(
+      React.createElement(TwoFactorAuthTemplate, { token }),
+    );
 
     return this.sendMail(email, "Verify your identity", html);
+  }
+
+  async sendEmailChangeCode(email: string, code: string) {
+    try {
+      const htmlContent = await render(EmailChangeTemplate({ code }));
+
+      await this.mailerService.sendMail({
+        from: '"Explys Support" <noreply@explys.com>',
+        to: email,
+        subject: "Verification Code for Email Change",
+        html: htmlContent,
+      });
+
+    } catch (error) {
+      throw new InternalServerErrorException(
+        "Не вдалося відправити лист з кодом",
+      );
+    }
   }
 
   private async sendMail(email: string, subject: string, html: string) {
@@ -58,17 +94,19 @@ export class MailService {
         subject,
         html,
       });
-      this.logger.debug(`Mail sent to ${email}: ${subject}`);
+      this.logger.debug(`Mail sent to user: ${subject}`);
       return result;
     } catch (error) {
-      this.logger.error(`Mail send failed for ${email}`, error as Error);
+      this.logger.error(`Mail send failed for user`, error as Error);
       throw error;
     }
   }
 
   async sendPasswordChangedNotification(email: string) {
     if (isOutboundMailDisabled(this.configService)) {
-      this.logger.warn(`Outbound mail disabled (DISABLE_EMAIL); skipping password-changed notice to ${email}`);
+      this.logger.warn(
+        `Outbound mail disabled (DISABLE_EMAIL); skipping password-changed notice to ${email}`,
+      );
       return;
     }
     try {
@@ -81,8 +119,32 @@ export class MailService {
         html: emailHtml,
       });
     } catch (error) {
-      this.logger.error(`Password-changed mail failed for ${email}`, error as Error);
+      this.logger.error(
+        `Password-changed mail failed for ${email}`,
+        error as Error,
+      );
       throw error;
+    }
+  }
+
+  async sendAccountDeletedEmail(
+    email: string,
+    name: string,
+    restoreLink: string,
+  ) {
+    try {
+      const htmlContent = await render(
+        AccountDeletedTemplate({ name, restoreLink }),
+      );
+
+      await this.mailerService.sendMail({
+        from: '"Explys Support" <noreply@explys.com>',
+        to: email,
+        subject: "Account Deletion Notice (Action Required)",
+        html: htmlContent,
+      });
+    } catch (error) {
+
     }
   }
 }

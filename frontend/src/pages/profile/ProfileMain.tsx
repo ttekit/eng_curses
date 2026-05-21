@@ -26,7 +26,10 @@ import {
 import { ProfileStats } from "../../components/profile/ProfileStats";
 import { ProfileProgress } from "../../components/profile/ProfileProgress";
 import { ProfileAchievements } from "../../components/profile/ProfileAchievements";
-import { ProfileActivity, type ActivityLogItem } from "../../components/profile/ProfileActivity";
+import {
+  ProfileActivity,
+  type ActivityLogItem,
+} from "../../components/profile/ProfileActivity";
 import { ProfileSettings } from "../../components/profile/ProfileSettings";
 import { ProfileTeacherStudents } from "../../components/profile/ProfileTeacherStudents";
 import { ProfileTeacherVideos } from "../../components/profile/ProfileTeacherVideos";
@@ -104,7 +107,8 @@ export default function ProfileMain() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id || (activeTab !== "overview" && activeTab !== "activity")) return;
+    if (!user?.id || (activeTab !== "overview" && activeTab !== "activity"))
+      return;
     let cancelled = false;
     void (async () => {
       try {
@@ -185,7 +189,9 @@ export default function ProfileMain() {
 
   const tabs = useMemo(() => {
     if (user?.role === "teacher") {
-      const withoutStudying = LEARNER_TABS.filter((t) => t.id !== "studying-plan");
+      const withoutStudying = LEARNER_TABS.filter(
+        (t) => t.id !== "studying-plan",
+      );
       return [
         withoutStudying[0],
         {
@@ -298,8 +304,8 @@ export default function ProfileMain() {
         <CatalogSidebar
           categories={[]}
           selectedCategory="All"
-          onSelectCategory={() => { }}
-          onSelectLevel={() => { }}
+          onSelectCategory={() => {}}
+          onSelectLevel={() => {}}
           reserveTopNavSpace={false}
           welcomeName={
             user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
@@ -372,7 +378,6 @@ export default function ProfileMain() {
               ) : null}
               {activeTab === "settings" ? (
                 <ProfileSettings
-                  user={user}
                   onSaved={async () => {
                     await refreshProfile();
                   }}

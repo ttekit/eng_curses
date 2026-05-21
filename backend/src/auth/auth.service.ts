@@ -41,9 +41,12 @@ export class AuthService {
     private readonly providerService: ProviderService,
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
-  ) { }
+    private readonly mailService: MailService,
+  ) {}
 
-  private async filterExistingGenreIds(ids: number[] | undefined): Promise<number[]> {
+  private async filterExistingGenreIds(
+    ids: number[] | undefined,
+  ): Promise<number[]> {
     if (!ids?.length) {
       return [];
     }
@@ -120,6 +123,7 @@ export class AuthService {
       learningGoal: trimmedLearningGoal || null,
       timeToAchieve: trimmedTimeToAchieve || null,
     };
+
     const allowedRegisterRoles = new Set(["ADULT", "STUDENT", "TEACHER"]);
     const requestedRole = String(dto.role ?? "")
       .trim()
@@ -127,6 +131,15 @@ export class AuthService {
     const roleLabel = allowedRegisterRoles.has(requestedRole)
       ? requestedRole
       : "ADULT";
+
+    let otpCode: string | null = null;
+    let otpExpires: Date | null = null;
+
+    if (!outboundMailDisabled) {
+      otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+    }
+
     const mainUser = await prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
@@ -135,6 +148,8 @@ export class AuthService {
         role: roleLabel as any,
         method: "CREDENTIALS",
         isVerified: outboundMailDisabled,
+        verificationCode: otpCode,
+        verificationCodeExpires: otpExpires,
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
             string,
@@ -146,8 +161,10 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        verificationCode: true,
       },
     });
+
     if (favoriteGenreIds.length > 0 || hatedGenreIds.length > 0) {
       const genreUpdate: Record<string, unknown> = {};
       if (favoriteGenreIds.length > 0) {
@@ -211,16 +228,18 @@ export class AuthService {
         });
       }
     }
-    await this.alcorythmService.analyzeUserLevel(mainUser.id);
-
-    const payload = { sub: mainUser.id, email: mainUser.email };
 
     if (!outboundMailDisabled) {
       await this.emailConfirmationService.sendVerificationToken(mainUser);
     }
 
+    const payload = { sub: mainUser.id, email: mainUser.email };
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      access_token: outboundMailDisabled
+        ? await this.jwtService.signAsync(payload)
+        : null,
+      isVerified: outboundMailDisabled,
       user: {
         id: mainUser.id,
         email: mainUser.email,
@@ -230,8 +249,126 @@ export class AuthService {
         generatedStudents.length > 0 ? generatedStudents : undefined,
       message: outboundMailDisabled
         ? "You have successfully registered."
-        : "You have successfully registered. Please confirm your email. A message has been sent to your mailing address.",
+        : "Please verify your email. A 6-digit confirmation code has been sent to your email address.",
     };
+  }
+
+  async verifyEmailCode(email: string, code: string) {
+    const prisma = this.prisma as any;
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new BadRequestException("User with this email does not exist.");
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException("This account is already verified.");
+    }
+
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException("Invalid confirmation code.");
+    }
+
+    if (
+      !user.verificationCodeExpires ||
+      new Date() > new Date(user.verificationCodeExpires)
+    ) {
+      throw new BadRequestException(
+        "Verification code has expired. Please request a new one.",
+      );
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
+    });
+
+    const payload = { sub: updatedUser.id, email: updatedUser.email };
+
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+      },
+      message: "Email successfully verified. Welcome!",
+    };
+  }
+
+  async deleteAccount(userId: number, dto: DeleteAccountDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) throw new UnauthorizedException("Користувача не знайдено");
+    if (!user.password)
+      throw new BadRequestException("Акаунт зареєстровано через Google.");
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) throw new BadRequestException("Невірний пароль.");
+
+    const deletionDate = new Date();
+    deletionDate.setDate(deletionDate.getDate() + 30);
+
+    await this.prisma.token.deleteMany({ where: { email: user.email } });
+
+    const restoreToken = uuidv4();
+    await this.prisma.token.create({
+      data: {
+        email: user.email,
+        token: restoreToken,
+        type: "ACCOUNT_RESTORE",
+        expiresIn: deletionDate,
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { deletionScheduledAt: deletionDate },
+    });
+
+    const restoreLink = `http://localhost:5173/restore-account?token=${restoreToken}`;
+    await this.mailService.sendAccountDeletedEmail(
+      user.email,
+      user.name,
+      restoreLink,
+    );
+
+    return {
+      success: true,
+      message: "Акаунт заплановано на видалення через 30 днів.",
+    };
+  }
+
+  async restoreAccount(token: string) {
+    const tokenRecord = await this.prisma.token.findUnique({
+      where: { token },
+    });
+
+    if (
+      !tokenRecord ||
+      tokenRecord.type !== "ACCOUNT_RESTORE" ||
+      tokenRecord.expiresIn < new Date()
+    ) {
+      throw new BadRequestException(
+        "Посилання для відновлення недійсне або прострочене.",
+      );
+    }
+
+    await this.prisma.user.update({
+      where: { email: tokenRecord.email },
+      data: { deletionScheduledAt: null },
+    });
+
+    await this.prisma.token.delete({ where: { id: tokenRecord.id } });
+
+    return { success: true, message: "Ваш акаунт успішно відновлено!" };
   }
 
   public async confirmEmail(token: string) {
@@ -270,6 +407,20 @@ export class AuthService {
 
     return { message: "Email успішно підтверджено" };
   }
+  async updateUserPreferences(userId: number, data: any) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        additionalUserData: {
+          update: {
+            hobbies: data.hobbies,
+            knownLanguages: data.knownLanguages,
+          },
+        },
+      },
+    });
+  }
+
   public async resendConfirmationEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -295,7 +446,20 @@ export class AuthService {
 
     return { message: "Новий лист підтвердження надіслано успішно" };
   }
-
+  // const user = await this.prisma.user.findUnique({
+  //   where: { email: dto.email },
+  //   select: {
+  //     id: true,
+  //     email: true,
+  //     name: true,
+  //     password: true,
+  //     isVerified: true,
+  //     isTwoFactorEnable: true,
+  //     role: true,
+  //     hasCompletedPlacement: true,
+  //     isSuspended: true,
+  //   },
+  // });
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -327,23 +491,26 @@ export class AuthService {
       }
     }
 
+    if (user.isSuspended) {
+      throw new ForbiddenException("Account suspended");
+    }
+
     if (user.isTwoFactorEnable) {
       if (!dto.code) {
         await this.twoFactorAuthService.sendTwoFactorToken(user.email);
 
         return {
+          requiresTwoFactor: true,
+          email: user.email,
           message:
             "Please check your email. Two-factor authentication code is required.",
         };
       }
+
       await this.twoFactorAuthService.validateTwoFactorToken(
         user.email,
         dto.code,
       );
-    }
-
-    if (user.isSuspended) {
-      throw new ForbiddenException("Account suspended");
     }
 
     const payload = { sub: user.id, email: user.email };
@@ -357,6 +524,33 @@ export class AuthService {
         role: user.role,
         hasCompletedPlacement: user.hasCompletedPlacement,
       },
+    };
+  }
+
+  async toggleTwoFactor(userId: number, dto: ToggleTwoFactorDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Невірний пароль");
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isTwoFactorEnable: dto.enable },
+    });
+
+    return {
+      success: true,
+      message: dto.enable
+        ? "Двофакторна автентифікація увімкнена"
+        : "Двофакторна автентифікація вимкнена",
     };
   }
 
@@ -387,6 +581,15 @@ export class AuthService {
       },
     });
 
+    this.mailService
+      .sendPasswordChangedNotification(user.email)
+      .catch((err) => {
+        console.error(
+          `Failed to send password changed notification to ${user.email}`,
+          err,
+        );
+      });
+
     return { message: "Password successfully updated" };
   }
   async updateEmail(userId: number, dto: UpdateEmailDto) {
@@ -395,15 +598,24 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException("Email already in use");
+      throw new BadRequestException(
+        "Ця пошта вже використовується іншим користувачем",
+      );
     }
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { email: dto.newEmail },
+      data: {
+        email: dto.newEmail,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
     });
 
-    return { message: "Email updated successfully" };
+    return {
+      success: true,
+      message: "Пошту успішно змінено!",
+    };
   }
 
   public async extractProfileFromCode(
@@ -546,6 +758,7 @@ export class AuthService {
         id: true,
         name: true,
         email: true,
+        isTwoFactorEnable: true,
         isVerified: true,
         role: true,
         hasCompletedPlacement: true,
@@ -587,6 +800,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      isTwoFactorEnable: user.isTwoFactorEnable,
       isVerified: user.isVerified,
       role: user.role,
       xp: user.xp,
