@@ -118,7 +118,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Post("update-preferences")
-  async updatePreferences(@ReqDecorator() req: any, @Body() body: any) {
+  async updatePreferences(@Req() req: any, @Body() body: any) {
     const userId = req.user?.id || req.user?.sub;
 
     if (!userId) {
