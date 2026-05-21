@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { setStoredAccessToken } from "../../lib/api"; // поправь путь к файлу api, если нужно
+import { useLocation, useNavigate, Link } from "react-router";
+import { setStoredAccessToken } from "../../lib/api";
+import { maskEmail } from "../../lib/formatters";
+
+import { AuthSplitLayout } from "../../components/AuthSplitLayout";
+import InputText from "../../components/InputText";
+import LabelRegister from "../../components/LabelRegister";
+import Button from "../../components/Button";
 
 export const EmailVerification: React.FC = () => {
   const location = useLocation();
@@ -23,19 +29,19 @@ export const EmailVerification: React.FC = () => {
 
   useEffect(() => {
     if (!email) {
-      navigate("/registration");
+      navigate("/registrationMain");
     }
   }, [email, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code.length !== 6) {
-      setErrorText("Код повинен складатися з 6 цифр");
+      setErrorText("Please enter the 6-digit code.");
       return;
     }
 
     setErrorText("");
-    setLoading(false);
+    setLoading(true);
 
     try {
       const response = await fetch("http://localhost:4200/auth/verify-email", {
@@ -58,9 +64,11 @@ export const EmailVerification: React.FC = () => {
         } else {
           navigate("/registrationDetails");
         }
+      } else {
+        setErrorText(data.message || "Invalid verification code");
       }
     } catch (err) {
-      setErrorText("Помилка з'єднання з сервером");
+      setErrorText("Connection error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -77,137 +85,96 @@ export const EmailVerification: React.FC = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email }),
-        },
+        }
       );
 
       if (response.ok) {
-        setResendMessage("Новий код успішно надіслано!");
+        setResendMessage("New code successfully sent!");
         setTimer(59);
       } else {
         const data = await response.json();
-        setErrorText(data.message || "Не вдалося надіслати код");
+        setErrorText(data.message || "Failed to resend code");
       }
     } catch {
-      setErrorText("Помилка при повторному надсиланні");
+      setErrorText("Error while resending code");
     }
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        backgroundColor: "#0f172a",
-        color: "#fff",
-      }}
+    <AuthSplitLayout
+      rightTitle="Almost there!"
+      rightSubtitle="Verify your email to start your personalized learning path."
     >
-      <div
-        style={{
-          background: "#1e293b",
-          padding: "40px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-          width: "100%",
-          maxWidth: "400px",
-          textAlign: "center",
-        }}
-      >
-        <h2 style={{ color: "#a78bfa", marginBottom: "10px" }}>
-          Підтвердження пошти ✉️
-        </h2>
-        <p style={{ color: "#94a3b8", fontSize: "14px", marginBottom: "25px" }}>
-          Ми надіслали 6-значний код на <br /> <strong>{email}</strong>
-        </p>
+      <div className="mb-2 flex items-center gap-3">
+        <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
+        <h1 className="font-display text-2xl font-bold">Check your email</h1>
+      </div>
+      
+      <p className="mb-8 text-sm text-muted-foreground">
+        We sent a 6-digit code to <br />
+        <span className="font-medium text-primary">{maskEmail(email)}</span>
+      </p>
 
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            maxLength={6}
-            placeholder="000000"
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {errorText && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
+            {errorText}
+          </div>
+        )}
+        {resendMessage && (
+          <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
+            {resendMessage}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <LabelRegister isRequired={true}>Verification Code</LabelRegister>
+          <InputText
+            name="code"
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            style={{
-              width: "100%",
-              letterSpacing: "8px",
-              textAlign: "center",
-              fontSize: "28px",
-              padding: "10px",
-              borderRadius: "8px",
-              border: "2px solid #334155",
-              backgroundColor: "#0f172a",
-              color: "#fff",
-              marginBottom: "15px",
-              outline: "none",
+            onChange={(e) => {
+              setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+              if (errorText) setErrorText("");
             }}
+            type="text"
+            placeholder="000000"
+            className="text-center text-2xl tracking-[0.5em]"
+            autoComplete="one-time-code"
             disabled={loading}
           />
+        </div>
 
-          {errorText && (
-            <p
-              style={{
-                color: "#ef4444",
-                fontSize: "14px",
-                marginBottom: "15px",
-              }}
-            >
-              {errorText}
-            </p>
-          )}
-          {resendMessage && (
-            <p
-              style={{
-                color: "#10b981",
-                fontSize: "14px",
-                marginBottom: "15px",
-              }}
-            >
-              {resendMessage}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || code.length !== 6}
-            style={{
-              width: "100%",
-              padding: "12px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: code.length === 6 ? "#7c3aed" : "#4c1d95",
-              color: "#fff",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: code.length === 6 ? "pointer" : "not-allowed",
-            }}
-          >
-            {loading ? "Перевірка..." : "Підтвердити"}
-          </button>
-        </form>
-
-        <div style={{ marginTop: "25px", fontSize: "14px" }}>
+        <div className="flex justify-center pt-2">
           {timer > 0 ? (
-            <p style={{ color: "#64748b" }}>
-              Надіслати код повторно через {timer}с
+            <p className="text-sm text-muted-foreground">
+              Resend code in {timer}s
             </p>
           ) : (
             <button
+              type="button"
               onClick={handleResend}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#a78bfa",
-                cursor: "pointer",
-                textDecoration: "underline",
-                fontSize: "14px",
-              }}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors underline"
             >
-              Надіслати код повторно
+              Resend code
             </button>
           )}
         </div>
-      </div>
-    </div>
+
+        <Button
+          type="submit"
+          disabled={loading || code.length !== 6}
+          className="w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Verifying..." : "Verify Code"}
+        </Button>
+      </form>
+
+      <Link
+        to="/registrationMain"
+        className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        ← Back to registration
+      </Link>
+    </AuthSplitLayout>
   );
 };

@@ -14,6 +14,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
   UnauthorizedException,
+  Delete,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -35,6 +36,9 @@ import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
 import { TurnstileGuard } from "./guards/turnstile.guard";
 import { UsersService } from "src/users/users.service";
+import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
+import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
+import { DeleteAccountDto } from "./dto/delete-account.dto";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -135,19 +139,22 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Post("update-password")
   async updatePassword(@Req() req: any, @Body() dto: UpdatePasswordDto) {
-    console.log("Расшифрованный токен:", req.user);
     return await this.authService.updatePassword(req.user.sub, dto);
   }
 
   @UseGuards(AuthGuard)
-  @Post("update-email")
-  async updateEmail(@Req() req: any, @Body() dto: UpdateEmailDto) {
-    return this.authService.updateEmail(req.user.sub, dto);
+  @Post("toggle-2fa")
+  @HttpCode(HttpStatus.OK)
+  public async toggleTwoFactor(
+    @Req() req: any,
+    @Body() dto: ToggleTwoFactorDto,
+  ) {
+    return this.authService.toggleTwoFactor(req.user.sub, dto);
   }
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
-  @Post("profile")
+  @Get("profile")
   @ApiOperation({ summary: "Get user profile (requires authentication)" })
   @ApiResponse({
     status: 200,
@@ -168,6 +175,29 @@ export class AuthController {
     }
 
     return this.authService.getProfile(Number(userId));
+  }
+
+  @Post("send-email-change-code")
+  @UseGuards(AuthGuard)
+  async sendEmailChangeCode(@Req() req: any) {
+    const userId = req.user?.id || req.user?.sub;
+    return this.authService.sendEmailChangeCode(Number(userId));
+  }
+
+  @Post("verify-email-change")
+  @UseGuards(AuthGuard)
+  async verifyAndChangeEmail(
+    @Req() req: any,
+    @Body() dto: VerifyEmailChangeDto,
+  ) {
+    const userId = req.user?.id || req.user?.sub;
+    return this.authService.verifyAndChangeEmail(Number(userId), dto);
+  }
+  @Post("check-email-change-code")
+  @UseGuards(AuthGuard)
+  async checkEmailChangeCode(@Req() req: any, @Body("code") code: string) {
+    const userId = req.user?.id || req.user?.sub;
+    return this.authService.checkEmailChangeCode(Number(userId), code);
   }
 
   @UseGuards(AuthGuard)
@@ -229,5 +259,17 @@ export class AuthController {
     return {
       url: providerInstance!.getAuthUrl(),
     };
+  }
+
+  @Delete("delete-account")
+  @UseGuards(AuthGuard)
+  async deleteAccount(@Req() req: any, @Body() dto: DeleteAccountDto) {
+    const userId = req.user?.id || req.user?.sub;
+    return this.authService.deleteAccount(Number(userId), dto);
+  }
+
+  @Post("restore-account")
+  async restoreAccount(@Body("token") token: string) {
+    return this.authService.restoreAccount(token);
   }
 }

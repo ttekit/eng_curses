@@ -31,6 +31,8 @@ model User {
   isTwoFactorEnable       Boolean    @default(false) @map("is_two_factor_enable")
   method                  AuthMethod
 
+  deletionScheduledAt DateTime? @map("deletion_scheduled_at")
+
   accounts Account[]
 
   statistic                 UserStatistic?
@@ -126,6 +128,7 @@ enum TokenType {
   VERIFICATION
   TWO_FACTOR
   PASSWORD_RESET
+  ACCOUNT_RESTORE
 }
 
 model AdditionalUserData {

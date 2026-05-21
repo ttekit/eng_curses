@@ -23,8 +23,11 @@ import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service"
 import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
 import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
-
-// Экспортируем интерфейс, чтобы контроллер мог его видеть
+import { MailService } from "src/common/mail/mail.service";
+import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
+import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
+import { DeleteAccountDto } from "./dto/delete-account.dto";
+import { v4 as uuidv4 } from "uuid";
 export interface GeneratedStudent {
   name: string;
   email: string;
@@ -42,6 +45,7 @@ export class AuthService {
     private readonly providerService: ProviderService,
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
+    private readonly mailService: MailService,
   ) {}
 
   private async filterExistingGenreIds(
@@ -132,14 +136,12 @@ export class AuthService {
       ? requestedRole
       : "ADULT";
 
-    // --- ГЕНЕРАЦИЯ 6-ЗНАЧНОГО OTP КОДА ---
     let otpCode: string | null = null;
     let otpExpires: Date | null = null;
 
     if (!outboundMailDisabled) {
-      // Генерируем 6 случайных цифр в виде строки (чтобы не терялись нули в начале, например "012345")
       otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      otpExpires = new Date(Date.now() + 15 * 60 * 1000); // Код действителен 15 минут
+      otpExpires = new Date(Date.now() + 15 * 60 * 1000);
     }
 
     const mainUser = await prisma.user.create({
@@ -149,9 +151,9 @@ export class AuthService {
         name: dto.name,
         role: roleLabel as any,
         method: "CREDENTIALS",
-        isVerified: outboundMailDisabled, // Если почта отключена, сразу true, иначе false
-        verificationCode: otpCode, // Записываем код в БД
-        verificationCodeExpires: otpExpires, // Записываем срок жизни
+        isVerified: outboundMailDisabled,
+        verificationCode: otpCode,
+        verificationCodeExpires: otpExpires,
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
             string,
@@ -243,7 +245,7 @@ export class AuthService {
       access_token: outboundMailDisabled
         ? await this.jwtService.signAsync(payload)
         : null,
-      isVerified: outboundMailDisabled, // Фронтенд поймет по этому флагу, нужно ли открывать страницу ввода OTP
+      isVerified: outboundMailDisabled,
       user: {
         id: mainUser.id,
         email: mainUser.email,
@@ -307,6 +309,74 @@ export class AuthService {
     };
   }
 
+  async deleteAccount(userId: number, dto: DeleteAccountDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) throw new UnauthorizedException("Користувача не знайдено");
+    if (!user.password)
+      throw new BadRequestException("Акаунт зареєстровано через Google.");
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) throw new BadRequestException("Невірний пароль.");
+
+    const deletionDate = new Date();
+    deletionDate.setDate(deletionDate.getDate() + 30);
+
+    await this.prisma.token.deleteMany({ where: { email: user.email } });
+
+    const restoreToken = uuidv4();
+    await this.prisma.token.create({
+      data: {
+        email: user.email,
+        token: restoreToken,
+        type: "ACCOUNT_RESTORE",
+        expiresIn: deletionDate,
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { deletionScheduledAt: deletionDate },
+    });
+
+    const restoreLink = `http://localhost:5173/restore-account?token=${restoreToken}`;
+    await this.mailService.sendAccountDeletedEmail(
+      user.email,
+      user.name,
+      restoreLink,
+    );
+
+    return {
+      success: true,
+      message: "Акаунт заплановано на видалення через 30 днів.",
+    };
+  }
+
+  async restoreAccount(token: string) {
+    const tokenRecord = await this.prisma.token.findUnique({
+      where: { token },
+    });
+
+    if (
+      !tokenRecord ||
+      tokenRecord.type !== "ACCOUNT_RESTORE" ||
+      tokenRecord.expiresIn < new Date()
+    ) {
+      throw new BadRequestException(
+        "Посилання для відновлення недійсне або прострочене.",
+      );
+    }
+
+    await this.prisma.user.update({
+      where: { email: tokenRecord.email },
+      data: { deletionScheduledAt: null },
+    });
+
+    await this.prisma.token.delete({ where: { id: tokenRecord.id } });
+
+    return { success: true, message: "Ваш акаунт успішно відновлено!" };
+  }
+
   public async confirmEmail(token: string) {
     const existingToken = await this.prisma.token.findUnique({
       where: {
@@ -344,17 +414,13 @@ export class AuthService {
     return { message: "Email успішно підтверджено" };
   }
   async updateUserPreferences(userId: number, data: any) {
-    // Обновляем данные пользователя в Prisma
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        // Убедись, что эти поля есть в твоей схеме schema.prisma
-        // Если они в другой таблице, напиши мне, я поправлю
         additionalUserData: {
           update: {
             hobbies: data.hobbies,
             knownLanguages: data.knownLanguages,
-            // ... добавь остальные поля, которые ты шлешь с фронта
           },
         },
       },
@@ -362,7 +428,6 @@ export class AuthService {
   }
 
   public async resendConfirmationEmail(email: string) {
-    // 1. Шукаємо користувача в базі за email
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
@@ -371,7 +436,6 @@ export class AuthService {
       throw new NotFoundException("Користувача з таким email не знайдено");
     }
 
-    // 2. Перевіряємо, можливо він вже підтвердив пошту
     if (user.isVerified) {
       throw new BadRequestException(
         "Цей email вже підтверджено. Ви можете увійти в систему.",
@@ -384,33 +448,30 @@ export class AuthService {
       );
     }
 
-    // 3. Генеруємо новий токен і відправляємо лист
-    // (використовуємо той самий сервіс, що і при реєстрації)
     await this.emailConfirmationService.sendVerificationToken(user);
 
     return { message: "Новий лист підтвердження надіслано успішно" };
   }
-
+  // const user = await this.prisma.user.findUnique({
+  //   where: { email: dto.email },
+  //   select: {
+  //     id: true,
+  //     email: true,
+  //     name: true,
+  //     password: true,
+  //     isVerified: true,
+  //     isTwoFactorEnable: true,
+  //     role: true,
+  //     hasCompletedPlacement: true,
+  //     isSuspended: true,
+  //   },
+  // });
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email.toLowerCase(),
       },
     });
-    // const user = await this.prisma.user.findUnique({
-    //   where: { email: dto.email },
-    //   select: {
-    //     id: true,
-    //     email: true,
-    //     name: true,
-    //     password: true,
-    //     isVerified: true,
-    //     isTwoFactorEnable: true,
-    //     role: true,
-    //     hasCompletedPlacement: true,
-    //     isSuspended: true,
-    //   },
-    // });
 
     if (!user || !user.password) {
       throw new UnauthorizedException("Invalid credentials");
@@ -436,23 +497,26 @@ export class AuthService {
       }
     }
 
+    if (user.isSuspended) {
+      throw new ForbiddenException("Account suspended");
+    }
+
     if (user.isTwoFactorEnable) {
       if (!dto.code) {
         await this.twoFactorAuthService.sendTwoFactorToken(user.email);
 
         return {
+          requiresTwoFactor: true,
+          email: user.email,
           message:
             "Please check your email. Two-factor authentication code is required.",
         };
       }
+
       await this.twoFactorAuthService.validateTwoFactorToken(
         user.email,
         dto.code,
       );
-    }
-
-    if (user.isSuspended) {
-      throw new ForbiddenException("Account suspended");
     }
 
     const payload = { sub: user.id, email: user.email };
@@ -466,6 +530,33 @@ export class AuthService {
         role: user.role,
         hasCompletedPlacement: user.hasCompletedPlacement,
       },
+    };
+  }
+
+  async toggleTwoFactor(userId: number, dto: ToggleTwoFactorDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Невірний пароль");
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isTwoFactorEnable: dto.enable },
+    });
+
+    return {
+      success: true,
+      message: dto.enable
+        ? "Двофакторна автентифікація увімкнена"
+        : "Двофакторна автентифікація вимкнена",
     };
   }
 
@@ -496,23 +587,109 @@ export class AuthService {
       },
     });
 
+    this.mailService
+      .sendPasswordChangedNotification(user.email)
+      .catch((err) => {
+        console.error(
+          `Failed to send password changed notification to ${user.email}`,
+          err,
+        );
+      });
+
     return { message: "Password successfully updated" };
   }
-  async updateEmail(userId: number, dto: UpdateEmailDto) {
+
+  async sendEmailChangeCode(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        verificationCode: code,
+        verificationCodeExpires: expires,
+      },
+    });
+
+    await this.mailService.sendEmailChangeCode(user.email, code);
+
+    return {
+      success: true,
+      message: "Код відправлено на поточну пошту",
+    };
+  }
+  async checkEmailChangeCode(userId: number, code: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || user.verificationCode !== code) {
+      throw new BadRequestException("Невірний код підтвердження");
+    }
+
+    if (
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      throw new BadRequestException("Термін дії коду минув. Запросіть новий.");
+    }
+
+    return { success: true };
+  }
+
+  async verifyAndChangeEmail(userId: number, dto: VerifyEmailChangeDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    if (!user.verificationCode || user.verificationCode !== dto.code) {
+      throw new BadRequestException("Невірний код підтвердження");
+    }
+
+    if (
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      throw new BadRequestException("Термін дії коду минув. Запросіть новий.");
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.newEmail },
     });
 
     if (existingUser) {
-      throw new BadRequestException("Email already in use");
+      throw new BadRequestException(
+        "Ця пошта вже використовується іншим користувачем",
+      );
     }
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { email: dto.newEmail },
+      data: {
+        email: dto.newEmail,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
     });
 
-    return { message: "Email updated successfully" };
+    return {
+      success: true,
+      message: "Пошту успішно змінено!",
+    };
   }
 
   public async extractProfileFromCode(
@@ -628,6 +805,7 @@ export class AuthService {
         id: true,
         name: true,
         email: true,
+        isTwoFactorEnable: true,
         isVerified: true,
         role: true,
         hasCompletedPlacement: true,
@@ -669,6 +847,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      isTwoFactorEnable: user.isTwoFactorEnable,
       isVerified: user.isVerified,
       role: user.role,
       xp: user.xp,
@@ -690,7 +869,6 @@ export class AuthService {
       stripeSubscriptionId: user.stripeSubscriptionId ?? "",
     };
   }
-  
 
   /** Monday 00:00 UTC through Sunday (current ISO week). */
   private utcWeekRange(): { weekStart: Date; weekEndExclusive: Date } {

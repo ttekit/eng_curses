@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
-import type { UserData } from "../../context/UserContext";
 import { useUser } from "../../context/UserContext";
 import { useNavigate } from "react-router";
 import InputText from "../InputText";
@@ -24,20 +23,15 @@ import {
   saveProfileUiPrefs,
 } from "../../lib/profileUiPrefs";
 import { Lock } from "lucide-react";
-import { maskEmail } from "../../lib/stringUtils";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { formatMessage } from "../../lib/formatMessage";
+import { maskEmail } from "../../lib/formatters";
 
 type GenreOption = { id: number; name: string };
 
-export function ProfileSettings({
-  user,
-  onSaved,
-}: {
-  user: UserData;
-  onSaved: () => Promise<void>;
-}) {
-  const { logout } = useUser();
+export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
+  const { user, refreshProfile, logout } = useUser();
+  if (!user) return null;
   const navigate = useNavigate();
   const { messages } = useLandingLocale();
   const s: any = (messages as any).profileSettings || {};
@@ -53,6 +47,9 @@ export function ProfileSettings({
 
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");
+  const [confirmNewEmail, setConfirmNewEmail] = useState("");
+  const [emailChangeStep, setEmailChangeStep] = useState<1 | 2>(1);
+  const [emailChangeCode, setEmailChangeCode] = useState("");
 
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +66,16 @@ export function ProfileSettings({
   const [saving, setSaving] = useState(false);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [dangerOpen, setDangerOpen] = useState<"reset" | "delete" | null>(null);
+
+  const [isToggling2FA, setIsToggling2FA] = useState(false);
+  const [target2FAState, setTarget2FAState] = useState(false);
+  const [twoFactorPassword, setTwoFactorPassword] = useState("");
+
+  const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   const [notifications, setNotifications] = useState(
     () => loadProfileUiPrefs(user.id).notifications,
@@ -88,29 +95,139 @@ export function ProfileSettings({
     };
   });
 
+  const handleToggle2FAClick = (checked: boolean) => {
+    setTarget2FAState(checked);
+    setTwoFactorPassword("");
+    setError("");
+    setIsToggling2FA(true);
+  };
+
+  const handleConfirm2FAToggle = async () => {
+    if (!twoFactorPassword) {
+      setError("Please enter your current password.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await apiFetch("/auth/toggle-2fa", {
+        method: "POST",
+        body: JSON.stringify({
+          enable: target2FAState,
+          password: twoFactorPassword,
+        }),
+      });
+
+      if (response.ok) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        await refreshProfile();
+
+        setIsToggling2FA(false);
+        setTwoFactorPassword("");
+
+        toast.success(
+          target2FAState
+            ? "Two-factor authentication enabled"
+            : "Two-factor authentication disabled",
+        );
+      } else {
+        const data = await response.json();
+        setError(data.message || "Invalid password");
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleEmailUpdate = async () => {
     setError("");
-    if (!newEmail) return setError("Please enter a new email.");
+
+    if (emailChangeStep === 1) {
+      if (emailChangeCode.length !== 6) {
+        return setError("Please enter the 6-digit code.");
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await apiFetch("/auth/check-email-change-code", {
+          method: "POST",
+          body: JSON.stringify({ code: emailChangeCode }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Invalid code");
+        }
+
+        setEmailChangeStep(2);
+        setError("");
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    if (!newEmail || !confirmNewEmail)
+      return setError("Please fill in all email fields.");
+    if (newEmail !== confirmNewEmail) return setError("Emails do not match.");
 
     setIsLoading(true);
     try {
-      const response = await apiFetch("/auth/update-email", {
+      const response = await apiFetch("/auth/verify-email-change", {
         method: "POST",
-        body: JSON.stringify({ newEmail }),
+        body: JSON.stringify({
+          code: emailChangeCode,
+          newEmail: newEmail,
+        }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(data.message || "Failed to update email");
 
+      toast.success("Email successfully updated!");
+      await refreshProfile();
       setIsChangingEmail(false);
-      setNewEmail("");
     } catch (err: any) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleStartEmailChange = async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch("/auth/send-email-change-code", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to send verification code");
+      }
+
+      setEmailChangeStep(1);
+      setEmailChangeCode("");
+      setNewEmail("");
+      setConfirmNewEmail("");
+      setIsChangingEmail(true);
+
+      toast.success("Verification code sent to your current email!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePasswordUpdate = async () => {
     setError("");
 
@@ -153,17 +270,45 @@ export function ProfileSettings({
       setIsLoading(false);
     }
   };
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      return setDeleteError("Please enter your password to confirm.");
+    }
+
+    setIsLoading(true);
+    setDeleteError("");
+
+    try {
+      const response = await apiFetch("/auth/delete-account", {
+        method: "DELETE",
+        body: JSON.stringify({ password: deletePassword }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to delete account");
+      }
+
+      toast.success("Your account has been deleted.");
+
+      logout();
+      void navigate("/loginForm", { replace: true });
+    } catch (err: any) {
+      setDeleteError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsChangingPassword(false);
-        setIsChangingEmail(false); // Закрываем почту тоже
+        setIsChangingEmail(false);
         setError("");
       }
     };
 
-    // Если открыта ХОТЯ БЫ ОДНА модалка
     if (isChangingPassword || isChangingEmail) {
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleKeyDown);
@@ -175,7 +320,7 @@ export function ProfileSettings({
       document.body.style.overflow = "unset";
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isChangingPassword, isChangingEmail]); // Следим за обоими стейтами
+  }, [isChangingPassword, isChangingEmail]);
   useEffect(() => {
     setName(user.name);
     setJob(user.workField);
@@ -726,18 +871,21 @@ export function ProfileSettings({
                   <p className="font-medium text-foreground text-left">
                     Email address
                   </p>
-                  <p className="text-sm text-muted-foreground text-left">
-                    ваша@почта.com
-                  </p>
+                  <button
+                    onClick={() => setIsChangeEmailModalOpen(true)}
+                    className="text-sm text-muted-foreground text-left hover:underline transition-colors"
+                  >
+                    {maskEmail(user?.email)}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsChangingEmail(true)}
-                  className="shrink-0 rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
-                >
-                  Change email
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={handleStartEmailChange}
+                className="shrink-0 rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+              >
+                Change email
+              </button>
 
               {isChangingEmail && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
@@ -746,7 +894,9 @@ export function ProfileSettings({
                       <div>
                         <h2 className="text-3xl font-bold">Update email</h2>
                         <p className="text-base text-muted-foreground mt-2">
-                          Enter your new email address.
+                          {emailChangeStep === 1
+                            ? `We sent a code to ${maskEmail(user?.email)}. Enter it below.`
+                            : "Enter your new email address."}
                         </p>
                       </div>
                       <button
@@ -769,24 +919,66 @@ export function ProfileSettings({
                       </button>
                     </div>
 
-                    <div className="p-8 pt-0 space-y-7">
+                    <div className="p-8 pt-0 space-y-5">
                       {error && (
                         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
                           {error}
                         </div>
                       )}
-                      <div className="space-y-3">
-                        <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                          New Email Address{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          value={newEmail}
-                          onChange={(e) => setNewEmail(e.target.value)}
-                          className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        />
-                      </div>
+
+                      {emailChangeStep === 1 ? (
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                            Verification Code{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={6}
+                            value={emailChangeCode}
+                            onChange={(e) =>
+                              setEmailChangeCode(
+                                e.target.value.replace(/\D/g, ""),
+                              )
+                            }
+                            placeholder="• • • • • •"
+                            autoFocus
+                            className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-2 text-2xl text-foreground text-center tracking-[0.5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-5">
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              New Email Address{" "}
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="email"
+                              value={newEmail}
+                              onChange={(e) => setNewEmail(e.target.value)}
+                              autoFocus
+                              className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              Confirm New Email{" "}
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="email"
+                              value={confirmNewEmail}
+                              onChange={(e) =>
+                                setConfirmNewEmail(e.target.value)
+                              }
+                              onPaste={(e) => e.preventDefault()} 
+                              className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-6 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
@@ -798,10 +990,18 @@ export function ProfileSettings({
                       </button>
                       <button
                         onClick={handleEmailUpdate}
-                        disabled={isLoading}
+                        disabled={
+                          isLoading ||
+                          (emailChangeStep === 1 &&
+                            emailChangeCode.length !== 6)
+                        }
                         className="rounded-xl bg-primary px-8 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                       >
-                        {isLoading ? "Saving..." : "Done"}
+                        {isLoading
+                          ? "Processing..."
+                          : emailChangeStep === 1
+                            ? "Next"
+                            : "Done"}
                       </button>
                     </div>
                   </div>
@@ -848,7 +1048,7 @@ export function ProfileSettings({
                           <button
                             onClick={() => {
                               setIsChangingPassword(false);
-                              setError(""); // Очищаем ошибку при закрытии на крестик
+                              setError("");
                             }}
                             className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mt-1"
                           >
@@ -869,7 +1069,6 @@ export function ProfileSettings({
                         </div>
 
                         <div className="p-8 pt-0 space-y-7">
-                          {/* Плашка с ошибкой */}
                           {error && (
                             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
                               {error}
@@ -926,7 +1125,7 @@ export function ProfileSettings({
                             type="button"
                             onClick={() => {
                               setIsChangingPassword(false);
-                              setError(""); // Очищаем ошибку при кнопке Cancel
+                              setError("");
                             }}
                             disabled={isLoading}
                             className="px-5 py-3 text-base font-medium text-foreground hover:underline disabled:opacity-50"
@@ -939,7 +1138,6 @@ export function ProfileSettings({
                             disabled={isLoading}
                             className="rounded-xl bg-primary px-8 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                           >
-                            {/* Анимация загрузки */}
                             {isLoading ? (
                               <>
                                 <svg
@@ -986,12 +1184,128 @@ export function ProfileSettings({
                 Add an extra layer of security to your account
               </p>
             </div>
+
             <ToggleSwitch
-              checked={false}
-              onCheckedChange={(checked) =>
-                console.log("2FA toggled:", checked)
-              }
+              key={`${user?.isTwoFactorEnable}-${isToggling2FA}`}
+              checked={!!user?.isTwoFactorEnable}
+              onCheckedChange={handleToggle2FAClick}
             />
+
+            {isToggling2FA && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
+                <div className="w-full max-w-2xl rounded-2xl border border-border bg-card text-foreground shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+                  <div className="flex items-start justify-between p-8 pb-6">
+                    <div>
+                      <h2 className="text-3xl font-bold">
+                        {target2FAState ? "Enable" : "Disable"} 2FA
+                      </h2>
+                      <p className="text-base text-muted-foreground mt-2">
+                        Please enter your password to confirm this change.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsToggling2FA(false);
+                        setError("");
+                      }}
+                      className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mt-1"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="p-8 pt-0 space-y-7">
+                    {error && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                        Current Password <span className="text-red-500">*</span>
+                      </label>
+
+                      <input
+                        type="password"
+                        autoComplete="current-password"
+                        style={{ display: "none" }}
+                      />
+
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={twoFactorPassword}
+                        onChange={(e) => setTwoFactorPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        autoFocus
+                        className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-6 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsToggling2FA(false);
+                        setError("");
+                      }}
+                      disabled={isLoading}
+                      className="px-5 py-3 text-base font-medium text-foreground hover:underline disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirm2FAToggle}
+                      disabled={isLoading || !twoFactorPassword}
+                      className="rounded-xl bg-primary px-8 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isLoading ? (
+                        <>
+                          <svg
+                            className="animate-spin h-5 w-5 text-primary-foreground"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Confirming...
+                        </>
+                      ) : (
+                        "Confirm"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </ProfileCard>
@@ -1069,35 +1383,100 @@ export function ProfileSettings({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           role="presentation"
-          onClick={() => setDangerOpen(null)}
+          onClick={() => {
+            setDangerOpen(null);
+            setDeletePassword("");
+            setDeleteError("");
+          }}
         >
           <div
-            className="max-w-md rounded-xl border border-border bg-card p-6 shadow-xl"
+            className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl"
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
-            <h4 className="text-lg font-semibold text-foreground">
+            <h4
+              className={`text-xl font-bold ${dangerOpen === "delete" ? "text-red-500" : "text-foreground"}`}
+            >
               {dangerOpen === "reset"
                 ? s?.dangerReset || "Reset Progress"
                 : s?.dangerDelete || "Delete Account"}
             </h4>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {dangerOpen === "reset"
-                ? s?.modalUnavailableResetLead ||
-                  "Resetting progress is temporarily unavailable."
-                : s?.deletionUnavailable ||
-                  "Account deletion is temporarily unavailable."}
-            </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-border px-4 py-2 text-foreground hover:bg-secondary"
-                onClick={() => setDangerOpen(null)}
-              >
-                {s?.modalClose || "Close"}
-              </button>
-            </div>
+
+            {dangerOpen === "reset" ? (
+              <>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {s?.modalUnavailableResetLead ||
+                    "Resetting progress is temporarily unavailable."}
+                </p>
+                <div className="mt-6 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border px-4 py-2 text-foreground hover:bg-secondary"
+                    onClick={() => setDangerOpen(null)}
+                  >
+                    {s?.modalClose || "Close"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This action cannot be undone. Please enter your password to
+                  permanently delete your account.
+                </p>
+
+                {deleteError && (
+                  <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                    {deleteError}
+                  </div>
+                )}
+
+                <div className="mt-4 space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Password <span className="text-red-500">*</span>
+                  </label>
+
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    style={{ display: "none" }}
+                  />
+
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    autoFocus
+                    className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                  />
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+                    onClick={() => {
+                      setDangerOpen(null);
+                      setDeletePassword("");
+                      setDeleteError("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting || !deletePassword}
+                    className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {isDeleting ? "Deleting..." : "Permanently Delete"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}

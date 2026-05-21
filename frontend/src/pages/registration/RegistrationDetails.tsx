@@ -55,7 +55,6 @@ export default function RegistrationDetails() {
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 🚀 ЧИНЯТ ТОПИКИ: Меняем на правильный ключ
     const token = localStorage.getItem("exply_access_token");
     if (!token) return;
 
@@ -185,7 +184,8 @@ export default function RegistrationDetails() {
 
     try {
       const formattedTopics =
-        Array.isArray(formData.teacherTopics) && formData.teacherTopics.length > 0
+        Array.isArray(formData.teacherTopics) &&
+        formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
               const num = parseInt(t.replace("topic:", ""), 10);
               return isNaN(num) ? t : num;
@@ -211,17 +211,19 @@ export default function RegistrationDetails() {
         Object.entries(registrationPayload).filter(([, v]) => v !== undefined),
       );
 
-      // 🚀 УБИВАЕМ USER NOT FOUND: Берем правильный системный токен!
       const accessToken = localStorage.getItem("exply_access_token");
-      
-      const response = await fetch("http://localhost:4200/auth/profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+
+      const response = await fetch(
+        "http://localhost:4200/auth/update-preferences",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(cleanPayload),
         },
-        body: JSON.stringify(cleanPayload),
-      });
+      );
 
       const result = await response.json();
 
@@ -231,7 +233,6 @@ export default function RegistrationDetails() {
         const userRole = formData.role;
         const students = result.generatedStudents || result.students || [];
 
-        // 🚀 Обновляем токен под правильным системным ключом
         if (result.access_token) {
           localStorage.setItem("exply_access_token", result.access_token);
         }

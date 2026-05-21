@@ -15,6 +15,7 @@ export interface UserData {
   name: string;
   email: string;
   role: string;
+  isTwoFactorEnable: boolean;
   hasCompletedPlacement: boolean;
   englishLevel: string;
   hobbies: string[];
@@ -82,6 +83,7 @@ function normalizeProfile(raw: unknown): UserData | null {
     name: String(r.name ?? ""),
     email: String(r.email ?? ""),
     role: normalizeLearnerRole(r.role),
+    isTwoFactorEnable: Boolean(r.isTwoFactorEnable),
     hasCompletedPlacement: coerceHasCompletedPlacement(r.hasCompletedPlacement),
     englishLevel: String(r.englishLevel ?? ""),
     education: stripChoosePlaceholder(r.education),
@@ -158,7 +160,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshProfile = useCallback(async (): Promise<UserData | null> => {
     try {
-      const response = await apiFetch("/auth/profile", { method: "GET" });
+      const response = await apiFetch(`/auth/profile?t=${Date.now()}`, {
+        method: "GET",
+      });
 
       if (response.status === 404) {
         console.warn(

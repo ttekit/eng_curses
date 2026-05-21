@@ -1,5 +1,10 @@
 import { MailerService } from "@nestjs-modules/mailer";
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { render } from "@react-email/components";
@@ -8,6 +13,9 @@ import { ResetPasswordTemplate } from "./templates/reset-password.template";
 import { TwoFactorAuthTemplate } from "./templates/two-factor-auth.template";
 import { PasswordChangedTemplate } from "./templates/password-change-notification.template";
 import * as React from "react";
+import EmailChangeTemplate from "./templates/email-change";
+import { PrismaService } from "src/prisma.service";
+import AccountDeletedTemplate from "./templates/account-deleted";
 
 @Injectable()
 export class MailService {
@@ -16,6 +24,7 @@ export class MailService {
   public constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   public async sendConfirmationEmail(email: string, code: string) {
@@ -25,7 +34,9 @@ export class MailService {
       );
       return;
     }
-    const html = await render(ConfirmationTemplate({ code }));
+    const html = await render(
+      React.createElement(ConfirmationTemplate, { code }),
+    );
 
     return this.sendMail(email, "Код підтвердження реєстрації — Explys", html);
   }
@@ -50,9 +61,31 @@ export class MailService {
       );
       return;
     }
-    const html = await render(TwoFactorAuthTemplate({ token }));
+    const html = await render(
+      React.createElement(TwoFactorAuthTemplate, { token }),
+    );
 
     return this.sendMail(email, "Verify your identity", html);
+  }
+
+  async sendEmailChangeCode(email: string, code: string) {
+    try {
+      const htmlContent = await render(EmailChangeTemplate({ code }));
+
+      await this.mailerService.sendMail({
+        from: '"Explys Support" <noreply@explys.com>',
+        to: email,
+        subject: "Verification Code for Email Change",
+        html: htmlContent,
+      });
+
+      console.log(`Письмо с кодом отправлено на ${email}`);
+    } catch (error) {
+      console.error("Ошибка при отправке письма:", error);
+      throw new InternalServerErrorException(
+        "Не вдалося відправити лист з кодом",
+      );
+    }
   }
 
   private async sendMail(email: string, subject: string, html: string) {
@@ -93,6 +126,27 @@ export class MailService {
         error as Error,
       );
       throw error;
+    }
+  }
+
+  async sendAccountDeletedEmail(
+    email: string,
+    name: string,
+    restoreLink: string,
+  ) {
+    try {
+      const htmlContent = await render(
+        AccountDeletedTemplate({ name, restoreLink }),
+      );
+
+      await this.mailerService.sendMail({
+        from: '"Explys Support" <noreply@explys.com>',
+        to: email,
+        subject: "Account Deletion Notice (Action Required)",
+        html: htmlContent,
+      });
+    } catch (error) {
+      console.error("Не удалось отправить письмо об удалении:", error);
     }
   }
 }

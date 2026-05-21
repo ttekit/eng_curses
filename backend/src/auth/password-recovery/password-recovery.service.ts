@@ -18,9 +18,7 @@ export class PasswordRecoveryService {
     private readonly mail: MailService,
   ) {}
 
-  async resetPassword(
-    dto: ResetPasswordDto,
-  ): Promise<{ message: string }> {
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const email = dto.email.toLowerCase().trim();
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -76,11 +74,21 @@ export class PasswordRecoveryService {
       throw new NotFoundException("User not found");
     }
     const hashed = await bcrypt.hash(dto.password, 10);
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: { password: hashed },
     });
+
     await this.prisma.token.delete({ where: { id: row.id } });
+
+    this.mail.sendPasswordChangedNotification(user.email).catch((err) => {
+      console.error(
+        `Failed to send password changed notification to ${user.email}`,
+        err,
+      );
+    });
+
     return { message: "Password updated successfully" };
   }
 }
