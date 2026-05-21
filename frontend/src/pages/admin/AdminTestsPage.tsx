@@ -67,9 +67,14 @@ export default function AdminTestsPage() {
           <h1 className="font-display text-2xl font-bold text-foreground">
             Tests &amp; quizzes
           </h1>
-          <p className="text-muted-foreground">Placement and comprehension tests (demo).</p>
+          <p className="text-muted-foreground">
+            Placement and comprehension tests (demo).
+          </p>
         </div>
-        <AdminButton className="gap-2" onClick={() => setCreateOpen(true)}>
+        <AdminButton
+          className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Create test
         </AdminButton>
@@ -132,7 +137,9 @@ export default function AdminTestsPage() {
               <Users className="h-6 w-6 text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.totalAttempts.toLocaleString()}</p>
+              <p className="text-2xl font-bold">
+                {stats.totalAttempts.toLocaleString()}
+              </p>
               <p className="text-sm text-muted-foreground">Attempts</p>
             </div>
           </AdminCardContent>
@@ -195,10 +202,18 @@ export default function AdminTestsPage() {
               <th className="p-4 text-left text-muted-foreground">Test</th>
               <th className="p-4 text-left text-muted-foreground">Type</th>
               <th className="p-4 text-left text-muted-foreground">Level</th>
-              <th className="hidden p-4 text-left text-muted-foreground md:table-cell">Q&apos;s</th>
-              <th className="hidden p-4 text-left text-muted-foreground md:table-cell">Time</th>
-              <th className="hidden p-4 text-left text-muted-foreground lg:table-cell">Attempts</th>
-              <th className="hidden p-4 text-left text-muted-foreground lg:table-cell">Avg</th>
+              <th className="hidden p-4 text-left text-muted-foreground md:table-cell">
+                Q&apos;s
+              </th>
+              <th className="hidden p-4 text-left text-muted-foreground md:table-cell">
+                Time
+              </th>
+              <th className="hidden p-4 text-left text-muted-foreground lg:table-cell">
+                Attempts
+              </th>
+              <th className="hidden p-4 text-left text-muted-foreground lg:table-cell">
+                Avg
+              </th>
               <th className="p-4 text-left text-muted-foreground">Pass %</th>
               <th className="p-4 text-left text-muted-foreground">Status</th>
               <th className="w-12 p-4" />
@@ -206,7 +221,10 @@ export default function AdminTestsPage() {
           </thead>
           <tbody>
             {filtered.map((test) => (
-              <tr key={test.id} className="border-border border-b hover:bg-muted/40">
+              <tr
+                key={test.id}
+                className="border-border border-b hover:bg-muted/40"
+              >
                 <td className="p-4 font-medium">{test.title}</td>
                 <td className="p-4">
                   <span
@@ -224,7 +242,9 @@ export default function AdminTestsPage() {
                 <td className="hidden p-4 text-muted-foreground md:table-cell">
                   {test.duration}
                 </td>
-                <td className="hidden p-4 lg:table-cell">{test.attempts.toLocaleString()}</td>
+                <td className="hidden p-4 lg:table-cell">
+                  {test.attempts.toLocaleString()}
+                </td>
                 <td className="hidden p-4 lg:table-cell">{test.avgScore}%</td>
                 <td className="p-4">
                   <span
@@ -240,7 +260,9 @@ export default function AdminTestsPage() {
                   </span>
                 </td>
                 <td className="p-4">
-                  <AdminBadge variant={test.status === "active" ? "accent" : "secondary"}>
+                  <AdminBadge
+                    variant={test.status === "active" ? "accent" : "secondary"}
+                  >
                     {test.status}
                   </AdminBadge>
                 </td>

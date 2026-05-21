@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ArrowRight, CheckCircle, Clock, Lock } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { ChameleonMascot } from "../ChameleonMascot";
 import type { QuizQuestion } from "./defaultLessonSides";
 
 const OPEN_MIN_CHARS = 40;
@@ -59,16 +58,12 @@ export function VideoQuiz({
   const [openDraft, setOpenDraft] = useState("");
   const [isAnswered, setIsAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
-  const [showResults, setShowResults] = useState(false);
   const [answersById, setAnswersById] = useState<
     Record<string, number | string>
   >({});
 
   const question = questions[currentQuestion];
   const isOpen = question ? isOpenQuestion(question) : false;
-
-  const mcqTotal = questions.filter((q) => !isOpenQuestion(q)).length;
-  const hasOpen = questions.some(isOpenQuestion);
 
   useEffect(() => {
     if (!question) return;
@@ -78,8 +73,7 @@ export function VideoQuiz({
     } else {
       setOpenDraft("");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset when step changes
-  }, [currentQuestion]);
+  }, [currentQuestion, answersById, question]);
 
   if (!isVideoComplete) {
     return (
@@ -97,11 +91,7 @@ export function VideoQuiz({
     );
   }
 
-  if (showResults) {
-    const mcqPct =
-      mcqTotal > 0 ? Math.round((correctCount / mcqTotal) * 100) : 0;
-    const mood = mcqPct >= 80 ? "excited" : mcqPct >= 50 ? "happy" : "thinking";
-
+  function handleComplete() {
     const wrongReview: QuizWrongReviewItem[] = [];
     for (const q of questions) {
       if (isOpenQuestion(q)) continue;
@@ -119,94 +109,12 @@ export function VideoQuiz({
       });
     }
 
-    return (
-      <div className="py-4 text-center flex flex-col items-center">
-        <img src="/ResultHappy.svg" className="w-40 h-40 mb-3" />
-
-        <h3 className="mb-2 text-xl font-bold text-foreground">
-          Quiz complete
-        </h3>
-
-        <div className="mb-4 rounded-xl w-full bg-muted p-4">
-          <p className="mb-1 text-3xl font-bold text-primary">
-            {correctCount}/{mcqTotal}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {mcqPct}% multiple choice
-          </p>
-          {hasOpen ? (
-            <p className="mt-3 text-xs leading-snug text-muted-foreground">
-              Your written summary is included in the final score when you tap{" "}
-              <span className="font-medium text-foreground">
-                Complete lesson
-              </span>{" "}
-              (submitted to the server with your answers).
-            </p>
-          ) : null}
-        </div>
-
-        <p className="mb-4 text-sm text-muted-foreground">
-          {mcqPct >= 80
-            ? "Strong work on the multiple-choice items."
-            : mcqPct >= 50
-              ? "Good effort — skim vocabulary once more."
-              : "Review the clip and vocabulary, then retry."}
-        </p>
-
-        {wrongReview.length > 0 ? (
-          <div className="mb-6 w-full space-y-3 rounded-xl border border-border bg-card/50 p-4 text-left">
-            <p className="text-sm font-semibold text-foreground">
-              Review — correct answers
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Answers were hidden while you worked through the quiz. Here are
-              the items you missed:
-            </p>
-            <ul className="space-y-3 text-sm">
-              {wrongReview.map((w) => (
-                <li
-                  key={`${w.question}-${w.selectedIndex}`}
-                  className="rounded-lg border border-border/80 bg-background/60 p-3"
-                >
-                  <p className="mb-2 font-medium text-foreground">
-                    {w.question}
-                  </p>
-                  <p className="text-muted-foreground">
-                    Your answer:{" "}
-                    <span className="text-foreground">
-                      {w.options[w.selectedIndex] ?? "—"}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-accent">
-                    Correct: {w.options[w.correctIndex] ?? "—"}
-                  </p>
-                  {w.explanation?.trim() ? (
-                    <p className="mt-2 text-xs leading-snug text-muted-foreground">
-                      {w.explanation.trim()}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={() =>
-            onComplete({
-              correctCount,
-              totalQuestions: questions.length,
-              answersById,
-              wrongReview,
-            })
-          }
-          className="flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-        >
-          Complete lesson
-        </button>
-      </div>
-    );
+    onComplete({
+      correctCount,
+      totalQuestions: questions.length,
+      answersById,
+      wrongReview,
+    });
   }
 
   function handleSubmit() {
@@ -227,7 +135,7 @@ export function VideoQuiz({
         setSelectedAnswer(null);
         setIsAnswered(false);
       } else {
-        setShowResults(true);
+        handleComplete();
       }
       return;
     }
@@ -251,7 +159,7 @@ export function VideoQuiz({
       setSelectedAnswer(null);
       setIsAnswered(false);
     } else {
-      setShowResults(true);
+      handleComplete();
     }
   }
 
@@ -338,10 +246,10 @@ export function VideoQuiz({
                   "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
                   !isAnswered && isSelected && "border-primary bg-primary/10",
                   !isAnswered &&
-                    !isSelected &&
-                    "border-border bg-card hover:border-primary/50",
+                  !isSelected &&
+                  "border-border bg-card hover:border-primary/50",
                   lockedInThis &&
-                    "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
+                  "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
                   isAnswered && !isSelected && "opacity-45",
                 )}
               >
@@ -349,15 +257,15 @@ export function VideoQuiz({
                   className={cn(
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
                     !isAnswered &&
-                      isSelected &&
-                      "bg-primary text-primary-foreground",
+                    isSelected &&
+                    "bg-primary text-primary-foreground",
                     !isAnswered &&
-                      !isSelected &&
-                      "bg-muted text-muted-foreground",
+                    !isSelected &&
+                    "bg-muted text-muted-foreground",
                     lockedInThis && "bg-primary/80 text-primary-foreground",
                     isAnswered &&
-                      !isSelected &&
-                      "bg-muted text-muted-foreground",
+                    !isSelected &&
+                    "bg-muted text-muted-foreground",
                   )}
                 >
                   {lockedInThis ? (
@@ -403,7 +311,7 @@ export function VideoQuiz({
             Next question <ArrowRight className="h-4 w-4" />
           </>
         ) : (
-          "See results"
+          "Complete lesson"
         )}
       </button>
     </div>

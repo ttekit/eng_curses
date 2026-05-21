@@ -34,12 +34,17 @@ export default function AdminTopicsPage() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Topics</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Topics
+          </h1>
           <p className="text-muted-foreground">
             Organize learning paths by category (demo tree).
           </p>
         </div>
-        <AdminButton className="gap-2" onClick={() => setAddOpen(true)}>
+        <AdminButton
+          className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          onClick={() => setAddOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           New topic
         </AdminButton>
@@ -59,7 +64,8 @@ export default function AdminTopicsPage() {
         }
       >
         <p className="text-sm text-muted-foreground">
-          Connect this modal to your content API when you wire the admin backend.
+          Connect this modal to your content API when you wire the admin
+          backend.
         </p>
       </AdminModal>
 
@@ -84,7 +90,9 @@ export default function AdminTopicsPage() {
                       {cat.topics.reduce((a, x) => a + x.videos, 0)} videos
                     </AdminBadge>
                   </div>
-                  <p className="mt-2 text-muted-foreground">{cat.description}</p>
+                  <p className="mt-2 text-muted-foreground">
+                    {cat.description}
+                  </p>
                 </div>
                 {isOpen ? (
                   <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -107,8 +115,12 @@ export default function AdminTopicsPage() {
                           </div>
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-medium text-foreground">{t.name}</p>
-                              <AdminBadge variant="outline">{t.level}</AdminBadge>
+                              <p className="font-medium text-foreground">
+                                {t.name}
+                              </p>
+                              <AdminBadge variant="outline">
+                                {t.level}
+                              </AdminBadge>
                             </div>
                             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
@@ -119,7 +131,9 @@ export default function AdminTopicsPage() {
                                 <FileQuestion className="h-3 w-3" />
                                 {t.tests}
                               </span>
-                              <span className="hidden sm:inline">Topic #{t.id}</span>
+                              <span className="hidden sm:inline">
+                                Topic #{t.id}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -134,7 +148,10 @@ export default function AdminTopicsPage() {
                       </div>
                     ))}
                   </div>
-                  <AdminButton variant="outline" className="mt-4 w-full gap-2 border-dashed sm:w-auto">
+                  <AdminButton
+                    variant="outline"
+                    className="mt-4 w-full gap-2 border-dashed sm:w-auto"
+                  >
                     <FolderOpen className="h-4 w-4" />
                     Add bundle in category
                   </AdminButton>
@@ -153,8 +170,8 @@ export default function AdminTopicsPage() {
           <div>
             <h3 className="font-semibold text-foreground">Topic tips</h3>
             <p className="text-sm text-muted-foreground">
-              Keep each lane focused on one outcome — fewer, clearer topics convert better than
-              long catch-all playlists.
+              Keep each lane focused on one outcome — fewer, clearer topics
+              convert better than long catch-all playlists.
             </p>
           </div>
         </AdminCardContent>

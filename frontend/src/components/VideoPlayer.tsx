@@ -119,13 +119,17 @@ export default function VideoPlayer({
 
     const { currentTime, duration } = video;
     setCurrentTime(currentTime);
-    const dur = duration && Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const dur =
+      duration && Number.isFinite(duration) && duration > 0 ? duration : 0;
     const frac = dur > 0 ? currentTime / dur : 0;
     setProgress(dur > 0 ? frac * 100 : 0);
 
     if (dur > 0 && video.buffered.length > 0) {
       for (let i = 0; i < video.buffered.length; i++) {
-        if (video.buffered.start(i) <= currentTime && video.buffered.end(i) >= currentTime) {
+        if (
+          video.buffered.start(i) <= currentTime &&
+          video.buffered.end(i) >= currentTime
+        ) {
           const bufferedEnd = video.buffered.end(i);
           setBufferedProgress((bufferedEnd / dur) * 100);
           break;
@@ -190,7 +194,7 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.setPointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
     evaluatePosition(e.clientX);
   };
@@ -205,7 +209,7 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
     if (videoRef.current) {
       videoRef.current.currentTime = currentTime;
@@ -278,14 +282,36 @@ export default function VideoPlayer({
     videoRef.current.playbackRate = speed;
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      void containerRef.current.requestFullscreen();
+      try {
+        await containerRef.current.requestFullscreen();
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape").catch(() => { });
+        }
+      } catch (err) { }
     } else {
-      void document.exitFullscreen();
+      try {
+        await document.exitFullscreen();
+      } catch (err) { }
     }
   };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -327,9 +353,7 @@ export default function VideoPlayer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleToggle, handleSkip, volume]);
 
-  
   return (
-    
     <div
       ref={containerRef}
       className={cn(
@@ -492,7 +516,7 @@ export default function VideoPlayer({
             className="h-full bg-(--purple-default) rounded-full absolute left-0 top-0 pointer-events-none transition-colors duration-200 group-hover/timeline:bg-purple-500"
             style={{ width: `${progress}%` }}
           />
-          
+
           <div
             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150"
             style={{ left: `calc(${progress}% - 8px)` }}
@@ -549,7 +573,7 @@ export default function VideoPlayer({
               onClick={toggleFullscreen}
               className="text-white/80 hover:text-white transition-colors"
             >
-              <Maximize className="size-5.5" />
+              <Maximize className="size-5.5 hover:cursor-pointer" />
             </button>
           </div>
         </div>

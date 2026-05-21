@@ -30,7 +30,7 @@ export interface ProfileStatsModel {
   averageScore: number | null;
   levelLabel: string;
   weeklyActivity: { day: string; minutes: number }[];
-  // Делаем эти поля необязательными, чтобы компонент не падал без них
+
   xp?: number;
   appLevel?: number;
 }
@@ -71,8 +71,8 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
     );
   }
 
-  const hours = Math.floor(user.totalWatchTimeMin / 60);
-  const minutes = user.totalWatchTimeMin % 60;
+  // const hours = Math.floor(user.totalWatchTimeMin / 60);
+  // const minutes = user.totalWatchTimeMin % 60;
   const current = parseCefrLevel(user.levelLabel || "A1");
   const idx = cefrIndex(current);
   const order = cefrOrder();
@@ -121,7 +121,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
         <StatTile
           icon={Clock}
           iconWrapClass="bg-primary/20 text-primary"
-          value={<>{hours}h {minutes}m</>}
+          value={`${Math.floor((user.totalWatchTimeMin || 0) / 60)}h ${(user.totalWatchTimeMin || 0) % 60}m`}
           label="Watch time"
         />
         <StatTile
@@ -139,7 +139,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
         <StatTile
           icon={Target}
           iconWrapClass="bg-secondary text-muted-foreground"
-          value={user.averageScore != null ? `${user.averageScore}%` : "—"}
+          value={user.averageScore !== null ? `${Math.round(user.averageScore)}%` : "—"}
           label="Avg. Score"
         />
       </div>
@@ -147,8 +147,8 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* График активности */}
         <ProfileCard title="Weekly activity">
-          <div className="h-[200px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[200px] w-full mt-4 overflow-hidden">
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <AreaChart data={weeklyActivity}>
                 <defs>
                   <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">

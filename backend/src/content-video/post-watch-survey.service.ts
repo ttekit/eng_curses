@@ -69,49 +69,34 @@ export class PostWatchSurveyService {
    * Call when the client reports the video finished: bumps watch stats, generates questions (Gemini or fallback), stores survey.
    * Persist a deduped `WatchSession` per user/video/day when `userId` is provided (authenticated SPA flow).
    */
-  async recordWatchAndGenerateSurvey(
-    contentVideoId: number,
-    userId: number | null,
-    secondsWatched?: number,
-  ): Promise<{
-    surveyId: number;
-    questions: PostWatchSurveyQuestion[];
-  }> {
-    const video = await this.prisma.contentVideo.findUnique({
-      where: { id: contentVideoId },
-    });
-    if (!video) {
-      throw new NotFoundException(`ContentVideo ${contentVideoId} not found`);
-    }
+  async recordWatchAndGenerateSurvey(videoId: number, userId: number, secondsWatched?: number) {
+    // Нам нужно знать, сколько времени передал фронт (или 0)
+    const duration = secondsWatched || 0;
 
-    await this.incrementUsersWatched(video.contentId);
-
-    if (userId != null) {
-      await this.upsertWatchSessionDaily(userId, contentVideoId, secondsWatched);
-      await this.awardXpAndCheckAchievements(userId);
-      await this.updateUserStreak(userId);
-      void this.bumpListeningForVideoTopics(userId, contentVideoId).catch(
-        () => undefined,
-      );
-    }
-
-    const geminiQs = await this.gemini.generateQuestions({
-      videoName: video.videoName,
-      videoDescription: video.videoDescription,
-    });
-    const questions = geminiQs?.length
-      ? geminiQs
-      : fallbackQuestions();
-
-    const row = await this.prisma.postWatchSurvey.create({
-      data: {
-        contentVideoId,
-        userId: userId ?? undefined,
-        questionsJson: questions,
+    return await this.prisma.watchSession.upsert({
+      where: {
+        userId_contentVideoId_completionDate: {
+          userId,
+          contentVideoId: videoId,
+          // Считаем сессию за сегодняшний день
+          completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
+      },
+      update: {
+        // Ключевой момент: ПРИБАВЛЯЕМ (increment) время, а не заменяем
+        secondsWatched: { increment: duration },
+        completed: true,
+        endedAt: new Date(),
+      },
+      create: {
+        userId,
+        contentVideoId: videoId,
+        completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
+        secondsWatched: duration,
+        completed: true,
+        endedAt: new Date(),
       },
     });
-
-    return { surveyId: row.id, questions };
   }
 
   /**

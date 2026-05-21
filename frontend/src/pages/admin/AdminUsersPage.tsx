@@ -57,12 +57,7 @@ const roleBadge: Record<KnownRole, string> = {
 
 function roleKey(r: string): KnownRole | null {
   const k = normalizeUserRoleCode(r);
-  if (
-    k === "adult" ||
-    k === "student" ||
-    k === "teacher" ||
-    k === "admin"
-  ) {
+  if (k === "adult" || k === "student" || k === "teacher" || k === "admin") {
     return k;
   }
   return null;
@@ -83,10 +78,7 @@ function mailtoHref(email: string, name: string): string {
 function optionalPasswordOk(pwd: string): boolean {
   if (!pwd.trim()) return true;
   return (
-    pwd.length >= 8 &&
-    /[a-z]/.test(pwd) &&
-    /[A-Z]/.test(pwd) &&
-    /\d/.test(pwd)
+    pwd.length >= 8 && /[a-z]/.test(pwd) && /[A-Z]/.test(pwd) && /\d/.test(pwd)
   );
 }
 
@@ -142,8 +134,7 @@ export default function AdminUsersPage() {
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesRole =
-        roleFilter === "all" ||
-        normalizeUserRoleCode(user.role) === roleFilter;
+        roleFilter === "all" || normalizeUserRoleCode(user.role) === roleFilter;
       const matchesLevel = matchesLevelFilter(user, levelFilter);
       return matchesSearch && matchesRole && matchesLevel;
     });
@@ -316,11 +307,18 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <AdminButton variant="outline" className="gap-2" onClick={exportCsv}>
+          <AdminButton
+            variant="outline"
+            className="gap-2 flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center hover:cursor-pointer rounded-xlpx-8 py-3 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
+            onClick={exportCsv}
+          >
             <Download className="h-4 w-4" />
             Export
           </AdminButton>
-          <AdminButton className="gap-2" onClick={() => setAddOpen(true)}>
+          <AdminButton
+            className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            onClick={() => setAddOpen(true)}
+          >
             <UserPlus className="h-4 w-4" />
             Add user
           </AdminButton>
@@ -340,7 +338,10 @@ export default function AdminUsersPage() {
             >
               Cancel
             </AdminButton>
-            <AdminButton onClick={() => void handleCreateUser()} disabled={addSaving}>
+            <AdminButton
+              onClick={() => void handleCreateUser()}
+              disabled={addSaving}
+            >
               {addSaving ? "Creating…" : "Create"}
             </AdminButton>
           </>
@@ -433,7 +434,10 @@ export default function AdminUsersPage() {
             >
               Cancel
             </AdminButton>
-            <AdminButton onClick={() => void handleSaveEdit()} disabled={editSaving}>
+            <AdminButton
+              onClick={() => void handleSaveEdit()}
+              disabled={editSaving}
+            >
               {editSaving ? "Saving…" : "Save changes"}
             </AdminButton>
           </>
@@ -452,10 +456,7 @@ export default function AdminUsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <label
-                className="text-sm font-medium"
-                htmlFor="admin-edit-email"
-              >
+              <label className="text-sm font-medium" htmlFor="admin-edit-email">
                 Email
               </label>
               <AdminInput
@@ -501,7 +502,8 @@ export default function AdminUsersPage() {
             </label>
             <AdminSelectNative
               value={
-                editLevel && ["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel)
+                editLevel &&
+                ["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel)
                   ? editLevel
                   : ""
               }
@@ -517,8 +519,8 @@ export default function AdminUsersPage() {
             {editLevel.trim() &&
             !["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel) ? (
               <p className="text-xs text-muted-foreground">
-                Profile currently <code>{editLevel}</code> — pick a level above to
-                replace it, or save without selecting to leave it unchanged.
+                Profile currently <code>{editLevel}</code> — pick a level above
+                to replace it, or save without selecting to leave it unchanged.
               </p>
             ) : null}
           </div>
@@ -549,8 +551,7 @@ export default function AdminUsersPage() {
         }
       >
         <p className="text-sm text-foreground">
-          Permanently remove{" "}
-          <strong>{deleteCandidate?.name}</strong> (
+          Permanently remove <strong>{deleteCandidate?.name}</strong> (
           <code>{deleteCandidate?.email}</code>)? Related profile data may be
           removed per database cascade rules.
         </p>
@@ -812,8 +813,7 @@ export default function AdminUsersPage() {
         <div className="flex flex-col gap-4 border-border border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {filtered.length}
-            {!loading ? ` of ${users.length}` : ""}{" "}
-            users in this view.
+            {!loading ? ` of ${users.length}` : ""} users in this view.
           </p>
           <div className="flex gap-2">
             <AdminButton

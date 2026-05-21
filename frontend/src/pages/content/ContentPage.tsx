@@ -59,6 +59,8 @@ type LessonSideBundle = {
   }[];
 };
 
+
+
 function mapApiTestsToQuiz(
   tests: NonNullable<LessonSideBundle["tests"]>,
 ): QuizQuestion[] {
@@ -346,6 +348,8 @@ const tabs: { id: TabId; label: string; icon: typeof BookOpen }[] = [
   { id: "quiz", label: "Quiz", icon: HelpCircle },
 ];
 
+
+
 function ContentWatchHeader({
   rightLabel,
   playlistRibbon,
@@ -554,6 +558,7 @@ function TabPanels({
           loading={transcriptLoading}
           playbackSec={playbackSec}
           onSeek={onSeekTranscript}
+          vocabulary={vocabulary}
         />
       </div>
       <div
@@ -621,6 +626,8 @@ export default function ContentPage() {
 
   const isLgUp = useIsLgUp();
 
+
+
   /** True once playback reaches threshold for this lesson (quiz + Watched label). */
   const progressedToWatchedRef = useRef(false);
   /** POST /watch-complete fire-once guard (survey + analytics). */
@@ -640,34 +647,28 @@ export default function ContentPage() {
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
+    // 1. Сразу блокируем повторные вызовы
     if (watchCompletePostedRef.current || !id) return;
+    watchCompletePostedRef.current = true; // Ставим флаг СРАЗУ
+
     const vid = Number.parseInt(String(id), 10);
     if (!Number.isFinite(vid) || vid <= 0) return;
-    watchCompletePostedRef.current = true;
-
-    const currentSeconds = videoElRef.current?.currentTime || 0;
 
     try {
-      const res = await apiFetch(`/content-video/${vid}/watch-complete`, {
+      await apiFetch(`/content-video/${vid}/watch-complete`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          secondsWatched: Math.round(currentSeconds),
+          secondsWatched: 0, // ВАЖНО: строго 0!
+          completed: true,   // Добавь этот флаг, если бэкенд его ждет
         }),
       });
-      if (res.ok) {
-        captureEvent("video_watch_complete", { content_video_id: vid });
-      } else {
-        watchCompletePostedRef.current = false;
-      }
-    } catch {
+    } catch (e) {
+      // Если упало, сбрасываем флаг, чтобы можно было попробовать снова
       watchCompletePostedRef.current = false;
+      console.error("Failed to mark as complete", e);
     }
   }, [id]);
-
   const ensureLessonWatched = useCallback(() => {
     if (progressedToWatchedRef.current) return;
     progressedToWatchedRef.current = true;
@@ -685,6 +686,8 @@ export default function ContentPage() {
   const handleVideoEnded = useCallback(() => {
     ensureLessonWatched();
   }, [ensureLessonWatched]);
+
+
 
   useEffect(() => {
     if (!id) {
@@ -790,8 +793,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-                body.tests as NonNullable<LessonSideBundle["tests"]>,
-              )
+              body.tests as NonNullable<LessonSideBundle["tests"]>,
+            )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -855,6 +858,32 @@ export default function ContentPage() {
     playbackStartedForPersonalizeRef.current = false;
     vocabPersonalizeDoneRef.current = false;
     setPlaylistRibbon(null);
+  }, [id]);
+
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+
+    heartbeatIntervalRef.current = setInterval(async () => {
+      if (document.hidden || !videoElRef.current || videoElRef.current.paused) return;
+
+      try {
+        await apiFetch(`/content-video/${id}/watch-complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            secondsWatched: 20, // Шлем строго 20
+          }),
+        });
+      } catch (err) {
+        console.error("Heartbeat failed:", err);
+      }
+    }, 20000); // 20 секунд
+
+    return () => {
+      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+    };
   }, [id]);
 
   const headerRight = isVideoComplete
@@ -1055,7 +1084,7 @@ export default function ContentPage() {
 
           if (r.ok) {
             // ДОДАНО: Примусово оновлюємо дані користувача після відправки тесту
-            await refreshProfile().catch(() => {});
+            await refreshProfile().catch(() => { });
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1356,6 +1385,7 @@ export default function ContentPage() {
                         loading={transcriptLoading}
                         playbackSec={playbackSec}
                         onSeek={seekToCue}
+                        vocabulary={enrichedDisplayVocabulary}
                       />
                     </div>
                     <div

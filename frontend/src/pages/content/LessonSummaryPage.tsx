@@ -377,10 +377,10 @@ export default function LessonSummaryPage() {
             className="inline-flex shrink-0 items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm">Catalog</span>
+            <span className="text-sm hidden md:block">Catalog</span>
           </Link>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-            <img src="/Icon.svg" className="w-15 h-18" />
+            <img src="/Icon.svg" className="w-10 h-13 sm:w-15 sm:h-18" />
             <span className="font-display truncate font-bold">
               Lesson summary
             </span>
@@ -420,14 +420,14 @@ export default function LessonSummaryPage() {
             </p>
             <Link
               to={`/content/${videoId}`}
-              className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
+              className=" flex rounded-[15px] bg-primary px-6 py-3 mt-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             >
               Continue lesson
             </Link>
           </div>
         ) : (
           <>
-            <div className="text-center">
+            <div className="text-center items-center justify-center flex flex-col">
               <img
                 src="/ResultHappy.svg"
                 className="w-50 h-50 mb-5 animate-float"

@@ -103,9 +103,7 @@ export default function AdminAnalyticsPage() {
 
     const distinct = overview.distinctWatchLearnersInRange;
     const watchMin =
-      distinct > 0
-        ? (overview.watchHours * 60) / distinct
-        : null;
+      distinct > 0 ? (overview.watchHours * 60) / distinct : null;
 
     return [
       {
@@ -159,17 +157,18 @@ export default function AdminAnalyticsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <AdminSelectNative
-            className="w-40 bg-card"
+            className="w-40 bg-card hover:cursor-pointer"
             value={range}
-            onChange={(e) =>
-              setRange(e.target.value as RangeKey)
-            }
+            onChange={(e) => setRange(e.target.value as RangeKey)}
           >
             <option value="week">Past week</option>
             <option value="month">Past month</option>
             <option value="year">Past year</option>
           </AdminSelectNative>
-          <AdminButton variant="outline" className="gap-2">
+          <AdminButton
+            variant="outline"
+            className="flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-3 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
+          >
             <Download className="h-4 w-4" /> Export CSV
           </AdminButton>
         </div>
@@ -199,7 +198,10 @@ export default function AdminAnalyticsPage() {
                   ) : (
                     <ArrowDownRight className="h-4 w-4" />
                   )}
-                  <span aria-hidden title="Comparison vs prior period — not wired">
+                  <span
+                    aria-hidden
+                    title="Comparison vs prior period — not wired"
+                  >
                     —
                   </span>
                 </span>

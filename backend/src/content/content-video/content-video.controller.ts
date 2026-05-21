@@ -203,18 +203,17 @@ export class ContentVideoController {
 
   @Post(":id/watch-complete")
   @UseGuards(AuthGuard)
-  watchComplete(
+  async watchComplete(
     @Param("id", ParseIntPipe) id: number,
     @Req() req: Request & { user: unknown },
-    @Body() body: { secondsWatched?: number } // <--- Добавляем получение body
+    @Body() body: { secondsWatched?: number } // Добавили тип тела
   ) {
     const userId = jwtSubToUserId(req.user);
-
-    // Передаем секунды третьим аргументом в сервис
+    // Передаем secondsWatched в сервис
     return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,
-      body.secondsWatched
+      body.secondsWatched || 0 // Если пришел undefined, пишем 0
     );
   }
 
