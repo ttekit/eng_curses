@@ -3,7 +3,7 @@ import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
 import { Link, useNavigate } from "react-router";
-import { useContext, useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useContext, useState, ChangeEvent, FormEvent } from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
@@ -16,7 +16,8 @@ export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
   if (!context) throw new Error("RegistrationContext is not available");
 
-  const [captchaToken, setCaptchaToken] = useState<string>("");
+  // Зробили стейт точно як в LoginForm
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState<number>(0);
 
   const { formData, updateFormData } = context;
@@ -25,19 +26,6 @@ export default function RegistrationMain() {
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
   const navigate = useNavigate();
-  const [renderCaptcha, setRenderCaptcha] = useState(false);
-
-  useEffect(() => {
-    if ((window as any).turnstile) {
-      try {
-        (window as any).turnstile.remove();
-      } catch (e) {
-        console.error("Turnstile cleanup error:", e);
-      }
-    }
-    const timer = setTimeout(() => setRenderCaptcha(true), 300);
-    return () => clearTimeout(timer);
-  }, []);
 
   const isValidPassword = (p: string) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(p);
@@ -142,7 +130,7 @@ export default function RegistrationMain() {
       return;
     }
     if (!captchaToken) {
-      setErrorText("Please complete the CAPTCHA.");
+      setErrorText("Please wait for the captcha verification to complete.");
       return;
     }
 
@@ -151,14 +139,13 @@ export default function RegistrationMain() {
     try {
       localStorage.setItem("temp_email", email);
 
-      // 🚀 Передаем капчу под обоими ключами, чтобы задобрить и фронтенд-функцию, и бэкенд-валидатор!
       const result = (await registerUser({
         name,
         email,
         password,
         confirmPassword,
-        token: captchaToken, // Для внутренней логики функции registerUser
-        captchaToken: captchaToken, // Для RegisterDto бэкенда
+        token: captchaToken,
+        captchaToken: captchaToken,
         role: "ADULT",
       } as any)) as any;
 
@@ -166,19 +153,24 @@ export default function RegistrationMain() {
         if (result.isVerified) {
           navigate("/registrationDetails");
         } else {
-          // ✉️ ОТПРАВЛЯЕМ НА ПОДТВЕРЖДЕНИЕ ПОЧТЫ
           navigate("/verify-email", {
             state: { email },
           });
         }
       } else {
         setErrorText(result.message || "Registration failed.");
+        // Скидаємо капчу при помилці бекенда (як в логіні)
+        setCaptchaToken(null);
+        setCaptchaKey((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Error during registration:", error);
       setErrorText("Network error.");
+      setCaptchaToken(null);
+      setCaptchaKey((prev) => prev + 1);
     }
   };
+
   const handleBack = () => {
     updateFormData({
       name: "",
@@ -303,30 +295,28 @@ export default function RegistrationMain() {
 
           {errorText && <ValidateError>{errorText}</ValidateError>}
 
-          <div
-            className="flex justify-center my-2"
-            style={{ minHeight: "65px" }}
-          >
-            {renderCaptcha && (
-              <Turnstile
-                key={captchaKey}
-                id="turnstile-register-widget"
-                sitekey="0x4AAAAAADSk3etSiWLwGH5-"
-                onVerify={(token) => {
-                  setCaptchaToken(token);
-                  (window as any).turnstileToken = token;
-                }}
-                onExpire={() => {
-                  setCaptchaToken(null);
-                  setCaptchaKey((prev) => prev + 1);
-                }}
-              />
-            )}
+          {/* КАПЧА: Чиста, як у LoginForm */}
+          <div className="flex justify-center py-2" style={{ minHeight: "65px" }}>
+            <Turnstile
+              key={captchaKey}
+              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => {
+                setCaptchaToken(null);
+                setCaptchaKey((prev) => prev + 1);
+              }}
+              onError={() => {
+                setCaptchaToken(null);
+                setCaptchaKey((prev) => prev + 1);
+              }}
+              theme="light"
+            />
           </div>
 
           <Button
             type="submit"
-            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] w-full flex items-center justify-center gap-2"
+            disabled={!captchaToken}
+            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
             <ArrowRight className="size-4" />
