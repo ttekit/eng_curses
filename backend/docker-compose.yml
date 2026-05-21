@@ -28,10 +28,10 @@ services:
     image: axllent/mailpit:latest
     container_name: explys-mailpit
     ports:
-      - "1025:1025" # Порт для приема SMTP писем от NestJS
-      - "8025:8025" # Порт для Web-интерфейса (откроем в браузере)
+      - "1025:1025" 
+      - "8025:8025" 
     environment:
-      - MP_MAX_MESSAGES=500 # Чтобы память не забивалась, храним последние 500 писем
+      - MP_MAX_MESSAGES=500 
     restart: unless-stopped
 
 volumes:

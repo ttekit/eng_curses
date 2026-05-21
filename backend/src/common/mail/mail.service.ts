@@ -25,7 +25,7 @@ export class MailService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   public async sendConfirmationEmail(email: string, code: string) {
     if (isOutboundMailDisabled(this.configService)) {
@@ -79,9 +79,7 @@ export class MailService {
         html: htmlContent,
       });
 
-      console.log(`Письмо с кодом отправлено на ${email}`);
     } catch (error) {
-      console.error("Ошибка при отправке письма:", error);
       throw new InternalServerErrorException(
         "Не вдалося відправити лист з кодом",
       );
@@ -96,10 +94,10 @@ export class MailService {
         subject,
         html,
       });
-      this.logger.debug(`Mail sent to ${email}: ${subject}`);
+      this.logger.debug(`Mail sent to user: ${subject}`);
       return result;
     } catch (error) {
-      this.logger.error(`Mail send failed for ${email}`, error as Error);
+      this.logger.error(`Mail send failed for user`, error as Error);
       throw error;
     }
   }
@@ -146,7 +144,7 @@ export class MailService {
         html: htmlContent,
       });
     } catch (error) {
-      console.error("Не удалось отправить письмо об удалении:", error);
+
     }
   }
 }
