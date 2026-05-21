@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router";
-import { setStoredAccessToken } from "../../lib/api";
+import { setStoredAccessToken, apiFetch, readApiErrorBody } from "../../lib/api";
 import { maskEmail } from "../../lib/formatters";
 
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
@@ -44,15 +44,13 @@ export const EmailVerification: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:4200/auth/verify-email", {
+      const response = await apiFetch("/auth/verify-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
+        const data = await response.json();
         setStoredAccessToken(data.access_token);
 
         const savedStudents = location.state?.generatedStudents || [];
@@ -65,7 +63,8 @@ export const EmailVerification: React.FC = () => {
           navigate("/registrationDetails");
         }
       } else {
-        setErrorText(data.message || "Invalid verification code");
+        const errorMsg = await readApiErrorBody(response);
+        setErrorText(errorMsg || "Invalid verification code");
       }
     } catch (err) {
       setErrorText("Connection error. Please try again.");
@@ -79,21 +78,17 @@ export const EmailVerification: React.FC = () => {
     setResendMessage("");
 
     try {
-      const response = await fetch(
-        "http://localhost:4200/auth/resend-confirmation",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const response = await apiFetch("/auth/resend-confirmation", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
 
       if (response.ok) {
         setResendMessage("New code successfully sent!");
         setTimer(59);
       } else {
-        const data = await response.json();
-        setErrorText(data.message || "Failed to resend code");
+        const errorMsg = await readApiErrorBody(response);
+        setErrorText(errorMsg || "Failed to resend code");
       }
     } catch {
       setErrorText("Error while resending code");
@@ -109,7 +104,7 @@ export const EmailVerification: React.FC = () => {
         <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
         <h1 className="font-display text-2xl font-bold">Check your email</h1>
       </div>
-      
+
       <p className="mb-8 text-sm text-muted-foreground">
         We sent a 6-digit code to <br />
         <span className="font-medium text-primary">{maskEmail(email)}</span>

@@ -11,11 +11,11 @@ export type GeneratedStudentAccount = {
 
 export type RegisterResult =
   | {
-      success: true;
-      generatedStudents?: GeneratedStudentAccount[];
-      /** JWT from `POST /auth/register` when registration succeeds. */
-      accessToken?: string;
-    }
+    success: true;
+    generatedStudents?: GeneratedStudentAccount[];
+    /** JWT from `POST /auth/register` when registration succeeds. */
+    accessToken?: string;
+  }
   | { success: false; message: string };
 
 /** Matches backend `@IsEmail` + `@MinLength(6)`; returns a user-facing error or `null`. */
@@ -104,8 +104,6 @@ export async function registerUser(
   }
 
   const body = buildRegisterBody(formData);
-
-  console.log("FINAL BODY SENT TO BACKEND:", body);
 
   let response: Response;
   try {
