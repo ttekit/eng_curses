@@ -3,7 +3,7 @@ import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
 import { Link, useNavigate } from "react-router";
-import { useContext, useState, ChangeEvent, FormEvent } from "react";
+import { useContext, useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
@@ -24,6 +24,19 @@ export default function RegistrationMain() {
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
   const navigate = useNavigate();
+  const [renderCaptcha, setRenderCaptcha] = useState(false);
+
+  useEffect(() => {
+    if ((window as any).turnstile) {
+      try {
+        (window as any).turnstile.remove();
+      } catch (e) {
+        console.error("Turnstile cleanup error:", e);
+      }
+    }
+    const timer = setTimeout(() => setRenderCaptcha(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const isValidPassword = (p: string) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(p);
@@ -289,16 +302,21 @@ export default function RegistrationMain() {
 
           {errorText && <ValidateError>{errorText}</ValidateError>}
 
-          <div className="flex justify-center my-2">
-            <Turnstile
-              key="turnstile-register-page"
-              id="turnstile-register-widget"
-              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
-              onVerify={(token) => {
-                setCaptchaToken(token);
-                (window as any).turnstileToken = token;
-              }}
-            />
+          <div
+            className="flex justify-center my-2"
+            style={{ minHeight: "65px" }}
+          >
+            {renderCaptcha && (
+              <Turnstile
+                key="turnstile-register-forced"
+                id="turnstile-register-widget"
+                sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+                onVerify={(token) => {
+                  setCaptchaToken(token);
+                  (window as any).turnstileToken = token;
+                }}
+              />
+            )}
           </div>
 
           <Button
