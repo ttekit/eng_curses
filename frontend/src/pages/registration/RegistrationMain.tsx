@@ -291,6 +291,8 @@ export default function RegistrationMain() {
 
           <div className="flex justify-center my-2">
             <Turnstile
+              key="turnstile-register-page"
+              id="turnstile-register-widget"
               sitekey="0x4AAAAAADSk3etSiWLwGH5-"
               onVerify={(token) => {
                 setCaptchaToken(token);
