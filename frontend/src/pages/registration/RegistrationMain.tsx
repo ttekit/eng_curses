@@ -17,6 +17,7 @@ export default function RegistrationMain() {
   if (!context) throw new Error("RegistrationContext is not available");
 
   const [captchaToken, setCaptchaToken] = useState<string>("");
+  const [captchaKey, setCaptchaKey] = useState<number>(0);
 
   const { formData, updateFormData } = context;
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -308,12 +309,16 @@ export default function RegistrationMain() {
           >
             {renderCaptcha && (
               <Turnstile
-                key="turnstile-register-forced"
+                key={captchaKey}
                 id="turnstile-register-widget"
                 sitekey="0x4AAAAAADSk3etSiWLwGH5-"
                 onVerify={(token) => {
                   setCaptchaToken(token);
                   (window as any).turnstileToken = token;
+                }}
+                onExpire={() => {
+                  setCaptchaToken(null);
+                  setCaptchaKey((prev) => prev + 1);
                 }}
               />
             )}
