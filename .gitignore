@@ -24,6 +24,10 @@ dist-ssr
 *.sw?
 /.idea/
 
+frontend/.env
+/frontend/.env
+.env
+
 src/generated/
 /src/generated/
 src/generated

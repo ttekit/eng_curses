@@ -262,8 +262,8 @@ export default function PlacementPreTestStep({
     setSaving(true);
     try {
       const skipTest = isSkip;
-      const res = await apiFetch(`/users/${user.id}`, {
-        method: "PATCH",
+      const res = await apiFetch(`/auth/update-preferences`, {
+        method: "POST",
         body: JSON.stringify(
           skipTest
             ? {
@@ -283,6 +283,7 @@ export default function PlacementPreTestStep({
             },
         ),
       });
+
       if (!res.ok) {
         toast.error(await readApiErrorBody(res));
         return;

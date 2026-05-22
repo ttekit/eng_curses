@@ -416,10 +416,20 @@ export class AuthService {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
+        // Оновлюємо статус проходження тесту, якщо він є в запиті
+        ...(data.hasCompletedPlacement !== undefined && {
+          hasCompletedPlacement: data.hasCompletedPlacement,
+        }),
         additionalUserData: {
           update: {
-            hobbies: data.hobbies,
-            knownLanguages: data.knownLanguages,
+            ...(data.hobbies && { hobbies: data.hobbies }),
+            ...(data.knownLanguages && { knownLanguages: data.knownLanguages }),
+            ...(data.workField && { workField: data.workField }),
+            ...(data.education && { education: data.education }),
+            ...(data.nativeLanguage && { nativeLanguage: data.nativeLanguage }),
+            ...(data.englishLevel && { englishLevel: data.englishLevel }),
+            ...(data.learningGoal && { learningGoal: data.learningGoal }),
+            ...(data.timeToAchieve && { timeToAchieve: data.timeToAchieve }),
           },
         },
       },
@@ -515,6 +525,10 @@ export class AuthService {
         name: user.name,
         role: user.role,
         hasCompletedPlacement: user.hasCompletedPlacement,
+
+        subscriptionPlan: (user as any).subscriptionPlan ?? "",
+        subscriptionStatus: (user as any).subscriptionStatus ?? "",
+        stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
       },
     };
   }
