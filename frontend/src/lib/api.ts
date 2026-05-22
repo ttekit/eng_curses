@@ -175,6 +175,12 @@ export async function apiFetch(
   path: string,
   init: FetchOpts = {},
 ): Promise<Response> {
+  if (
+    (path === "/users/" || path === "/users" || path.includes("undefined")) &&
+    init.method?.toUpperCase() === "PATCH"
+  ) {
+    path = "/users/profile";
+  }
   const token = init.token ?? getStoredAccessToken();
 
   const { token: _t, ...rest } = init;

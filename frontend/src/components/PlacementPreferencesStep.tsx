@@ -97,7 +97,7 @@ export default function PlacementPreferencesStep({
   user: UserData;
   onSuccess: (updatedProfile: UserData | null) => void;
 }) {
-  const { refreshProfile } = useUser();
+  const { refreshProfile, user: contextUser } = useUser();
   const { messages } = useLandingLocale();
   const s = messages.placementFlow.student;
   const a = messages.placementFlow.adult;
@@ -179,6 +179,15 @@ export default function PlacementPreferencesStep({
 
     setSaving(true);
     try {
+      const userId = contextUser?.id || user?.id;
+
+      if (!userId) {
+        toast.error(
+          "Помилка: Не вдалося знайти ID користувача. Спробуйте оновити сторінку.",
+        );
+        return;
+      }
+
       const profilePatch = collectIndependentProfile
         ? {
             workField: workField.trim(),
@@ -186,7 +195,8 @@ export default function PlacementPreferencesStep({
             nativeLanguage: nativeLanguage.trim(),
           }
         : {};
-      const res = await apiFetch(`/users/${user.id}`, {
+
+      const res = await apiFetch(`/users/${userId}`, {
         method: "PATCH",
         body: JSON.stringify(
           skipGenrePickers
@@ -204,6 +214,7 @@ export default function PlacementPreferencesStep({
               },
         ),
       });
+
       if (!res.ok) {
         toast.error(await readApiErrorBody(res));
         return;
