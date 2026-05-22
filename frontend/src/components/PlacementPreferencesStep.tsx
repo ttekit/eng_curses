@@ -138,14 +138,14 @@ export default function PlacementPreferencesStep({
           setGenreOptions(data.map((g) => ({ value: g.id, label: g.name })));
         }
       } catch {
-        if (!cancelled) toast.error(s.loadGenresError);
+        if (!cancelled) toast.error("Не вдалося завантажити жанри");
       }
     };
     void load();
     return () => {
       cancelled = true;
     };
-  }, [s.loadGenresError, skipGenrePickers]);
+  }, [skipGenrePickers]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -189,19 +189,19 @@ export default function PlacementPreferencesStep({
       const res = await apiFetch(`/users/${user.id}`, {
         method: "PATCH",
         body: JSON.stringify(
-          skipGenrePickers ?
-            {
-              ...profilePatch,
-              hobbies: hobbiesPayload,
-              favoriteGenres: user.favoriteGenres ?? [],
-              hatedGenres: user.hatedGenres ?? [],
-            }
-          : {
-              ...profilePatch,
-              hobbies: hobbiesPayload,
-              favoriteGenres,
-              hatedGenres: hatedGenres.length ? hatedGenres : [],
-            },
+          skipGenrePickers
+            ? {
+                ...profilePatch,
+                hobbies: hobbiesPayload,
+                favoriteGenres: user.favoriteGenres ?? [],
+                hatedGenres: user.hatedGenres ?? [],
+              }
+            : {
+                ...profilePatch,
+                hobbies: hobbiesPayload,
+                favoriteGenres,
+                hatedGenres: hatedGenres.length ? hatedGenres : [],
+              },
         ),
       });
       if (!res.ok) {
@@ -258,7 +258,7 @@ export default function PlacementPreferencesStep({
         </p>
       </div>
 
-      {collectIndependentProfile ?
+      {collectIndependentProfile ? (
         <>
           <p className="text-xs leading-relaxed text-muted-foreground">
             {a.formIntro}
@@ -274,7 +274,8 @@ export default function PlacementPreferencesStep({
                   name="workField"
                   value={workField}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setWorkField(e.target.value)}
+                    setWorkField(e.target.value)
+                  }
                   placeholder={a.jobPlaceholder}
                 />
               </div>
@@ -284,24 +285,28 @@ export default function PlacementPreferencesStep({
                   name="education"
                   value={education}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setEducation(e.target.value)}
+                    setEducation(e.target.value)
+                  }
                   placeholder={a.educationPlaceholder}
                 />
               </div>
               <div className="space-y-2">
-                <LabelRegister isRequired={true}>{a.nativeLanguage}</LabelRegister>
+                <LabelRegister isRequired={true}>
+                  {a.nativeLanguage}
+                </LabelRegister>
                 <InputText
                   name="nativeLanguage"
                   value={nativeLanguage}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setNativeLanguage(e.target.value)}
+                    setNativeLanguage(e.target.value)
+                  }
                   placeholder={a.nativeLanguagePlaceholder}
                 />
               </div>
             </div>
           </section>
         </>
-      : null}
+      ) : null}
 
       <div className="flex flex-col gap-1">
         <LabelRegister isRequired={true}>{s.hobbies}</LabelRegister>
@@ -321,7 +326,7 @@ export default function PlacementPreferencesStep({
         />
       </div>
 
-      {!skipGenrePickers ?
+      {!skipGenrePickers ? (
         <>
           <div className="flex flex-col gap-1">
             <LabelRegister isRequired={true}>{s.genresPrefer}</LabelRegister>
@@ -347,7 +352,7 @@ export default function PlacementPreferencesStep({
             />
           </div>
         </>
-      : null}
+      ) : null}
 
       {fieldError ? (
         <p className="text-destructive text-sm" role="alert">

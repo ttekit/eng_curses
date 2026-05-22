@@ -7,22 +7,33 @@ import { MailService } from "./mail.service";
   imports: [
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        transport: config.get<string>("SMTP_HOST")?.trim()
-          ? {
-              host: config.get<string>("SMTP_HOST"),
-              port: Number(config.get<string>("SMTP_PORT") ?? 587),
-              secure: false,
-              auth: {
-                user: config.get<string>("SMTP_USER"),
-                pass: config.get<string>("SMTP_PASS"),
-              },
-            }
-          : { jsonTransport: true },
-        defaults: {
-          from: '"Explys" <no-reply@localhost>',
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const host = config.get<string>("SMTP_HOST");
+        const port = Number(config.get<string>("SMTP_PORT") ?? 587);
+
+        return {
+          transport: host?.trim()
+            ? {
+                host: host,
+                port: port,
+                secure: false,
+                auth: {
+                  user: config.get<string>("SMTP_USER"),
+                  pass: config.get<string>("SMTP_PASSWORD"),
+                },
+                tls: {
+                  rejectUnauthorized: false,
+                  ciphers: "SSLv3",
+                },
+              }
+            : { jsonTransport: true },
+          defaults: {
+            from:
+              config.get<string>("SMTP_FROM") ??
+              '"Explys Support" <noreply@explys.com>',
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

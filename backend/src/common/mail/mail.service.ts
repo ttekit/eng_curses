@@ -16,6 +16,7 @@ import * as React from "react";
 import EmailChangeTemplate from "./templates/email-change";
 import { PrismaService } from "src/prisma.service";
 import AccountDeletedTemplate from "./templates/account-deleted";
+import { promises as dns } from "dns";
 
 @Injectable()
 export class MailService {
@@ -25,7 +26,7 @@ export class MailService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   public async sendConfirmationEmail(email: string, code: string) {
     if (isOutboundMailDisabled(this.configService)) {
@@ -34,6 +35,17 @@ export class MailService {
       );
       return;
     }
+    const isDomainValid = await this.validateEmailDomain(email);
+
+    if (!isDomainValid) {
+      this.logger.warn(
+        `Registration blocked: Domain for email ${email} does not exist.`,
+      );
+      throw new BadRequestException(
+        "Вказана поштова адреса не існує або не може приймати листи. Перевірте правильність введення.",
+      );
+    }
+
     const html = await render(
       React.createElement(ConfirmationTemplate, { code }),
     );
@@ -78,7 +90,6 @@ export class MailService {
         subject: "Verification Code for Email Change",
         html: htmlContent,
       });
-
     } catch (error) {
       throw new InternalServerErrorException(
         "Не вдалося відправити лист з кодом",
@@ -89,7 +100,7 @@ export class MailService {
   private async sendMail(email: string, subject: string, html: string) {
     try {
       const result = await this.mailerService.sendMail({
-        from: '"Explys Support" <no-reply@explys.com>',
+        from: '"Explys Support" <noreply@explys.com>',
         to: email,
         subject,
         html,
@@ -114,6 +125,7 @@ export class MailService {
         React.createElement(PasswordChangedTemplate, { email }),
       );
       await this.mailerService.sendMail({
+        from: '"Explys Support" <noreply@explys.com>',
         to: email,
         subject: "Security Alert: Password Changed 🦎",
         html: emailHtml,
@@ -143,8 +155,31 @@ export class MailService {
         subject: "Account Deletion Notice (Action Required)",
         html: htmlContent,
       });
-    } catch (error) {
+    } catch (error) {}
+  }
+  
+  private async validateEmailDomain(email: string): Promise<boolean> {
+    try {
+      const domain = email.split("@")[1];
+      if (!domain) return false;
 
+      const resolver = new dns.Resolver();
+
+      resolver.setServers(["8.8.8.8", "8.8.4.4"]);
+
+      const mxRecords = await resolver.resolveMx(domain);
+
+      return mxRecords && mxRecords.length > 0;
+    } catch (error: any) {
+      this.logger.error(
+        `DNS validation failed for ${email}. Error code: ${error?.code}`,
+        error,
+      );
+      if (error?.code === "ENOTFOUND" || error?.code === "ENODATA") {
+        return false;
+      }
+
+      return true;
     }
   }
 }
