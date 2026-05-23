@@ -498,9 +498,10 @@ export class AuthService {
         });
       } else {
         await this.emailConfirmationService.sendVerificationToken(user);
-        throw new UnauthorizedException(
-          "Email not verified. Please check your mail to confirm your account.",
-        );
+        throw new ForbiddenException({
+          message: "Email not verified. Please check your mail.",
+          error: "EMAIL_NOT_VERIFIED", // ЭТОТ КОД ВАЖЕН ДЛЯ ФРОНТА
+        });
       }
     }
 

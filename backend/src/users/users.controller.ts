@@ -40,6 +40,7 @@ export class UsersController {
     status: 400,
     description: "Unable to create user with the provided information.",
   })
+  @UseGuards(ApiTokenOrJwtAuthGuard)
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
@@ -51,6 +52,7 @@ export class UsersController {
       "In production, requires `x-api-token` (enforced globally) matching API_TOKEN.",
   })
   @ApiResponse({ status: 200, description: "Return all users." })
+  @UseGuards(ApiTokenOrJwtAuthGuard)
   findAll() {
     return this.usersService.findAll();
   }
@@ -59,10 +61,7 @@ export class UsersController {
   @ApiBearerAuth("JWT-auth")
   @ApiOperation({ summary: "Update current user profile via JWT token" })
   @ApiResponse({ status: 200, description: "User successfully updated." })
-  updateProfile(
-    @Req() req: any, 
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
+  updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     const userId = req.user?.id || req.user?.sub;
 
     if (!userId) {
