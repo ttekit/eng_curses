@@ -262,7 +262,7 @@ export default function PlacementPreTestStep({
     setSaving(true);
     try {
       const skipTest = isSkip;
-      const res = await apiFetch(`/users/${user.id}`, {
+      const res = await apiFetch(`/users/profile`, {
         method: "PATCH",
         body: JSON.stringify(
           skipTest
@@ -289,7 +289,8 @@ export default function PlacementPreTestStep({
       }
       await refreshProfile();
       onSuccess(skipTest ? { skippedPlacementTest: true } : undefined);
-    } catch {
+    } catch(error){
+      console.error("ОШИБКА ПРИ ОТПРАВКЕ:", error); 
       toast.error(a.saveErrorToast || "Failed to save profile information.");
     } finally {
       setSaving(false);

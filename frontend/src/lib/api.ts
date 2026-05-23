@@ -104,7 +104,8 @@ export function mergeApiAuthHeaders(
     }
   } else if (basicAuth && behindProxy) {
     if (bearer) {
-      headers.set("X-Access-Token", bearer);
+      headers.set("X-Access-Token", bearer); 
+      headers.set("Authorization", `Bearer ${bearer}`); 
     }
   } else if (bearer) {
     headers.set("Authorization", `Bearer ${bearer}`);

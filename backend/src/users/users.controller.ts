@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -51,6 +53,25 @@ export class UsersController {
   @ApiResponse({ status: 200, description: "Return all users." })
   findAll() {
     return this.usersService.findAll();
+  }
+  @Patch("profile")
+  @UseGuards(ApiTokenOrJwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Update current user profile via JWT token" })
+  @ApiResponse({ status: 200, description: "User successfully updated." })
+  updateProfile(
+    @Req() req: any, 
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const userId = req.user?.id || req.user?.sub;
+
+    if (!userId) {
+      throw new BadRequestException(
+        "Не вдалося визначити користувача з токена",
+      );
+    }
+
+    return this.usersService.update(Number(userId), updateUserDto);
   }
 
   @Get(":id")

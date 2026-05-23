@@ -46,7 +46,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   @Post("register")
   @UseGuards(TurnstileGuard)
@@ -106,9 +106,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Confirm user email via token" })
   @ApiQuery({ name: "token", type: "string" })
-  async confirmEmail(
-    @Query("token") token: string,
-  ) {
+  async confirmEmail(@Query("token") token: string) {
     await this.authService.confirmEmail(token);
     return {
       success: true,
@@ -232,8 +230,13 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
   @Get("profile/progress-details")
-  @ApiOperation({ summary: "Get aggregated profile metrics for dashboard progress charts" })
-  @ApiResponse({ status: 200, description: "Detailed summary data objects returned successfully." })
+  @ApiOperation({
+    summary: "Get aggregated profile metrics for dashboard progress charts",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Detailed summary data objects returned successfully.",
+  })
   getProgressDetails(@Req() req: any) {
     const userId = Number(req.user.sub);
     return this.authService.getProgressDetails(userId);
@@ -272,5 +275,18 @@ export class AuthController {
     return {
       url: providerInstance!.getAuthUrl(),
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete("delete-account")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Delete user account" })
+  async deleteAccount(@Req() req: any, @Body() dto: DeleteAccountDto) {
+    return await this.authService.deleteAccount(req.user.sub, dto);
+  }
+
+  @Post("restore-account")
+  async restoreAccount(@Body() body: { token: string }) {
+    return this.authService.restoreAccount(body.token);
   }
 }

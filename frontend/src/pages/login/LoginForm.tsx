@@ -142,16 +142,16 @@ export default function LoginForm() {
           const message = await getResponseErrorMessage(response);
           toast.error(message);
 
-          setCaptchaToken(null);
-          setCaptchaKey((prev) => prev + 1);
+          // setCaptchaToken(null);
+          // setCaptchaKey((prev) => prev + 1);
         }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Could not sign in";
         toast.error(message);
 
-        setCaptchaToken(null);
-        setCaptchaKey((prev) => prev + 1);
+        // setCaptchaToken(null);
+        // setCaptchaKey((prev) => prev + 1);
       }
     } else {
       setEmptyError(true);
@@ -172,7 +172,6 @@ export default function LoginForm() {
       </p>
 
       <form onSubmit={handleLogin} tabIndex={0} className="space-y-5">
-        {/* КРОК 1: Ввод логина и пароля */}
         {!show2FA ? (
           <>
             <div className="space-y-2">
@@ -225,7 +224,6 @@ export default function LoginForm() {
             </div>
           </>
         ) : (
-          /* КРОК 2: Ввод кода 2FA */
           <div className="space-y-4">
             <div className="text-center mb-6">
               <p className="text-sm text-muted-foreground">
@@ -268,7 +266,6 @@ export default function LoginForm() {
           </div>
         )}
 
-        {/* Капча остается на обоих экранах */}
         <div className="flex justify-center py-2">
           <Turnstile
             key={captchaKey}
