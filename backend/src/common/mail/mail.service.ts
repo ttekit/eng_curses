@@ -149,15 +149,17 @@ export class MailService {
         AccountDeletedTemplate({ name, restoreLink }),
       );
 
-      await this.mailerService.sendMail({
+      const info = await this.mailerService.sendMail({
         from: '"Explys Support" <noreply@explys.com>',
         to: email,
         subject: "Account Deletion Notice (Action Required)",
         html: htmlContent,
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error("❌ ОШИБКА MailerService:", error);
+    }
   }
-  
+
   private async validateEmailDomain(email: string): Promise<boolean> {
     try {
       const domain = email.split("@")[1];

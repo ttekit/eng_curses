@@ -47,7 +47,7 @@ export class AuthService {
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -462,6 +462,20 @@ export class AuthService {
     if (!user || !user.password) {
       throw new UnauthorizedException("Invalid credentials");
     }
+    if (user.deletionScheduledAt) {
+      if (user.deletionScheduledAt > new Date()) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { deletionScheduledAt: null },
+        });
+
+        await this.prisma.token.deleteMany({
+          where: { email: user.email, type: "ACCOUNT_RESTORE" },
+        });
+      } else {
+        throw new UnauthorizedException("Аккаунт було видалено.");
+      }
+    }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
 
@@ -611,15 +625,94 @@ export class AuthService {
   }
 
   async sendEmailChangeCode(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException("Користувача не знайдено");
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        verificationCode: otpCode,
+        verificationCodeExpires: otpExpires,
+      },
+    });
+
+    await this.mailService.sendEmailChangeCode(updatedUser.email, otpCode);
+
     return { success: true, message: "Код для зміни пошти надіслано" };
   }
 
-  async verifyAndChangeEmail(userId: number, dto: VerifyEmailChangeDto) {
-    return { success: true, message: "Пошту успішно змінено" };
+  async checkEmailChangeCode(userId: number, code: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { verificationCode: true, verificationCodeExpires: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException("Користувача не знайдено");
+    }
+
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException("Невірний код підтвердження");
+    }
+
+    if (
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      throw new BadRequestException("Термін дії коду минув. Відправте новий.");
+    }
+
+    return { success: true, message: "Код успішно перевірено" };
   }
 
-  async checkEmailChangeCode(userId: number, code: string) {
-    return { success: true, message: "Код успішно перевірено" };
+  async verifyAndChangeEmail(userId: number, dto: VerifyEmailChangeDto) {
+    const newEmail = (dto as any).newEmail || (dto as any).email;
+    const code = dto.code;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException("Користувача не знайдено");
+    }
+
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException("Невірний код підтвердження");
+    }
+    if (
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      throw new BadRequestException("Термін дії коду минув. Відправте новий.");
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: newEmail.toLowerCase() },
+    });
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictException("Ця електронна адреса вже використовується");
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: newEmail.toLowerCase(),
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
+    });
+
+    return { success: true, message: "Пошту успішно змінено" };
   }
 
   public async extractProfileFromCode(
@@ -758,8 +851,17 @@ export class AuthService {
   async getProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { isSuspended: true },
+      include: {
+        additionalUserData: {
+          include: {
+            favoriteGenres: true,
+            hatedGenres: true,
+          },
+        },
+        settings: true,
+      },
     });
+
     if (!user) {
       throw new NotFoundException("User not found");
     }
@@ -767,6 +869,7 @@ export class AuthService {
       throw new ForbiddenException("Account suspended");
     }
     const extra = (user as any).additionalUserData;
+
     return {
       id: (user as any).id,
       name: (user as any).name,
@@ -821,43 +924,48 @@ export class AuthService {
       throw new ForbiddenException("Account suspended");
     }
 
-    const [watchSum, distinctVideos, quizAgg, weekSessions] = await Promise.all([
-      this.prisma.watchSession.aggregate({
-        where: { userId },
-        _sum: { secondsWatched: true },
-      }),
-      this.prisma.watchSession.findMany({
-        where: { userId, completed: true },
-        select: { contentVideoId: true },
-        distinct: ["contentVideoId"],
-      }),
-      this.prisma.comprehensionTestAttempt.aggregate({
-        where: { userId },
-        _avg: { scorePct: true },
-        _count: { _all: true },
-      }),
-      (() => {
-        const { weekStart, weekEndExclusive } = this.utcWeekRange();
-        return this.prisma.watchSession.findMany({
-          where: {
-            userId,
-            endedAt: { gte: weekStart, lt: weekEndExclusive },
-          },
-          select: { endedAt: true, secondsWatched: true },
-        });
-      })(),
-    ]);
+    const [watchSum, distinctVideos, quizAgg, weekSessions] = await Promise.all(
+      [
+        this.prisma.watchSession.aggregate({
+          where: { userId },
+          _sum: { secondsWatched: true },
+        }),
+        this.prisma.watchSession.findMany({
+          where: { userId, completed: true },
+          select: { contentVideoId: true },
+          distinct: ["contentVideoId"],
+        }),
+        this.prisma.comprehensionTestAttempt.aggregate({
+          where: { userId },
+          _avg: { scorePct: true },
+          _count: { _all: true },
+        }),
+        (() => {
+          const { weekStart, weekEndExclusive } = this.utcWeekRange();
+          return this.prisma.watchSession.findMany({
+            where: {
+              userId,
+              endedAt: { gte: weekStart, lt: weekEndExclusive },
+            },
+            select: { endedAt: true, secondsWatched: true },
+          });
+        })(),
+      ],
+    );
 
     const totalSeconds = Number(watchSum?._sum?.secondsWatched ?? 0);
 
-    const totalWatchTimeMin = Math.floor(totalSeconds / 60)
+    const totalWatchTimeMin = Math.floor(totalSeconds / 60);
 
-    const videosCompleted = Array.isArray(distinctVideos) ? distinctVideos.length : 0;
+    const videosCompleted = Array.isArray(distinctVideos)
+      ? distinctVideos.length
+      : 0;
     const testsCompleted = quizAgg?._count?._all ?? 0;
     const rawAvg = quizAgg?._avg?.scorePct;
-    const averageScore = typeof rawAvg === "number" && Number.isFinite(rawAvg)
-      ? Math.round(rawAvg)
-      : null;
+    const averageScore =
+      typeof rawAvg === "number" && Number.isFinite(rawAvg)
+        ? Math.round(rawAvg)
+        : null;
 
     const minutesMonSun = [0, 0, 0, 0, 0, 0, 0];
     const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -951,7 +1059,7 @@ export class AuthService {
 
   async getProgressDetails(userId: number) {
     if (!userId || Number.isNaN(userId)) {
-      throw new BadRequestException('Invalid user ID');
+      throw new BadRequestException("Invalid user ID");
     }
 
     let totalWords = 0;
@@ -991,7 +1099,7 @@ export class AuthService {
     try {
       recentSessions = await this.prisma.watchSession.findMany({
         where: { userId },
-        orderBy: { endedAt: 'desc' },
+        orderBy: { endedAt: "desc" },
         take: 4,
         include: { contentVideo: true },
       });
@@ -1005,7 +1113,7 @@ export class AuthService {
         try {
           test = await this.prisma.comprehensionTestAttempt.findFirst({
             where: { userId, contentVideoId: session.contentVideoId },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
           });
         } catch (e) {
           console.error(e);
@@ -1013,8 +1121,8 @@ export class AuthService {
 
         return {
           id: String(session.id),
-          title: session.contentVideo?.videoName || 'Video Lesson',
-          category: 'General',
+          title: session.contentVideo?.videoName || "Video Lesson",
+          category: "General",
           completed: !!session.completed,
           score: test ? Math.round(test.scorePct) : 0,
           progress: session.completed ? 100 : 50,
@@ -1032,33 +1140,43 @@ export class AuthService {
     }
 
     const businessCount = await this.prisma.watchSession.count({
-      where: { userId, completed: true, contentVideo: { content: { category: { name: "Business English" } } } },
+      where: {
+        userId,
+        completed: true,
+        contentVideo: { content: { category: { name: "Business English" } } },
+      },
     });
 
     const travelCount = await this.prisma.watchSession.count({
-      where: { userId, completed: true, contentVideo: { content: { category: { name: "Travel & Conversation" } } } },
+      where: {
+        userId,
+        completed: true,
+        contentVideo: {
+          content: { category: { name: "Travel & Conversation" } },
+        },
+      },
     });
 
     const learningPaths = [
       {
-        id: 'business',
-        title: 'Business English',
-        description: 'Professional communication for the workplace',
+        id: "business",
+        title: "Business English",
+        description: "Professional communication for the workplace",
         progress: Math.min(100, Math.round((businessCount / 12) * 100)),
         totalVideos: 12,
         completedVideos: businessCount,
-        level: 'B2',
-        accentClass: 'bg-primary',
+        level: "B2",
+        accentClass: "bg-primary",
       },
       {
-        id: 'travel',
-        title: 'Travel & Conversation',
-        description: 'Essential phrases for traveling abroad',
+        id: "travel",
+        title: "Travel & Conversation",
+        description: "Essential phrases for traveling abroad",
         progress: Math.min(100, Math.round((travelCount / 10) * 100)),
         totalVideos: 10,
         completedVideos: travelCount,
-        level: 'B1',
-        accentClass: 'bg-accent',
+        level: "B1",
+        accentClass: "bg-accent",
       },
     ];
 

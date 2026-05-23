@@ -145,7 +145,7 @@ export default function PlacementPreferencesStep({
     return () => {
       cancelled = true;
     };
-  }, [skipGenrePickers]);
+  }, [s, skipGenrePickers]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
