@@ -7,16 +7,13 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import Turnstile from "react-turnstile";
-import {
-  apiFetch,
-  getResponseErrorMessage,
-  setStoredAccessToken,
-} from "../../lib/api";
+import { apiFetch, setStoredAccessToken } from "../../lib/api";
 import type { UserData } from "../../context/UserContext";
 import { useUser } from "../../context/UserContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
+import { maskEmail } from "../../lib/formatters";
 
 function safeReturnPath(state: unknown): string | undefined {
   if (!state || typeof state !== "object" || !("from" in state))
@@ -48,7 +45,6 @@ export default function LoginForm() {
 
   const [show2FA, setShow2FA] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
-  
 
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState<number>(0);
@@ -88,37 +84,33 @@ export default function LoginForm() {
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!captchaToken) {
-      toast.error("Please wait for the captcha verification to complete.");
+    if (!show2FA && !captchaToken) {
+      toast.error("Please wait for captcha verification.");
       return;
     }
 
     if (!isEmpty) {
       setEmptyError(false);
       try {
-        const bodyPayload: Record<string, string> = {
+        const endpoint = show2FA ? "/auth/verify-2fa" : "/auth/login";
+
+        const bodyPayload = {
           ...loginData,
-          captchaToken,
+          ...(show2FA ? { code: twoFactorCode } : { captchaToken }),
         };
 
-        if (show2FA) {
-          bodyPayload.code = twoFactorCode;
-        }
-
-        const response = await apiFetch("/auth/login", {
+        const response = await apiFetch(endpoint, {
           method: "POST",
           body: JSON.stringify(bodyPayload),
         });
 
         if (response.ok) {
-          const data = (await response.json()) as {
-            access_token?: string;
-            requiresTwoFactor?: boolean;
-          };
+          const data = await response.json();
 
           if (data.requiresTwoFactor) {
             setShow2FA(true);
             toast.success("Verification code sent to your email.");
+
             setCaptchaToken(null);
             setCaptchaKey((prev) => prev + 1);
             return;
@@ -139,19 +131,29 @@ export default function LoginForm() {
             navigate(next);
           }
         } else {
-          const message = await getResponseErrorMessage(response);
-          toast.error(message);
+          const errorData = await response.json();
 
-          // setCaptchaToken(null);
-          // setCaptchaKey((prev) => prev + 1);
+          if (!show2FA) {
+            setCaptchaToken(null);
+            setCaptchaKey((prev) => prev + 1);
+          }
+
+          if (errorData?.error === "EMAIL_NOT_VERIFIED") {
+            toast.error("Please verify your email to continue.");
+            navigate("/verify-email", {
+              state: { email: loginData.email, isLoginFlow: true },
+            });
+          } else {
+            toast.error(errorData?.message || "Could not sign in");
+          }
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Could not sign in";
-        toast.error(message);
+        if (!show2FA) {
+          setCaptchaToken(null);
+          setCaptchaKey((prev) => prev + 1);
+        }
 
-        // setCaptchaToken(null);
-        // setCaptchaKey((prev) => prev + 1);
+        toast.error("Network error. Please try again later.");
       }
     } else {
       setEmptyError(true);
@@ -229,7 +231,7 @@ export default function LoginForm() {
               <p className="text-sm text-muted-foreground">
                 We sent a 6-digit code to <br />
                 <span className="font-medium text-primary">
-                  {loginData.email}
+                  {maskEmail(loginData.email)}
                 </span>
               </p>
             </div>
@@ -266,22 +268,25 @@ export default function LoginForm() {
           </div>
         )}
 
-        <div className="flex justify-center py-2">
-          <Turnstile
-            key={captchaKey}
-            sitekey="0x4AAAAAADSk3etSiWLwGH5-"
-            onVerify={(token) => setCaptchaToken(token)}
-            onExpire={() => {
-              setCaptchaToken(null);
-              setCaptchaKey((prev) => prev + 1);
-            }}
-            onError={() => {
-              setCaptchaToken(null);
-              setCaptchaKey((prev) => prev + 1);
-            }}
-            theme="light"
-          />
-        </div>
+        {!show2FA && (
+          <div className="flex justify-center py-2">
+            <Turnstile
+              key={captchaKey}
+              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+              onVerify={(token) => setCaptchaToken(token)}
+              onLoad={() => console.log("Turnstile loaded")}
+              onExpire={() => {
+                setCaptchaToken(null);
+                setCaptchaKey((prev) => prev + 1);
+              }}
+              onError={() => {
+                setCaptchaToken(null);
+                setCaptchaKey((prev) => prev + 1);
+              }}
+              theme="light"
+            />
+          </div>
+        )}
 
         {emptyError && (
           <ValidateError>
@@ -293,7 +298,10 @@ export default function LoginForm() {
 
         <Button
           type="submit"
-          disabled={!captchaToken || (show2FA && twoFactorCode.length !== 6)}
+          disabled={
+            (show2FA && twoFactorCode.length !== 6) ||
+            (!show2FA && !captchaToken)
+          }
           className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {show2FA ? "Verify Code" : "Log in"}

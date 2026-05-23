@@ -135,6 +135,7 @@ export class AuthController {
     return await this.authService.updatePassword(req.user.sub, dto);
   }
 
+  //включени/отключение двухфакторки
   @UseGuards(AuthGuard)
   @Post("toggle-2fa")
   @HttpCode(HttpStatus.OK)
@@ -143,6 +144,15 @@ export class AuthController {
     @Body() dto: ToggleTwoFactorDto,
   ) {
     return this.authService.toggleTwoFactor(req.user.sub, dto);
+  }
+  
+  //подтверждение двухфакторки
+  @Post("verify-2fa")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Verify 2FA code during login (No Captcha)" })
+  @ApiBody({ type: LoginDto })
+  async verifyTwoFactorLogin(@Body() loginDto: LoginDto) {
+    return await this.authService.login(loginDto);
   }
 
   @UseGuards(AuthGuard)
@@ -288,5 +298,12 @@ export class AuthController {
   @Post("restore-account")
   async restoreAccount(@Body() body: { token: string }) {
     return this.authService.restoreAccount(body.token);
+  }
+
+  @Post("resend-verification")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Resend email confirmation code" })
+  async resendVerification(@Body() body: { email: string }) {
+    return await this.authService.resendConfirmationEmail(body.email);
   }
 }

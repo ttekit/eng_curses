@@ -24,41 +24,40 @@ export const AccountDeletedTemplate = ({
   return (
     <Html>
       <Head />
-      <Preview>Ваш акаунт Explys заплановано на видалення</Preview>
+      <Preview>Your Explys account is scheduled for deletion</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Запит на видалення акаунту</Heading>
+          <Heading style={heading}>Account Deletion Request</Heading>
 
-          <Text style={text}>Привіт, {name},</Text>
+          <Text style={text}>Hello {name},</Text>
 
           <Text style={text}>
-            Нещодавно ви надіслали запит на видалення вашого акаунту{" "}
-            <strong>Explys</strong>. Ваш профіль та всі пов'язані з ним дані
-            будуть остаточно видалені з наших серверів через{" "}
-            <strong>30 днів</strong>.
+            You recently requested to delete your <strong>Explys</strong>{" "}
+            account. Your profile and all associated data will be permanently
+            deleted from our servers in <strong>30 days</strong>.
           </Text>
 
           <Text style={text}>
-            Якщо ви не робили цей запит, або якщо ви просто передумали, ви
-            можете скасувати видалення та відновити свій акаунт, натиснувши
-            кнопку нижче:
+            If you didn't make this request, or if you simply changed your mind,
+            you can cancel the deletion and restore your account by clicking the
+            button below:
           </Text>
 
           <Section style={btnContainer}>
             <Button style={button} href={restoreLink}>
-              Відновити мій акаунт
+              Restore my account
             </Button>
           </Section>
 
           <Text style={text}>
-            Якщо ви не перейдете за посиланням, ваш акаунт буде назавжди стерто
-            після закінчення 30 днів. Нам сумно прощатися!
+            If you do not click the link, your account will be permanently
+            erased after 30 days. We are sad to see you go!
           </Text>
 
           <Text style={footerText}>
-            З найкращими побажаннями,
+            Best regards,
             <br />
-            Команда Explys
+            The Explys Team
           </Text>
         </Container>
       </Body>
