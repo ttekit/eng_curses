@@ -26,7 +26,7 @@ export class MailService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   public async sendConfirmationEmail(email: string, code: string) {
     if (isOutboundMailDisabled(this.configService)) {
@@ -42,7 +42,7 @@ export class MailService {
         `Registration blocked: Domain for email ${email} does not exist.`,
       );
       throw new BadRequestException(
-        "Вказана поштова адреса не існує або не може приймати листи. Перевірте правильність введення.",
+        "The specified email address does not exist or cannot accept mail. Please check that it is entered correctly..",
       );
     }
 
@@ -50,7 +50,7 @@ export class MailService {
       React.createElement(ConfirmationTemplate, { code }),
     );
 
-    return this.sendMail(email, "Код підтвердження реєстрації — Explys", html);
+    return this.sendMail(email, "Registration confirmation code — Explys", html);
   }
 
   public async sendPasswordResetEmail(email: string, token: string) {
@@ -156,7 +156,7 @@ export class MailService {
         html: htmlContent,
       });
     } catch (error) {
-      console.error("❌ ОШИБКА MailerService:", error);
+
     }
   }
 
