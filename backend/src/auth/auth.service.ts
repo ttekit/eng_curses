@@ -515,6 +515,10 @@ export class AuthService {
         name: user.name,
         role: user.role,
         hasCompletedPlacement: user.hasCompletedPlacement,
+
+        subscriptionPlan: (user as any).subscriptionPlan ?? "",
+        subscriptionStatus: (user as any).subscriptionStatus ?? "",
+        stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
       },
     };
   }
