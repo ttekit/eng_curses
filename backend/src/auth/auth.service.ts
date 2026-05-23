@@ -87,6 +87,12 @@ export class AuthService {
   }
 
   async register(req: Request, dto: RegisterDto) {
+    const isDomainValid = await this.mailService.validateEmailDomain(dto.email);
+    if (!isDomainValid) {
+      throw new BadRequestException(
+        "The provided email domain does not exist or cannot receive mail.",
+      );
+    }
     const prisma = this.prisma as any;
     const outboundMailDisabled = isOutboundMailDisabled(this.configService);
 
@@ -412,6 +418,7 @@ export class AuthService {
 
     return { message: "Email успішно підтверджено" };
   }
+
   async updateUserPreferences(userId: number, data: any) {
     return this.prisma.user.update({
       where: { id: userId },

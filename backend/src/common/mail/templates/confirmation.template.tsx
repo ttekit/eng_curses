@@ -4,14 +4,17 @@ interface ConfirmationTemplateProps {
   code: string;
 }
 
-export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({ code }) => {
+export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
+  code,
+}) => {
   return (
     <div
       style={{
         margin: 0,
         padding: 0,
         backgroundColor: "#f4f4f5",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
       <table
@@ -39,7 +42,12 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({ code
               }}
             >
               <tr>
-                <td style={{ padding: "30px 20px 15px 20px", textAlign: "center" }}>
+                <td
+                  style={{
+                    padding: "30px 20px 15px 20px",
+                    textAlign: "center",
+                  }}
+                >
                   <h1
                     style={{
                       margin: 0,
@@ -55,7 +63,9 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({ code
               </tr>
 
               <tr>
-                <td style={{ padding: "0 20px 20px 20px", textAlign: "center" }}>
+                <td
+                  style={{ padding: "0 20px 20px 20px", textAlign: "center" }}
+                >
                   <h2
                     style={{
                       margin: "0 0 12px 0",
@@ -74,8 +84,8 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({ code
                       lineHeight: "1.6",
                     }}
                   >
-                    Раді бачити вас в Explys. Щоб завершити реєстрацію, будь ласка,
-                    введіть цей код підтвердження:
+                    Раді бачити вас в Explys. Щоб завершити реєстрацію, будь
+                    ласка, введіть цей код підтвердження:
                   </p>
                 </td>
               </tr>
@@ -106,13 +116,45 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({ code
               </tr>
 
               <tr>
-                <td style={{ padding: "0 20px 30px 20px", textAlign: "center" }}>
-                  <p style={{ margin: 0, fontSize: "13px", color: "#71717a", lineHeight: "1.5" }}>
+                <td
+                  style={{ padding: "0 20px 30px 20px", textAlign: "center" }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "13px",
+                      color: "#71717a",
+                      lineHeight: "1.5",
+                    }}
+                  >
                     Код дійсний протягом <strong>15 хвилин</strong>.<br />
-                    Якщо ви не реєструвалися в Explys, просто проігноруйте цей лист.
+                    Якщо ви не реєструвалися в Explys, просто проігноруйте цей
+                    лист.
                   </p>
                 </td>
               </tr>
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "12px",
+                  backgroundColor: "#fff1f1",
+                  border: "1px solid #fecaca",
+                  borderRadius: "8px",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "12px",
+                    color: "#991b1b",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  <strong>Увага:</strong> Будь ласка, підтвердьте пошту протягом{" "}
+                  <strong>24 годин</strong>. В іншому випадку ваш обліковий
+                  запис буде автоматично видалено з метою безпеки.
+                </p>
+              </div>
 
               <tr>
                 <td
@@ -123,8 +165,17 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({ code
                     borderTop: "1px solid #e4e4e7",
                   }}
                 >
-                  <p style={{ margin: 0, fontSize: "12px", color: "#a1a1aa", lineHeight: "1.5" }}>
-                    &copy; {new Date().getFullYear()} Explys. Всі права захищені.<br />
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "12px",
+                      color: "#a1a1aa",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    &copy; {new Date().getFullYear()} Explys. Всі права
+                    захищені.
+                    <br />
                     Ваш шлях до ідеальної англійської.
                   </p>
                 </td>

@@ -17,6 +17,7 @@ import EmailChangeTemplate from "./templates/email-change";
 import { PrismaService } from "src/prisma.service";
 import AccountDeletedTemplate from "./templates/account-deleted";
 import { promises as dns } from "dns";
+import { Resolver } from "dns/promises";
 
 @Injectable()
 export class MailService {
@@ -160,28 +161,51 @@ export class MailService {
     }
   }
 
-  private async validateEmailDomain(email: string): Promise<boolean> {
+  private readonly disposableDomains = new Set([
+    "mailinator.com",
+    "10minutemail.com",
+    "guerrillamail.com",
+    "tempmail.com",
+  ]);
+
+  public async validateEmailDomain(email: string): Promise<boolean> {
+    const trustedDomains = [
+      "gmail.com",
+      "outlook.com",
+      "icloud.com",
+      "hotmail.com",
+      "ukr.net",
+      "yahoo.com",
+      "protonmail.com",
+      "meta.ua",
+      "me.com",
+    ];
+    
+    const domain = email.split("@")[1]?.toLowerCase();
+    if (!domain) return false;
+
+    if (!trustedDomains.includes(domain)) {
+      this.logger.warn(`Domain ${domain} is not in whitelist.`);
+      return false;
+    }
+
+    if (this.disposableDomains.has(domain)) return false;
+
     try {
-      const domain = email.split("@")[1];
-      if (!domain) return false;
-
-      const resolver = new dns.Resolver();
-
-      resolver.setServers(["8.8.8.8", "8.8.4.4"]);
+      const resolver = new Resolver();
+      resolver.setServers(["1.1.1.1", "8.8.8.8"]);
 
       const mxRecords = await resolver.resolveMx(domain);
 
-      return mxRecords && mxRecords.length > 0;
-    } catch (error: any) {
-      this.logger.error(
-        `DNS validation failed for ${email}. Error code: ${error?.code}`,
-        error,
-      );
-      if (error?.code === "ENOTFOUND" || error?.code === "ENODATA") {
-        return false;
-      }
+      if (!mxRecords || mxRecords.length === 0) return false;
 
       return true;
+    } catch (error) {
+      const err = error as any;
+      this.logger.warn(
+        `Validation failed for ${email}: ${err?.message || "Unknown error"}`,
+      );
+      return false;
     }
   }
 }

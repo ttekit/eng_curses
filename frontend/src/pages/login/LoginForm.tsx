@@ -48,7 +48,6 @@ export default function LoginForm() {
 
   const [show2FA, setShow2FA] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
-  
 
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState<number>(0);
@@ -271,6 +270,7 @@ export default function LoginForm() {
             key={captchaKey}
             sitekey="0x4AAAAAADSk3etSiWLwGH5-"
             onVerify={(token) => setCaptchaToken(token)}
+            onLoad={() => console.log("Turnstile loaded")}
             onExpire={() => {
               setCaptchaToken(null);
               setCaptchaKey((prev) => prev + 1);
