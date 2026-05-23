@@ -16,7 +16,6 @@ export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
   if (!context) throw new Error("RegistrationContext is not available");
 
-  // Зробили стейт точно як в LoginForm
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState<number>(0);
 
@@ -29,6 +28,11 @@ export default function RegistrationMain() {
 
   const isValidPassword = (p: string) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(p);
+
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    setCaptchaKey((prev) => prev + 1);
+  };
 
   const validateField = (
     value: string,
@@ -115,18 +119,22 @@ export default function RegistrationMain() {
 
     if (!name) {
       setErrorText("Username is required.");
+      resetCaptcha();
       return;
     }
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       setErrorText("Invalid email format.");
+      resetCaptcha();
       return;
     }
     if (!password || !isValidPassword(password)) {
       setErrorText("Password does not meet requirements.");
+      resetCaptcha();
       return;
     }
     if (password !== confirmPassword) {
       setErrorText("Passwords do not match.");
+      resetCaptcha();
       return;
     }
     if (!captchaToken) {
@@ -159,15 +167,12 @@ export default function RegistrationMain() {
         }
       } else {
         setErrorText(result.message || "Registration failed.");
-        // Скидаємо капчу при помилці бекенда (як в логіні)
-        setCaptchaToken(null);
-        setCaptchaKey((prev) => prev + 1);
+        resetCaptcha();
       }
     } catch (error) {
       console.error("Error during registration:", error);
       setErrorText("Network error.");
-      setCaptchaToken(null);
-      setCaptchaKey((prev) => prev + 1);
+      resetCaptcha();
     }
   };
 
@@ -295,8 +300,10 @@ export default function RegistrationMain() {
 
           {errorText && <ValidateError>{errorText}</ValidateError>}
 
-          {/* КАПЧА: Чиста, як у LoginForm */}
-          <div className="flex justify-center py-2" style={{ minHeight: "65px" }}>
+          <div
+            className="flex justify-center py-2"
+            style={{ minHeight: "65px" }}
+          >
             <Turnstile
               key={captchaKey}
               sitekey="0x4AAAAAADSk3etSiWLwGH5-"

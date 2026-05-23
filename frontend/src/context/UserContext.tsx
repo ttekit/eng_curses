@@ -6,7 +6,11 @@ import {
   useEffect,
   useCallback,
 } from "react";
-import { apiFetch, setStoredAccessToken } from "../lib/api";
+import {
+  apiFetch,
+  setStoredAccessToken,
+  getStoredAccessToken,
+} from "../lib/api";
 import { identifyLearner, resetAnalytics } from "../lib/analytics";
 
 export interface UserData {
@@ -159,6 +163,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshProfile = useCallback(async (): Promise<UserData | null> => {
     try {
+      const token = getStoredAccessToken();
+      if (!token) {
+        setUser(null);
+        return null;
+      }
       const response = await apiFetch(`/auth/profile?t=${Date.now()}`, {
         method: "GET",
       });

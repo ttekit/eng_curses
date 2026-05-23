@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router";
-import { setStoredAccessToken, apiFetch, readApiErrorBody } from "../../lib/api";
+import {
+  setStoredAccessToken,
+  apiFetch,
+  readApiErrorBody,
+} from "../../lib/api";
 import { maskEmail } from "../../lib/formatters";
 
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import InputText from "../../components/InputText";
 import LabelRegister from "../../components/LabelRegister";
 import Button from "../../components/Button";
+import toast from "react-hot-toast";
 
 export const EmailVerification: React.FC = () => {
   const location = useLocation();
@@ -52,6 +57,20 @@ export const EmailVerification: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setStoredAccessToken(data.access_token);
+        const isLoginFlow = (location.state as any)?.isLoginFlow;
+        if (isLoginFlow) {
+          toast.success("Welcome back!");
+          navigate("/");
+        } else {
+          const savedStudents = location.state?.generatedStudents || [];
+          if (savedStudents.length > 0) {
+            navigate("/registrationSuccess", {
+              state: { generatedStudents: savedStudents },
+            });
+          } else {
+            navigate("/registrationDetails");
+          }
+        }
 
         const savedStudents = location.state?.generatedStudents || [];
 
