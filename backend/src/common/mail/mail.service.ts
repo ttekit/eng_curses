@@ -180,7 +180,7 @@ export class MailService {
       "meta.ua",
       "me.com",
     ];
-    
+
     const domain = email.split("@")[1]?.toLowerCase();
     if (!domain) return false;
 

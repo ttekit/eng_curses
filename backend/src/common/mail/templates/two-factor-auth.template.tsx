@@ -16,7 +16,7 @@ export type ResetPasswordTemplateProps = {
   token: string;
 };
 
-export function ResetPasswordTemplate({
+export default function TwoFactorAuthTemplate({
   domain,
   token,
 }: ResetPasswordTemplateProps): React.ReactElement {
@@ -131,4 +131,3 @@ const footerText = {
   paddingTop: "20px",
 };
 
-export default ResetPasswordTemplate;
