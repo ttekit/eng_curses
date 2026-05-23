@@ -74,7 +74,7 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                       fontWeight: 700,
                     }}
                   >
-                    Ласкаво просимо!
+                    Welcome!
                   </h2>
                   <p
                     style={{
@@ -84,8 +84,8 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                       lineHeight: "1.6",
                     }}
                   >
-                    Раді бачити вас в Explys. Щоб завершити реєстрацію, будь
-                    ласка, введіть цей код підтвердження:
+                    Glad to see you in Explys. To complete your registration,
+                    please enter this verification code:
                   </p>
                 </td>
               </tr>
@@ -127,9 +127,9 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                       lineHeight: "1.5",
                     }}
                   >
-                    Код дійсний протягом <strong>15 хвилин</strong>.<br />
-                    Якщо ви не реєструвалися в Explys, просто проігноруйте цей
-                    лист.
+                    The code is valid for <strong>15 minutes</strong>.<br />
+                    If you did not register for Explys, please ignore this
+                    email.
                   </p>
                 </td>
               </tr>
@@ -150,9 +150,9 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                     lineHeight: "1.4",
                   }}
                 >
-                  <strong>Увага:</strong> Будь ласка, підтвердьте пошту протягом{" "}
-                  <strong>24 годин</strong>. В іншому випадку ваш обліковий
-                  запис буде автоматично видалено з метою безпеки.
+                  <strong>Attention:</strong> Please verify your email within{" "}
+                  <strong>24 hours</strong>. Otherwise, your account will be
+                  automatically deleted for security reasons.
                 </p>
               </div>
 
@@ -173,10 +173,10 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                       lineHeight: "1.5",
                     }}
                   >
-                    &copy; {new Date().getFullYear()} Explys. Всі права
-                    захищені.
+                    &copy; {new Date().getFullYear()} Explys. All rights
+                    reserved.
                     <br />
-                    Ваш шлях до ідеальної англійської.
+                    Your path to perfect English.
                   </p>
                 </td>
               </tr>

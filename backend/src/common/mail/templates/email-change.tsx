@@ -18,15 +18,14 @@ export const EmailChangeTemplate = ({ code }: EmailChangeTemplateProps) => {
   return (
     <Html>
       <Head />
-      <Preview>Ваш код підтвердження електронної пошти</Preview>
+      <Preview>Your email verification code</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Оновлення електронної пошти</Heading>
+          <Heading style={heading}>Email Update</Heading>
 
           <Text style={text}>
-            Нещодавно ви надіслали запит на зміну адреси електронної пошти. Будь
-            ласка, введіть наступний 6-значний код підтвердження, щоб завершити
-            процес.
+            You recently requested to change your email address. Please enter
+            the following 6-digit verification code to complete the process.
           </Text>
 
           <Section style={codeContainer}>
@@ -34,9 +33,9 @@ export const EmailChangeTemplate = ({ code }: EmailChangeTemplateProps) => {
           </Section>
 
           <Text style={text}>
-            Цей код дійсний протягом 15 хвилин. Якщо ви не надсилали цей запит,
-            будь ласка, негайно увійдіть в систему та змініть свій пароль, щоб
-            захистити свій акаунт.
+            This code is valid for 15 minutes. If you did not make this request,
+            please log in immediately and change your password to secure your
+            account.
           </Text>
         </Container>
       </Body>

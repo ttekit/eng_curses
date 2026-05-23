@@ -9,9 +9,9 @@ export function PasswordChangedTemplate({
   email,
 }: PasswordChangedTemplateProps): React.ReactElement {
   return (
-    <Html lang="uk">
+    <Html lang="en">
       <Head />
-      <Preview>Пароль до вашого акаунту Explys було змінено</Preview>
+      <Preview>The password for your Explys account has been changed</Preview>
       <Body
         style={{
           margin: 0,
@@ -81,7 +81,7 @@ export function PasswordChangedTemplate({
                         fontWeight: 700,
                       }}
                     >
-                      Пароль змінено!
+                      Password Changed!
                     </h2>
                     <p
                       style={{
@@ -94,8 +94,9 @@ export function PasswordChangedTemplate({
                         overflowWrap: "anywhere",
                       }}
                     >
-                      Цим листом підтверджуємо, що пароль до вашого акаунту
-                      Explys <strong>{email}</strong> був успішно змінений.
+                      This email confirms that the password for your Explys
+                      account <strong>{email}</strong> has been successfully
+                      changed.
                     </p>
                   </td>
                 </tr>
@@ -120,7 +121,7 @@ export function PasswordChangedTemplate({
                           marginBottom: "4px",
                         }}
                       >
-                        Важливо:
+                        Important:
                       </p>
                       <p
                         style={{
@@ -130,9 +131,9 @@ export function PasswordChangedTemplate({
                           lineHeight: "1.5",
                         }}
                       >
-                        Якщо ви не змінювали пароль, ваш акаунт міг бути
-                        зламаний. Терміново зверніться до нашої служби підтримки
-                        або скористайтеся функцією відновлення паролю.
+                        If you did not change your password, your account may
+                        have been compromised. Please contact our support team
+                        immediately or use the password recovery feature.
                       </p>
                     </div>
                   </td>
@@ -155,10 +156,10 @@ export function PasswordChangedTemplate({
                         lineHeight: "1.5",
                       }}
                     >
-                      &copy; {new Date().getFullYear()} Explys. Всі права
-                      захищені.
+                      &copy; {new Date().getFullYear()} Explys. All rights
+                      reserved.
                       <br />
-                      Безпека вашого навчання — наш пріоритет.
+                      The security of your learning is our priority.
                     </p>
                   </td>
                 </tr>
