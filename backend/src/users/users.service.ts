@@ -14,6 +14,8 @@ import { Prisma } from "../generated/prisma/client";
 import type { AuthMethod } from "@generated/prisma/enums";
 import { UserRole } from "@generated/prisma/enums";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { MailService } from "src/common/mail/mail.service";
+import { MailModule } from "src/common/mail/mail.module";
 
 function parseRoleFromDto(roleRaw: string | undefined): UserRole | undefined {
   if (roleRaw == null || typeof roleRaw !== "string") {
@@ -45,7 +47,8 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
-  ) {}
+    private readonly mailService: MailService,
+  ) { }
 
   private readonly userSelect = {
     id: true,
@@ -110,6 +113,14 @@ export class UsersService {
       studyingPlanPhases,
       activeStudyingPhaseIndex,
     } = createUserDto;
+
+    const isDomainValid = await this.mailService.validateEmailDomain(email);
+    if (!isDomainValid) {
+      throw new BadRequestException(
+        "The provided email domain does not exist or cannot receive mail.",
+      );
+    }
+
     const role = parseRoleFromDto(roleRaw);
     const resolvedAuthMethod = resolveAuthMethodForCreate(createUserDto);
     const additionalDataPayload: any = {
@@ -146,14 +157,14 @@ export class UsersService {
       favoriteGenres:
         favoriteGenres && favoriteGenres.length > 0
           ? {
-              connect: favoriteGenres.map((id) => ({ id })),
-            }
+            connect: favoriteGenres.map((id) => ({ id })),
+          }
           : undefined,
       hatedGenres:
         hatedGenres && hatedGenres.length > 0
           ? {
-              connect: hatedGenres.map((id) => ({ id })),
-            }
+            connect: hatedGenres.map((id) => ({ id })),
+          }
           : undefined,
     };
 
@@ -268,6 +279,17 @@ export class UsersService {
     const prisma = this.prisma as any;
     await this.findById(id);
 
+    if ((updateUserDto as any).email) {
+      const isDomainValid = await this.mailService.validateEmailDomain(
+        (updateUserDto as any).email,
+      );
+      if (!isDomainValid) {
+        throw new BadRequestException(
+          "The provided email domain does not exist or cannot receive mail.",
+        );
+      }
+    }
+
     const {
       favoriteGenres,
       hatedGenres,
@@ -325,31 +347,31 @@ export class UsersService {
 
     const settingsUpsert = hasSettingsRowUpdate
       ? {
-          settings: {
-            upsert: {
-              create: {
-                playbackSpeed:
-                  playbackSpeed === undefined ? null : Number(playbackSpeed),
-                currentResolution:
-                  currentResolution === undefined
-                    ? null
-                    : String(currentResolution),
-              },
-              update: {
-                ...(playbackSpeed !== undefined
-                  ? {
-                      playbackSpeed: Number(playbackSpeed),
-                    }
-                  : {}),
-                ...(currentResolution !== undefined
-                  ? {
-                      currentResolution: String(currentResolution),
-                    }
-                  : {}),
-              },
+        settings: {
+          upsert: {
+            create: {
+              playbackSpeed:
+                playbackSpeed === undefined ? null : Number(playbackSpeed),
+              currentResolution:
+                currentResolution === undefined
+                  ? null
+                  : String(currentResolution),
+            },
+            update: {
+              ...(playbackSpeed !== undefined
+                ? {
+                  playbackSpeed: Number(playbackSpeed),
+                }
+                : {}),
+              ...(currentResolution !== undefined
+                ? {
+                  currentResolution: String(currentResolution),
+                }
+                : {}),
             },
           },
-        }
+        },
+      }
       : {};
 
     let updatedUser: any;
@@ -361,61 +383,61 @@ export class UsersService {
           ...settingsUpsert,
           ...(hasProfileUpdate
             ? {
-                additionalUserData: {
-                  upsert: {
-                    create: {
-                      englishLevel,
-                      nativeLanguage,
-                      knownLanguages: knownLanguages || [],
-                      knownLanguageLevels,
-                      hobbies: hobbies || [],
-                      education,
-                      workField,
-                      learningGoal,
-                      timeToAchieve,
-                      favoriteGenres: favoriteGenres
-                        ? {
-                            connect: favoriteGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                      hatedGenres: hatedGenres
-                        ? {
-                            connect: hatedGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                    },
-                    update: {
-                      englishLevel,
-                      nativeLanguage,
-                      knownLanguages,
-                      knownLanguageLevels,
-                      hobbies,
-                      education,
-                      workField,
-                      learningGoal,
-                      timeToAchieve,
-                      favoriteGenres: favoriteGenres
-                        ? {
-                            set: favoriteGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                      hatedGenres: hatedGenres
-                        ? {
-                            set: hatedGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                    },
+              additionalUserData: {
+                upsert: {
+                  create: {
+                    englishLevel,
+                    nativeLanguage,
+                    knownLanguages: knownLanguages || [],
+                    knownLanguageLevels,
+                    hobbies: hobbies || [],
+                    education,
+                    workField,
+                    learningGoal,
+                    timeToAchieve,
+                    favoriteGenres: favoriteGenres
+                      ? {
+                        connect: favoriteGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                    hatedGenres: hatedGenres
+                      ? {
+                        connect: hatedGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                  },
+                  update: {
+                    englishLevel,
+                    nativeLanguage,
+                    knownLanguages,
+                    knownLanguageLevels,
+                    hobbies,
+                    education,
+                    workField,
+                    learningGoal,
+                    timeToAchieve,
+                    favoriteGenres: favoriteGenres
+                      ? {
+                        set: favoriteGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                    hatedGenres: hatedGenres
+                      ? {
+                        set: hatedGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
                   },
                 },
-              }
+              },
+            }
             : {}),
         },
         select: this.userSelect,

@@ -47,7 +47,7 @@ export class AuthService {
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -500,7 +500,7 @@ export class AuthService {
         await this.emailConfirmationService.sendVerificationToken(user);
         throw new ForbiddenException({
           message: "Email not verified. Please check your mail.",
-          error: "EMAIL_NOT_VERIFIED", // ЭТОТ КОД ВАЖЕН ДЛЯ ФРОНТА
+          error: "EMAIL_NOT_VERIFIED",
         });
       }
     }
@@ -610,7 +610,13 @@ export class AuthService {
 
     return { message: "Password successfully updated" };
   }
+
   async updateEmail(userId: number, dto: UpdateEmailDto) {
+    const isDomainValid = await this.mailService.validateEmailDomain(dto.newEmail);
+    if (!isDomainValid) {
+      throw new BadRequestException("The provided email domain does not exist or cannot receive mail.");
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.newEmail },
     });
@@ -688,6 +694,11 @@ export class AuthService {
   async verifyAndChangeEmail(userId: number, dto: VerifyEmailChangeDto) {
     const newEmail = (dto as any).newEmail || (dto as any).email;
     const code = dto.code;
+
+    const isDomainValid = await this.mailService.validateEmailDomain(newEmail);
+    if (!isDomainValid) {
+      throw new BadRequestException("The provided email domain does not exist or cannot receive mail.");
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
