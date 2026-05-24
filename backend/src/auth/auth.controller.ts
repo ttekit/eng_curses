@@ -14,6 +14,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
   Delete,
+  SetMetadata,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -46,7 +47,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @Post("register")
   @UseGuards(TurnstileGuard)
@@ -74,6 +75,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     return await this.authService.login(loginDto);
   }
+
   @Post("verify-email")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Verify user email using 6-digit OTP code" })
@@ -115,6 +117,7 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
+  @SetMetadata("IS_PUBLIC_KEY", true)
   @Post("update-preferences")
   async updatePreferences(@Req() req: any, @Body() body: any) {
     const userId = req.user?.id || req.user?.sub;
@@ -135,7 +138,6 @@ export class AuthController {
     return await this.authService.updatePassword(req.user.sub, dto);
   }
 
-  //включени/отключение двухфакторки
   @UseGuards(AuthGuard)
   @Post("toggle-2fa")
   @HttpCode(HttpStatus.OK)
@@ -145,8 +147,7 @@ export class AuthController {
   ) {
     return this.authService.toggleTwoFactor(req.user.sub, dto);
   }
-  
-  //подтверждение двухфакторки
+
   @Post("verify-2fa")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Verify 2FA code during login (No Captcha)" })
@@ -204,6 +205,7 @@ export class AuthController {
     const userId = req.user?.id || req.user?.sub;
     return this.authService.verifyAndChangeEmail(Number(userId), dto);
   }
+
   @Post("check-email-change-code")
   @UseGuards(AuthGuard)
   async checkEmailChangeCode(@Req() req: any, @Body("code") code: string) {
