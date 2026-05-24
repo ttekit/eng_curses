@@ -470,6 +470,9 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         body: JSON.stringify({
           playbackSpeed: speed,
           currentResolution: preferences.videoQuality?.trim() || "auto",
+
+          dailyReminderEnabled: notifications.dailyReminder,
+          weeklyReportEnabled: notifications.weeklyReport,
         }),
       });
 
@@ -716,18 +719,20 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               </div>
               <ToggleSwitch
                 checked={notifications[item.key as keyof NotificationPrefs]}
-                onCheckedChange={(checked) =>
-                  setNotifications((n) => ({
-                    ...n,
+                onCheckedChange={async (checked) => {
+                  const newNotifications = {
+                    ...notifications,
                     [item.key as keyof NotificationPrefs]: checked,
-                  }))
-                }
+                  };
+                  setNotifications(newNotifications);
+                  await saveLearnerPreferences();
+                }}
               />
             </div>
           ))}
         </div>
       </ProfileCard>
-      
+
       <ProfileCard
         title={
           <span className="flex items-center gap-2">
@@ -846,7 +851,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               onChange={(e) =>
                                 setConfirmNewEmail(e.target.value)
                               }
-                              onPaste={(e) => e.preventDefault()} 
+                              onPaste={(e) => e.preventDefault()}
                               className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             />
                           </div>

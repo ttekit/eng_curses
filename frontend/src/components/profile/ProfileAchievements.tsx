@@ -1,17 +1,4 @@
-import {
-  Award,
-  BookOpen,
-  Clock,
-  Crown,
-  Flame,
-  Heart,
-  Lock,
-  Star,
-  Target,
-  Trophy,
-  Zap,
-} from "lucide-react";
-import { ChameleonMascot } from "../ChameleonMascot";
+import { Award, BookOpen, Crown, Flame, Lock, Star } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { useUser } from "../../context/UserContext";
 
@@ -30,7 +17,6 @@ function PlayCircleIcon({ className }: { className?: string }) {
   );
 }
 
-// Мы убрали 'unlocked' и 'progress' из массива. Это будет считаться кодом!
 const BASE_ACHIEVEMENTS = [
   {
     id: "first-video",
@@ -103,7 +89,6 @@ const rarityBadge = {
 export function ProfileAchievements() {
   const { user } = useUser();
 
-  // БЕЗПЕЧНИЙ ПАРСИНГ: якщо бекенд надіслав об'єкти замість рядків, ми це виправимо на льоту
   const userAchievements = new Set(
     (user?.achievements || [])
       .map((a: any) => (typeof a === "string" ? a : a?.achievementId))
@@ -112,7 +97,6 @@ export function ProfileAchievements() {
 
   const currentStreak = (user as any)?.currentStreak || 0;
 
-  // Рахуємо відкриті ачівки (якщо є в базі АБО якщо прогрес >= вимоги)
   const unlockedCount = BASE_ACHIEVEMENTS.filter((a) => {
     const fromDb = userAchievements.has(a.id);
     let progress = 0;
@@ -164,12 +148,10 @@ export function ProfileAchievements() {
           if (achievement.type === "streak")
             currentProgressValue = currentStreak;
 
-          // РОЗУМНА ПЕРЕВІРКА: відкриваємо, якщо є в базі або якщо виконали умову
           const isUnlocked =
             userAchievements.has(achievement.id) ||
             currentProgressValue >= achievement.requirement;
 
-          // ОБМЕЖУВАЧ: щоб не було 8/7, беремо максимум вимогу (7/7)
           const displayProgress = Math.min(
             currentProgressValue,
             achievement.requirement,
