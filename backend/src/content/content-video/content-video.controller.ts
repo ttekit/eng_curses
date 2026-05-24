@@ -322,13 +322,7 @@ export class ContentVideoController {
         learnerDescription?: string | null;
       }>;
     },
-    @Req() req: any,
   ) {
-    const userId = jwtSubToUserId(req.user);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { xp: { increment: 150 } },
-    });
     return this.comprehensionTestsService.submit(id, body);
   }
 
