@@ -703,27 +703,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 s?.reportWeeklyDesc ||
                 "Receive a weekly summary of your progress.",
             },
-            {
-              key: "achievements" as const,
-              label: s?.achievements || "Achievements",
-              description:
-                s?.achievementAlertsDesc ||
-                "Get notified when you unlock achievements.",
-            },
-            {
-              key: "newContent" as const,
-              label: s?.newContentAlerts || "New Content",
-              description:
-                s?.newContentAlertsDesc ||
-                "Get notified when new lessons are available.",
-            },
-            {
-              key: "marketing" as const,
-              label: s?.marketing || "Marketing",
-              description:
-                s?.marketingDesc ||
-                "Receive updates about new features and promotions.",
-            },
           ].map((item) => (
             <div
               key={item.key}
@@ -748,113 +727,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           ))}
         </div>
       </ProfileCard>
-
-      <ProfileCard
-        title={
-          <span className="flex items-center gap-2">
-            <Palette className="size-5 text-primary" />
-            {s?.cardLearningPrefs || "Learning Preferences"}
-          </span>
-        }
-      >
-        <p className="mb-6 text-sm text-muted-foreground">
-          {formatMessage(
-            s?.cardLearningPrefsLead ||
-              "Customize your playback settings. {savePhrase}",
-            {
-              savePhrase:
-                s?.cardLearningPrefsSavePhrase || "Don't forget to save.",
-            },
-          )}
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium">
-              {s?.labelPlaybackSpeed || "Playback Speed"}
-            </span>
-            <select
-              className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-foreground"
-              value={preferences.playbackSpeed}
-              onChange={(e) =>
-                setPreferences((p) => ({ ...p, playbackSpeed: e.target.value }))
-              }
-            >
-              <option value="0.5">0.5×</option>
-              <option value="0.75">0.75×</option>
-              <option value="1">1×</option>
-              <option value="1.25">1.25×</option>
-              <option value="1.5">1.5×</option>
-            </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium">
-              {s?.labelVideoQuality || "Video Quality"}
-            </span>
-            <select
-              className="w-full rounded-lg border border-border bg-input px-3 py-2.5 text-foreground"
-              value={preferences.videoQuality}
-              onChange={(e) =>
-                setPreferences((p) => ({ ...p, videoQuality: e.target.value }))
-              }
-            >
-              <option value="auto">{s?.videoQualityAuto || "Auto"}</option>
-              <option value="1080p">1080p</option>
-              <option value="720p">720p</option>
-              <option value="480p">480p</option>
-            </select>
-          </label>
-        </div>
-        <div className="mt-6 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-medium text-foreground">
-                {s?.autoplayNextTitle || "Autoplay Next"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {s?.autoplayNextDesc || "Automatically play the next episode."}
-              </p>
-            </div>
-            <ToggleSwitch
-              checked={preferences.autoplayNext}
-              onCheckedChange={(checked) =>
-                setPreferences((p) => ({ ...p, autoplayNext: checked }))
-              }
-            />
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-medium text-foreground">
-                {s?.showSubtitlesTitle || "Show Subtitles"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {s?.showSubtitlesDesc ||
-                  "Display subtitles on the video player."}
-              </p>
-            </div>
-            <ToggleSwitch
-              checked={preferences.showSubtitles}
-              onCheckedChange={(checked) =>
-                setPreferences((p) => ({ ...p, showSubtitles: checked }))
-              }
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end border-t border-border/50 pt-6">
-          <Button
-            type="button"
-            className="flex w-fit rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-            disabled={savingPrefs}
-            onClick={() => void saveLearnerPreferences()}
-          >
-            <Save className="size-4" />
-            {savingPrefs
-              ? s?.saving || "Saving..."
-              : s?.savePreferences || "Save Preferences"}
-          </Button>
-        </div>
-      </ProfileCard>
-
+      
       <ProfileCard
         title={
           <span className="flex items-center gap-2">

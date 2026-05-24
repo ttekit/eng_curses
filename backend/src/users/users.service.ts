@@ -57,6 +57,8 @@ export class UsersService {
     createdAt: true,
     xp: true,
     currentStreak: true,
+    dailyReminderEnabled: true, 
+    weeklyReportEnabled: true,
     additionalUserData: {
       select: {
         englishLevel: true,

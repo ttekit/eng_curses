@@ -180,7 +180,7 @@ export class MailService {
       "meta.ua",
       "me.com",
     ];
-    
+
     const domain = email.split("@")[1]?.toLowerCase();
     if (!domain) return false;
 
@@ -207,5 +207,25 @@ export class MailService {
       );
       return false;
     }
+  }
+
+  public async sendCustomEmail(email: string, subject: string, html: string) {
+    return await this.sendMail(email, subject, html);
+  }
+
+  public async sendNotification(
+    to: string,
+    subject: string,
+    template: React.ReactElement,
+  ) {
+    if (isOutboundMailDisabled(this.configService)) {
+      this.logger.warn(
+        `Outbound mail disabled; skipping notification to ${to}`,
+      );
+      return;
+    }
+
+    const html = await render(template);
+    return this.sendMail(to, subject, html);
   }
 }

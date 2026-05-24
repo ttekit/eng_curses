@@ -1,134 +1,177 @@
 import * as React from "react";
-import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Section,
-  Text,
-  Button,
-} from "@react-email/components";
+import { Html, Body, Head, Preview } from "@react-email/components";
 
-export type ResetPasswordTemplateProps = {
-  domain: string;
+export interface TwoFactorAuthTemplateProps {
   token: string;
-};
+}
 
-export function ResetPasswordTemplate({
-  domain,
+export function TwoFactorAuthTemplate({
   token,
-}: ResetPasswordTemplateProps): React.ReactElement {
-  const base = domain.replace(/\/+$/, "");
-  const href = `${base}/auth/password-recovery/new/${encodeURIComponent(token)}`;
-
+}: TwoFactorAuthTemplateProps): React.ReactElement {
   return (
     <Html lang="en">
       <Head />
-      <Preview>Reset your Explys password</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Heading style={heading}>Reset Your Password</Heading>
+      <Preview>Your two-factor authentication code: {token}</Preview>
+      <Body
+        style={{
+          margin: 0,
+          padding: 0,
+          backgroundColor: "#f4f4f5",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        }}
+      >
+        <table
+          width="100%"
+          border={0}
+          cellSpacing="0"
+          cellPadding="0"
+          style={{ backgroundColor: "#f4f4f5", padding: "40px 10px" }}
+        >
+          <tr>
+            <td align="center">
+              <table
+                width="100%"
+                border={0}
+                cellSpacing="0"
+                cellPadding="0"
+                style={{
+                  maxWidth: "500px",
+                  width: "100%",
+                  margin: "0 auto",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.05)",
+                }}
+              >
+                <tr>
+                  <td
+                    style={{
+                      padding: "30px 20px 15px 20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <h1
+                      style={{
+                        margin: 0,
+                        fontSize: "26px",
+                        color: "#8b5cf6",
+                        fontWeight: 800,
+                        letterSpacing: "-0.5px",
+                      }}
+                    >
+                      Explys
+                    </h1>
+                  </td>
+                </tr>
 
-          <Text style={text}>
-            We received a request to reset the password for your{" "}
-            <strong>Explys</strong> account. If you made this request, please
-            click the button below to set a new password:
-          </Text>
+                <tr>
+                  <td
+                    style={{
+                      padding: "0 20px 20px 20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <h2
+                      style={{
+                        margin: "0 0 12px 0",
+                        fontSize: "20px",
+                        color: "#09090b",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Account Login
+                    </h2>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "15px",
+                        color: "#52525b",
+                        lineHeight: "1.6",
+                      }}
+                    >
+                      To continue logging into your account, please enter this
+                      one-time security code:
+                    </p>
+                  </td>
+                </tr>
 
-          <Section style={btnContainer}>
-            <Button style={button} href={href}>
-              Reset Password
-            </Button>
-          </Section>
+                <tr>
+                  <td style={{ padding: "10px 20px 30px 20px" }}>
+                    <div
+                      style={{
+                        backgroundColor: "#f5f3ff",
+                        border: "2px dashed #c4b5fd",
+                        borderRadius: "12px",
+                        padding: "20px 10px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "34px",
+                          fontWeight: 800,
+                          letterSpacing: "4px",
+                          color: "#6d28d9",
+                        }}
+                      >
+                        {token}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
 
-          <Text style={text}>
-            Or copy and paste this link into your browser:
-            <br />
-            <a href={href} style={linkStyle}>
-              {href}
-            </a>
-          </Text>
+                <tr>
+                  <td
+                    style={{
+                      padding: "0 20px 30px 20px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "13px",
+                        color: "#71717a",
+                        lineHeight: "1.5",
+                      }}
+                    >
+                      The code is valid for <strong>15 minutes</strong>.<br />
+                      Do not share this code with anyone.
+                    </p>
+                  </td>
+                </tr>
 
-          <Text style={text}>
-            This link will expire in <strong>15 minutes</strong>. If you did not
-            request a password reset, you can safely ignore this email. Your
-            password will remain unchanged.
-          </Text>
-
-          <Text style={footerText}>
-            Best regards,
-            <br />
-            The Explys Team
-          </Text>
-        </Container>
+                <tr>
+                  <td
+                    style={{
+                      backgroundColor: "#fafafa",
+                      padding: "20px",
+                      textAlign: "center",
+                      borderTop: "1px solid #e4e4e7",
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "12px",
+                        color: "#a1a1aa",
+                        lineHeight: "1.5",
+                      }}
+                    >
+                      &copy; {new Date().getFullYear()} Explys. All rights
+                      reserved.
+                      <br />
+                      The security of your learning is our priority.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </Body>
     </Html>
   );
 }
-
-const main = {
-  backgroundColor: "#f6f9fc",
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-  padding: "40px 0",
-};
-
-const container = {
-  backgroundColor: "#ffffff",
-  border: "1px solid #e5e7eb",
-  borderRadius: "12px",
-  margin: "0 auto",
-  padding: "40px",
-  maxWidth: "560px",
-};
-
-const heading = {
-  color: "#111827",
-  fontSize: "24px",
-  fontWeight: "bold",
-  margin: "0 0 20px",
-  padding: "0",
-};
-
-const text = {
-  color: "#4b5563",
-  fontSize: "16px",
-  lineHeight: "24px",
-  margin: "0 0 20px",
-};
-
-const btnContainer = {
-  textAlign: "center" as const,
-  margin: "30px 0",
-};
-
-const button = {
-  backgroundColor: "#6d28d9",
-  borderRadius: "8px",
-  color: "#fff",
-  fontSize: "16px",
-  fontWeight: "bold",
-  textDecoration: "none",
-  textAlign: "center" as const,
-  display: "inline-block",
-  padding: "14px 24px",
-};
-
-const linkStyle = {
-  color: "#6d28d9",
-  textDecoration: "underline",
-  wordBreak: "break-all" as const,
-};
-
-const footerText = {
-  color: "#9ca3af",
-  fontSize: "14px",
-  lineHeight: "22px",
-  margin: "20px 0 0",
-  borderTop: "1px solid #e5e7eb",
-  paddingTop: "20px",
-};
-
-export default ResetPasswordTemplate;

@@ -5,7 +5,6 @@ import {
   ReactNode,
   useEffect,
   useCallback,
-  DO_NOT_USE_OR_YOU_WILL_BE_FIRED_CALLBACK_REF_RETURN_VALUES,
 } from "react";
 import {
   apiFetch,
@@ -54,6 +53,9 @@ export interface UserData {
   xp: number;
   level: number;
   achievements: string[];
+  /** Notifications */
+  dailyReminderEnabled?: boolean;
+  weeklyReportEnabled?: boolean;
 }
 
 /** Registration used `"choose"` as a sentinel for unfilled selects; strip so UI shows blanks. */
