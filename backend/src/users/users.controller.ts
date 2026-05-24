@@ -23,6 +23,7 @@ import { UserSelfOrApiGuard } from "../auth/guards/user-self-or-api.guard";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UsersService } from "./users.service";
+import { ResetProgressDto } from "./dto/reset-progress.dto";
 
 @ApiTags("users")
 @Controller("users")
@@ -110,5 +111,28 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "User not found." })
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.usersService.remove(id);
+  }
+
+  
+  @Post("profile/progress/reset")
+  @UseGuards(ApiTokenOrJwtAuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Сброс прогресса обучения с валидацией пароля" })
+  @ApiResponse({ status: 200, description: "Прогресс успешно сброшен." })
+  @ApiResponse({
+    status: 400,
+    description: "Неверный пароль или ошибка запроса.",
+  })
+  async resetProfileProgress(@Req() req: any, @Body() dto: ResetProgressDto) {
+    const userId = req.user?.id || req.user?.sub;
+
+    if (!userId) {
+      throw new BadRequestException(
+        "Не удалось определить пользователя из токена",
+      );
+    }
+
+    await this.usersService.resetProgress(Number(userId), dto);
+    return { success: true, message: "Прогресс успешно сброшен." };
   }
 }

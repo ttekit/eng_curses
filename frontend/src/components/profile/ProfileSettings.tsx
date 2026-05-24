@@ -54,6 +54,11 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  //Reset Progress
+  const [resetPassword, setResetPassword] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState("");
+
   const [hobbies, setHobbies] = useState<string[]>(user.hobbies ?? []);
   const [favoriteGenreIds, setFavoriteGenreIds] = useState<number[]>(
     user.favoriteGenres ?? [],
@@ -498,6 +503,40 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     s?.prefsSavedToast,
     s?.prefsErrorToast,
   ]);
+
+  const handleResetProgress = async () => {
+    if (!resetPassword) {
+      return setResetError("Пожалуйста, введите пароль для подтверждения.");
+    }
+
+    setIsLoading(true);
+    setIsResetting(true);
+    setResetError("");
+
+    try {
+      const response = await apiFetch("/users/profile/progress/reset", {
+        method: "POST",
+        body: JSON.stringify({ password: resetPassword }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Не удалось сбросить прогресс");
+      }
+
+      toast.success(s?.resetSuccessToast || "Прогресс успешно сброшен!");
+
+      setResetPassword("");
+      setDangerOpen(null);
+
+      await refreshProfile();
+    } catch (err: any) {
+      setResetError(err.message);
+    } finally {
+      setIsResetting(false);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1265,6 +1304,9 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             setDangerOpen(null);
             setDeletePassword("");
             setDeleteError("");
+
+            setResetPassword("");
+            setResetError("");
           }}
         >
           <div
@@ -1284,20 +1326,65 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             {dangerOpen === "reset" ? (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {s?.modalUnavailableResetLead ||
-                    "Resetting progress is temporarily unavailable."}
+                  Это действие невозможно отменить. Все ваши сохраненные слова,
+                  история просмотров видео, XP и результаты тестов будут
+                  безвозвратно удалены. Для подтверждения введите ваш текущий
+                  пароль.
                 </p>
-                <div className="mt-6 flex justify-end gap-2">
+
+                {resetError && (
+                  <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                    {resetError}
+                  </div>
+                )}
+
+                <div className="mt-4 space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Пароль <span className="text-red-500">*</span>
+                  </label>
+
+                  {/* Защита от автозаполнения браузерами */}
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    style={{ display: "none" }}
+                  />
+
+                  <input
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    autoFocus
+                    className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                  />
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
                   <button
                     type="button"
-                    className="rounded-lg border border-border px-4 py-2 text-foreground hover:bg-secondary"
-                    onClick={() => setDangerOpen(null)}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                    onClick={() => {
+                      setDangerOpen(null);
+                      setResetPassword("");
+                      setResetError("");
+                    }}
                   >
-                    {s?.modalClose || "Close"}
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetProgress}
+                    disabled={isResetting || !resetPassword}
+                    className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {isResetting ? "Сброс..." : "Сбросить прогресс"}
                   </button>
                 </div>
               </>
             ) : (
+              // Дальше идет ваш существующий блок dangerOpen === "delete"
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
                   This action cannot be undone. Please enter your password to
