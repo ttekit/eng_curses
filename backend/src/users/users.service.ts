@@ -15,7 +15,7 @@ import type { AuthMethod } from "@generated/prisma/enums";
 import { UserRole } from "@generated/prisma/enums";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { MailService } from "src/common/mail/mail.service";
-import { MailModule } from "src/common/mail/mail.module";
+
 
 function parseRoleFromDto(roleRaw: string | undefined): UserRole | undefined {
   if (roleRaw == null || typeof roleRaw !== "string") {
