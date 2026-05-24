@@ -65,27 +65,20 @@ export class PostWatchSurveyService {
     });
   }
 
-  /**
-   * Call when the client reports the video finished: bumps watch stats, generates questions (Gemini or fallback), stores survey.
-   * Persist a deduped `WatchSession` per user/video/day when `userId` is provided (authenticated SPA flow).
-   */
-  async recordWatchAndGenerateSurvey(videoId: number, userId: number, secondsWatched?: number) {
-    // Нам нужно знать, сколько времени передал фронт (или 0)
+  async recordWatchAndGenerateSurvey(videoId: number, userId: number, secondsWatched?: number, isCompleted?: boolean) {
     const duration = secondsWatched || 0;
 
-    return await this.prisma.watchSession.upsert({
+    const session = await this.prisma.watchSession.upsert({
       where: {
         userId_contentVideoId_completionDate: {
           userId,
           contentVideoId: videoId,
-          // Считаем сессию за сегодняшний день
           completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
         },
       },
       update: {
-        // Ключевой момент: ПРИБАВЛЯЕМ (increment) время, а не заменяем
         secondsWatched: { increment: duration },
-        completed: true,
+        ...(isCompleted ? { completed: true } : {}),
         endedAt: new Date(),
       },
       create: {
@@ -93,15 +86,19 @@ export class PostWatchSurveyService {
         contentVideoId: videoId,
         completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
         secondsWatched: duration,
-        completed: true,
+        completed: isCompleted ?? false,
         endedAt: new Date(),
       },
     });
+
+    if (isCompleted) {
+      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
+      await this.awardXpAndCheckAchievements(userId, 50).catch(() => { });
+    }
+
+    return session;
   }
 
-  /**
-   * Finished watch → small listening boost on topics linked to this video.
-   */
   private async bumpListeningForVideoTopics(
     userId: number,
     contentVideoId: number,
