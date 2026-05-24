@@ -18,12 +18,6 @@ import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { UserRole } from "@generated/prisma/enums";
 import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
 
-/**
- * Requires an active Stripe-backed subscription for learner JWT calls.
- * Bypass: non-production `NODE_ENV`, `SKIP_SUBSCRIPTION_ENFORCEMENT`, `@Public` routes,
- * routes without Bearer token (other guards must enforce auth), allowlisted paths,
- * teachers, roster students (`teacherId` set).
- */
 @Injectable()
 export class RequireActiveSubscriptionGuard implements CanActivate {
   constructor(
@@ -31,13 +25,13 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
-  ) {}
+  ) { }
 
-  /** Exact allowlist: HTTP method + path (Express `req.path`, no query string). */
   private static readonly ALLOWLIST: ReadonlySet<string> = new Set([
     "POST /auth/register",
     "POST /auth/login",
     "GET /auth/profile",
+    "POST /auth/update-preferences",
     "POST /auth/profile/regenerate-studying-plan",
     "POST /billing/checkout",
     "GET /billing/stripe-publishable-key",

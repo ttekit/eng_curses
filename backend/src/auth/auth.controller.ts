@@ -117,7 +117,6 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
-  @SetMetadata("IS_PUBLIC_KEY", true)
   @Post("update-preferences")
   async updatePreferences(@Req() req: any, @Body() body: any) {
     const userId = req.user?.id || req.user?.sub;
