@@ -78,8 +78,7 @@ export class PostWatchSurveyService {
       },
       update: {
         secondsWatched: { increment: duration },
-        ...(isCompleted ? { completed: true } : {}),
-        endedAt: new Date(),
+        ...(isCompleted ? { completed: true, endedAt: new Date() } : {}),
       },
       create: {
         userId,
@@ -93,7 +92,6 @@ export class PostWatchSurveyService {
 
     if (isCompleted) {
       await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
-      await this.awardXpAndCheckAchievements(userId, 50).catch(() => { });
     }
 
     return session;
@@ -260,20 +258,20 @@ export class PostWatchSurveyService {
   }
 
   public async awardXpAndCheckAchievements(userId: number, amount: number = 125) {
-    const user = await this.prisma.user.findUnique({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
+      data: { xp: { increment: amount } },
       select: { xp: true, level: true, currentStreak: true },
     });
 
-    if (!user) return;
+    const newLevel = Math.floor((updatedUser.xp || 0) / 1000) + 1;
 
-    const newXp = (user.xp || 0) + amount;
-    const newLevel = Math.floor(newXp / 1000) + 1;
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { xp: newXp, level: newLevel },
-    });
+    if (updatedUser.level !== newLevel) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { level: newLevel },
+      });
+    }
 
     const achievementsToUnlock: string[] = [];
 
@@ -286,8 +284,8 @@ export class PostWatchSurveyService {
       });
     }
 
-    if (user.currentStreak >= 7) achievementsToUnlock.push('streak-7');
-    if (user.currentStreak >= 30) achievementsToUnlock.push('streak-30');
+    if (updatedUser.currentStreak >= 7) achievementsToUnlock.push('streak-7');
+    if (updatedUser.currentStreak >= 30) achievementsToUnlock.push('streak-30');
 
     for (const achievementId of achievementsToUnlock) {
       await this.prisma.userAchievement.upsert({
