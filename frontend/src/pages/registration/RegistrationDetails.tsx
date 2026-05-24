@@ -27,6 +27,7 @@ import {
   RegistrationRoleCards,
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
+import { apiFetch } from "../../lib/api";
 
 interface SelectOption {
   value: string;
@@ -185,11 +186,11 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-        formData.teacherTopics.length > 0
+          formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-              const num = parseInt(t.replace("topic:", ""), 10);
-              return isNaN(num) ? t : num;
-            })
+            const num = parseInt(t.replace("topic:", ""), 10);
+            return isNaN(num) ? t : num;
+          })
           : undefined;
 
       const userEmail = formData.email || localStorage.getItem("temp_email");
@@ -213,16 +214,14 @@ export default function RegistrationDetails() {
 
       const accessToken = localStorage.getItem("exply_access_token");
 
-      const response = await fetch(
-        "http://localhost:4200/auth/update-preferences",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(cleanPayload),
+      const response = await apiFetch("/auth/update-preferences", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
+        body: JSON.stringify(cleanPayload),
+      },
       );
 
       const result = await response.json();
