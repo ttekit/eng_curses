@@ -57,7 +57,6 @@ export const landingUk = {
 
   header: {
     navLinks: [
-      { hash: "release-countdown", label: "Зворотний відлік" },
       { hash: "why-choose-explys", label: "Чому Explys" },
       { hash: "how-explys-works", label: "Як це працює" },
       { hash: "ready-to-start", label: "Готові почати" },
@@ -157,25 +156,6 @@ export const landingUk = {
     subtitle:
       "Від базового доступу до адаптивного AI та сімейних планів — плюс рішення для навчальних закладів.",
     fullPageLink: "Усі тарифи на окремій сторінці",
-  },
-
-  releaseCountdown: {
-    titleAccent: "Запуск",
-    titleRest: "— зворотний відлік",
-    subtitleBefore: "Explys стартує",
-    subtitleDate: "22 травня 2026 р.",
-    subtitleAfter:
-      " Відстежуй кожну годину до релізу — дні, години, хвилини та секунди нижче.",
-    statusLive: "Ми в ефірі",
-    statusWaiting: "Час до запуску",
-    hoursRemaining: "годин залишилось загалом",
-    thanksLive: "Дякуємо за очікування — ласкаво просимо до Explys",
-    units: {
-      days: "Дні",
-      hours: "Години",
-      minutes: "Хвилини",
-      seconds: "Секунди",
-    },
   },
 
   cta: {
@@ -439,7 +419,6 @@ export const landingUk = {
       "Персоналізоване вивчення англійської через адаптивні відео. Навчайся у власному темпі й на своїх правилах.",
     copyright: "Усі права захищені.",
     links: {
-      launchCountdown: "Зворотний відлік",
       whyChoose: "Чому Explys",
       howWorks: "Як працює Explys",
       pricing: "Тарифи",

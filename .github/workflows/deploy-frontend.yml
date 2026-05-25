@@ -1,0 +1,56 @@
+# Deploys Vite frontend to the VPS static root after pushes to `product` touch `frontend/`.
+#
+# GitHub repository → Settings → Secrets and variables → Actions (same as backend):
+#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY
+# Optional: SSH_PORT
+#
+# Server: static files at /var/www/explys/frontend/dist (see nginx example config).
+
+name: Deploy frontend
+
+on:
+  push:
+    branches: [product]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-explys-frontend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and rsync dist
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and build
+        working-directory: frontend
+        env:
+          VITE_SITE_URL: https://explys.com
+        run: |
+          npm ci
+          npm run seo:lint
+          npm run build
+
+      - name: Upload dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "frontend/dist/*"
+          target: "/var/www/explys/frontend/dist"
+          strip_components: 2

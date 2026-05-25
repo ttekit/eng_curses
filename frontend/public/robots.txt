@@ -1,9 +1,21 @@
 User-agent: *
 Allow: /
-Allow: /catalog
-Allow: /content/
-Disallow: /admin/
-Disallow: /profileMain
-Disallow: /level-test
+Allow: /pricing
+Disallow: /catalog
+Disallow: /content/
+Disallow: /learning-plan
+Disallow: /subscribe
+Disallow: /loginForm
 Disallow: /registrationMain
+Disallow: /registrationDetails
+Disallow: /registrationPreferences
+Disallow: /registrationSuccess
+Disallow: /verify-email
+Disallow: /restore-account
+Disallow: /profileMain
+Disallow: /profile
+Disallow: /admin/
+Disallow: /level-test
+Disallow: /watched-lessons
+
 Sitemap: https://explys.com/sitemap.xml

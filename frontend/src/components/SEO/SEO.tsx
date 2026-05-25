@@ -1,5 +1,17 @@
 import { Helmet } from "react-helmet-async";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import {
+  DEFAULT_OG_IMAGE_PATH,
+  getDefaultOgImageUrl,
+  getTwitterSiteHandle,
+} from "../../lib/seoDefaults";
+
+export type HreflangAlternate = {
+  /** BCP 47 language tag, e.g. `en`, `uk`. */
+  hreflang: string;
+  /** Path + optional query on this origin, e.g. `/` or `/pricing?lang=uk`. */
+  href: string;
+};
 
 export type SEOProps = {
   title: string;
@@ -22,7 +34,7 @@ export type SEOProps = {
   ogLocaleAlternate?: string;
   /** Twitter card style (default summary_large_image). */
   twitterCard?: "summary" | "summary_large_image";
-  /** Optional @site handle for Twitter. */
+  /** Optional @site handle for Twitter. Falls back to `VITE_TWITTER_SITE`. */
   twitterSite?: string;
   /** PWA / browser chrome (optional). */
   themeColor?: string;
@@ -31,6 +43,8 @@ export type SEOProps = {
    * `application/ld+json` script tags.
    */
   jsonLd?: Record<string, unknown>[];
+  /** Alternate language URLs for hreflang (same page, different locale). */
+  hreflangAlternates?: HreflangAlternate[];
 };
 
 const DEFAULT_OG_TYPE = "website";
@@ -52,11 +66,14 @@ export function SEO({
   twitterSite,
   themeColor = DEFAULT_THEME,
   jsonLd,
+  hreflangAlternates,
 }: SEOProps) {
   const absoluteUrl = resolveCanonicalUrl(canonicalUrl);
-  const absoluteOgImage = ogImage
-    ? resolveCanonicalUrl(ogImage)
-    : resolveCanonicalUrl("/Icon.svg");
+  const absoluteOgImage =
+    ogImage ?
+      resolveCanonicalUrl(ogImage)
+    : getDefaultOgImageUrl();
+  const resolvedTwitterSite = twitterSite ?? getTwitterSiteHandle();
 
   const documentTitle = useTitleSuffix ? `${title} | Explys` : title;
 
@@ -68,6 +85,14 @@ export function SEO({
         <meta name="robots" content="index, follow, max-image-preview:large" />
       : <meta name="robots" content="noindex, nofollow" />}
       <link rel="canonical" href={absoluteUrl} />
+      {hreflangAlternates?.map((alt) => (
+        <link
+          key={alt.hreflang}
+          rel="alternate"
+          hrefLang={alt.hreflang}
+          href={resolveCanonicalUrl(alt.href)}
+        />
+      ))}
 
       <meta name="theme-color" content={themeColor} />
       <meta name="application-name" content={ogSiteName} />
@@ -93,18 +118,19 @@ export function SEO({
       <meta name="twitter:title" content={documentTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={absoluteOgImage} />
-      {twitterSite ?
-        <meta name="twitter:site" content={twitterSite} />
+      {resolvedTwitterSite ?
+        <meta name="twitter:site" content={resolvedTwitterSite} />
       : null}
 
       {jsonLd?.map((schema, i) => (
         <script
           key={i}
           type="application/ld+json"
-          // JSON-LD must not be HTML-escaped as text children in all runtimes.
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
         />
       ))}
     </Helmet>
   );
 }
+
+export { DEFAULT_OG_IMAGE_PATH };

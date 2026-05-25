@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/inject-marketing-seo.mjs",
+    "build:spa": "vite build",
+    "seo:lint": "node scripts/lint-seo-routes.mjs",
     "pages:deploy": "npm run build && npx wrangler pages deploy dist",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "type-check": "tsc --noEmit",

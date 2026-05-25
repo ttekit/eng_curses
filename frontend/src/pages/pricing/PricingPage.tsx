@@ -8,6 +8,8 @@ import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
+import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
+import { buildPricingJsonLdSchemas } from "../../lib/seoStructuredData";
 
 export default function PricingPage() {
   const [searchParams] = useSearchParams();
@@ -34,6 +36,8 @@ export default function PricingPage() {
         canonicalUrl={resolveCanonicalUrl("/pricing")}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+        hreflangAlternates={buildMarketingHreflangAlternates("/pricing")}
+        jsonLd={buildPricingJsonLdSchemas(locale)}
       />
       <ContentHeader variant="landing" />
       <main className="mx-auto max-w-7xl px-4 pb-24 pt-28 sm:px-6 lg:px-8 lg:pt-32">
