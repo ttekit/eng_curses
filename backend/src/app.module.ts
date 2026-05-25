@@ -24,7 +24,6 @@ import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
 import { ProfileModule } from "./profile/profile.module";
 import { RedisModule } from "./redis/redis.module";
-import { NotificationsModule } from './notifications/notifications.module';
 import { SeoModule } from "./seo/seo.module";
 
 @Module({
@@ -51,7 +50,6 @@ import { SeoModule } from "./seo/seo.module";
     LearnerRecapModule,
     ProfileModule,
     RedisModule,
-    NotificationsModule,
     SeoModule,
   ],
   controllers: [AppController],
@@ -61,4 +59,4 @@ import { SeoModule } from "./seo/seo.module";
     { provide: APP_GUARD, useClass: GlobalApiTokenGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }
