@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "src/prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
-import { UpdateUserDto } from "./dto/update-user.dto";
+import { AdminUpdateUserDto, UpdateUserDto } from "./dto/update-user.dto";
 import * as bcrypt from "bcrypt";
 import { parseStudyingPlanV2Strict } from "../studying-plan/studying-plan-json.util";
 import { AlcorythmService } from "../alcorythm/alcorythm.service";
@@ -58,8 +58,7 @@ export class UsersService {
     createdAt: true,
     xp: true,
     currentStreak: true,
-    dailyReminderEnabled: true, 
-    weeklyReportEnabled: true,
+    //weeklyReportEnabled: true,
     additionalUserData: {
       select: {
         englishLevel: true,
@@ -588,5 +587,56 @@ export class UsersService {
         },
       }),
     ]);
+  }
+
+  async updateProfile(id: number, updateUserDto: UpdateUserDto) {
+    const { role, isSuspended, hasCompletedPlacement, ...safeData } =
+      updateUserDto as any;
+
+    if (
+      role ||
+      isSuspended !== undefined ||
+      hasCompletedPlacement !== undefined
+    ) {
+      this.logger.warn(
+        `Security Warning: User ${id} attempted privilege escalation via Mass Assignment!`,
+      );
+    }
+
+    return this.updateAsAdmin(id, safeData);
+  }
+
+  async updateAsAdmin(
+    id: number,
+    updateUserDto: UpdateUserDto | AdminUpdateUserDto,
+  ) {
+    const prisma = this.prisma as any;
+    await this.findById(id);
+
+    const {
+      favoriteGenres,
+      hatedGenres,
+      englishLevel,
+      hobbies,
+      education,
+      workField,
+      nativeLanguage,
+      knownLanguages,
+      knownLanguageLevels,
+      learningGoal,
+      timeToAchieve,
+      playbackSpeed,
+      currentResolution,
+      ...dataToUpdate
+    } = updateUserDto as any;
+
+    if (dataToUpdate.role !== undefined && dataToUpdate.role !== null) {
+      const coerced = parseRoleFromDto(String(dataToUpdate.role));
+      if (coerced !== undefined) {
+        dataToUpdate.role = coerced;
+      } else {
+        delete dataToUpdate.role;
+      }
+    }
   }
 }

@@ -24,6 +24,8 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UsersService } from "./users.service";
 import { ResetProgressDto } from "./dto/reset-progress.dto";
+import { AdminUpdateUserDto } from "./dto/update-user.dto";
+import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
 
 @ApiTags("users")
 @Controller("users")
@@ -57,6 +59,7 @@ export class UsersController {
   findAll() {
     return this.usersService.findAll();
   }
+
   @Patch("profile")
   @UseGuards(ApiTokenOrJwtAuthGuard)
   @ApiBearerAuth("JWT-auth")
@@ -71,7 +74,7 @@ export class UsersController {
       );
     }
 
-    return this.usersService.update(Number(userId), updateUserDto);
+    return this.usersService.updateProfile(Number(userId), updateUserDto);
   }
 
   @Get(":id")
@@ -92,13 +95,11 @@ export class UsersController {
   @ApiSecurity("api-token")
   @ApiOperation({ summary: "Update user (self or API token)" })
   @ApiResponse({ status: 200, description: "User successfully updated." })
-  @ApiResponse({ status: 403, description: "Forbidden." })
-  @ApiResponse({ status: 404, description: "User not found." })
   update(
     @Param("id", ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.update(id, updateUserDto);
+    return this.usersService.updateProfile(id, updateUserDto);
   }
 
   @Delete(":id")
@@ -113,7 +114,18 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-  
+  @Patch(":id/admin")
+  @UseGuards(ApiTokenOrJwtAuthGuard, JwtAdminGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Update user as Admin (includes role, suspension)" })
+  @ApiResponse({ status: 200, description: "User updated." })
+  updateAsAdmin(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() adminUpdateDto: AdminUpdateUserDto,
+  ) {
+    return this.usersService.updateAsAdmin(id, adminUpdateDto);
+  }
+
   @Post("profile/progress/reset")
   @UseGuards(ApiTokenOrJwtAuthGuard)
   @ApiBearerAuth("JWT-auth")

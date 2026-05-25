@@ -1,3 +1,4 @@
+// backend/src/users/dto/update-user.dto.ts
 import { ApiPropertyOptional, OmitType, PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {
@@ -10,11 +11,14 @@ import {
 } from "class-validator";
 import { CreateUserDto } from "./create-user.dto";
 
-/** User updates cannot set studying-plan phases or active phase (derived from quiz progress). */
+/** * БЕЗОПАСНЫЙ DTO: Используется для обновления собственного профиля пользователем.
+ * Исключаем 'role', 'studyingPlanPhases' и 'activeStudyingPhaseIndex'.
+ */
 export class UpdateUserDto extends PartialType(
   OmitType(CreateUserDto, [
     "studyingPlanPhases",
     "activeStudyingPhaseIndex",
+    "role",
   ] as const),
 ) {
   @IsOptional()
@@ -36,29 +40,17 @@ export class UpdateUserDto extends PartialType(
     return false;
   })
   isTwoFactorEnabled?: boolean;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  isSuspended?: boolean;
 
-  /** Stored on `UserSettings.playbackSpeed` */
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   playbackSpeed?: number;
 
-  /** Stored on `UserSettings.currentResolution` (e.g. auto, 720p) */
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   currentResolution?: string;
-
-  /** When true, marks placement as finished without requiring the entry test (used for the “no English level / skip test” path). */
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  hasCompletedPlacement?: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -69,4 +61,23 @@ export class UpdateUserDto extends PartialType(
   @IsOptional()
   @IsBoolean()
   weeklyReportEnabled?: boolean;
+}
+
+/** * АДМИНСКИЙ DTO: Позволяет менять критические поля.
+ */
+export class AdminUpdateUserDto extends UpdateUserDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  role?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isSuspended?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  hasCompletedPlacement?: boolean;
 }

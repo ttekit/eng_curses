@@ -24,7 +24,6 @@ import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
 import { ProfileModule } from "./profile/profile.module";
 import { RedisModule } from "./redis/redis.module";
-import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -50,7 +49,6 @@ import { NotificationsModule } from './notifications/notifications.module';
     LearnerRecapModule,
     ProfileModule,
     RedisModule,
-    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
