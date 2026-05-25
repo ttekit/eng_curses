@@ -59,6 +59,7 @@ The codebase delivers a full learning platform (NestJS + Prisma backend, React +
 
 
 
+##сделано
 ---
 ### 4. Auth guard does not re-check account status
 **Severity:** Critical
