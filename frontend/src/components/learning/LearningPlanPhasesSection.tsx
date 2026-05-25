@@ -5,6 +5,7 @@ import {
   passConditionsForDisplay,
 } from "../../lib/learningPlan";
 import { renderLightMarkdown } from "../../lib/renderLightMarkdown";
+import { cn } from "../../lib/utils";
 
 type Props = {
   plan: LearningPlanModel;
