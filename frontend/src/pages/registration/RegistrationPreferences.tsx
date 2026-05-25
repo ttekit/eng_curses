@@ -17,6 +17,7 @@ import {
 } from "../../context/RegistrationContext";
 import { ArrowLeft } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
+import { AuthPageSeo } from "../../lib/authPageSeo";
 import { cn } from "../../lib/utils";
 import { apiFetch } from "../../lib/api";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
@@ -25,6 +26,7 @@ import { useUser } from "../../context/UserContext";
 export default function RegistrationPreferences() {
   const { messages, locale } = useLandingLocale();
   const t = messages.auth.registration.step3;
+  const regSeo = messages.auth.registration.step1;
   const alerts = messages.auth.registration.step3Alerts;
   const registrationErrors = messages.auth.registration.errors;
   const lpLearn = messages.learningPlan;
@@ -150,7 +152,13 @@ export default function RegistrationPreferences() {
   };
 
   return (
-    <div lang={locale === "uk" ? "uk" : "en"}>
+    <>
+      <AuthPageSeo
+        title={regSeo.seoTitle}
+        description={regSeo.seoDescription}
+        path="/registrationPreferences"
+      />
+      <div lang={locale === "uk" ? "uk" : "en"}>
       <AuthSplitLayout
         progressStep={3}
         progressTotal={3}
@@ -298,5 +306,6 @@ export default function RegistrationPreferences() {
         </form>
       </AuthSplitLayout>
     </div>
+    </>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
+import { AuthPageSeo } from "../../lib/authPageSeo";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 import Button from "../../components/Button";
 import { apiFetch } from "../../lib/api";
 
@@ -12,6 +14,8 @@ export default function RestoreAccount() {
     "loading",
   );
   const [message, setMessage] = useState("");
+  const { messages } = useLandingLocale();
+  const loginSeo = messages.auth.login;
 
   const hasFetched = useRef(false);
 
@@ -51,7 +55,13 @@ export default function RestoreAccount() {
   }, [token]);
 
   return (
-    <AuthSplitLayout
+    <>
+      <AuthPageSeo
+        title={loginSeo.seoTitle}
+        description={loginSeo.seoDescription}
+        path="/restore-account"
+      />
+      <AuthSplitLayout
       rightTitle="Welcome back!"
       rightSubtitle="Ми раді, що ви змінили своє рішення та залишилися з нами."
     >
@@ -91,5 +101,6 @@ export default function RestoreAccount() {
         </div>
       </div>
     </AuthSplitLayout>
+    </>
   );
 }

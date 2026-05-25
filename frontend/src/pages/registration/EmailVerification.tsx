@@ -8,6 +8,8 @@ import {
 import { maskEmail } from "../../lib/formatters";
 
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
+import { AuthPageSeo } from "../../lib/authPageSeo";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 import InputText from "../../components/InputText";
 import LabelRegister from "../../components/LabelRegister";
 import Button from "../../components/Button";
@@ -16,6 +18,8 @@ import toast from "react-hot-toast";
 export const EmailVerification: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { messages } = useLandingLocale();
+  const loginSeo = messages.auth.login;
 
   const email = location.state?.email || "";
 
@@ -115,7 +119,13 @@ export const EmailVerification: React.FC = () => {
   };
 
   return (
-    <AuthSplitLayout
+    <>
+      <AuthPageSeo
+        title={loginSeo.seoTitle}
+        description={loginSeo.seoDescription}
+        path="/verify-email"
+      />
+      <AuthSplitLayout
       rightTitle="Almost there!"
       rightSubtitle="Verify your email to start your personalized learning path."
     >
@@ -190,5 +200,6 @@ export const EmailVerification: React.FC = () => {
         ← Back to registration
       </Link>
     </AuthSplitLayout>
+    </>
   );
 };

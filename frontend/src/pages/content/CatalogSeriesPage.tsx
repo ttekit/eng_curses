@@ -70,7 +70,7 @@ export default function CatalogSeriesPage() {
 
   const title = useMemo(() => {
     if (payload?.name?.trim()) {
-      return `${payload.name} — playlist | Explys`;
+      return `${payload.name} — playlist`;
     }
     return `${catalogSeo.title} — playlist`;
   }, [payload?.name, catalogSeo.title]);
@@ -85,6 +85,7 @@ export default function CatalogSeriesPage() {
         canonicalUrl={resolveCanonicalUrl(canonicalPath)}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+        noindex
       />
 
       <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur-md">

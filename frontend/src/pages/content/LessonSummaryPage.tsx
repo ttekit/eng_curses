@@ -11,6 +11,11 @@ import {
   WATCH_COMPLETE_LISTENING_POINTS,
 } from "../../lib/lessonKnowledgeEstimate";
 import type { QuizWrongReviewItem } from "../../components/content-watch/VideoQuiz";
+import { SEO } from "../../components/SEO/SEO";
+import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { appEn } from "../../locales/app/en";
+import { appUk } from "../../locales/app/uk";
 
 export type LessonWordEntry = {
   word: string;
@@ -286,6 +291,16 @@ export default function LessonSummaryPage() {
   const [metaOnly, setMetaOnly] = useState<VideoMeta | null>(null);
 
   const summary = coerceSummary(fromNav) ?? coerceSummary(stored);
+  const { locale } = useLandingLocale();
+  const lessonSeo = locale === "uk" ? appUk.lesson : appEn.lesson;
+  const summaryTitle =
+    summary?.videoName?.trim() ||
+    metaOnly?.videoName?.trim() ||
+    lessonSeo.seoLoadingTitle;
+  const summaryDescription =
+    summary?.videoDescription?.trim() ||
+    metaOnly?.videoDescription?.trim() ||
+    lessonSeo.seoLoadingDescription;
 
   useEffect(() => {
     if (!videoId || fromNav) return;
@@ -370,6 +385,14 @@ export default function LessonSummaryPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
+      <SEO
+        title={summaryTitle}
+        description={summaryDescription}
+        canonicalUrl={resolveCanonicalUrl(
+          videoId ? `/content/${videoId}/summary` : "/catalog",
+        )}
+        noindex
+      />
       <header className="border-border border-b bg-background/80 backdrop-blur-lg">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link

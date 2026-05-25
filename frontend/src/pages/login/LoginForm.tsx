@@ -12,6 +12,8 @@ import type { UserData } from "../../context/UserContext";
 import { useUser } from "../../context/UserContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
+import { AuthPageSeo } from "../../lib/authPageSeo";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
 import { maskEmail } from "../../lib/formatters";
 
@@ -54,6 +56,8 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useUser();
+  const { messages } = useLandingLocale();
+  const loginSeo = messages.auth.login;
 
   useEffect(() => {
     const s = location.state as {
@@ -161,7 +165,13 @@ export default function LoginForm() {
   };
 
   return (
-    <AuthSplitLayout
+    <>
+      <AuthPageSeo
+        title={loginSeo.seoTitle}
+        description={loginSeo.seoDescription}
+        path="/loginForm"
+      />
+      <AuthSplitLayout
       rightTitle="Ready to continue?"
       rightSubtitle="Pick up right where you left off with your personalized learning path."
     >
@@ -327,5 +337,6 @@ export default function LoginForm() {
         ← Back home
       </Link>
     </AuthSplitLayout>
+    </>
   );
 }
