@@ -62,8 +62,6 @@ type LessonSideBundle = {
   }[];
 };
 
-
-
 function mapApiTestsToQuiz(
   tests: NonNullable<LessonSideBundle["tests"]>,
 ): QuizQuestion[] {
@@ -351,8 +349,6 @@ const tabs: { id: TabId; label: string; icon: typeof BookOpen }[] = [
   { id: "quiz", label: "Quiz", icon: HelpCircle },
 ];
 
-
-
 function ContentWatchHeader({
   rightLabel,
   playlistRibbon,
@@ -631,8 +627,6 @@ export default function ContentPage() {
 
   const isLgUp = useIsLgUp();
 
-
-
   /** True once playback reaches threshold for this lesson (quiz + Watched label). */
   const progressedToWatchedRef = useRef(false);
   /** POST /watch-complete fire-once guard (survey + analytics). */
@@ -665,7 +659,7 @@ export default function ContentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           secondsWatched: 0, // ВАЖНО: строго 0!
-          completed: true,   // Добавь этот флаг, если бэкенд его ждет
+          completed: true, // Добавь этот флаг, если бэкенд его ждет
         }),
       });
     } catch (e) {
@@ -691,8 +685,6 @@ export default function ContentPage() {
   const handleVideoEnded = useCallback(() => {
     ensureLessonWatched();
   }, [ensureLessonWatched]);
-
-
 
   useEffect(() => {
     if (!id) {
@@ -798,8 +790,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -868,10 +860,12 @@ export default function ContentPage() {
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+    if (heartbeatIntervalRef.current)
+      clearInterval(heartbeatIntervalRef.current);
 
     heartbeatIntervalRef.current = setInterval(async () => {
-      if (document.hidden || !videoElRef.current || videoElRef.current.paused) return;
+      if (document.hidden || !videoElRef.current || videoElRef.current.paused)
+        return;
 
       try {
         await apiFetch(`/content-video/${id}/watch-complete`, {
@@ -887,7 +881,8 @@ export default function ContentPage() {
     }, 20000); // 20 секунд
 
     return () => {
-      if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+      if (heartbeatIntervalRef.current)
+        clearInterval(heartbeatIntervalRef.current);
     };
   }, [id]);
 
@@ -959,7 +954,8 @@ export default function ContentPage() {
   }, [sideBundleLoading, tryPersonalizeVocabulary]);
 
   useEffect(() => {
-    if (user?.id != null) return;
+    if (user?.id == null) return;
+
     if (displayVocabulary.length === 0) {
       setVocabularyHintMap({});
       return;
@@ -1089,7 +1085,7 @@ export default function ContentPage() {
 
           if (r.ok) {
             // ДОДАНО: Примусово оновлюємо дані користувача після відправки тесту
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);

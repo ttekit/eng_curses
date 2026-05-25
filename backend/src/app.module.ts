@@ -61,4 +61,4 @@ import { SeoModule } from "./seo/seo.module";
     { provide: APP_GUARD, useClass: GlobalApiTokenGuard },
   ],
 })
-export class AppModule { }
+export class AppModule {}

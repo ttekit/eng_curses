@@ -196,7 +196,7 @@ export default function PlacementPreferencesStep({
           }
         : {};
 
-      const res = await apiFetch(`/users/${userId}`, {
+      const res = await apiFetch(`/users/profile`, {
         method: "PATCH",
         body: JSON.stringify(
           skipGenrePickers
@@ -205,12 +205,14 @@ export default function PlacementPreferencesStep({
                 hobbies: hobbiesPayload,
                 favoriteGenres: user.favoriteGenres ?? [],
                 hatedGenres: user.hatedGenres ?? [],
+                hasCompletedPlacement: true,
               }
             : {
                 ...profilePatch,
                 hobbies: hobbiesPayload,
                 favoriteGenres,
                 hatedGenres: hatedGenres.length ? hatedGenres : [],
+                hasCompletedPlacement: true,
               },
         ),
       });
