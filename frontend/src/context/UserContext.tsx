@@ -53,6 +53,9 @@ export interface UserData {
   xp: number;
   level: number;
   achievements: string[];
+  /** Notifications */
+  dailyReminderEnabled?: boolean;
+  weeklyReportEnabled?: boolean;
 }
 
 /** Registration used `"choose"` as a sentinel for unfilled selects; strip so UI shows blanks. */

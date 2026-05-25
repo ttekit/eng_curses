@@ -59,4 +59,14 @@ export class UpdateUserDto extends PartialType(
   @IsOptional()
   @IsBoolean()
   hasCompletedPlacement?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dailyReminderEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  weeklyReportEnabled?: boolean;
 }

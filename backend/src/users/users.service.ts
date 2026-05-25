@@ -14,6 +14,7 @@ import { Prisma } from "../generated/prisma/client";
 import type { AuthMethod } from "@generated/prisma/enums";
 import { UserRole } from "@generated/prisma/enums";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { ResetProgressDto } from "./dto/reset-progress.dto";
 import { MailService } from "src/common/mail/mail.service";
 
 
@@ -60,6 +61,8 @@ export class UsersService {
     createdAt: true,
     xp: true,
     currentStreak: true,
+    dailyReminderEnabled: true, 
+    weeklyReportEnabled: true,
     additionalUserData: {
       select: {
         englishLevel: true,
@@ -536,20 +539,76 @@ export class UsersService {
     });
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async cleanupUnverifiedUsers() {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  // пускай пока что будет
+  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // async cleanupUnverifiedUsers() {
+  //   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const result = await this.prisma.user.deleteMany({
-      where: {
-        isVerified: false,
-        createdAt: { lt: oneDayAgo },
-        role: { not: "ADMIN" },
-      },
+  //   const result = await this.prisma.user.deleteMany({
+  //     where: {
+  //       isVerified: false,
+  //       createdAt: { lt: oneDayAgo },
+  //       role: { not: "ADMIN" },
+  //     },
+  //   });
+
+  //   if (result.count > 0) {
+  //     this.logger.log(`Cleanup: deleted ${result.count} unverified users.`);
+  //   }
+  // }
+
+  async resetProgress(userId: number, dto: ResetProgressDto) {
+    const prisma = this.prisma as any;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    if (result.count > 0) {
-      this.logger.log(`Cleanup: deleted ${result.count} unverified users.`);
+    if (!user) {
+      throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
     }
+
+    if (!user.password) {
+      throw new BadRequestException(
+        "Для аккаунтов, созданных через сторонние сервисы, сброс по паролю недоступен.",
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    if (!isPasswordValid) {
+      throw new BadRequestException("Неверный пароль. Действие отменено.");
+    }
+
+    return prisma.$transaction([
+      prisma.watchSession.deleteMany({ where: { userId } }),
+      prisma.comprehensionTestAttempt.deleteMany({ where: { userId } }),
+      prisma.userComprehensionWeakSpot.deleteMany({ where: { userId } }),
+      prisma.userVocabulary.deleteMany({ where: { userId } }),
+      prisma.userLanguageData.deleteMany({ where: { userId } }),
+      prisma.userAchievement.deleteMany({ where: { userId } }),
+      prisma.postWatchSurvey.deleteMany({ where: { userId } }),
+
+      prisma.userStatistic.upsert({
+        where: { userId },
+        update: { studyingProgress: 0, learnedAmount: 0, lastLesson: null },
+        create: { userId, studyingProgress: 0, learnedAmount: 0 },
+      }),
+
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          xp: 0,
+          level: 1,
+          currentStreak: 0,
+          comprehensionWrongBank: 0,
+          errorFixingTestPending: false,
+          weeklyReviewCompletedWeekStart: null,
+          weeklyReviewLastScorePct: null,
+          monthlyReviewCompletedMonth: null,
+          monthlyReviewLastScorePct: null,
+          mistakesPracticeCompletedAt: null,
+        },
+      }),
+    ]);
   }
 }

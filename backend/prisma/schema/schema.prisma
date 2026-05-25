@@ -25,6 +25,9 @@ model User {
   students              User[]        @relation("UserTeacher")
   settings              UserSettings?
 
+  dailyReminderEnabled Boolean @default(true) @map("daily_reminder_enabled")
+  weeklyReportEnabled  Boolean @default(true) @map("weekly_report_enabled")
+
   isVerified              Boolean    @default(false) @map("is_verified")
   verificationCode        String?    @map("verification_code")
   verificationCodeExpires DateTime?  @map("verification_code_expires")
@@ -75,6 +78,8 @@ model User {
   @@index([teacherId], map: "users_teacher_id_idx")
   @@map("users")
 }
+
+
 
 model UserAchievement {
   id            Int      @id @default(autoincrement())

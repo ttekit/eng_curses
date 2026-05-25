@@ -10,7 +10,7 @@ import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.
 import { render } from "@react-email/components";
 import { ConfirmationTemplate } from "./templates/confirmation.template";
 import { ResetPasswordTemplate } from "./templates/reset-password.template";
-import { TwoFactorAuthTemplate } from "./templates/two-factor-auth.template";
+
 import { PasswordChangedTemplate } from "./templates/password-change-notification.template";
 import * as React from "react";
 import EmailChangeTemplate from "./templates/email-change";
@@ -18,6 +18,7 @@ import { PrismaService } from "src/prisma.service";
 import AccountDeletedTemplate from "./templates/account-deleted";
 import { promises as dns } from "dns";
 import { Resolver } from "dns/promises";
+import { TwoFactorAuthTemplate } from "./templates/two-factor-auth.template";
 
 @Injectable()
 export class MailService {
@@ -207,5 +208,25 @@ export class MailService {
       );
       return false;
     }
+  }
+
+  public async sendCustomEmail(email: string, subject: string, html: string) {
+    return await this.sendMail(email, subject, html);
+  }
+
+  public async sendNotification(
+    to: string,
+    subject: string,
+    template: React.ReactElement,
+  ) {
+    if (isOutboundMailDisabled(this.configService)) {
+      this.logger.warn(
+        `Outbound mail disabled; skipping notification to ${to}`,
+      );
+      return;
+    }
+
+    const html = await render(template);
+    return this.sendMail(to, subject, html);
   }
 }
