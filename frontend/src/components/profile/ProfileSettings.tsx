@@ -31,14 +31,16 @@ type GenreOption = { id: number; name: string };
 
 export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const { user, refreshProfile, logout } = useUser();
-  if (!user) return null;
+
   const navigate = useNavigate();
   const { messages } = useLandingLocale();
   const s: any = (messages as any).profileSettings || {};
-  const [name, setName] = useState(user.name);
-  const [email] = useState(user.email);
-  const [job, setJob] = useState(user.workField);
-  const [education, setEducation] = useState(user.education);
+
+  const [name, setName] = useState(user?.name || "");
+  const [email] = useState(user?.email || "");
+  const [job, setJob] = useState(user?.workField || "");
+  const [education, setEducation] = useState(user?.education || "");
+
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -59,12 +61,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [isResetting, setIsResetting] = useState(false);
   const [resetError, setResetError] = useState("");
 
-  const [hobbies, setHobbies] = useState<string[]>(user.hobbies ?? []);
+  const [hobbies, setHobbies] = useState<string[]>(user?.hobbies ?? []);
   const [favoriteGenreIds, setFavoriteGenreIds] = useState<number[]>(
-    user.favoriteGenres ?? [],
+    user?.favoriteGenres ?? [],
   );
   const [hatedGenreIds, setHatedGenreIds] = useState<number[]>(
-    user.hatedGenres ?? [],
+    user?.hatedGenres ?? [],
   );
   const [newHobby, setNewHobby] = useState("");
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
@@ -83,22 +85,30 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [deleteError, setDeleteError] = useState("");
 
   const [notifications, setNotifications] = useState(
-    () => loadProfileUiPrefs(user.id).notifications,
+    () => loadProfileUiPrefs(String(user?.id ?? 0)).notifications,
   );
 
   const [preferences, setPreferences] = useState(() => {
-    const ui = loadProfileUiPrefs(user.id);
+    const ui = loadProfileUiPrefs(String(user?.id ?? 0));
     return {
       autoplayNext: ui.autoplayNext,
       showSubtitles: ui.showSubtitles,
-      playbackSpeed:
-        user.playbackSpeed != null &&
-        Number.isFinite(Number(user.playbackSpeed))
-          ? String(user.playbackSpeed)
-          : "1",
-      videoQuality: user.videoQuality?.trim() || "auto",
+      playbackSpeed: user?.playbackSpeed ? String(user.playbackSpeed) : "1",
+      videoQuality: user?.videoQuality?.trim() || "auto",
     };
   });
+  useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setJob(user.workField || "");
+      setEducation(user.education || "");
+      setHobbies(user.hobbies ?? []);
+      setFavoriteGenreIds(user.favoriteGenres ?? []);
+      setHatedGenreIds(user.hatedGenres ?? []);
+    }
+  }, [user]);
+
+  if (!user) return null;
 
   const handleToggle2FAClick = (checked: boolean) => {
     setTarget2FAState(checked);

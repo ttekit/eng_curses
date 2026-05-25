@@ -599,11 +599,11 @@ export class UsersService {
       hasCompletedPlacement !== undefined
     ) {
       this.logger.warn(
-        `Security Warning: User ${id} attempted privilege escalation via Mass Assignment!`,
+        `Security Warning: User ${id} attempted privilege escalation!`,
       );
     }
 
-    return this.updateAsAdmin(id, safeData);
+    return this.update(id, safeData as UpdateUserDto);
   }
 
   async updateAsAdmin(

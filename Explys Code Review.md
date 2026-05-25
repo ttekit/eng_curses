@@ -18,22 +18,6 @@ The codebase delivers a full learning platform (NestJS + Prisma backend, React +
   
 
 ---
-### 6. Wrong token key breaks registration preferences
-**Severity:** Critical (bug)
-**File:** `frontend/src/pages/registration/RegistrationPreferences.tsx`
-**Problem:** App stores JWT as `exply_access_token` (`lib/api.ts`), but preferences step reads `access_token`.
-**Impact:** `Authorization: Bearer null` — registration step 3 fails.
-**Fix:** Use `getStoredAccessToken()` from `lib/api.ts`; let `apiFetch` attach auth.
-
----
-### 7. Duplicate navigation after email verification
-**Severity:** Critical (bug)
-**File:** `frontend/src/pages/registration/EmailVerification.tsx`
-**Problem:** Login flow navigates to `/`, then a second block always runs and overwrites with registration routes.
-**Impact:** Login-after-verification users are sent to registration instead of home.
-**Fix:** Remove duplicate block (lines 75–83) or wrap in `else if (!isLoginFlow)`.
-
----
 ### 8. Inverted vocabulary-hints logic
 **Severity:** Critical (bug)
 **File:** `frontend/src/pages/content/ContentPage.tsx`

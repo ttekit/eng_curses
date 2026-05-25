@@ -61,6 +61,11 @@ export class UpdateUserDto extends PartialType(
   @IsOptional()
   @IsBoolean()
   weeklyReportEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  hasCompletedPlacement?: boolean;
 }
 
 /** * АДМИНСКИЙ DTO: Позволяет менять критические поля.
@@ -76,8 +81,4 @@ export class AdminUpdateUserDto extends UpdateUserDto {
   @IsBoolean()
   isSuspended?: boolean;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  hasCompletedPlacement?: boolean;
 }

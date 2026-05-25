@@ -58,6 +58,7 @@ export const EmailVerification: React.FC = () => {
         const data = await response.json();
         setStoredAccessToken(data.access_token);
         const isLoginFlow = (location.state as any)?.isLoginFlow;
+
         if (isLoginFlow) {
           toast.success("Welcome back!");
           navigate("/");
@@ -70,16 +71,6 @@ export const EmailVerification: React.FC = () => {
           } else {
             navigate("/registrationDetails");
           }
-        }
-
-        const savedStudents = location.state?.generatedStudents || [];
-
-        if (savedStudents.length > 0) {
-          navigate("/registrationSuccess", {
-            state: { generatedStudents: savedStudents },
-          });
-        } else {
-          navigate("/registrationDetails");
         }
       } else {
         const errorMsg = await readApiErrorBody(response);

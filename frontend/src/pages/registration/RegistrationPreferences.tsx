@@ -118,13 +118,11 @@ export default function RegistrationPreferences() {
     e.preventDefault();
 
     try {
-      const accessToken = localStorage.getItem("access_token");
 
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           favoriteGenres: formData.favoriteGenres,
