@@ -353,7 +353,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       showSubtitles: ui.showSubtitles,
       playbackSpeed:
         user.playbackSpeed != null &&
-        Number.isFinite(Number(user.playbackSpeed))
+          Number.isFinite(Number(user.playbackSpeed))
           ? String(user.playbackSpeed)
           : prev.playbackSpeed || "1",
       videoQuality: user.videoQuality?.trim() || prev.videoQuality || "auto",
@@ -672,22 +672,20 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <button
                       type="button"
                       onClick={() => toggleGenrePair(g.id, "favorite")}
-                      className={`rounded-l-lg px-3 py-1.5 text-sm hover:cursor-pointer font-medium transition-colors ${
-                        loved
+                      className={`rounded-l-lg px-3 py-1.5 text-sm hover:cursor-pointer font-medium transition-colors ${loved
                           ? "bg-accent text-accent-foreground"
                           : "bg-secondary text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       {g.name}
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleGenrePair(g.id, "hated")}
-                      className={`rounded-r-lg px-2 py-1.5 hover:cursor-pointer transition-colors ${
-                        hated
+                      className={`rounded-r-lg px-2 py-1.5 hover:cursor-pointer transition-colors ${hated
                           ? "bg-destructive text-destructive-foreground"
                           : "bg-secondary/80 text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                       aria-label={formatMessage(
                         s?.avoidGenreAria || "Avoid {name}",
                         {
@@ -1336,10 +1334,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             {dangerOpen === "reset" ? (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Это действие невозможно отменить. Все ваши сохраненные слова,
-                  история просмотров видео, XP и результаты тестов будут
-                  безвозвратно удалены. Для подтверждения введите ваш текущий
-                  пароль.
+                  This action cannot be undone. All your saved words,
+                  video viewing history, XP, and test results will be
+                  permanently deleted. To confirm, enter your current
+                  password.
                 </p>
 
                 {resetError && (
