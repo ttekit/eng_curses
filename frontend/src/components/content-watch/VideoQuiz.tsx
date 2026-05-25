@@ -122,7 +122,8 @@ export function VideoQuiz({
 
     if (isOpen) {
       if (!isAnswered) {
-        if (!openAnswerIsValid(openDraft)) return;
+        const isSkip = openDraft.trim() === "";
+        if (!openAnswerIsValid(openDraft) && !isSkip) return;
         setIsAnswered(true);
         setAnswersById((prev) => ({
           ...prev,
@@ -163,9 +164,11 @@ export function VideoQuiz({
     }
   }
 
+  const isSkip = isOpen && openDraft.trim() === "";
+
   const primaryDisabled = isOpen
     ? !isAnswered
-      ? !openAnswerIsValid(openDraft)
+      ? !(openAnswerIsValid(openDraft) || isSkip)
       : false
     : !isAnswered
       ? selectedAnswer === null
@@ -219,12 +222,12 @@ export function VideoQuiz({
             onChange={(e) => setOpenDraft(e.target.value)}
             disabled={isAnswered}
             rows={5}
-            placeholder="Write 2–3 clear sentences in English."
+            placeholder="Write 2–3 clear sentences in English or leave blank to skip."
             className="focus:ring-primary/40 w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:outline-none disabled:opacity-80"
           />
           {!isAnswered ? (
             <p className="text-xs text-muted-foreground">
-              Aim for at least {OPEN_MIN_CHARS} characters and two sentences.
+              Aim for at least {OPEN_MIN_CHARS} characters or clear the text to skip (-50 XP).
             </p>
           ) : null}
         </>
@@ -291,7 +294,9 @@ export function VideoQuiz({
           )}
         >
           {isOpen
-            ? "Response saved — your summary will be graded when you complete the lesson."
+            ? openDraft.trim() === ""
+              ? "Question skipped."
+              : "Response saved — your summary will be graded when you complete the lesson."
             : "Answer saved. You’ll see how you did and the correct options after you finish all questions."}
         </div>
       ) : null}
@@ -305,14 +310,14 @@ export function VideoQuiz({
         )}
       >
         {!isAnswered ? (
-          "Check answer"
+          isSkip ? "Skip question" : "Check answer"
         ) : currentQuestion < questions.length - 1 ? (
           <>
             Next question <ArrowRight className="h-4 w-4" />
           </>
         ) : (
           "Complete lesson"
-        )}
+      )}
       </button>
     </div>
   );

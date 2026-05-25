@@ -790,8 +790,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-                body.tests as NonNullable<LessonSideBundle["tests"]>,
-              )
+              body.tests as NonNullable<LessonSideBundle["tests"]>,
+            )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -1085,7 +1085,7 @@ export default function ContentPage() {
 
           if (r.ok) {
             // ДОДАНО: Примусово оновлюємо дані користувача після відправки тесту
-            await refreshProfile().catch(() => {});
+            await refreshProfile().catch(() => { });
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1139,7 +1139,7 @@ export default function ContentPage() {
       const payload: LessonSummaryState = {
         correctCount,
         totalQuestions,
-        xpEarned: LESSON_XP,
+        xpEarned: writtenSummaryText?.trim() ? 150 : 100,
         videoName: videoData.videoName,
         categoryName: videoData.content.category.name,
         videoDescription: videoData.videoDescription,
