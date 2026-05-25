@@ -28,6 +28,7 @@ import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
 import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { v4 as uuidv4 } from "uuid";
+import { randomInt } from "crypto";
 
 export interface GeneratedStudent {
   name: string;
@@ -147,7 +148,7 @@ export class AuthService {
     let otpExpires: Date | null = null;
 
     if (!outboundMailDisabled) {
-      otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      otpCode = randomInt(100000, 1000000).toString();
       otpExpires = new Date(Date.now() + 15 * 60 * 1000);
     }
 
@@ -645,7 +646,7 @@ export class AuthService {
       throw new NotFoundException("Користувача не знайдено");
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = randomInt(100000, 1000000).toString();
     const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
 
     const updatedUser = await this.prisma.user.update({

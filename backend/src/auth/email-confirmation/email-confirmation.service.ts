@@ -6,10 +6,9 @@ import {
 import { PrismaService } from "src/prisma.service";
 import { MailService } from "src/common/mail/mail.service";
 import { TokenType } from "@generated/prisma/client";
-import { randomBytes } from "crypto";
+import { randomInt } from "crypto";
 import type { Request } from "express";
 import type { ConfirmationDto } from "./dto/confirmation.dto";
-import type { User } from "@generated/prisma/client";
 
 @Injectable()
 export class EmailConfirmationService {
@@ -27,7 +26,7 @@ export class EmailConfirmationService {
     let code = user.verificationCode;
 
     if (!code) {
-      code = Math.floor(100000 + Math.random() * 900000).toString();
+      code = randomInt(100000, 1000000).toString();
       const expires = new Date(Date.now() + 15 * 60 * 1000);
 
       await this.prisma.user.update({
