@@ -519,10 +519,10 @@ function richPassConditionsForPhaseUi(options: {
   const words = vocabularyTargetForPhaseUi(tier, phaseIndex);
   const out = [...base];
   out.push(
-    `Reach a <b>${streak}-day</b> study streak at least once (each day with meaningful catalog practice counts).`,
-    `Pass <b>at least ${videos}</b> distinct videos at <b>≥70%</b> on comprehension checks (the app advances after <b>${DISTINCT_PASSED_LESSONS_PER_PHASE_STEP}</b> distinct passes — treat <b>${videos}</b> as your depth target for this phase).`,
-    `Learn or consolidate <b>~${words}</b> new words from lessons (saved words + reviews in the app).`,
-    `Keep clip and quiz choices aligned with your goal: <b>${learningGoal}</b>.`,
+    `Reach a **${streak}-day** study streak at least once (each day with meaningful catalog practice counts).`,
+    `Pass **at least ${videos}** distinct videos at **≥70%** on comprehension checks (the app advances after **${DISTINCT_PASSED_LESSONS_PER_PHASE_STEP}** distinct passes — treat **${videos}** as your depth target for this phase).`,
+    `Learn or consolidate **~${words}** new words from lessons (saved words + reviews in the app).`,
+    `Keep clip and quiz choices aligned with your goal: **${learningGoal}**.`,
   );
   return out;
 }

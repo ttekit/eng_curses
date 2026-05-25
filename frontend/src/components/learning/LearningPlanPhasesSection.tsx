@@ -4,7 +4,7 @@ import {
   DISTINCT_PASSED_LESSONS_PER_PHASE_STEP,
   passConditionsForDisplay,
 } from "../../lib/learningPlan";
-import { cn } from "../../lib/utils";
+import { renderLightMarkdown } from "../../lib/renderLightMarkdown";
 
 type Props = {
   plan: LearningPlanModel;
@@ -42,7 +42,7 @@ export function LearningPlanPhasesSection({ plan, headingClassName }: Props) {
                 "rounded-xl border bg-card/60 p-4 md:p-5",
                 isActive ?
                   "border-primary/50 ring-2 ring-primary/20"
-                : "border-border opacity-90",
+                  : "border-border opacity-90",
               )}
             >
               <div className="mb-2 flex flex-wrap items-baseline gap-2">
@@ -51,7 +51,7 @@ export function LearningPlanPhasesSection({ plan, headingClassName }: Props) {
                     "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                     isActive ?
                       "bg-primary text-primary-foreground"
-                    : "bg-primary/15 text-primary",
+                      : "bg-primary/15 text-primary",
                   )}
                 >
                   {idx + 1}
@@ -61,7 +61,7 @@ export function LearningPlanPhasesSection({ plan, headingClassName }: Props) {
                   <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                     Active phase
                   </span>
-                : null}
+                  : null}
               </div>
               <p className="mb-3 text-sm text-muted-foreground">{phase.summary}</p>
               {passLines.length > 0 ?
@@ -76,12 +76,12 @@ export function LearningPlanPhasesSection({ plan, headingClassName }: Props) {
                           className="mt-1.5 size-1 shrink-0 rounded-full bg-emerald-500/80"
                           aria-hidden
                         />
-                        {line}
+                        {renderLightMarkdown(line)}
                       </li>
                     ))}
                   </ul>
                 </div>
-              : null}
+                : null}
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Suggested focus
               </p>

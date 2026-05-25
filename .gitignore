@@ -29,4 +29,7 @@ src/generated/
 src/generated
 ./src/generated/
 
+frontend/pnpm-lock.yaml
+backend/pnpm-lock.yaml
+
 Explys Code Review.md
