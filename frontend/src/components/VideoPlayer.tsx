@@ -61,16 +61,23 @@ export default function VideoPlayer({
   const [showRightAnimation, setShowRightAnimation] = useState(false);
 
   const [showControls, setShowControls] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   const showControlsRef = useRef(true);
   const playingRef = useRef(false);
   const hideControlsTimerRef = useRef<number | null>(null);
   const isDraggingRef = useRef<boolean>(false);
+  const isBufferingRef = useRef(true);
 
   const lastTapRef = useRef<{ time: number; clientX: number } | null>(null);
   const singleTapTimerRef = useRef<number | null>(null);
 
   const [bufferedProgress, setBufferedProgress] = useState(0);
+
+  const setBufferingState = useCallback((val: boolean) => {
+    setIsBuffering(val);
+    isBufferingRef.current = val;
+  }, []);
 
   const setControlsVisible = (val: boolean) => {
     showControlsRef.current = val;
@@ -155,7 +162,7 @@ export default function VideoPlayer({
 
   const handleSkip = useCallback(
     (seconds: number) => {
-      if (!videoRef.current) return;
+      if (isBufferingRef.current || !videoRef.current) return;
       let newTime = videoRef.current.currentTime + seconds;
       if (newTime < 0) newTime = 0;
       if (newTime > videoRef.current.duration)
@@ -190,6 +197,7 @@ export default function VideoPlayer({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isBufferingRef.current) return;
     isDraggingRef.current = true;
     if (timelineRef.current) {
       try {
@@ -371,6 +379,11 @@ export default function VideoPlayer({
         className="absolute inset-0 w-full h-full object-cover"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onLoadStart={() => setBufferingState(true)}
+        onWaiting={() => setBufferingState(true)}
+        onPlaying={() => setBufferingState(false)}
+        onCanPlay={() => setBufferingState(false)}
+        onLoadedData={() => setBufferingState(false)}
         onPlay={() => {
           playingRef.current = true;
           setPlaying(true);
@@ -431,11 +444,13 @@ export default function VideoPlayer({
       >
         <button
           type="button"
+          disabled={isBuffering}
           className={cn(
             "relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-md",
             showControls
               ? "pointer-events-auto cursor-pointer"
               : "pointer-events-none",
+            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none"
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -472,11 +487,13 @@ export default function VideoPlayer({
 
         <button
           type="button"
+          disabled={isBuffering}
           className={cn(
             "relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-md",
             showControls
               ? "pointer-events-auto cursor-pointer"
               : "pointer-events-none",
+            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none"
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -502,7 +519,10 @@ export default function VideoPlayer({
       >
         <div
           ref={timelineRef}
-          className="w-full h-2.5 bg-white/20 rounded-full cursor-pointer relative group/timeline transition-all duration-200 touch-none"
+          className={cn(
+            "w-full h-2.5 bg-white/20 rounded-full relative group/timeline transition-all duration-200 touch-none",
+            isBuffering ? "cursor-not-allowed" : "cursor-pointer"
+          )}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
