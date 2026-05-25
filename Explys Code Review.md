@@ -38,7 +38,7 @@ The codebase delivers a full learning platform (NestJS + Prisma backend, React +
 
   
 
-##skip
+##сделано
 ### 2. Unauthenticated or weakly protected write endpoints
 **Severity:** Critical
 **Files:**

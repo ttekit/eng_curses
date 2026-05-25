@@ -17,8 +17,11 @@ import {
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor, FileFieldsInterceptor } from "@nestjs/platform-express";
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  FileInterceptor,
+  FileFieldsInterceptor,
+} from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Express, Request } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
@@ -45,7 +48,7 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) { }
+  constructor(private readonly contentsService: ContentsService) {}
 
   @Get("all")
   getContent() {
@@ -91,7 +94,8 @@ export class ContentsController {
   @Get("teacher/my-series")
   @UseGuards(AuthGuard)
   @ApiOperation({
-    summary: "Teacher: list series uploaded from profile (with caption/tag status)",
+    summary:
+      "Teacher: list series uploaded from profile (with caption/tag status)",
   })
   async teacherMySeries(@Req() req: Request & { user?: unknown }) {
     const userId = jwtSubToUserId(req.user);
@@ -101,7 +105,8 @@ export class ContentsController {
   @Patch("teacher/:id/visibility")
   @UseGuards(AuthGuard)
   @ApiOperation({
-    summary: 'Teacher: set catalog visibility ("public" or "unlisted") for owned series',
+    summary:
+      'Teacher: set catalog visibility ("public" or "unlisted") for owned series',
   })
   async teacherPatchVisibility(
     @Req() req: Request & { user?: unknown },
@@ -118,25 +123,38 @@ export class ContentsController {
   }
 
   @Post("create")
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth("JWT-auth")
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: "file", maxCount: 1 },
-      { name: "thumbnailFile", maxCount: 1 },
-    ], {
-      limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
-    }),
+    FileFieldsInterceptor(
+      [
+        { name: "file", maxCount: 1 },
+        { name: "thumbnailFile", maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
+      },
+    ),
   )
+  @ApiOperation({ summary: "Admin: Create new content series" })
   async createContent(
     @Body() createContentDto: CreateContentDto,
     @UploadedFiles()
-    files: { file?: Express.Multer.File[]; thumbnailFile?: Express.Multer.File[] },
+    files: {
+      file?: Express.Multer.File[];
+      thumbnailFile?: Express.Multer.File[];
+    },
   ) {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
     if (!videoFile) {
       throw new BadRequestException("Video file is required");
     }
-    return await this.contentsService.createContent(createContentDto, videoFile, thumbnailFile);
+    return await this.contentsService.createContent(
+      createContentDto,
+      videoFile,
+      thumbnailFile,
+    );
   }
 
   @Patch(":id/playlist")
@@ -154,12 +172,15 @@ export class ContentsController {
   @Post(":id/episodes")
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: "file", maxCount: 1 },
-      { name: "thumbnailFile", maxCount: 1 },
-    ], {
-      limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
-    }),
+    FileFieldsInterceptor(
+      [
+        { name: "file", maxCount: 1 },
+        { name: "thumbnailFile", maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
+      },
+    ),
   )
   @ApiOperation({
     summary: "Add an episode (new ContentMedia + video) to an existing series",
@@ -168,14 +189,22 @@ export class ContentsController {
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddContentEpisodeDto,
     @UploadedFiles()
-    files: { file?: Express.Multer.File[]; thumbnailFile?: Express.Multer.File[] },
+    files: {
+      file?: Express.Multer.File[];
+      thumbnailFile?: Express.Multer.File[];
+    },
   ) {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
     if (!videoFile) {
       throw new BadRequestException("Video file is required");
     }
-    return await this.contentsService.addEpisode(id, dto, videoFile, thumbnailFile);
+    return await this.contentsService.addEpisode(
+      id,
+      dto,
+      videoFile,
+      thumbnailFile,
+    );
   }
 
   @Patch(":id")

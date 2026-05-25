@@ -15,7 +15,13 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ApiOperation, ApiProduces, ApiQuery, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProduces,
+  ApiQuery,
+  ApiTags,
+} from "@nestjs/swagger";
 import { Request, Response } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
@@ -44,9 +50,12 @@ export class ContentVideoController {
     private readonly comprehensionTestsService: ContentVideoComprehensionTestsService,
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
-  ) { }
+  ) {}
 
   @Post()
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Admin: Create a new video entity" })
   create(@Body() createContentVideoDto: CreateContentVideoDto) {
     return this.contentVideoService.create(createContentVideoDto);
   }
@@ -99,11 +108,12 @@ export class ContentVideoController {
   ) {
     const userId = jwtSubToUserId(req.user);
     const words = Array.isArray(body?.words) ? body!.words! : [];
-    const hints = await this.vocabularyPersonalizationService.personalizeForUser({
-      userId,
-      contentVideoId: id,
-      words,
-    });
+    const hints =
+      await this.vocabularyPersonalizationService.personalizeForUser({
+        userId,
+        contentVideoId: id,
+        words,
+      });
     return { hints };
   }
 
@@ -131,7 +141,10 @@ export class ContentVideoController {
       "Re-analyzes the WebVTT transcript (Gemini) and updates ContentStats.userTags only. Requires captions.",
   })
   regenerateThemeTags(@Param("id", ParseIntPipe) id: number) {
-    return this.videoTranscriptTags.regenerateTagsForContentVideo(id, "userTags");
+    return this.videoTranscriptTags.regenerateTagsForContentVideo(
+      id,
+      "userTags",
+    );
   }
 
   @Post(":id/regenerate-genres")
@@ -142,7 +155,10 @@ export class ContentVideoController {
       "Re-analyzes the transcript and updates ContentStats.systemTags and processingComplexity. UI label “genres” maps to level bands, not learner Genre prefs.",
   })
   regenerateLevelTags(@Param("id", ParseIntPipe) id: number) {
-    return this.videoTranscriptTags.regenerateTagsForContentVideo(id, "systemTags");
+    return this.videoTranscriptTags.regenerateTagsForContentVideo(
+      id,
+      "systemTags",
+    );
   }
 
   @Post(":id/regenerate-captions")
@@ -206,26 +222,25 @@ export class ContentVideoController {
   async watchComplete(
     @Param("id", ParseIntPipe) id: number,
     @Req() req: Request & { user: unknown },
-    @Body() body: { secondsWatched?: number } // Добавили тип тела
+    @Body() body: { secondsWatched?: number }, // Добавили тип тела
   ) {
     const userId = jwtSubToUserId(req.user);
     // Передаем secondsWatched в сервис
     return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,
-      body.secondsWatched || 0 // Если пришел undefined, пишем 0
+      body.secondsWatched || 0, // Если пришел undefined, пишем 0
     );
   }
 
   @Post(":id/tests/generate")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
   generateComprehensionTests(
     @Param("id", ParseIntPipe) id: number,
     @Body() body: { userId?: number | null } | undefined,
   ) {
-    return this.comprehensionTestsService.generate(
-      id,
-      body?.userId ?? null,
-    );
+    return this.comprehensionTestsService.generate(id, body?.userId ?? null);
   }
 
   @Get(":id/tests")
@@ -236,7 +251,8 @@ export class ContentVideoController {
   @ApiQuery({
     name: "userId",
     required: false,
-    description: "Optional user for CEFR and saved vocabulary in metadata (same as POST /tests/generate).",
+    description:
+      "Optional user for CEFR and saved vocabulary in metadata (same as POST /tests/generate).",
   })
   getComprehensionTests(
     @Param("id", ParseIntPipe) id: number,
@@ -252,17 +268,19 @@ export class ContentVideoController {
 
   @Get(":id/tests/iframe")
   @ApiOperation({
-    summary: "Comprehension + grammar test as a standalone HTML page (iframe src)",
+    summary:
+      "Comprehension + grammar test as a standalone HTML page (iframe src)",
     description:
       "Generates the same test as POST …/tests/generate and returns `text/html` for embedding, " +
-      "e.g. `<iframe src=\"{API}/content-video/1/tests/iframe?userId=2\">` (userId is optional, for CEFR/vocab and saving topic scores). " +
+      'e.g. `<iframe src="{API}/content-video/1/tests/iframe?userId=2">` (userId is optional, for CEFR/vocab and saving topic scores). ' +
       "Submit results with POST /content-video/:id/tests/submit. " +
       "CSP: `COMPREHENSION_TEST_FRAME_ANCESTORS` or `*` default.",
   })
   @ApiQuery({
     name: "userId",
     required: false,
-    description: "Optional user id to tailor CEFR and saved vocabulary (same as POST body).",
+    description:
+      "Optional user id to tailor CEFR and saved vocabulary (same as POST body).",
   })
   @ApiQuery({
     name: "summaryBase",
@@ -282,7 +300,10 @@ export class ContentVideoController {
   ): Promise<void> {
     const frame = this.config.get<string>("COMPREHENSION_TEST_FRAME_ANCESTORS");
     if (frame?.trim()) {
-      res.setHeader("Content-Security-Policy", `frame-ancestors ${frame.trim()}`);
+      res.setHeader(
+        "Content-Security-Policy",
+        `frame-ancestors ${frame.trim()}`,
+      );
     } else {
       res.setHeader("Content-Security-Policy", "frame-ancestors *");
     }
@@ -291,7 +312,10 @@ export class ContentVideoController {
         ? Number.parseInt(userIdRaw, 10)
         : Number.NaN;
     const userId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-    const result = await this.comprehensionTestsService.getOrLoadTests(id, userId);
+    const result = await this.comprehensionTestsService.getOrLoadTests(
+      id,
+      userId,
+    );
     const apiOrigin = `${req.protocol}://${req.get("host") ?? "localhost"}`;
     res.send(
       renderComprehensionTestsIframeHtml(result, apiOrigin, {
@@ -301,8 +325,11 @@ export class ContentVideoController {
   }
 
   @Post(":id/tests/submit")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
   @ApiOperation({
-    summary: "Submit comprehension/grammar test; updates UserLanguageData for linked topics",
+    summary:
+      "Submit comprehension/grammar test; updates UserLanguageData for linked topics",
   })
   submitComprehensionTest(
     @Param("id", ParseIntPipe) id: number,
@@ -324,6 +351,8 @@ export class ContentVideoController {
   }
 
   @Post(":id/summary-recommendations")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
   @ApiOperation({
     summary:
       "Gemini: personalized summary, focus words, and next steps after a test (uses scores + vocabulary list)",
@@ -341,6 +370,9 @@ export class ContentVideoController {
   }
 
   @Patch(":id")
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Admin: Update a video entity" })
   update(
     @Param("id", ParseIntPipe) id: number,
     @Body() updateContentVideoDto: UpdateContentVideoDto,
@@ -349,6 +381,9 @@ export class ContentVideoController {
   }
 
   @Delete(":id")
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Admin: Delete a video entity" })
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.contentVideoService.remove(id);
   }

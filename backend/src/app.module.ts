@@ -24,6 +24,7 @@ import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
 import { ProfileModule } from "./profile/profile.module";
 import { RedisModule } from "./redis/redis.module";
+import { ContentRecommendationsModule } from "./content-recommendations/content-recommendations.module";
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { RedisModule } from "./redis/redis.module";
     LearnerRecapModule,
     ProfileModule,
     RedisModule,
+    ContentRecommendationsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -57,4 +59,4 @@ import { RedisModule } from "./redis/redis.module";
     { provide: APP_GUARD, useClass: GlobalApiTokenGuard },
   ],
 })
-export class AppModule { }
+export class AppModule {}
