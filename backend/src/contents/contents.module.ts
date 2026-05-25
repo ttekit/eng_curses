@@ -7,9 +7,7 @@ import { ContentVideoModule } from "src/content/content-video/content-video.modu
 import { ContentsController } from "./contents.controller";
 import { ContentsService } from "./contents.service";
 
-// TODO: Add GET /sitemap.xml (e.g. on ContentsController or a dedicated SEO controller)
-// returning dynamic XML with all public lesson/content URLs from the Content entity
-// (plus static routes like `/`, `/catalog`, `/pricing` as needed).
+// Sitemap is served by SeoModule (`GET /sitemap.xml`).
 
 @Module({
   imports: [

@@ -572,6 +572,7 @@ export default function VideoPage() {
         canonicalUrl={resolveCanonicalUrl("/catalog")}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+        noindex
       />
       <div>
         <div className="flex w-full">

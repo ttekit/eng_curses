@@ -24,7 +24,8 @@ import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
 import { ProfileModule } from "./profile/profile.module";
 import { RedisModule } from "./redis/redis.module";
-import { ContentRecommendationsModule } from "./content-recommendations/content-recommendations.module";
+import { NotificationsModule } from './notifications/notifications.module';
+import { SeoModule } from "./seo/seo.module";
 
 @Module({
   imports: [
@@ -50,7 +51,8 @@ import { ContentRecommendationsModule } from "./content-recommendations/content-
     LearnerRecapModule,
     ProfileModule,
     RedisModule,
-    ContentRecommendationsModule,
+    NotificationsModule,
+    SeoModule,
   ],
   controllers: [AppController],
   providers: [

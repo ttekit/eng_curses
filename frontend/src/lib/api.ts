@@ -32,9 +32,9 @@ export function getApiBase(): string {
       return "/__proxy";
     }
   }
-  const u = import.meta.env.VITE_API_BASE_URL || "http://localhost:4200";
+  const u = import.meta.env.VITE_API_BASE_URL || "https://api.explys.com";
   if (typeof u !== "string" || !u.trim()) {
-    return "http://localhost:4200";
+    return "https://api.explys.com";
   }
   return u.replace(/\/$/, "");
 }
@@ -104,8 +104,8 @@ export function mergeApiAuthHeaders(
     }
   } else if (basicAuth && behindProxy) {
     if (bearer) {
-      headers.set("X-Access-Token", bearer); 
-      headers.set("Authorization", `Bearer ${bearer}`); 
+      headers.set("X-Access-Token", bearer);
+      headers.set("Authorization", `Bearer ${bearer}`);
     }
   } else if (bearer) {
     headers.set("Authorization", `Bearer ${bearer}`);

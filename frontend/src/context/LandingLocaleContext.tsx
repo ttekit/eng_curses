@@ -15,7 +15,16 @@ import {
 
 const STORAGE_KEY = "explys-landing-locale";
 
+function readUrlLocale(): LandingLocaleId | null {
+  if (typeof window === "undefined") return null;
+  const lang = new URLSearchParams(window.location.search).get("lang");
+  if (lang === "uk" || lang === "en") return lang;
+  return null;
+}
+
 function readStoredLocale(): LandingLocaleId {
+  const fromUrl = readUrlLocale();
+  if (fromUrl) return fromUrl;
   if (typeof window === "undefined") return "en";
   try {
     const raw = localStorage.getItem(STORAGE_KEY);

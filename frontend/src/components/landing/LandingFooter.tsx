@@ -18,10 +18,6 @@ export function LandingFooter() {
     {
       title: footer.categories.product,
       links: [
-        {
-          label: footer.links.launchCountdown,
-          to: "/#release-countdown",
-        },
         { label: footer.links.whyChoose, to: "/#why-choose-explys" },
         { label: footer.links.howWorks, to: "/#how-explys-works" },
         { label: footer.links.pricing, to: "/pricing" },

@@ -36,6 +36,9 @@ import { parseSeriesPlaylistPayload } from "../../lib/catalogPlaylist";
 import { parseWebVttTranscriptLines } from "../../lib/parseWebVtt";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { appEn } from "../../locales/app/en";
+import { appUk } from "../../locales/app/uk";
 import { useIsLgUp } from "../../hooks/useMediaQuery";
 import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
 
@@ -573,6 +576,8 @@ export default function ContentPage() {
   const navigate = useNavigate();
   // ОБ'ЄДНАНО: отримуємо і user, і refreshProfile
   const { user, refreshProfile } = useUser();
+  const { locale } = useLandingLocale();
+  const lessonSeo = locale === "uk" ? appUk.lesson : appEn.lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
   const [isVideoComplete, setIsVideoComplete] = useState(false);
   const [videoData, setVideoData] = useState<{
@@ -1176,9 +1181,10 @@ export default function ContentPage() {
     return (
       <>
         <SEO
-          title="Урок"
-          description="Интерактивный видеоурок английского на платформе Explys."
+          title={lessonSeo.seoLoadingTitle}
+          description={lessonSeo.seoLoadingDescription}
           canonicalUrl={resolveCanonicalUrl(id ? `/content/${id}` : "/catalog")}
+          noindex
         />
         <LoadingView />
       </>
@@ -1189,8 +1195,8 @@ export default function ContentPage() {
     return (
       <>
         <SEO
-          title="Урок"
-          description="Выберите урок в каталоге Explys."
+          title={lessonSeo.seoPickTitle}
+          description={lessonSeo.seoPickDescription}
           canonicalUrl={resolveCanonicalUrl("/catalog")}
           noindex
         />
@@ -1207,8 +1213,8 @@ export default function ContentPage() {
     return (
       <>
         <SEO
-          title="Урок не найден"
-          description="Этот урок недоступен или был удалён."
+          title={lessonSeo.seoNotFoundTitle}
+          description={lessonSeo.seoNotFoundDescription}
           canonicalUrl={resolveCanonicalUrl(`/content/${id}`)}
           noindex
         />
@@ -1280,6 +1286,7 @@ export default function ContentPage() {
         title={videoData.videoName}
         description={descriptionBlurb}
         canonicalUrl={resolveCanonicalUrl(`/content/${id}`)}
+        noindex
       />
       <ContentWatchHeader
         rightLabel={headerRight}

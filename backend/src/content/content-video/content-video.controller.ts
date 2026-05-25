@@ -37,6 +37,7 @@ import { ComprehensionSummaryRecommendationsBodyDto } from "./dto/summary-recomm
 import { UpdateContentVideoDto } from "./dto/update-content-video.dto";
 import { VocabularyHintsService } from "src/content-video/vocabulary-hints.service";
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
+import { PrismaService } from "src/prisma.service";
 
 @ApiTags("content-video")
 @Controller("content-video")
@@ -50,7 +51,8 @@ export class ContentVideoController {
     private readonly comprehensionTestsService: ContentVideoComprehensionTestsService,
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
-  ) {}
+    private readonly prisma: PrismaService,
+  ) { }
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -166,7 +168,7 @@ export class ContentVideoController {
   @ApiOperation({
     summary: "Regenerate WebVTT captions",
     description:
-      "Downloads MP4 from `videoLink`, FFmpeg extracts mono 16 kHz PCM WAV, POSTs `audio/wav` to Listen (`DEEPGRAM_TRANSCRIBE_MODEL`, default `nova-3`), writes WebVTT to S3, upserts `VideoCaptions`. Optional Gemini tag refresh after success.",
+      "Downloads MP4 from `videoLink`, FFmpeg extracts mono 16 kHz PCM WAV, POSTs `audio/wav` to Listen (`DEEPGRAM_TRANSCRIBE_MODEL`, default `nova-3`), writes WebVTT to S3, upserts `VideoCaptions`. Optional Gemini tag refresh after success.",
   })
   async regenerateCaptions(@Param("id", ParseIntPipe) id: number) {
     const row = await this.videoCaptionsService.generateCaptions(id);
@@ -222,14 +224,15 @@ export class ContentVideoController {
   async watchComplete(
     @Param("id", ParseIntPipe) id: number,
     @Req() req: Request & { user: unknown },
-    @Body() body: { secondsWatched?: number }, // Добавили тип тела
+    @Body() body: { secondsWatched?: number, completed?: boolean }
   ) {
     const userId = jwtSubToUserId(req.user);
     // Передаем secondsWatched в сервис
     return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,
-      body.secondsWatched || 0, // Если пришел undefined, пишем 0
+      body.secondsWatched || 0,
+      body.completed,
     );
   }
 
@@ -331,7 +334,7 @@ export class ContentVideoController {
     summary:
       "Submit comprehension/grammar test; updates UserLanguageData for linked topics",
   })
-  submitComprehensionTest(
+  async submitComprehensionTest(
     @Param("id", ParseIntPipe) id: number,
     @Body()
     body: {

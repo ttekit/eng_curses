@@ -65,43 +65,38 @@ export class PostWatchSurveyService {
     });
   }
 
-  /**
-   * Call when the client reports the video finished: bumps watch stats, generates questions (Gemini or fallback), stores survey.
-   * Persist a deduped `WatchSession` per user/video/day when `userId` is provided (authenticated SPA flow).
-   */
-  async recordWatchAndGenerateSurvey(videoId: number, userId: number, secondsWatched?: number) {
-    // Нам нужно знать, сколько времени передал фронт (или 0)
+  async recordWatchAndGenerateSurvey(videoId: number, userId: number, secondsWatched?: number, isCompleted?: boolean) {
     const duration = secondsWatched || 0;
 
-    return await this.prisma.watchSession.upsert({
+    const session = await this.prisma.watchSession.upsert({
       where: {
         userId_contentVideoId_completionDate: {
           userId,
           contentVideoId: videoId,
-          // Считаем сессию за сегодняшний день
           completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
         },
       },
       update: {
-        // Ключевой момент: ПРИБАВЛЯЕМ (increment) время, а не заменяем
         secondsWatched: { increment: duration },
-        completed: true,
-        endedAt: new Date(),
+        ...(isCompleted ? { completed: true, endedAt: new Date() } : {}),
       },
       create: {
         userId,
         contentVideoId: videoId,
         completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
         secondsWatched: duration,
-        completed: true,
+        completed: isCompleted ?? false,
         endedAt: new Date(),
       },
     });
+
+    if (isCompleted) {
+      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
+    }
+
+    return session;
   }
 
-  /**
-   * Finished watch → small listening boost on topics linked to this video.
-   */
   private async bumpListeningForVideoTopics(
     userId: number,
     contentVideoId: number,
@@ -263,20 +258,20 @@ export class PostWatchSurveyService {
   }
 
   public async awardXpAndCheckAchievements(userId: number, amount: number = 125) {
-    const user = await this.prisma.user.findUnique({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
+      data: { xp: { increment: amount } },
       select: { xp: true, level: true, currentStreak: true },
     });
 
-    if (!user) return;
+    const newLevel = Math.floor((updatedUser.xp || 0) / 1000) + 1;
 
-    const newXp = (user.xp || 0) + amount;
-    const newLevel = Math.floor(newXp / 1000) + 1;
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { xp: newXp, level: newLevel },
-    });
+    if (updatedUser.level !== newLevel) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { level: newLevel },
+      });
+    }
 
     const achievementsToUnlock: string[] = [];
 
@@ -289,8 +284,8 @@ export class PostWatchSurveyService {
       });
     }
 
-    if (user.currentStreak >= 7) achievementsToUnlock.push('streak-7');
-    if (user.currentStreak >= 30) achievementsToUnlock.push('streak-30');
+    if (updatedUser.currentStreak >= 7) achievementsToUnlock.push('streak-7');
+    if (updatedUser.currentStreak >= 30) achievementsToUnlock.push('streak-30');
 
     for (const achievementId of achievementsToUnlock) {
       await this.prisma.userAchievement.upsert({

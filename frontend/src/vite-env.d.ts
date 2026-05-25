@@ -26,6 +26,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_SUBSCRIPTION_DEV_MODE?: string;
   /** Optional; Stripe publishable key (pk_test_… / pk_live_…). Mirrored backend: `STRIPE_PUBLISHABLE_KEY` + GET /billing/stripe-publishable-key */
   readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
+  /** Optional Twitter @site handle for social cards (e.g. `explys` or `@explys`). */
+  readonly VITE_TWITTER_SITE?: string;
 }
 
 interface ImportMeta {

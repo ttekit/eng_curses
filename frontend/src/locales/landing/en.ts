@@ -54,7 +54,6 @@ export const landingEn = {
 
   header: {
     navLinks: [
-      { hash: "release-countdown", label: "Launch countdown" },
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "ready-to-start", label: "Ready to start" },
@@ -156,25 +155,6 @@ export const landingEn = {
     subtitle:
       "From essentials to adaptive AI and family plans — plus solutions for schools.",
     fullPageLink: "Full pricing page",
-  },
-
-  releaseCountdown: {
-    titleAccent: "Launch",
-    titleRest: " countdown",
-    subtitleBefore: "Explys goes live on",
-    subtitleDate: "22 May 2026",
-    subtitleAfter:
-      ". Track every hour until release — days, hours, minutes, and seconds below.",
-    statusLive: "We’re live",
-    statusWaiting: "Time until launch",
-    hoursRemaining: "total hours remaining",
-    thanksLive: "Thanks for waiting — welcome to Explys",
-    units: {
-      days: "Days",
-      hours: "Hours",
-      minutes: "Minutes",
-      seconds: "Seconds",
-    },
   },
 
   cta: {
@@ -436,7 +416,6 @@ export const landingEn = {
       "Personalized English learning through adaptive video content. Learn at your own pace, in your own way.",
     copyright: "All rights reserved.",
     links: {
-      launchCountdown: "Launch countdown",
       whyChoose: "Why Explys",
       howWorks: "How Explys works",
       pricing: "Pricing",

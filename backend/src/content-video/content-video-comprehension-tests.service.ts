@@ -48,6 +48,8 @@ import {
   effectiveTimeHorizon,
 } from "./studying-plan.util";
 
+import { PostWatchSurveyService } from "./post-watch-survey.service";
+
 const GRADING_TTL_MS = 2 * 60 * 60 * 1000;
 
 /** Stored on each attempt row; aligns with coarse "passed" KPI in admin dashboards. */
@@ -153,6 +155,7 @@ export class ContentVideoComprehensionTestsService {
     private readonly summaryRecommendations: ContentVideoSummaryRecommendationsGeminiClient,
     private readonly openAnswerGrader: ContentVideoOpenAnswerGraderClient,
     private readonly userVocabulary: UserVocabularyService,
+    private readonly postWatchSurveyService: PostWatchSurveyService,
   ) { }
 
   /**
@@ -377,18 +380,18 @@ export class ContentVideoComprehensionTestsService {
     const items: GradingItem[] = p.tests.map((t) =>
       t.questionType === "open"
         ? {
-            kind: "open" as const,
-            id: t.id,
-            category: "open" as const,
-            questionStem: t.question.slice(0, 400),
-          }
+          kind: "open" as const,
+          id: t.id,
+          category: "open" as const,
+          questionStem: t.question.slice(0, 400),
+        }
         : {
-            kind: "mcq" as const,
-            id: t.id,
-            correctIndex: t.correctIndex,
-            category: t.category,
-            questionStem: t.question.slice(0, 400),
-          },
+          kind: "mcq" as const,
+          id: t.id,
+          correctIndex: t.correctIndex,
+          category: t.category,
+          questionStem: t.question.slice(0, 400),
+        },
     );
     const gradingToken = createGradingToken(
       { contentVideoId: p.contentVideoId, userId: p.userId, exp, items },
@@ -485,7 +488,7 @@ export class ContentVideoComprehensionTestsService {
       openEndedFeedback =
         writtenSummaryScore != null ?
           `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
-        : baseFeedback;
+          : baseFeedback;
     }
 
     const { correct, total } = totalCorrectAndQuestions(buckets);
@@ -498,6 +501,9 @@ export class ContentVideoComprehensionTestsService {
     );
 
     if (p.userId != null) {
+
+      await this.postWatchSurveyService.awardXpAndCheckAchievements(p.userId, 150).catch(() => undefined);
+
       await this.recordWeakSpotsFromSubmit(
         p.userId,
         contentVideoId,
@@ -883,8 +889,8 @@ export class ContentVideoComprehensionTestsService {
     const timeToAchieve = effectiveTimeHorizon(extra?.timeToAchieve);
     const hobbies = Array.isArray(extra?.hobbies)
       ? extra.hobbies
-          .map((h) => String(h).trim())
-          .filter((h) => h.length > 0)
+        .map((h) => String(h).trim())
+        .filter((h) => h.length > 0)
       : [];
 
     const cefr = extra?.englishLevel?.trim() ?? null;

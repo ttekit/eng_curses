@@ -3,6 +3,8 @@ import Button from "../../components/Button";
 import { downloadStudentAccountsExcel } from "../../lib/studentAccountsExcel";
 import type { GeneratedStudentAccount } from "../../lib/registerUser";
 import { ChameleonMascot } from "../../components/ChameleonMascot";
+import { AuthPageSeo } from "../../lib/authPageSeo";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 type SuccessLocationState = {
   generatedStudents?: GeneratedStudentAccount[];
@@ -11,12 +13,20 @@ type SuccessLocationState = {
 export default function RegisterSuccessPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { messages } = useLandingLocale();
+  const regSeo = messages.auth.registration.step1;
   const state = location.state as SuccessLocationState | null;
   const students = state?.generatedStudents ?? [];
   const hasStudents = students.length > 0;
 
   return (
-    <div className="bg-background font-display flex min-h-screen flex-col gap-12 p-8 text-foreground lg:flex-row lg:items-center lg:justify-center lg:gap-16">
+    <>
+      <AuthPageSeo
+        title={regSeo.seoTitle}
+        description={regSeo.seoDescription}
+        path="/registrationSuccess"
+      />
+      <div className="bg-background font-display flex min-h-screen flex-col gap-12 p-8 text-foreground lg:flex-row lg:items-center lg:justify-center lg:gap-16">
       <div className="mx-auto hidden w-full max-w-sm flex-col items-center text-center lg:flex">
         <img src="/ResultHappy.svg" className="w-50 h-50 animate-float mb-3" />
         <h2 className="font-display text-2xl font-bold">Nice work!</h2>
@@ -101,5 +111,6 @@ export default function RegisterSuccessPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
