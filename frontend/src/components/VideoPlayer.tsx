@@ -16,6 +16,7 @@ import {
   ChevronRight,
   RotateCcw,
   RotateCw,
+  Loader2,
 } from "lucide-react";
 
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
@@ -399,6 +400,12 @@ export default function VideoPlayer({
           onEnded?.();
         }}
       />
+
+      {isBuffering ? (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 pointer-events-none">
+          <Loader2 className="w-12 h-12 text-white animate-spin opacity-90" />
+        </div>
+      ) : null}
 
       <div
         className="absolute inset-0 z-10 cursor-pointer"
