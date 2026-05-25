@@ -43,6 +43,7 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     "GET /placement-test/status",
     "GET /placement-test/document",
     "POST /placement-test/complete",
+    "GET /sitemap.xml",
   ]);
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

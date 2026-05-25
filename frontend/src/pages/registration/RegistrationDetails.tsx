@@ -23,6 +23,8 @@ import {
 import type { GroupBase, MultiValue } from "react-select";
 import { ArrowLeft } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
+import { AuthPageSeo } from "../../lib/authPageSeo";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 import {
   RegistrationRoleCards,
   type RegistrationRoleChoice,
@@ -48,6 +50,8 @@ export default function RegistrationDetails() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { messages } = useLandingLocale();
+  const regSeo = messages.auth.registration.step1;
 
   const [learningTopicGroups, setLearningTopicGroups] = useState<
     GroupBase<LearningTopicOption>[]
@@ -257,7 +261,13 @@ export default function RegistrationDetails() {
   };
 
   return (
-    <AuthSplitLayout
+    <>
+      <AuthPageSeo
+        title={regSeo.seoTitle}
+        description={regSeo.seoDescription}
+        path="/registrationDetails"
+      />
+      <AuthSplitLayout
       progressStep={2}
       progressTotal={3}
       mainClassName="max-w-2xl"
@@ -437,5 +447,6 @@ export default function RegistrationDetails() {
         </div>
       </form>
     </AuthSplitLayout>
+    </>
   );
 }

@@ -77,6 +77,7 @@ export default function LearningPlanPage() {
         canonicalUrl={resolveCanonicalUrl("/learning-plan")}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+        noindex
       />
       <ContentHeader />
 

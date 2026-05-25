@@ -1,5 +1,4 @@
 import { HeroSection } from "../../components/landing/HeroSection";
-import { ReleaseCountdownSection } from "../../components/landing/ReleaseCountdown";
 import { FeaturesSection } from "../../components/landing/FeaturesSection";
 import { HowItWorksSection } from "../../components/landing/HowItWorksSection";
 import { CtaSection } from "../../components/landing/CtaSection";
@@ -9,6 +8,7 @@ import ContentHeader from "../../components/catalog/ContentHeader";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { buildLandingJsonLdSchemas } from "../../lib/seoStructuredData";
+import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 export default function LandingPage() {
@@ -27,11 +27,11 @@ export default function LandingPage() {
         useTitleSuffix={false}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+        hreflangAlternates={buildMarketingHreflangAlternates("/")}
         jsonLd={buildLandingJsonLdSchemas()}
       />
       <ContentHeader variant="landing" />
       <HeroSection />
-      <ReleaseCountdownSection />
       <FeaturesSection />
       <HowItWorksSection />
       <LandingPricingSection />
