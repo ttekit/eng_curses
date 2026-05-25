@@ -536,6 +536,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        avatarUrl: user.avatarUrl,
         role: user.role,
         hasCompletedPlacement: user.hasCompletedPlacement,
 
@@ -898,6 +899,7 @@ export class AuthService {
       id: (user as any).id,
       name: (user as any).name,
       email: (user as any).email,
+      avatarUrl: (user as any).avatarUrl,
       isTwoFactorEnable: (user as any).isTwoFactorEnable,
       isVerified: (user as any).isVerified,
       role: (user as any).role,

@@ -14,6 +14,7 @@ import {
   BookOpen,
   FileQuestion,
   BarChart3,
+  Smile
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ChameleonMascot } from "../ChameleonMascot";
@@ -28,6 +29,7 @@ const sidebarLinks = [
   { icon: GraduationCap, label: "Teachers", to: "/admin/teachers" },
   { icon: BookOpen, label: "Topics", to: "/admin/topics" },
   { icon: BarChart3, label: "Analytics", to: "/admin/analytics" },
+  { icon: Smile, label: "Avatars", to: "/admin/avatars" },
   { icon: Settings, label: "Settings", to: "/admin/settings" },
 ] as const;
 

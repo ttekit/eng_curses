@@ -215,3 +215,25 @@ export async function adminApiFetch(
 ): Promise<Response> {
   return apiFetch(path, init);
 }
+export interface AvatarOption {
+  id: number;
+  url: string;
+}
+
+export async function fetchAvailableAvatars(): Promise<AvatarOption[]> {
+  const res = await apiFetch("/avatars");
+  if (!res.ok) {
+    throw new Error("Failed to fetch avatars");
+  }
+  return res.json();
+}
+
+export async function updateUserAvatar(avatarUrl: string): Promise<void> {
+  const res = await apiFetch("/users/profile", {
+    method: "PATCH",
+    body: JSON.stringify({ avatarUrl }),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to update user avatar");
+  }
+}

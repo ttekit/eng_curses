@@ -12,6 +12,7 @@ model User {
   name                  String
   email                 String        @unique
   password              String?
+  avatarUrl             String?       @map("avatar_url")
   role                  UserRole      @default(REGULAR)
   hasCompletedPlacement Boolean       @default(false) @map("has_completed_placement")
   lastLogin             DateTime?
@@ -37,6 +38,7 @@ model User {
   deletionScheduledAt DateTime? @map("deletion_scheduled_at")
 
   accounts Account[]
+
 
   statistic                 UserStatistic?
   languageData              UserLanguageData[]
@@ -78,9 +80,15 @@ model User {
   @@index([teacherId], map: "users_teacher_id_idx")
   @@map("users")
 }
+model Avatar {
+  id        Int      @id @default(autoincrement())
+  url       String   // Публичная ссылка на картинку в S3
+  key       String   // Уникальный ключ файла в S3 (нужен, если админ захочет удалить аватарку)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
 
-
-
+  @@map("avatars")
+}
 model UserAchievement {
   id            Int      @id @default(autoincrement())
   userId        Int
@@ -315,3 +323,4 @@ model PlacementAttempt {
   @@index([createdAt])
   @@map("placement_attempts")
 }
+

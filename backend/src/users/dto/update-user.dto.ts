@@ -66,6 +66,10 @@ export class UpdateUserDto extends PartialType(
   @IsOptional()
   @IsBoolean()
   hasCompletedPlacement?: boolean;
+
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
 }
 
 /** * АДМИНСКИЙ DTO: Позволяет менять критические поля.
@@ -80,5 +84,4 @@ export class AdminUpdateUserDto extends UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isSuspended?: boolean;
-
 }

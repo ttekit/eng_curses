@@ -40,6 +40,7 @@ import RequireSubscriberAccess from "./components/RequireSubscriberAccess";
 import SubscribePage from "./pages/subscription/SubscribePage";
 import { EmailVerification } from "./pages/registration/EmailVerification";
 import RestoreAccount from "./pages/login/RestoreAccount";
+import AdminAvatarsPage from "./pages/admin/AdminAvatarsPage";
 
 const router = createBrowserRouter([
   {
@@ -75,6 +76,7 @@ const router = createBrowserRouter([
                   { path: "teachers", element: <AdminTeachersPage /> },
                   { path: "topics", element: <AdminTopicsPage /> },
                   { path: "analytics", element: <AdminAnalyticsPage /> },
+                  { path: "avatars", element: <AdminAvatarsPage /> },
                   { path: "settings", element: <AdminSettingsPage /> },
                 ],
               },

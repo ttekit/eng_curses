@@ -55,6 +55,7 @@ export class UsersService {
     id: true,
     name: true,
     email: true,
+    avatarUrl: true,
     role: true,
     isSuspended: true,
     hasCompletedPlacement: true,
