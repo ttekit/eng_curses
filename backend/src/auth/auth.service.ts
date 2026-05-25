@@ -48,7 +48,7 @@ export class AuthService {
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -318,12 +318,12 @@ export class AuthService {
   async deleteAccount(userId: number, dto: DeleteAccountDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-    if (!user) throw new UnauthorizedException("Користувача не знайдено");
+    if (!user) throw new UnauthorizedException("User not found");
     if (!user.password)
-      throw new BadRequestException("Акаунт зареєстровано через Google.");
+      throw new BadRequestException("The account was registered via Google.");
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) throw new BadRequestException("Невірний пароль.");
+    if (!isPasswordValid) throw new BadRequestException("Incorrect password.");
 
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
@@ -354,7 +354,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: "Акаунт заплановано на видалення через 30 днів.",
+      message: "This account is scheduled to be deleted in 30 days.",
     };
   }
 
@@ -369,7 +369,7 @@ export class AuthService {
       tokenRecord.expiresIn < new Date()
     ) {
       throw new BadRequestException(
-        "Посилання для відновлення недійсне або прострочене.",
+        "The recovery link is invalid or has expired.",
       );
     }
 
@@ -380,7 +380,7 @@ export class AuthService {
 
     await this.prisma.token.delete({ where: { id: tokenRecord.id } });
 
-    return { success: true, message: "Ваш акаунт успішно відновлено!" };
+    return { success: true, message: "Your account has been successfully restored!" };
   }
 
   public async confirmEmail(token: string) {
@@ -392,7 +392,7 @@ export class AuthService {
 
     if (!existingToken) {
       throw new BadRequestException(
-        "Невірний або прострочений токен підтвердження",
+        "Invalid or expired verification token",
       );
     }
 
@@ -403,7 +403,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException("Користувача не знайдено");
+      throw new BadRequestException("User not found");
     }
 
     await this.prisma.user.update({
@@ -417,7 +417,7 @@ export class AuthService {
       where: { id: existingToken.id },
     });
 
-    return { message: "Email успішно підтверджено" };
+    return { message: "Your email address has been successfully verified" };
   }
 
   async updateUserPreferences(userId: number, data: any) {
@@ -440,24 +440,24 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException("Користувача з таким email не знайдено");
+      throw new NotFoundException("No user with that email address was found");
     }
 
     if (user.isVerified) {
       throw new BadRequestException(
-        "Цей email вже підтверджено. Ви можете увійти в систему.",
+        "This email address has already been verified. You can now log in.",
       );
     }
 
     if (isOutboundMailDisabled(this.configService)) {
       throw new BadRequestException(
-        "Підтвердження email поштою вимкнено на цьому сервері. Увійдіть у систему — обліковий запис буде активовано автоматично.",
+        "Email verification is disabled on this server. Please log in—your account will be activated automatically.",
       );
     }
 
     await this.emailConfirmationService.sendVerificationToken(user);
 
-    return { message: "Новий лист підтвердження надіслано успішно" };
+    return { message: "A new confirmation email has been sent successfully" };
   }
 
   async login(dto: LoginDto) {
@@ -481,7 +481,7 @@ export class AuthService {
           where: { email: user.email, type: "ACCOUNT_RESTORE" },
         });
       } else {
-        throw new UnauthorizedException("Аккаунт було видалено.");
+        throw new UnauthorizedException("The account has been deleted.");
       }
     }
 
@@ -558,7 +558,7 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Невірний пароль");
+      throw new UnauthorizedException("Incorrect password");
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -569,8 +569,8 @@ export class AuthService {
     return {
       success: true,
       message: dto.enable
-        ? "Двофакторна автентифікація увімкнена"
-        : "Двофакторна автентифікація вимкнена",
+        ? "Two-factor authentication is enabled"
+        : "Two-factor authentication is disabled",
     };
   }
 
@@ -589,7 +589,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Неверный текущий пароль");
+      throw new UnauthorizedException("Incorrect current password");
     }
 
     const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
@@ -614,9 +614,13 @@ export class AuthService {
   }
 
   async updateEmail(userId: number, dto: UpdateEmailDto) {
-    const isDomainValid = await this.mailService.validateEmailDomain(dto.newEmail);
+    const isDomainValid = await this.mailService.validateEmailDomain(
+      dto.newEmail,
+    );
     if (!isDomainValid) {
-      throw new BadRequestException("The provided email domain does not exist or cannot receive mail.");
+      throw new BadRequestException(
+        "The provided email domain does not exist or cannot receive mail.",
+      );
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -625,7 +629,7 @@ export class AuthService {
 
     if (existingUser) {
       throw new BadRequestException(
-        "Ця пошта вже використовується іншим користувачем",
+        "This email address is already in use by another user",
       );
     }
 
@@ -640,7 +644,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: "Пошту успешно змінено!",
+      message: "Your email address has been successfully updated!",
     };
   }
 
@@ -650,7 +654,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException("Користувача не знайдено");
+      throw new NotFoundException("User not found");
     }
 
     const otpCode = randomInt(100000, 1000000).toString();
@@ -666,7 +670,10 @@ export class AuthService {
 
     await this.mailService.sendEmailChangeCode(updatedUser.email, otpCode);
 
-    return { success: true, message: "Код для зміни пошти надіслано" };
+    return {
+      success: true,
+      message: "The code to change your email address has been sent",
+    };
   }
 
   async checkEmailChangeCode(userId: number, code: string) {
@@ -676,21 +683,26 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException("Користувача не знайдено");
+      throw new NotFoundException("User not found");
     }
 
     if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException("Невірний код підтвердження");
+      throw new BadRequestException("Incorrect verification code");
     }
 
     if (
       !user.verificationCodeExpires ||
       user.verificationCodeExpires < new Date()
     ) {
-      throw new BadRequestException("Термін дії коду минув. Відправте новий.");
+      throw new BadRequestException(
+        "The code has expired. Please send a new one.",
+      );
     }
 
-    return { success: true, message: "Код успішно перевірено" };
+    return {
+      success: true,
+      message: "The code has been successfully verified",
+    };
   }
 
   async verifyAndChangeEmail(userId: number, dto: VerifyEmailChangeDto) {
@@ -699,7 +711,9 @@ export class AuthService {
 
     const isDomainValid = await this.mailService.validateEmailDomain(newEmail);
     if (!isDomainValid) {
-      throw new BadRequestException("The provided email domain does not exist or cannot receive mail.");
+      throw new BadRequestException(
+        "The provided email domain does not exist or cannot receive mail.",
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -707,17 +721,19 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException("Користувача не знайдено");
+      throw new NotFoundException("User not found");
     }
 
     if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException("Невірний код підтвердження");
+      throw new BadRequestException("Incorrect verification code");
     }
     if (
       !user.verificationCodeExpires ||
       user.verificationCodeExpires < new Date()
     ) {
-      throw new BadRequestException("Термін дії коду минув. Відправте новий.");
+      throw new BadRequestException(
+        "The code has expired. Please send a new one.",
+      );
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -725,7 +741,7 @@ export class AuthService {
     });
 
     if (existingUser && existingUser.id !== userId) {
-      throw new ConflictException("Ця електронна адреса вже використовується");
+      throw new ConflictException("This email address is already in use");
     }
 
     await this.prisma.user.update({
@@ -737,7 +753,10 @@ export class AuthService {
       },
     });
 
-    return { success: true, message: "Пошту успішно змінено" };
+    return {
+      success: true,
+      message: "Your email address has been successfully updated",
+    };
   }
 
   public async extractProfileFromCode(

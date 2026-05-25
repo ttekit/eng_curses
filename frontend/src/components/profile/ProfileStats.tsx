@@ -53,8 +53,12 @@ function StatTile({
           <Icon className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xl font-bold text-foreground leading-tight">{value}</p>
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
+          <p className="text-xl font-bold text-foreground leading-tight">
+            {value}
+          </p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+            {label}
+          </p>
         </div>
       </div>
     </div>
@@ -62,7 +66,6 @@ function StatTile({
 }
 
 export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
-  // Если данных нет — показываем заглушку, а не пустой экран
   if (!user) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -71,8 +74,6 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
     );
   }
 
-  // const hours = Math.floor(user.totalWatchTimeMin / 60);
-  // const minutes = user.totalWatchTimeMin % 60;
   const current = parseCefrLevel(user.levelLabel || "A1");
   const idx = cefrIndex(current);
   const order = cefrOrder();
@@ -83,7 +84,6 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
 
   return (
     <div className="space-y-6">
-      {/* Секция Уровня и Опыта */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br from-primary/10 to-transparent p-6">
           <div className="flex items-center gap-4">
@@ -91,7 +91,9 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
               <Crown className="size-8 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase">Current Rank</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase">
+                Current Rank
+              </p>
               <p className="text-4xl font-black text-foreground">
                 Level {user.appLevel || 1}
               </p>
@@ -106,9 +108,14 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
               <Zap className="size-8 text-orange-500" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase">Total Experience</p>
+              <p className="text-sm font-medium text-muted-foreground uppercase">
+                Total Experience
+              </p>
               <p className="text-4xl font-black text-foreground">
-                {user.xp || 0} <span className="text-xl font-normal text-muted-foreground">XP</span>
+                {user.xp || 0}{" "}
+                <span className="text-xl font-normal text-muted-foreground">
+                  XP
+                </span>
               </p>
             </div>
           </div>
@@ -116,7 +123,6 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
         </div>
       </div>
 
-      {/* Основная сетка статистики */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
           icon={Clock}
@@ -139,21 +145,32 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
         <StatTile
           icon={Target}
           iconWrapClass="bg-secondary text-muted-foreground"
-          value={user.averageScore !== null ? `${Math.round(user.averageScore)}%` : "—"}
+          value={
+            user.averageScore !== null
+              ? `${Math.round(user.averageScore)}%`
+              : "—"
+          }
           label="Avg. Score"
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* График активности */}
         <ProfileCard title="Weekly activity">
           <div className="h-[200px] w-full mt-4 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <AreaChart data={weeklyActivity}>
                 <defs>
                   <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--primary)"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <XAxis
@@ -167,7 +184,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
                   contentStyle={{
                     background: "var(--card)",
                     border: "1px solid var(--border)",
-                    borderRadius: "8px"
+                    borderRadius: "8px",
                   }}
                 />
                 <Area
@@ -183,28 +200,31 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
           </div>
         </ProfileCard>
 
-        {/* Прогресс CEFR */}
         <ProfileCard title="Language proficiency">
           <div className="flex items-end gap-2 mt-6">
             {order.map((lp) => {
               const levelIndex = order.indexOf(lp);
               let pct = 0;
               if (levelIndex < idx) pct = 100;
-              else if (levelIndex === idx) pct = 45; // Тут можно добавить реальный прогресс к след. уровню
+              else if (levelIndex === idx) pct = 45;
 
               return (
                 <div key={lp} className="flex-1">
                   <div className="flex flex-col items-center gap-2">
                     <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${current === lp ? "bg-accent" : "bg-primary/60"
-                          }`}
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          current === lp ? "bg-accent" : "bg-primary/60"
+                        }`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
                     <span
-                      className={`text-xs font-bold ${current === lp ? "text-primary" : "text-muted-foreground"
-                        }`}
+                      className={`text-xs font-bold ${
+                        current === lp
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
                     >
                       {lp}
                     </span>
@@ -214,7 +234,8 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
             })}
           </div>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Estimated level: <span className="font-bold text-primary">{current}</span>
+            Estimated level:{" "}
+            <span className="font-bold text-primary">{current}</span>
           </p>
         </ProfileCard>
       </div>

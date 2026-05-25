@@ -11,9 +11,6 @@ import {
 } from "class-validator";
 import { CreateUserDto } from "./create-user.dto";
 
-/** * БЕЗОПАСНЫЙ DTO: Используется для обновления собственного профиля пользователем.
- * Исключаем 'role', 'studyingPlanPhases' и 'activeStudyingPhaseIndex'.
- */
 export class UpdateUserDto extends PartialType(
   OmitType(CreateUserDto, [
     "studyingPlanPhases",
@@ -72,8 +69,6 @@ export class UpdateUserDto extends PartialType(
   avatarUrl?: string;
 }
 
-/** * АДМИНСКИЙ DTO: Позволяет менять критические поля.
- */
 export class AdminUpdateUserDto extends UpdateUserDto {
   @ApiPropertyOptional()
   @IsOptional()

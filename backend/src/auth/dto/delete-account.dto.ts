@@ -2,6 +2,6 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 export class DeleteAccountDto {
   @IsString()
-  @IsNotEmpty({ message: 'Пароль обов\'язковий' })
+  @IsNotEmpty({ message: 'A password is required' })
   password: string;
 }

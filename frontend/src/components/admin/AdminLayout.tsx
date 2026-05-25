@@ -14,10 +14,9 @@ import {
   BookOpen,
   FileQuestion,
   BarChart3,
-  Smile
+  Smile,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { ChameleonMascot } from "../ChameleonMascot";
 import { SEO } from "../SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 

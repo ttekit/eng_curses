@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Upload, Eye, EyeOff } from "lucide-react";
 
-// Импортируем UI-компоненты из папки компонентов
 import {
   AdminCard,
   AdminCardHeader,
@@ -12,7 +11,6 @@ import {
   AdminBadge,
 } from "../../components/admin/adminUi";
 
-// Импортируем API-запросы
 import {
   fetchAdminAvatars,
   uploadAdminAvatar,
@@ -49,14 +47,14 @@ export default function AdminAvatarsPage() {
     try {
       setIsUploading(true);
       await uploadAdminAvatar(file);
-      await loadAvatars(); // Перезагружаем список после загрузки
+      await loadAvatars();
     } catch (error) {
       console.error("Failed to upload avatar", error);
       alert("Ошибка при загрузке. Проверьте консоль.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Очищаем инпут
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -64,7 +62,7 @@ export default function AdminAvatarsPage() {
   const handleToggleStatus = async (id: number, currentStatus: boolean) => {
     try {
       await toggleAdminAvatarStatus(id, !currentStatus);
-      await loadAvatars(); // Перезагружаем список
+      await loadAvatars();
     } catch (error) {
       console.error("Failed to change status", error);
     }
@@ -82,7 +80,6 @@ export default function AdminAvatarsPage() {
           </p>
         </div>
 
-        {/* Скрытый инпут для выбора файла */}
         <input
           type="file"
           accept="image/*"
@@ -135,7 +132,6 @@ export default function AdminAvatarsPage() {
                       className="h-full w-full object-cover"
                     />
 
-                    {/* Кнопка скрытия/показа появляется при наведении */}
                     <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
                       <AdminButton
                         variant={avatar.isActive ? "danger" : "primary"}

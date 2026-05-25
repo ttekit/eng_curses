@@ -13,10 +13,8 @@ import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { Prisma } from "../generated/prisma/client";
 import type { AuthMethod } from "@generated/prisma/enums";
 import { UserRole } from "@generated/prisma/enums";
-import { Cron, CronExpression } from "@nestjs/schedule";
 import { ResetProgressDto } from "./dto/reset-progress.dto";
 import { MailService } from "src/common/mail/mail.service";
-
 
 function parseRoleFromDto(roleRaw: string | undefined): UserRole | undefined {
   if (roleRaw == null || typeof roleRaw !== "string") {
@@ -49,7 +47,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   private readonly userSelect = {
     id: true,
@@ -62,7 +60,6 @@ export class UsersService {
     createdAt: true,
     xp: true,
     currentStreak: true,
-    //weeklyReportEnabled: true,
     additionalUserData: {
       select: {
         englishLevel: true,
@@ -160,14 +157,14 @@ export class UsersService {
       favoriteGenres:
         favoriteGenres && favoriteGenres.length > 0
           ? {
-            connect: favoriteGenres.map((id) => ({ id })),
-          }
+              connect: favoriteGenres.map((id) => ({ id })),
+            }
           : undefined,
       hatedGenres:
         hatedGenres && hatedGenres.length > 0
           ? {
-            connect: hatedGenres.map((id) => ({ id })),
-          }
+              connect: hatedGenres.map((id) => ({ id })),
+            }
           : undefined,
     };
 
@@ -350,31 +347,31 @@ export class UsersService {
 
     const settingsUpsert = hasSettingsRowUpdate
       ? {
-        settings: {
-          upsert: {
-            create: {
-              playbackSpeed:
-                playbackSpeed === undefined ? null : Number(playbackSpeed),
-              currentResolution:
-                currentResolution === undefined
-                  ? null
-                  : String(currentResolution),
-            },
-            update: {
-              ...(playbackSpeed !== undefined
-                ? {
-                  playbackSpeed: Number(playbackSpeed),
-                }
-                : {}),
-              ...(currentResolution !== undefined
-                ? {
-                  currentResolution: String(currentResolution),
-                }
-                : {}),
+          settings: {
+            upsert: {
+              create: {
+                playbackSpeed:
+                  playbackSpeed === undefined ? null : Number(playbackSpeed),
+                currentResolution:
+                  currentResolution === undefined
+                    ? null
+                    : String(currentResolution),
+              },
+              update: {
+                ...(playbackSpeed !== undefined
+                  ? {
+                      playbackSpeed: Number(playbackSpeed),
+                    }
+                  : {}),
+                ...(currentResolution !== undefined
+                  ? {
+                      currentResolution: String(currentResolution),
+                    }
+                  : {}),
+              },
             },
           },
-        },
-      }
+        }
       : {};
 
     let updatedUser: any;
@@ -386,61 +383,61 @@ export class UsersService {
           ...settingsUpsert,
           ...(hasProfileUpdate
             ? {
-              additionalUserData: {
-                upsert: {
-                  create: {
-                    englishLevel,
-                    nativeLanguage,
-                    knownLanguages: knownLanguages || [],
-                    knownLanguageLevels,
-                    hobbies: hobbies || [],
-                    education,
-                    workField,
-                    learningGoal,
-                    timeToAchieve,
-                    favoriteGenres: favoriteGenres
-                      ? {
-                        connect: favoriteGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                    hatedGenres: hatedGenres
-                      ? {
-                        connect: hatedGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                  },
-                  update: {
-                    englishLevel,
-                    nativeLanguage,
-                    knownLanguages,
-                    knownLanguageLevels,
-                    hobbies,
-                    education,
-                    workField,
-                    learningGoal,
-                    timeToAchieve,
-                    favoriteGenres: favoriteGenres
-                      ? {
-                        set: favoriteGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                    hatedGenres: hatedGenres
-                      ? {
-                        set: hatedGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
+                additionalUserData: {
+                  upsert: {
+                    create: {
+                      englishLevel,
+                      nativeLanguage,
+                      knownLanguages: knownLanguages || [],
+                      knownLanguageLevels,
+                      hobbies: hobbies || [],
+                      education,
+                      workField,
+                      learningGoal,
+                      timeToAchieve,
+                      favoriteGenres: favoriteGenres
+                        ? {
+                            connect: favoriteGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                      hatedGenres: hatedGenres
+                        ? {
+                            connect: hatedGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                    },
+                    update: {
+                      englishLevel,
+                      nativeLanguage,
+                      knownLanguages,
+                      knownLanguageLevels,
+                      hobbies,
+                      education,
+                      workField,
+                      learningGoal,
+                      timeToAchieve,
+                      favoriteGenres: favoriteGenres
+                        ? {
+                            set: favoriteGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                      hatedGenres: hatedGenres
+                        ? {
+                            set: hatedGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                    },
                   },
                 },
-              },
-            }
+              }
             : {}),
         },
         select: this.userSelect,
@@ -539,24 +536,6 @@ export class UsersService {
     });
   }
 
-  // пускай пока что будет
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  // async cleanupUnverifiedUsers() {
-  //   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-  //   const result = await this.prisma.user.deleteMany({
-  //     where: {
-  //       isVerified: false,
-  //       createdAt: { lt: oneDayAgo },
-  //       role: { not: "ADMIN" },
-  //     },
-  //   });
-
-  //   if (result.count > 0) {
-  //     this.logger.log(`Cleanup: deleted ${result.count} unverified users.`);
-  //   }
-  // }
-
   async resetProgress(userId: number, dto: ResetProgressDto) {
     const prisma = this.prisma as any;
 
@@ -565,18 +544,18 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`Пользователь с ID ${userId} не найден`);
+      throw new NotFoundException(`The user with ID ${userId} was not found.`);
     }
 
     if (!user.password) {
       throw new BadRequestException(
-        "Для аккаунтов, созданных через сторонние сервисы, сброс по паролю недоступен.",
+        "For accounts created through third-party services, password reset is not available.",
       );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
-      throw new BadRequestException("Неверный пароль. Действие отменено.");
+      throw new BadRequestException("Incorrect password. Action canceled.");
     }
 
     return prisma.$transaction([

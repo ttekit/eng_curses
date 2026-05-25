@@ -31,7 +31,7 @@ export const WeeklyReportTemplate = ({ name, stats }: WeeklyReportProps) => {
 
           <Text style={text}>
             {stats.minutes > 0 
-              ? "Great job! Keep the momentum going this week. 🚀" 
+              ? "Great job! Keep the momentum going this week." 
               : "Looks like you took a break this week. Ready to jump back in? 💪"}
           </Text>
         </Container>
@@ -40,7 +40,6 @@ export const WeeklyReportTemplate = ({ name, stats }: WeeklyReportProps) => {
   );
 };
 
-// Стили (можешь подогнать под дизайн Explys)
 const main = { backgroundColor: "#f6f9fc", fontFamily: "sans-serif", padding: "40px 0" };
 const container = { backgroundColor: "#ffffff", padding: "30px", borderRadius: "8px", maxWidth: "560px", margin: "0 auto" };
 const heading = { color: "#111827", fontSize: "24px", textAlign: "center" as const };

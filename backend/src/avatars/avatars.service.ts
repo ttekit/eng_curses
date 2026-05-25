@@ -1,8 +1,7 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { PrismaService } from "src/prisma.service";
-import { buildSafeS3ObjectKey, publicS3ObjectUrl } from "../common/s3-key.util";
 
 @Injectable()
 export class AvatarsService {
@@ -53,7 +52,6 @@ export class AvatarsService {
         },
       });
 
-      console.log("Success! Avatar saved in DB:", newAvatar);
       return newAvatar;
     } catch (error) {
       console.error("CRITICAL UPLOAD ERROR:", error);
