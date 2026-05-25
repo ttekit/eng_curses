@@ -39,18 +39,21 @@ export default function SubscribePage() {
 
   useEffect(() => {
     if (devSkip) return;
-    const checkoutDone = searchParams.get("checkout") === "success";
+
     if (isLoading) return;
 
+    const checkoutDone = searchParams.get("checkout") === "success";
+
     if (user && userMayUseLearnerApp(user)) {
-      navigate(`/catalog${checkoutDone ? "?checkout=success" : ""}`, {
-        replace: true,
-      });
+      if (checkoutDone) {
+        toast.success("Thank you for subscribing!");
+      }
+      navigate("/catalog", { replace: true });
       return;
     }
 
     if (checkoutDone) {
-      navigate("/catalog?checkout=success", { replace: true });
+      navigate("/catalog", { replace: true });
     }
   }, [devSkip, isLoading, navigate, searchParams, user]);
 
