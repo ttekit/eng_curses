@@ -12,7 +12,7 @@ Use this after deploying SEO changes to production.
 ## Rich results smoke test
 
 - [Google Rich Results Test](https://search.google.com/test/rich-results): test `/` and `/pricing`
-- Confirm title, description, and OG image without running JavaScript (post-`npm run build` prerender)
+- Confirm title, description, and OG image without running JavaScript (post-`npm run build` SEO head injection)
 
 ## Environment variables
 
