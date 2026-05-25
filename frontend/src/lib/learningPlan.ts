@@ -382,7 +382,7 @@ export function computeAchievabilityScore(user: UserData): number {
   const levelRaw =
     user.englishLevel?.trim() && user.englishLevel !== "choose" ?
       user.englishLevel.trim()
-    : "";
+      : "";
   const tier = coarseLevelTierFromProfile(levelRaw);
   const readiness = tierReadinessWeight(tier);
   const ambition = goalAmbitionWeight(goal);
@@ -399,7 +399,7 @@ export function computeAchievabilityScore(user: UserData): number {
   return Math.round(
     ((clamped - ACHIEVABILITY_RAW_MIN) /
       (ACHIEVABILITY_RAW_MAX - ACHIEVABILITY_RAW_MIN)) *
-      10,
+    10,
   );
 }
 
@@ -434,12 +434,12 @@ function coarseLevelTierFromProfile(englishLevel: string): CoarseLevelTier {
 }
 
 const VOCAB_BY_TIER: Record<CoarseLevelTier, [number, number, number, number]> =
-  {
-    beginner: [15, 22, 30, 40],
-    elementary: [20, 30, 45, 60],
-    intermediate: [28, 40, 55, 75],
-    advanced: [35, 50, 70, 90],
-  };
+{
+  beginner: [15, 22, 30, 40],
+  elementary: [20, 30, 45, 60],
+  intermediate: [28, 40, 55, 75],
+  advanced: [35, 50, 70, 90],
+};
 
 function vocabularyTargetForPhaseUi(
   tier: CoarseLevelTier,
@@ -519,10 +519,10 @@ function richPassConditionsForPhaseUi(options: {
   const words = vocabularyTargetForPhaseUi(tier, phaseIndex);
   const out = [...base];
   out.push(
-    `Reach a **${streak}-day** study streak at least once (each day with meaningful catalog practice counts).`,
-    `Pass **at least ${videos}** distinct videos at **≥70%** on comprehension checks (the app advances after **${DISTINCT_PASSED_LESSONS_PER_PHASE_STEP}** distinct passes — treat **${videos}** as your depth target for this phase).`,
-    `Learn or consolidate **~${words}** new words from lessons (saved words + reviews in the app).`,
-    `Keep clip and quiz choices aligned with your goal: **${learningGoal}**.`,
+    `Reach a <b>${streak}-day</b> study streak at least once (each day with meaningful catalog practice counts).`,
+    `Pass <b>at least ${videos}</b> distinct videos at <b>≥70%</b> on comprehension checks (the app advances after <b>${DISTINCT_PASSED_LESSONS_PER_PHASE_STEP}</b> distinct passes — treat <b>${videos}</b> as your depth target for this phase).`,
+    `Learn or consolidate <b>~${words}</b> new words from lessons (saved words + reviews in the app).`,
+    `Keep clip and quiz choices aligned with your goal: <b>${learningGoal}</b>.`,
   );
   return out;
 }
@@ -667,7 +667,7 @@ function buildDefaultPhasesFromCopy(
   const levelRaw =
     user.englishLevel?.trim() && user.englishLevel !== "choose" ?
       user.englishLevel.trim()
-    : "";
+      : "";
   const tier = coarseLevelTierFromProfile(levelRaw);
   const vars = { horizon, learningGoal: goal };
   return [0, 1, 2, 3].map((phaseIndex) => {
@@ -725,7 +725,7 @@ export function parseStudyingPlanPhases(raw: unknown): LearningPlanPhase[] | nul
     passConditions:
       p.passConditions && p.passConditions.length > 0 ?
         p.passConditions
-      : [...fallbackPass],
+        : [...fallbackPass],
   }));
 }
 
@@ -743,7 +743,7 @@ export function buildDefaultPhasesForUser(
   const levelRaw =
     user.englishLevel?.trim() && user.englishLevel !== "choose" ?
       user.englishLevel.trim()
-    : "";
+      : "";
   const tier = coarseLevelTierFromProfile(levelRaw);
   return [
     {
@@ -843,14 +843,14 @@ export function buildLearningPlanModel(
   const level =
     levelKnown && rawLevel ?
       rawLevel
-    : summaryLocale === "uk" ?
-      "твій поточний рівень"
-    : "your current level";
+      : summaryLocale === "uk" ?
+        "твій поточний рівень"
+        : "your current level";
 
   const hobbyLine =
     user.hobbies && user.hobbies.length > 0 ?
       ` Lean on interests like ${user.hobbies.slice(0, 3).join(", ")} when choosing videos — motivation matters as much as minutes watched.`
-    : "";
+      : "";
 
   const hobbyLineUk =
     user.hobbies && user.hobbies.length > 0 ?
@@ -858,12 +858,12 @@ export function buildLearningPlanModel(
         " Спирайся на інтереси на кшталт **{hobbies}**, обираючи відео — мотивація не менш важлива за хвилини перегляду.",
         { hobbies: user.hobbies.slice(0, 3).join(", ") },
       )
-    : "";
+      : "";
 
   const headline =
     summaryLocale === "uk" ?
       formatMessage("План на найближчі {horizon}", { horizon })
-    : `Plan for the next ${horizon}`;
+      : `Plan for the next ${horizon}`;
 
   const intro =
     summaryLocale === "uk" ?
@@ -876,15 +876,15 @@ export function buildLearningPlanModel(
           hobbyLine: hobbyLineUk,
         },
       )
-    : `Your focus: **${goal}**. Over **${horizon}**, steady practice beats occasional marathons. The catalog adapts to **${level}**; use it consistently and you’ll see listening, vocabulary, and grammar reinforce each other.${hobbyLine}`;
+      : `Your focus: **${goal}**. Over **${horizon}**, steady practice beats occasional marathons. The catalog adapts to **${level}**; use it consistently and you’ll see listening, vocabulary, and grammar reinforce each other.${hobbyLine}`;
 
   const phases = resolvePhasesForUser(user, copy);
   /** From API: derived from distinct videos with passing quiz (not user-editable). */
   const storedIndex =
     user.activeStudyingPhaseIndex != null &&
-    Number.isFinite(Number(user.activeStudyingPhaseIndex)) ?
+      Number.isFinite(Number(user.activeStudyingPhaseIndex)) ?
       Number(user.activeStudyingPhaseIndex)
-    : 0;
+      : 0;
   const activePhaseIndex = clampPhaseIndex(storedIndex, phases.length);
 
   const storedWeekly = weeklyHabitsFromStoredStudyingPlanJson(
@@ -894,7 +894,7 @@ export function buildLearningPlanModel(
     storedWeekly ??
     (copy?.weeklyHabits ?
       localizedWeeklyHabitsFromTemplates(user, copy.weeklyHabits)
-    : defaultWeeklyHabitsForUser(user));
+      : defaultWeeklyHabitsForUser(user));
 
   const achievabilityScore = computeAchievabilityScore(user);
   const achievabilitySuggestedMonths =
