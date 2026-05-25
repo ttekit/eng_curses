@@ -122,10 +122,6 @@ export function ProfileProgress() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Learning paths below are a preview. Tag knowledge reflects your model
-        scores from topics linked to your profile and activity.
-      </p>
 
       <ProfileCard title="Knowledge by tag">
         {tagRows === null ? (
@@ -214,55 +210,6 @@ export function ProfileProgress() {
         )}
       </ProfileCard>
 
-      <ProfileCard title="Learning paths">
-        <div className="space-y-4">
-          {(details?.learningPaths || []).map((path) => (
-            <div
-              key={path.id}
-              className="rounded-xl bg-secondary/30 p-4 transition-colors hover:bg-secondary/50"
-            >
-              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-foreground">
-                      {path.title}
-                    </h3>
-                    <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                      {path.level}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {path.description}
-                  </p>
-                </div>
-                <Link
-                  to={`/catalog?path=${path.id}`}
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                  aria-label={`Open ${path.title} in catalog`}
-                >
-                  <ChevronRight className="size-5" />
-                </Link>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {path.completedVideos} / {path.totalVideos} videos
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {path.progress}%
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className={cn("h-full rounded-full", path.accentClass)}
-                    style={{ width: `${path.progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ProfileCard>
 
       <ProfileCard
         title="Recent videos"
