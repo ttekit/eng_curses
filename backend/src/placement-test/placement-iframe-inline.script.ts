@@ -461,23 +461,26 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
       var h = { "Content-Type": "application/json" };
       if (d.xApiToken) h["x-api-token"] = d.xApiToken;
 
-      fetch(plApi("/placement-test/complete"), {
+      var completePath = (d.completePath && String(d.completePath)) || "/placement-test/complete";
+      var completeEvent = (d.completeEventType && String(d.completeEventType)) || "placement_test_complete";
+
+      fetch(plApi(completePath), {
         method: "POST",
         headers: h,
         body: JSON.stringify({ access_token: d.accessToken, answers: payloadAnswers })
       }).then(function (r) {
         if (!r.ok) return r.text().then(function (t) { throw new Error(t || String(r.status)); });
         return r.json();
-      }).then(function () {
+      }).then(function (body) {
         finishMsg.className = "msg-foot ok";
         finishMsg.textContent = "You are all set. Returning to your library.";
         try {
           if (typeof console !== "undefined" && console.log) {
-            console.log("[placement:iframe] complete OK — posting placement_test_complete to parent");
+            console.log("[placement:iframe] complete OK — posting to parent", completeEvent);
           }
         } catch (eL) {}
         try {
-          window.parent && window.parent.postMessage({ type: "placement_test_complete", summary: lastSummary }, "*");
+          window.parent && window.parent.postMessage({ type: completeEvent, summary: lastSummary, result: body || null }, "*");
         } catch (e) {}
       }).catch(function (e) {
         try {

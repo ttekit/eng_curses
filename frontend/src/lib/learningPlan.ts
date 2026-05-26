@@ -24,6 +24,9 @@ export function effectiveTimeHorizon(
 /** Match backend `studying-plan-phase-progress.util` (for UI copy). */
 export const DISTINCT_PASSED_LESSONS_PER_PHASE_STEP = 2;
 
+/** Minimum score on the phase final test to unlock the next phase. */
+export const PHASE_FINAL_TEST_MIN_SCORE_PCT = 70;
+
 export const STUDYING_PLAN_JSON_VERSION = 2 as const;
 
 const ALLOWED_TASK_KINDS = [
@@ -199,7 +202,46 @@ function parsePhaseV2(raw: unknown, _phaseIndex: number): {
       .filter((s) => s.length > 0);
     passConditions = pc.length > 0 ? pc : undefined;
   }
-  return { title, summary, actions, tasks, passConditions };
+  const topics = parsePhaseTopics(raw.topics);
+  const expectedLevel =
+    typeof raw.expectedLevel === "string" ?
+      raw.expectedLevel.trim().slice(0, 32)
+    : undefined;
+  const transitionCondition =
+    typeof raw.transitionCondition === "string" ?
+      raw.transitionCondition.trim().slice(0, 2000)
+    : undefined;
+  return {
+    title,
+    summary,
+    actions,
+    tasks,
+    passConditions,
+    ...(topics.length > 0 ? { topics } : {}),
+    ...(expectedLevel ? { expectedLevel } : {}),
+    ...(transitionCondition ? { transitionCondition } : {}),
+  };
+}
+
+function parsePhaseTopics(raw: unknown): { id: number; name: string }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { id: number; name: string }[] = [];
+  const seenIds = new Set<number>();
+  const seenNames = new Set<string>();
+  for (const item of raw.slice(0, 12)) {
+    if (!isRecord(item)) continue;
+    const id = Number(item.id);
+    const name =
+      typeof item.name === "string" ? item.name.trim().slice(0, 220) : "";
+    if (!Number.isFinite(id) || id < 1 || name.length < 2) continue;
+    const topicId = Math.floor(id);
+    const nameKey = name.toLowerCase();
+    if (seenIds.has(topicId) || seenNames.has(nameKey)) continue;
+    seenIds.add(topicId);
+    seenNames.add(nameKey);
+    out.push({ id: topicId, name });
+  }
+  return out;
 }
 
 /** v2 only; returns null if missing or invalid. */
@@ -213,6 +255,9 @@ export function parseStudyingPlanV2OrNull(
     actions: string[];
     tasks: PlanTask[];
     passConditions?: string[];
+    topics?: { id: number; name: string }[];
+    expectedLevel?: string;
+    transitionCondition?: string;
   }>;
   weeklyHabits: string[];
 } | null {
@@ -510,9 +555,8 @@ function richPassConditionsForPhaseUi(options: {
   phaseIndex: number;
   budget: HorizonBudget;
   tier: CoarseLevelTier;
-  learningGoal: string;
 }): string[] {
-  const { phaseIndex, budget, tier, learningGoal } = options;
+  const { phaseIndex, budget, tier } = options;
   const base = standardPhasePassConditionLines();
   const streak = streakTargetForPhaseUi(phaseIndex, budget.structuredStudyWeeks);
   const videos = videosPassedPlanTargetForPhaseUi(phaseIndex);
@@ -522,14 +566,44 @@ function richPassConditionsForPhaseUi(options: {
     `Reach a **${streak}-day** study streak at least once (each day with meaningful catalog practice counts).`,
     `Pass **at least ${videos}** distinct videos at **≥70%** on comprehension checks (the app advances after **${DISTINCT_PASSED_LESSONS_PER_PHASE_STEP}** distinct passes — treat **${videos}** as your depth target for this phase).`,
     `Learn or consolidate **~${words}** new words from lessons (saved words + reviews in the app).`,
-    `Keep clip and quiz choices aligned with your goal: **${learningGoal}**.`,
   );
+  if (phaseIndex < 3) {
+    out.push(
+      `Pass the **phase final test** at **≥${PHASE_FINAL_TEST_MIN_SCORE_PCT}%** (grammar & vocabulary for this phase).`,
+    );
+  }
   return out;
 }
 
 /** Hides calendar / phase-duration lines from learner-facing “To complete this phase” (pacing stays in structured tasks only). */
 export function passConditionsForDisplay(lines: string[]): string[] {
-  return lines.filter((line) => !shouldHideCalendarSpanPassConditionLine(line));
+  return lines.filter(
+    (line) =>
+      !shouldHideCalendarSpanPassConditionLine(line) &&
+      !shouldHideSoftTransitionPassConditionLine(line),
+  );
+}
+
+/** Catalog personalization is on us — not a learner checklist item. */
+function shouldHideSoftTransitionPassConditionLine(line: string): boolean {
+  const t = line.trim().toLowerCase();
+  if (
+    /keep clip|choose clip|clip and quiz|aligned with your goal|choose clips aligned/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  if (/підбирай кліп|обирай кліп|відповідали меті|вікторини так/i.test(t)) {
+    return true;
+  }
+  if (/use english toward your goal|perform consistently|apply phase topics/i.test(t)) {
+    return true;
+  }
+  if (/застосов.*тем|стабільно.*перевір|англійськ.*мет/i.test(t)) {
+    return true;
+  }
+  return false;
 }
 
 function shouldHideCalendarSpanPassConditionLine(line: string): boolean {
@@ -568,6 +642,12 @@ export type LearningPlanPhase = {
   tasks: PlanTask[];
   /** Human-readable checklist; may mirror tasks. */
   passConditions: string[];
+  /** Target CEFR band for this phase. */
+  expectedLevel?: string;
+  /** Criteria to advance to the next phase. */
+  transitionCondition?: string;
+  /** Catalogue topics assigned for this phase (from server DB). */
+  topics?: { id: number; name: string }[];
 };
 
 export type LearningPlanModel = {
@@ -582,8 +662,240 @@ export type LearningPlanModel = {
   phases: LearningPlanPhase[];
   /** Mirrors server index; always in range for `phases.length`. */
   activePhaseIndex: number;
+  /** Phase indices with a passed final test (from profile). */
+  phaseFinalTestPassedPhases: number[];
+  /** Live metrics used to strike through transition checklist items. */
+  advanceProgress: StudyingPlanAdvanceProgress;
   weeklyHabits: string[];
 };
+
+/** Profile-backed progress for “To advance to the next phase” checklist. */
+export type StudyingPlanAdvanceProgress = {
+  distinctPassedVideos: number;
+  vocabularyTermsTotal: number;
+  currentStreak: number;
+};
+
+export type PhaseTransitionChecklistItem = {
+  label: string;
+  completed: boolean;
+  kind: PhaseTransitionConditionKind;
+};
+
+export type PhaseTransitionConditionKind =
+  | "advance_videos"
+  | "depth_videos"
+  | "finish_lesson"
+  | "streak"
+  | "vocabulary"
+  | "topics"
+  | "final_test"
+  | "goal"
+  | "performance"
+  | "other";
+
+type PassConditionKind = PhaseTransitionConditionKind;
+
+function parseFirstIntFromText(text: string): number | null {
+  const match = text.match(/(\d+)/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function extractDepthTargetFromLine(line: string): number | null {
+  const depthMatch = line.match(/depth target\s+\*\*(\d+)\*\*/i);
+  if (depthMatch) return Number(depthMatch[1]);
+  const ukDepthMatch = line.match(/орієнтир\s+глибини[^*]*\*\*(\d+)\*\*/i);
+  if (ukDepthMatch) return Number(ukDepthMatch[1]);
+  const atLeastMatch = line.match(/at least\s+\*\*(\d+)\*\*/i);
+  if (atLeastMatch) return Number(atLeastMatch[1]);
+  const ukAtLeastMatch = line.match(/щонайменше\s+\*\*(\d+)\*\*/i);
+  if (ukAtLeastMatch) return Number(ukAtLeastMatch[1]);
+  return null;
+}
+
+function classifyPassConditionLine(line: string): PassConditionKind {
+  const trimmed = line.trim();
+  const text = trimmed.toLowerCase();
+  if (/^pass \*\*\d+ distinct\*\*/i.test(trimmed)) {
+    return "advance_videos";
+  }
+  if (/phase final test|підсумков|фінальн|ітогов/i.test(text)) {
+    return "final_test";
+  }
+  if (/finish the full lesson|завершуй повний урок/i.test(text)) {
+    return "finish_lesson";
+  }
+  if (
+    /depth target|орієнтир глибини/i.test(text) ||
+    (/at least|щонайменше/i.test(text) &&
+      /distinct|різних\s+відео/i.test(text))
+  ) {
+    return "depth_videos";
+  }
+  if (
+    /pass \*\*\d+ distinct\*\*/i.test(line) ||
+    /comprehension checks at 70/i.test(text) ||
+    /перевірки розуміння.*різних відео/i.test(text)
+  ) {
+    return "advance_videos";
+  }
+  if (/streak|сері/i.test(text)) return "streak";
+  if (/words|vocab|слів|лексик/i.test(text)) return "vocabulary";
+  if (/meaningful progress|прогрес.*тем|topics:/i.test(text)) {
+    return "topics";
+  }
+  if (/aligned with your goal|toward your goal|відповідали меті|під мет/i.test(text)) {
+    return "goal";
+  }
+  if (/perform consistently|apply phase topics|стабільно|застосов/i.test(text)) {
+    return "performance";
+  }
+  return "other";
+}
+
+function streakTargetFromPhaseTasks(phase: LearningPlanPhase): number | null {
+  const task = phase.tasks.find((item) => item.kind === "streak_days");
+  return task?.kind === "streak_days" ? task.minConsecutive : null;
+}
+
+function vocabularyTargetFromPhaseTasks(phase: LearningPlanPhase): number | null {
+  const task = phase.tasks.find((item) => item.kind === "vocabulary_terms_added");
+  return task?.kind === "vocabulary_terms_added" ? task.minCount : null;
+}
+
+function videoDepthTargetFromPhaseTasks(phase: LearningPlanPhase): number | null {
+  const task = phase.tasks.find((item) => item.kind === "distinct_videos_passed");
+  return task?.kind === "distinct_videos_passed" ? task.minCount : null;
+}
+
+function phaseStepVideoTarget(phaseIndex: number): number {
+  return (phaseIndex + 1) * DISTINCT_PASSED_LESSONS_PER_PHASE_STEP;
+}
+
+function isPassConditionCompleted(options: {
+  kind: PassConditionKind;
+  phaseIndex: number;
+  line: string;
+  phase: LearningPlanPhase;
+  plan: LearningPlanModel;
+  progress: StudyingPlanAdvanceProgress;
+}): boolean {
+  const { kind, phaseIndex, line, phase, plan, progress } = options;
+  if (phaseIndex < plan.activePhaseIndex) return true;
+  if (phaseIndex > plan.activePhaseIndex) return false;
+
+  const stepVideos = phaseStepVideoTarget(phaseIndex);
+  switch (kind) {
+    case "advance_videos":
+      return progress.distinctPassedVideos >= stepVideos;
+    case "depth_videos": {
+      const depthTarget =
+        extractDepthTargetFromLine(line) ??
+        videoDepthTargetFromPhaseTasks(phase) ??
+        stepVideos;
+      return progress.distinctPassedVideos >= depthTarget;
+    }
+    case "finish_lesson":
+      return progress.distinctPassedVideos >= stepVideos;
+    case "streak": {
+      const target =
+        streakTargetFromPhaseTasks(phase) ?? parseFirstIntFromText(line) ?? 1;
+      return progress.currentStreak >= target;
+    }
+    case "vocabulary": {
+      const target =
+        vocabularyTargetFromPhaseTasks(phase) ??
+        parseFirstIntFromText(line) ??
+        Number.MAX_SAFE_INTEGER;
+      return progress.vocabularyTermsTotal >= target;
+    }
+    case "final_test":
+      return plan.phaseFinalTestPassedPhases.includes(phaseIndex);
+    case "topics":
+      return progress.distinctPassedVideos >= Math.max(1, stepVideos - 1);
+    case "goal":
+    case "performance":
+    case "other":
+      return false;
+  }
+}
+
+/**
+ * Normalizes transition bullets for display (filters hidden lines, splits legacy joined text).
+ */
+export function normalizeTransitionChecklistLines(phase: LearningPlanPhase): string[] {
+  const source =
+    phase.passConditions && phase.passConditions.length > 0 ?
+      phase.passConditions
+    : phase.transitionCondition?.trim() ?
+      [phase.transitionCondition.trim()]
+    : [];
+  let lines = passConditionsForDisplay(source);
+  if (lines.length === 1 && lines[0].length > 160) {
+    lines = lines[0]
+      .split(/(?<=[.!?])\s+(?=[A-Z*«])/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return lines;
+}
+
+/**
+ * Builds the “To advance to the next phase” checklist with completion flags.
+ */
+export function buildPhaseTransitionChecklist(
+  phase: LearningPlanPhase,
+  phaseIndex: number,
+  plan: LearningPlanModel,
+): PhaseTransitionChecklistItem[] {
+  return normalizeTransitionChecklistLines(phase).map((label) => {
+    const kind = classifyPassConditionLine(label);
+    return {
+      label,
+      kind,
+      completed: isPassConditionCompleted({
+        kind,
+        phaseIndex,
+        line: label,
+        phase,
+        plan,
+        progress: plan.advanceProgress,
+      }),
+    };
+  });
+}
+
+function isGatingPassConditionKind(kind: PhaseTransitionConditionKind): boolean {
+  return (
+    kind !== "final_test" &&
+    kind !== "goal" &&
+    kind !== "performance" &&
+    kind !== "other"
+  );
+}
+
+/**
+ * True when every measurable prerequisite is done (excludes the final-test line itself).
+ */
+export function arePhaseFinalTestPrerequisitesMet(
+  items: PhaseTransitionChecklistItem[],
+): boolean {
+  const gatingItems = items.filter((item) => isGatingPassConditionKind(item.kind));
+  if (gatingItems.length === 0) {
+    return true;
+  }
+  return gatingItems.every((item) => item.completed);
+}
+
+export function buildStudyingPlanAdvanceProgress(user: UserData): StudyingPlanAdvanceProgress {
+  return {
+    distinctPassedVideos: user.studyingPlanProgress?.distinctPassedVideos ?? 0,
+    vocabularyTermsTotal: user.studyingPlanProgress?.vocabularyTermsTotal ?? 0,
+    currentStreak: user.currentStreak ?? 0,
+  };
+}
 
 /** Template strings for “To complete this phase” when using localized defaults. */
 export type LocalizedPhasePassLines = {
@@ -592,7 +904,6 @@ export type LocalizedPhasePassLines = {
   streak: string;
   videoDepth: string;
   vocab: string;
-  goalAlign: string;
 };
 
 export type LocalizedDefaultPhaseCard = {
@@ -635,11 +946,10 @@ function richPassConditionsForPhaseUiLocalized(
     phaseIndex: number;
     budget: HorizonBudget;
     tier: CoarseLevelTier;
-    learningGoal: string;
   },
   lines: LocalizedPhasePassLines,
 ): string[] {
-  const { phaseIndex, budget, tier, learningGoal } = options;
+  const { phaseIndex, budget, tier } = options;
   const streak = streakTargetForPhaseUi(phaseIndex, budget.structuredStudyWeeks);
   const videos = videosPassedPlanTargetForPhaseUi(phaseIndex);
   const words = vocabularyTargetForPhaseUi(tier, phaseIndex);
@@ -653,7 +963,6 @@ function richPassConditionsForPhaseUiLocalized(
       distinct: String(distinct),
     }),
     formatMessage(lines.vocab, { words: String(words) }),
-    formatMessage(lines.goalAlign, { learningGoal }),
   ];
 }
 
@@ -680,7 +989,7 @@ function buildDefaultPhasesFromCopy(
       summary,
       actions,
       passConditions: richPassConditionsForPhaseUiLocalized(
-        { phaseIndex, budget, tier, learningGoal: goal },
+        { phaseIndex, budget, tier },
         copy.passLines,
       ),
       tasks: buildPlanTasksForPhaseUi({ phaseIndex, budget, tier }),
@@ -713,6 +1022,40 @@ function defaultWeeklyHabitsForUser(user: UserData): string[] {
   ];
 }
 
+function extractTopicNamesFromPassConditions(
+  passConditions: readonly string[],
+): string[] {
+  for (const line of passConditions) {
+    const match =
+      line.match(/meaningful progress on:\s*\*\*([^*]+)\*\*/i) ??
+      line.match(/прогрес(?:і|e)?(?:\s+на)?[^:]*:\s*\*\*([^*]+)\*\*/i);
+    if (!match?.[1]) {
+      continue;
+    }
+    return match[1]
+      .split(/[,;]/)
+      .map((part) => part.trim())
+      .filter((part) => part.length > 1);
+  }
+  return [];
+}
+
+/**
+ * Topics shown under “Topics to learn” — from stored phase JSON or pass-condition fallback.
+ */
+export function resolvePhaseTopicsForDisplay(
+  phase: LearningPlanPhase,
+): { id: number; name: string }[] {
+  if (phase.topics && phase.topics.length > 0) {
+    return phase.topics;
+  }
+  const names = extractTopicNamesFromPassConditions(phase.passConditions ?? []);
+  return names.map((name, index) => ({
+    id: -(index + 1),
+    name,
+  }));
+}
+
 export function parseStudyingPlanPhases(raw: unknown): LearningPlanPhase[] | null {
   const plan = parseStudyingPlanV2OrNull(raw);
   if (!plan) return null;
@@ -725,7 +1068,14 @@ export function parseStudyingPlanPhases(raw: unknown): LearningPlanPhase[] | nul
     passConditions:
       p.passConditions && p.passConditions.length > 0 ?
         p.passConditions
-        : [...fallbackPass],
+        : p.transitionCondition ?
+          [p.transitionCondition]
+          : [...fallbackPass],
+    ...(p.topics && p.topics.length > 0 ? { topics: p.topics } : {}),
+    ...(p.expectedLevel ? { expectedLevel: p.expectedLevel } : {}),
+    ...(p.transitionCondition ?
+      { transitionCondition: p.transitionCondition }
+    : {}),
   }));
 }
 
@@ -758,7 +1108,6 @@ export function buildDefaultPhasesForUser(
         phaseIndex: 0,
         budget,
         tier,
-        learningGoal: goal,
       }),
       tasks: buildPlanTasksForPhaseUi({ phaseIndex: 0, budget, tier }),
     },
@@ -774,7 +1123,6 @@ export function buildDefaultPhasesForUser(
         phaseIndex: 1,
         budget,
         tier,
-        learningGoal: goal,
       }),
       tasks: buildPlanTasksForPhaseUi({ phaseIndex: 1, budget, tier }),
     },
@@ -790,7 +1138,6 @@ export function buildDefaultPhasesForUser(
         phaseIndex: 2,
         budget,
         tier,
-        learningGoal: goal,
       }),
       tasks: buildPlanTasksForPhaseUi({ phaseIndex: 2, budget, tier }),
     },
@@ -806,7 +1153,6 @@ export function buildDefaultPhasesForUser(
         phaseIndex: 3,
         budget,
         tier,
-        learningGoal: goal,
       }),
       tasks: buildPlanTasksForPhaseUi({ phaseIndex: 3, budget, tier }),
     },
@@ -818,8 +1164,21 @@ export function resolvePhasesForUser(
   copy?: LocalizedDefaultPhasesCopy,
 ): LearningPlanPhase[] {
   const parsed = parseStudyingPlanPhases(user.studyingPlanPhases);
-  if (parsed) return parsed;
-  return buildDefaultPhasesForUser(user, copy);
+  const phases = parsed ?? buildDefaultPhasesForUser(user, copy);
+  const remoteTopics = user.studyingPlanPhaseTopics;
+  if (!remoteTopics?.length) {
+    return phases;
+  }
+  return phases.map((phase, index) => {
+    if (phase.topics && phase.topics.length > 0) {
+      return phase;
+    }
+    const topics = remoteTopics[index];
+    if (!topics?.length) {
+      return phase;
+    }
+    return { ...phase, topics };
+  });
 }
 
 function clampPhaseIndex(index: number, phaseCount: number): number {
@@ -886,6 +1245,13 @@ export function buildLearningPlanModel(
       Number(user.activeStudyingPhaseIndex)
       : 0;
   const activePhaseIndex = clampPhaseIndex(storedIndex, phases.length);
+  const phaseFinalTestPassedPhases = Array.isArray(
+    user.phaseFinalTestPassedPhases,
+  ) ?
+    user.phaseFinalTestPassedPhases
+      .map((n) => Math.floor(Number(n)))
+      .filter((n) => Number.isFinite(n) && n >= 0)
+  : [];
 
   const storedWeekly = weeklyHabitsFromStoredStudyingPlanJson(
     user.studyingPlanPhases,
@@ -909,6 +1275,8 @@ export function buildLearningPlanModel(
     achievabilitySuggestedMonths,
     phases,
     activePhaseIndex,
+    phaseFinalTestPassedPhases,
+    advanceProgress: buildStudyingPlanAdvanceProgress(user),
     weeklyHabits,
   };
 }

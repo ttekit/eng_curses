@@ -621,7 +621,7 @@ export class ContentVideoComprehensionTestsService {
       const row = await this.prisma.userLanguageData.findUnique({
         where: { userId_topicId: { userId: p.userId, topicId } },
       });
-      const base = row?.score ?? 0.35;
+      const base = row?.score ?? 0;
       const prevListening = row?.listeningScore ?? base;
       const prevVocabulary = row?.vocabularyScore ?? base;
       const prevGrammar = row?.grammarScore ?? base;

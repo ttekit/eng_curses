@@ -1,6 +1,141 @@
 import { UserProfileContext } from './alcorythm.types';
 
-export const AI_ALGORITHM_VERSION = 'v3';
+export const AI_ALGORITHM_VERSION = 'v5';
+
+/** Upper bound of topic.complexity in seed/catalog (≈1 … 3.5). */
+export const TOPIC_COMPLEXITY_SCALE_MAX = 3.5;
+
+const CEFR_UNIT: Record<string, number> = {
+  A1: 1,
+  A2: 2,
+  B1: 3,
+  B2: 4,
+  C1: 5,
+  C2: 6,
+};
+
+/** Numeric CEFR band (A1=1 … C2=6). */
+export function cefrUnit(englishLevel?: string | null): number {
+  if (!englishLevel?.trim()) {
+    return 2;
+  }
+  return CEFR_UNIT[englishLevel.trim().toUpperCase()] ?? 2;
+}
+
+/** True for B2, C1, C2 — profile work/hobby lifts apply only above B1. */
+export function isEnglishLevelAboveB1(englishLevel?: string | null): boolean {
+  return cefrUnit(englishLevel) >= 4;
+}
+
+/** Maps catalog topic complexity (1–3.5) to a CEFR-like unit (A1=1 … C2=6). */
+export function topicComplexityToCefrUnit(topicComplexity: number): number {
+  const normalized = clamp(
+    topicComplexity ?? 2,
+    1,
+    TOPIC_COMPLEXITY_SCALE_MAX,
+  );
+  const span = TOPIC_COMPLEXITY_SCALE_MAX - 1;
+  return 1 + ((normalized - 1) / span) * 5;
+}
+
+/** Topic difficulty vs learner (positive = topic is harder). */
+export function topicComplexityGap(
+  englishLevel: string | null | undefined,
+  topicComplexity: number,
+): number {
+  const learnerUnit = cefrUnit(englishLevel);
+  const topicUnit = topicComplexityToCefrUnit(topicComplexity);
+  return topicUnit - learnerUnit;
+}
+
+/**
+ * Maximum uninferred prior when profile strongly matches a topic at the learner band.
+ */
+export function realisticPriorCeiling(
+  englishLevel: string | null | undefined,
+  profileMatchStrength: number,
+): number {
+  const learnerCapacity = getBaseLevel(englishLevel);
+  const aboveB1 = isEnglishLevelAboveB1(englishLevel);
+  const matchHeadroom = aboveB1 ? 0.12 + 0.18 * profileMatchStrength : 0.06 * profileMatchStrength;
+  return clamp(learnerCapacity + matchHeadroom);
+}
+
+export type TopicKnowledgePrior = {
+  score: number;
+  listeningScore: number;
+  vocabularyScore: number;
+  grammarScore: number;
+  confidence: number;
+  coverage: number;
+};
+
+/**
+ * Profile-only estimate before any quiz evidence on a topic.
+ * Each domain starts at 0% unless the topic matches the profile or is foundational at/below band.
+ * Work/hobby alignment boosts apply only when declared level is above B1.
+ */
+export function computeTopicKnowledgePrior(params: {
+  profile: UserProfileContext;
+  topicName: string;
+  tagNames: string[];
+  topicComplexity: number;
+  primaryStrength: number;
+  secondaryStrength: number;
+  isSelectedTopic: boolean;
+  confidence: number;
+}): TopicKnowledgePrior {
+  const { profile, topicName, tagNames, topicComplexity } = params;
+  const profileMatch = clamp(
+    params.primaryStrength * 0.55 +
+      params.secondaryStrength * 0.35 +
+      (params.isSelectedTopic ? 0.25 : 0),
+  );
+  const learnerCapacity = getBaseLevel(profile.englishLevel);
+  const gap = topicComplexityGap(profile.englishLevel, topicComplexity);
+  const aboveB1 = isEnglishLevelAboveB1(profile.englishLevel);
+
+  let blended = 0;
+  if (profileMatch >= 0.12) {
+    const hardnessPenalty = gap > 0 ? clamp(gap * 0.2, 0, 0.9) : 0;
+    blended = learnerCapacity * profileMatch * (1 - hardnessPenalty);
+    if (aboveB1) {
+      blended +=
+        0.1 * params.primaryStrength + 0.06 * params.secondaryStrength;
+    }
+    blended = clamp(Math.min(realisticPriorCeiling(profile.englishLevel, profileMatch), blended));
+  } else if (gap <= 0.2 && topicComplexity <= 1.35) {
+    blended = clamp(Math.min(0.09, learnerCapacity * 0.4));
+  }
+
+  const normalizedComplexity = clamp((topicComplexity ?? 1) / TOPIC_COMPLEXITY_SCALE_MAX);
+  const skills = splitTopicSkillScores({
+    blended,
+    topicName,
+    tagNames,
+    primaryStrength: params.primaryStrength,
+    secondaryStrength: params.secondaryStrength,
+    normalizedComplexity,
+    profile,
+  });
+  const score = aggregateSkillScore(
+    skills.listening,
+    skills.vocabulary,
+    skills.grammar,
+  );
+  const matchedSignals =
+    params.primaryStrength +
+    params.secondaryStrength +
+    (params.isSelectedTopic ? 1 : 0);
+  return {
+    score,
+    listeningScore: skills.listening,
+    vocabularyScore: skills.vocabulary,
+    grammarScore: skills.grammar,
+    confidence: params.confidence,
+    coverage: clamp(matchedSignals / 3),
+  };
+}
 
 export function aggregateSkillScore(
   listening: number,
@@ -23,6 +158,9 @@ export function splitTopicSkillScores(params: {
   normalizedComplexity: number;
   profile: UserProfileContext;
 }): { listening: number; vocabulary: number; grammar: number } {
+  if (params.blended <= 0) {
+    return { listening: 0, vocabulary: 0, grammar: 0 };
+  }
   const hay = `${params.topicName} ${params.tagNames.join(' ')}`.toLowerCase();
 
   let listeningAdj = 0;
@@ -41,7 +179,7 @@ export function splitTopicSkillScores(params: {
       h,
     ),
   );
-  if (listenHobby) {
+  if (listenHobby && isEnglishLevelAboveB1(params.profile.englishLevel)) {
     listeningAdj += 0.065;
   }
 
@@ -59,12 +197,14 @@ export function splitTopicSkillScores(params: {
       h,
     ),
   );
-  if (readHobby) {
+  if (readHobby && isEnglishLevelAboveB1(params.profile.englishLevel)) {
     vocabularyAdj += 0.055;
   }
 
-  vocabularyAdj +=
-    0.1 * params.primaryStrength + 0.075 * params.secondaryStrength;
+  if (isEnglishLevelAboveB1(params.profile.englishLevel)) {
+    vocabularyAdj +=
+      0.1 * params.primaryStrength + 0.075 * params.secondaryStrength;
+  }
 
   let grammarAdj = 0;
   if (
@@ -193,46 +333,45 @@ export function calculateConfidence(params: {
 }
 
 export function getDeterministicTagScore(params: {
-  base: number;
+  profile: UserProfileContext;
   tagName: string;
-  topicNames: string[];
+  topics: Array<{ id: number; name: string; complexity: number }>;
   primaryKeywords: string[];
   secondaryKeywords: string[];
-  selectedTopicIds: Set<number>;
-  tagTopicIds: number[];
+  confidence: number;
 }): number {
-  let boost = 0;
-
-  const normalizedTag = params.tagName.toLowerCase();
-  const normalizedTopics = params.topicNames.map((name) => name.toLowerCase());
-
-  const primaryMatch = params.primaryKeywords.some(
-    (keyword) =>
-      normalizedTag.includes(keyword) ||
-      keyword.includes(normalizedTag) ||
-      normalizedTopics.some((topicName) => topicName.includes(keyword) || keyword.includes(topicName)),
-  );
-
-  const secondaryMatch = params.secondaryKeywords.some(
-    (keyword) =>
-      normalizedTag.includes(keyword) ||
-      keyword.includes(normalizedTag) ||
-      normalizedTopics.some((topicName) => topicName.includes(keyword) || keyword.includes(topicName)),
-  );
-
-  const selectedMatch = params.tagTopicIds.some((topicId) => params.selectedTopicIds.has(topicId));
-
-  if (primaryMatch) {
-    boost += 0.3;
-  }
-  if (secondaryMatch) {
-    boost += 0.17;
-  }
-  if (selectedMatch) {
-    boost += 0.2;
+  const topics = params.topics ?? [];
+  if (!topics.length) {
+    return 0;
   }
 
-  return clamp(params.base + boost);
+  const scores = topics.map((topic) => {
+    const tagNames = [params.tagName];
+    const primaryStrength = keywordMatchStrength(
+      topic.name,
+      tagNames,
+      params.primaryKeywords,
+    );
+    const secondaryStrength = keywordMatchStrength(
+      topic.name,
+      tagNames,
+      params.secondaryKeywords,
+    );
+    const prior = computeTopicKnowledgePrior({
+      profile: params.profile,
+      topicName: topic.name,
+      tagNames,
+      topicComplexity: topic.complexity,
+      primaryStrength,
+      secondaryStrength,
+      isSelectedTopic: params.profile.selectedTopicIds.has(topic.id),
+      confidence: params.confidence,
+    });
+    return prior.score;
+  });
+
+  const total = scores.reduce((sum, value) => sum + value, 0);
+  return clamp(total / scores.length);
 }
 
 export function buildProfileContext(profile: any): UserProfileContext {
@@ -260,9 +399,12 @@ export function getLanguageBackgroundBoost(params: {
   nativeLanguage?: string | null;
   knownLanguages: string[];
   knownLanguageLevels: Array<{ language: string; level: string }>;
+  englishLevel?: string | null;
 }): number {
   const normalizedNative = (params.nativeLanguage ?? '').trim().toLowerCase();
-  const normalizedKnown = params.knownLanguages.map((value) => value.trim().toLowerCase());
+  const normalizedKnown = params.knownLanguages.map((value) =>
+    value.trim().toLowerCase(),
+  );
 
   const hasEnglish =
     normalizedNative === 'en' ||
@@ -270,20 +412,24 @@ export function getLanguageBackgroundBoost(params: {
     normalizedKnown.includes('en') ||
     normalizedKnown.includes('english');
 
+  let boost = 0;
   if (hasEnglish) {
-    return 0.2;
+    boost = 0.12;
+  } else if (normalizedKnown.length >= 2) {
+    boost = 0.04;
+  } else {
+    const advancedKnown = params.knownLanguageLevels.some((item) =>
+      ['b2', 'c1', 'c2', 'advanced', 'fluent', 'native'].includes(
+        item.level.trim().toLowerCase(),
+      ),
+    );
+    if (advancedKnown) {
+      boost = 0.04;
+    }
   }
 
-  if (normalizedKnown.length >= 2) {
-    return 0.05;
+  if (!isEnglishLevelAboveB1(params.englishLevel)) {
+    return Math.min(boost, 0.03);
   }
-
-  const advancedKnown = params.knownLanguageLevels.some((item) =>
-    ['b2', 'c1', 'c2', 'advanced', 'fluent', 'native'].includes(item.level.trim().toLowerCase()),
-  );
-  if (advancedKnown) {
-    return 0.05;
-  }
-
-  return 0;
+  return boost;
 }

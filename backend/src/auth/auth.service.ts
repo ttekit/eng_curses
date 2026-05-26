@@ -22,7 +22,12 @@ import { EmailConfirmationService } from "./email-confirmation/email-confirmatio
 import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
-import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
+import {
+  isDevModeEnabled,
+  isEmailConfirmationDisabled,
+} from "src/common/utils/outbound-mail-disabled.util";
+import { parsePhaseFinalTestProgress } from "src/phase-final-test/phase-final-test-progress.util";
+import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan-regeneration.service";
 import { MailService } from "src/common/mail/mail.service";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
@@ -48,6 +53,7 @@ export class AuthService {
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
+    private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
   ) { }
 
   private async filterExistingGenreIds(
@@ -95,7 +101,9 @@ export class AuthService {
       );
     }
     const prisma = this.prisma as any;
-    const outboundMailDisabled = isOutboundMailDisabled(this.configService);
+    const emailConfirmationDisabled = isEmailConfirmationDisabled(
+      this.configService,
+    );
 
     const userExists = await this.userService.FindByEmail(
       dto.email.toLowerCase(),
@@ -147,7 +155,7 @@ export class AuthService {
     let otpCode: string | null = null;
     let otpExpires: Date | null = null;
 
-    if (!outboundMailDisabled) {
+    if (!emailConfirmationDisabled) {
       otpCode = randomInt(100000, 1000000).toString();
       otpExpires = new Date(Date.now() + 15 * 60 * 1000);
     }
@@ -159,7 +167,7 @@ export class AuthService {
         name: dto.name,
         role: roleLabel as any,
         method: "CREDENTIALS",
-        isVerified: outboundMailDisabled,
+        isVerified: emailConfirmationDisabled,
         verificationCode: otpCode,
         verificationCodeExpires: otpExpires,
         additionalUserData: {
@@ -229,7 +237,7 @@ export class AuthService {
             role: "STUDENT",
             method: "CREDENTIALS",
             teacherId: mainUser.id,
-            isVerified: outboundMailDisabled,
+            isVerified: emailConfirmationDisabled,
           },
         });
 
@@ -241,17 +249,17 @@ export class AuthService {
       }
     }
 
-    if (!outboundMailDisabled) {
+    if (!emailConfirmationDisabled) {
       await this.emailConfirmationService.sendVerificationToken(mainUser);
     }
 
     const payload = { sub: mainUser.id, email: mainUser.email };
 
     return {
-      access_token: outboundMailDisabled
+      access_token: emailConfirmationDisabled
         ? await this.jwtService.signAsync(payload)
         : null,
-      isVerified: outboundMailDisabled,
+      isVerified: emailConfirmationDisabled,
       user: {
         id: mainUser.id,
         email: mainUser.email,
@@ -259,7 +267,7 @@ export class AuthService {
       },
       generatedStudents:
         generatedStudents.length > 0 ? generatedStudents : undefined,
-      message: outboundMailDisabled
+      message: emailConfirmationDisabled
         ? "You have successfully registered."
         : "Please verify your email. A 6-digit confirmation code has been sent to your email address.",
     };
@@ -449,7 +457,7 @@ export class AuthService {
       );
     }
 
-    if (isOutboundMailDisabled(this.configService)) {
+    if (isEmailConfirmationDisabled(this.configService)) {
       throw new BadRequestException(
         "Підтвердження email поштою вимкнено на цьому сервері. Увійдіть у систему — обліковий запис буде активовано автоматично.",
       );
@@ -492,7 +500,7 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      if (isOutboundMailDisabled(this.configService)) {
+      if (isEmailConfirmationDisabled(this.configService)) {
         await this.prisma.user.update({
           where: { id: user.id },
           data: { isVerified: true },
@@ -894,6 +902,19 @@ export class AuthService {
     }
     const extra = (user as any).additionalUserData;
 
+    const [distinctPassedVideos, vocabularyTermsTotal, studyingPlanPhaseTopics] =
+      await Promise.all([
+      this.prisma.comprehensionTestAttempt
+        .findMany({
+          where: { userId, passed: true },
+          distinct: ["contentVideoId"],
+          select: { contentVideoId: true },
+        })
+        .then((rows) => rows.length),
+      this.prisma.userVocabulary.count({ where: { userId } }),
+      this.studyingPlanRegeneration.resolvePhaseTopicsForUser(userId),
+    ]);
+
     return {
       id: (user as any).id,
       name: (user as any).name,
@@ -911,6 +932,20 @@ export class AuthService {
       hobbies: extra?.hobbies ?? [],
       learningGoal: extra?.learningGoal ?? "",
       timeToAchieve: extra?.timeToAchieve ?? "",
+      studyingPlanPhases: extra?.studyingPlanPhases ?? null,
+      studyingPlanPhaseTopics,
+      activeStudyingPhaseIndex: extra?.activeStudyingPhaseIndex ?? 0,
+      activePhaseEnteredAt:
+        extra?.activePhaseEnteredAt instanceof Date ?
+          extra.activePhaseEnteredAt.toISOString()
+        : extra?.activePhaseEnteredAt ?? null,
+      phaseFinalTestPassedPhases:
+        parsePhaseFinalTestProgress(extra?.phaseFinalTestProgress)
+          .passedPhaseIndices,
+      studyingPlanProgress: {
+        distinctPassedVideos,
+        vocabularyTermsTotal,
+      },
       favoriteGenres: extra?.favoriteGenres?.map((g: any) => g.id) ?? [],
       hatedGenres: extra?.hatedGenres?.map((g: any) => g.id) ?? [],
       playbackSpeed: (user as any).settings?.playbackSpeed ?? null,
@@ -1079,6 +1114,25 @@ export class AuthService {
       .sort((a, b) => b.score - a.score);
 
     return { tags };
+  }
+
+  async refreshKnowledgeTagProgress(userId: number): Promise<{
+    tags: Array<{
+      name: string;
+      score: number;
+      listening: number;
+      vocabulary: number;
+      grammar: number;
+      topicCount: number;
+    }>;
+  }> {
+    if (!isDevModeEnabled(this.configService)) {
+      throw new ForbiddenException(
+        "Knowledge tag refresh is only available when DEV_MODE is enabled",
+      );
+    }
+    await this.alcorythmService.analyzeUserLevel(userId);
+    return this.getKnowledgeTagProgress(userId);
   }
 
   async getProgressDetails(userId: number) {

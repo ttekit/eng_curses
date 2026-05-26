@@ -888,4 +888,12 @@ export class PlacementTestService {
     const xApi = this.config.get<string>("API_TOKEN");
     return renderPlacementHtml(payload, accessToken, xApi, apiPublicOrigin);
   }
+
+  /** Shared MCQ bank builder (placement + phase final tests). */
+  async buildMcqQuestionsForContext(
+    ctx: { name: string; cefrHint: string; knowledgeTags: string[] },
+    target: number,
+  ): Promise<PlacementQuestion[]> {
+    return this.buildFinalQuestions(ctx, this.themes, target);
+  }
 }

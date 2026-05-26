@@ -10,6 +10,7 @@ import {
   effectiveTimeHorizon,
 } from "src/content-video/studying-plan.util";
 import {
+  parseStudyingPlanV2OrNull,
   parseStudyingPlanV2Strict,
   wrapStudyingPlanV2,
   type StoredStudyingPlanPhaseV2,
@@ -19,10 +20,21 @@ import { horizonBudgetFromLabel } from "./studying-plan-horizon.util";
 import { coarseLevelTier } from "./studying-plan-level.util";
 import {
   buildPlanTasksForPhase,
-  richPassConditionsForPhase,
 } from "./studying-plan-pass-conditions.builder";
 import { StudyingPlanGeminiClient } from "./studying-plan-gemini.client";
+import {
+  selectTopicsForPhases,
+  type CatalogTopicForPlan,
+  type StudyingPlanTopicRef,
+  type StudyingPlanTopicSelectionContext,
+} from "./studying-plan-topic-selection.util";
+import { enrichStudyingPlanPhases } from "./studying-plan-phase-enrichment.util";
+import {
+  type StudyingPlanLearnerProfile,
+} from "./studying-plan-learner-profile.util";
 import { syncActiveStudyingPhaseForUser } from "./sync-active-studying-phase";
+
+const PHASE_COUNT = 4;
 
 @Injectable()
 export class StudyingPlanRegenerationService {
@@ -31,44 +43,88 @@ export class StudyingPlanRegenerationService {
     private readonly gemini: StudyingPlanGeminiClient,
   ) {}
 
-  async regenerateForUser(userId: number): Promise<StoredStudyingPlanV2> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        additionalUserData: {
-          select: {
-            learningGoal: true,
-            timeToAchieve: true,
-            englishLevel: true,
-            hobbies: true,
-          },
-        },
-      },
+  /**
+   * Resolves catalogue topics per phase (stored plan topics or profile-based selection).
+   */
+  async resolvePhaseTopicsForUser(
+    userId: number,
+  ): Promise<StudyingPlanTopicRef[][]> {
+    const ctx = await this.loadUserTopicSelectionContext(userId);
+    if (!ctx) {
+      return [];
+    }
+    const { catalogTopics, topicContext, studyingPlanPhases } = ctx;
+    const plan = parseStudyingPlanV2OrNull(studyingPlanPhases);
+    const phaseCount = plan?.phases.length ?? PHASE_COUNT;
+    const selectedByPhase = selectTopicsForPhases(
+      catalogTopics,
+      topicContext,
+      phaseCount,
+    );
+    if (!plan) {
+      return selectedByPhase;
+    }
+    return plan.phases.map((phase, index) => {
+      if (phase.topics?.length) {
+        return phase.topics.map((topic) => ({
+          id: topic.id,
+          name: topic.name,
+        }));
+      }
+      return selectedByPhase[index] ?? [];
     });
-    if (!user) {
+  }
+
+  async regenerateForUser(userId: number): Promise<StoredStudyingPlanV2> {
+    const ctx = await this.loadUserTopicSelectionContext(userId);
+    if (!ctx) {
       throw new NotFoundException("User not found");
     }
-    const extra = user.additionalUserData;
-    const learningGoal = effectiveLearningGoal(extra?.learningGoal);
-    const timeHorizon = effectiveTimeHorizon(extra?.timeToAchieve);
-    const englishLevel = extra?.englishLevel?.trim() || "your current level";
-    const hobbies = Array.isArray(extra?.hobbies)
-      ? extra.hobbies.map((h) => String(h).trim()).filter((h) => h.length > 0)
-      : [];
-
-    const fromGemini = await this.gemini.generate({
+    const {
+      extra,
+      catalogTopics,
+      topicContext,
+      learnerProfile,
       learningGoal,
       timeHorizon,
       englishLevel,
       hobbies,
+    } = ctx;
+    const topicsByPhase = selectTopicsForPhases(
+      catalogTopics,
+      topicContext,
+      PHASE_COUNT,
+    );
+
+    const budget = horizonBudgetFromLabel(timeHorizon);
+    const tier = coarseLevelTier(englishLevel.trim() || "");
+
+    const fromGemini = await this.gemini.generate({
+      learnerProfile,
+      catalogTopics,
+      topicsByPhase,
+      budget,
+      tier,
     });
 
     const rawPlan =
-      fromGemini ?? this.fallbackPlan(learningGoal, timeHorizon, hobbies, englishLevel);
+      fromGemini ??
+      this.fallbackPlan(learnerProfile, budget, tier);
+    const enrichedPhases = enrichStudyingPlanPhases({
+      phases: rawPlan.phases,
+      topicsByPhase,
+      englishLevel,
+      learningGoal,
+      budget,
+      tier,
+    });
+
     let plan: StoredStudyingPlanV2;
     try {
-      plan = parseStudyingPlanV2Strict(rawPlan);
+      plan = parseStudyingPlanV2Strict({
+        ...rawPlan,
+        phases: enrichedPhases,
+      });
     } catch {
       throw new BadRequestException("Generated studying plan failed validation");
     }
@@ -95,93 +151,203 @@ export class StudyingPlanRegenerationService {
     return plan;
   }
 
+  private async loadUserTopicSelectionContext(userId: number): Promise<{
+    extra: {
+      learningGoal: string | null;
+      timeToAchieve: string | null;
+      englishLevel: string | null;
+      job: string | null;
+      workField: string | null;
+      education: string | null;
+      hobbies: string[];
+      interests: string[];
+      studyingPlanPhases: unknown;
+      selectedTopics: Array<{ id: number; tags: Array<{ name: string }> }>;
+    } | null;
+    studyingPlanPhases: unknown;
+    catalogTopics: CatalogTopicForPlan[];
+    topicContext: StudyingPlanTopicSelectionContext;
+    learnerProfile: StudyingPlanLearnerProfile;
+    learningGoal: string;
+    timeHorizon: string;
+    englishLevel: string;
+    hobbies: string[];
+  } | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        additionalUserData: {
+          select: {
+            learningGoal: true,
+            timeToAchieve: true,
+            englishLevel: true,
+            job: true,
+            workField: true,
+            education: true,
+            hobbies: true,
+            interests: true,
+            studyingPlanPhases: true,
+            selectedTopics: {
+              select: { id: true, tags: { select: { name: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (!user?.additionalUserData) {
+      return null;
+    }
+    const extra = user.additionalUserData;
+    const learningGoal = effectiveLearningGoal(extra.learningGoal);
+    const timeHorizon = effectiveTimeHorizon(extra.timeToAchieve);
+    const englishLevel = extra.englishLevel?.trim() || "your current level";
+    const hobbies = Array.isArray(extra.hobbies)
+      ? extra.hobbies.map((h) => String(h).trim()).filter((h) => h.length > 0)
+      : [];
+    const interests = Array.isArray(extra.interests)
+      ? extra.interests.map((h) => String(h).trim()).filter((h) => h.length > 0)
+      : [];
+    const [catalogTopics, tagRows] = await Promise.all([
+      this.loadCatalogTopics(),
+      this.prisma.tag.findMany({
+        select: { name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+    const selectedTopicTagNames = extra.selectedTopics.flatMap((topic) =>
+      topic.tags.map((tag) => tag.name),
+    );
+    const tagNames = [
+      ...new Set([
+        ...tagRows.map((tag) => tag.name),
+        ...selectedTopicTagNames,
+      ]),
+    ];
+    const learnerProfile: StudyingPlanLearnerProfile = {
+      learningGoal,
+      timeHorizon,
+      englishLevel,
+      job: extra.job?.trim() || null,
+      workField: extra.workField?.trim() || null,
+      education: extra.education?.trim() || null,
+      hobbies,
+      tagNames,
+    };
+    const topicContext: StudyingPlanTopicSelectionContext = {
+      learningGoal,
+      englishLevel,
+      hobbies,
+      interests,
+      job: learnerProfile.job,
+      workField: learnerProfile.workField,
+      education: learnerProfile.education,
+      tagNames,
+      selectedTopicIds: extra.selectedTopics.map((topic) => topic.id),
+    };
+    return {
+      extra,
+      studyingPlanPhases: extra.studyingPlanPhases,
+      catalogTopics,
+      topicContext,
+      learnerProfile,
+      learningGoal,
+      timeHorizon,
+      englishLevel,
+      hobbies,
+    };
+  }
+
+  private async loadCatalogTopics(): Promise<CatalogTopicForPlan[]> {
+    const rows = await this.prisma.topic.findMany({
+      include: {
+        category: { select: { name: true } },
+        tags: { select: { name: true } },
+      },
+      orderBy: [{ complexity: "asc" }, { name: "asc" }],
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      categoryName: row.category.name,
+      complexity: row.complexity,
+      tagNames: row.tags.map((tag) => tag.name),
+    }));
+  }
+
   private fallbackPlan(
-    goal: string,
-    horizon: string,
-    hobbiesNote: string[],
-    englishLevel: string,
+    profile: StudyingPlanLearnerProfile,
+    budget: ReturnType<typeof horizonBudgetFromLabel>,
+    tier: ReturnType<typeof coarseLevelTier>,
   ): StoredStudyingPlanV2 {
+    const { learningGoal: goal, timeHorizon: horizon, hobbies: hobbiesNote } =
+      profile;
     const hobbyLine =
       hobbiesNote.length > 0 ?
-        ` Use interests like ${hobbiesNote.slice(0, 3).join(", ")} when choosing clips.`
+        ` Tie clips to interests like ${hobbiesNote.slice(0, 3).join(", ")}.`
       : "";
-    const budget = horizonBudgetFromLabel(horizon);
-    const tier = coarseLevelTier(englishLevel.trim() || "");
+    const jobLine =
+      profile.job || profile.workField ?
+        ` Use workplace language from **${profile.job ?? profile.workField}**.`
+      : "";
 
-    const phases: StoredStudyingPlanPhaseV2[] = [
+    const phaseBlueprints: Array<{
+      title: string;
+      summary: string;
+      actions: string[];
+    }> = [
       {
-        title: "Phase 1 — Build the habit",
-        summary:
-          "Turn English into a small weekly default: short catalog sessions that always include the comprehension check.",
+        title: "Phase 1 — Foundation & habit",
+        summary: `Build a steady routine and secure basics on the path to: **${goal}**.`,
         actions: [
-          "Pick 2–3 fixed slots per week for lessons (even 20 minutes counts).",
-          "Start with videos near your level; submit every quiz attempt.",
-          "Note new vocabulary from key-word lists and revisit it mid-week.",
+          "Schedule 2–3 short weekly catalog sessions with comprehension checks.",
+          "Start with lessons at your current band; finish every quiz.",
+          "Save new words that match your profile tags and daily life.",
         ],
-        tasks: buildPlanTasksForPhase({ phaseIndex: 0, budget, tier }),
-        passConditions: richPassConditionsForPhase({
-          phaseIndex: 0,
-          budget,
-          tier,
-          learningGoal: goal,
-        }),
       },
       {
-        title: "Phase 2 — Stretch input",
+        title: "Phase 2 — Expand input",
         summary:
-          "Widen topics and challenge so listening grows without burning out.",
+          "Widen listening range with topics matched to your profile and tags.",
         actions: [
-          "Each month add one genre or theme slightly outside your comfort zone.",
-          "Re-watch one short clip with subtitles off, then with subtitles.",
-          `Choose clips where people do activities aligned with **${goal}**.${hobbyLine}`,
+          "Add one slightly harder theme each week.",
+          `Choose clips aligned with your goal (**${goal}**).${hobbyLine}`,
+          "Re-watch a clip once without subtitles, then with support.",
         ],
-        tasks: buildPlanTasksForPhase({ phaseIndex: 1, budget, tier }),
-        passConditions: richPassConditionsForPhase({
-          phaseIndex: 1,
-          budget,
-          tier,
-          learningGoal: goal,
-        }),
       },
       {
-        title: "Phase 3 — Apply and check",
+        title: "Phase 3 — Apply in context",
         summary:
-          "Connect what you hear to short spoken or written output so skills transfer.",
+          "Turn comprehension into short output connected to your real-life goal.",
         actions: [
-          "After each lesson, say or write 3 sentences summarizing it in English.",
-          "Monthly, redo one older quiz to confirm retention.",
-          "If scores stay high for two weeks, choose slightly harder catalog items.",
+          "After each lesson, say or write 3 sentences in English.",
+          `Practise scenarios useful for **${goal}**.${jobLine}`,
+          "Redo one older quiz monthly to confirm retention.",
         ],
-        tasks: buildPlanTasksForPhase({ phaseIndex: 2, budget, tier }),
-        passConditions: richPassConditionsForPhase({
-          phaseIndex: 2,
-          budget,
-          tier,
-          learningGoal: goal,
-        }),
       },
       {
-        title: "Phase 4 — Sustain through the horizon",
-        summary: `Maintain gains through ${horizon} with light structure and honest goals.`,
+        title: "Phase 4 — Reach the goal",
+        summary: `Consolidate skills through **${horizon}** until **${goal}** feels achievable in practice.`,
         actions: [
-          "Keep a minimum weekly watch time even on busy weeks.",
-          "Prefer finishing sequences over random browsing.",
-          "Adjust your stated goal if life changes—keep the plan realistic.",
+          "Keep minimum weekly watch time even on busy weeks.",
+          "Prefer finishing topic sequences over random browsing.",
+          "Adjust pace if life changes — the plan should stay honest.",
         ],
-        tasks: buildPlanTasksForPhase({ phaseIndex: 3, budget, tier }),
-        passConditions: richPassConditionsForPhase({
-          phaseIndex: 3,
-          budget,
-          tier,
-          learningGoal: goal,
-        }),
       },
     ];
 
+    const phases: StoredStudyingPlanPhaseV2[] = phaseBlueprints.map(
+      (blueprint, phaseIndex) => ({
+        ...blueprint,
+        tasks: buildPlanTasksForPhase({ phaseIndex, budget, tier }),
+        passConditions: [],
+      }),
+    );
+
     return wrapStudyingPlanV2(phases, [
-      `At least **${Math.max(2, Math.round(budget.structuredStudyWeeks / 6))}** catalog sessions with quizzes finished each week (scaled to your **~${budget.structuredStudyWeeks}-week** structured window).`,
-      "One vocabulary or transcript review pulled from last week’s lessons.",
-      "One stretch video slightly above your easiest comfortable pick.",
+      `At least **${Math.max(2, Math.round(budget.structuredStudyWeeks / 6))}** catalog sessions with quizzes each week.`,
+      "Review vocabulary from last week's lessons once per week.",
+      `Every session should connect to your goal: **${goal}**.`,
     ]);
   }
 }

@@ -586,10 +586,24 @@ export const appEn = {
   learningPlanPhases: {
     heading: "Phases",
     intro:
-      "Your active phase updates automatically when you pass comprehension checks: each step needs about {count} distinct videos with a passing score (70%+) before the plan advances. Earlier phases stay available as reference.",
+      "Your active phase advances after passing comprehension checks ({count} distinct videos at ≥70%) and the phase final test. Earlier phases stay available as reference.",
     activeBadge: "Active phase",
     toComplete: "To complete this phase",
+    toAdvance: "To advance to the next phase",
+    expectedLevel: "Expected level",
     suggestedFocus: "Suggested focus",
+    topicsToLearn: "Topics to learn",
+    phaseFinalTestCta: "Phase final test",
+    phaseFinalTestModalTitle: "Phase {phase} final test",
+    phaseFinalTestLoading: "Loading test…",
+    phaseFinalTestLoadError: "Could not load the test.",
+    phaseFinalTestClose: "Close",
+    phaseFinalTestPassedBadge: "Phase final test passed",
+    phaseFinalTestPassedToast: "Phase final test passed — you can advance.",
+    phaseFinalTestFailedToast:
+      "You need at least 70% to advance. Review the phase topics and try again.",
+    phaseFinalTestLocked:
+      "Complete all checklist items above to unlock the phase final test.",
   },
 
   lesson: {

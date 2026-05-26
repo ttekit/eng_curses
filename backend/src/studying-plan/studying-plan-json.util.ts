@@ -9,6 +9,7 @@ const ALLOWED_TASK_KINDS = [
   "vocabulary_terms_added",
   "watch_time_minutes",
   "min_phase_calendar_days",
+  "phase_final_test_passed",
 ] as const;
 
 export type PlanTaskKind = (typeof ALLOWED_TASK_KINDS)[number];
@@ -47,12 +48,24 @@ export type PlanTaskMinPhaseCalendarDays = {
   minDays: number;
 };
 
+export type PlanTaskPhaseFinalTestPassed = {
+  id: string;
+  kind: "phase_final_test_passed";
+  minScorePct: number;
+};
+
 export type PlanTask =
   | PlanTaskDistinctVideosPassed
   | PlanTaskStreakDays
   | PlanTaskVocabularyTermsAdded
   | PlanTaskWatchTimeMinutes
-  | PlanTaskMinPhaseCalendarDays;
+  | PlanTaskMinPhaseCalendarDays
+  | PlanTaskPhaseFinalTestPassed;
+
+export type StoredStudyingPlanTopicRef = {
+  id: number;
+  name: string;
+};
 
 export type StoredStudyingPlanPhaseV2 = {
   title: string;
@@ -60,6 +73,12 @@ export type StoredStudyingPlanPhaseV2 = {
   actions: string[];
   tasks: PlanTask[];
   passConditions?: string[];
+  /** Catalogue topics assigned for this phase (from DB). */
+  topics?: StoredStudyingPlanTopicRef[];
+  /** Target CEFR band for this phase (e.g. A2, B1). */
+  expectedLevel?: string;
+  /** Measurable criteria to advance to the next phase (or complete the plan). */
+  transitionCondition?: string;
 };
 
 export type StoredStudyingPlanV2 = {
@@ -190,6 +209,22 @@ export function parsePlanTask(raw: unknown): PlanTask | null {
     };
   }
 
+  if (kind === "phase_final_test_passed") {
+    const minScorePct = Number(raw.minScorePct);
+    if (
+      !Number.isFinite(minScorePct) ||
+      minScorePct < 0 ||
+      minScorePct > 100
+    ) {
+      return null;
+    }
+    return {
+      id,
+      kind: "phase_final_test_passed",
+      minScorePct,
+    };
+  }
+
   return null;
 }
 
@@ -214,13 +249,53 @@ function parsePhase(raw: unknown, phaseIndex: number): StoredStudyingPlanPhaseV2
     const pc = stringArrayField(raw.passConditions, 20, 1200);
     passConditions = pc.length > 0 ? pc : undefined;
   }
+  const topics = parseTopicsField(raw.topics);
+  const expectedLevel =
+    typeof raw.expectedLevel === "string" ?
+      raw.expectedLevel.trim().slice(0, 32)
+    : undefined;
+  const transitionCondition =
+    typeof raw.transitionCondition === "string" ?
+      raw.transitionCondition.trim().slice(0, 2000)
+    : undefined;
   return {
     title,
     summary,
     actions,
     tasks,
     ...(passConditions ? { passConditions } : {}),
+    ...(topics.length > 0 ? { topics } : {}),
+    ...(expectedLevel ? { expectedLevel } : {}),
+    ...(transitionCondition ? { transitionCondition } : {}),
   };
+}
+
+function parseTopicsField(raw: unknown): StoredStudyingPlanTopicRef[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  const out: StoredStudyingPlanTopicRef[] = [];
+  const seenIds = new Set<number>();
+  const seenNames = new Set<string>();
+  for (const item of raw.slice(0, 12)) {
+    if (!isRecord(item)) {
+      continue;
+    }
+    const id = Number(item.id);
+    const name = typeof item.name === "string" ? item.name.trim().slice(0, 220) : "";
+    if (!Number.isFinite(id) || id < 1 || name.length < 2) {
+      continue;
+    }
+    const topicId = Math.floor(id);
+    const nameKey = name.toLowerCase();
+    if (seenIds.has(topicId) || seenNames.has(nameKey)) {
+      continue;
+    }
+    seenIds.add(topicId);
+    seenNames.add(nameKey);
+    out.push({ id: topicId, name });
+  }
+  return out;
 }
 
 function stringArrayField(
@@ -249,8 +324,8 @@ export function parseStudyingPlanV2Strict(raw: unknown): StoredStudyingPlanV2 {
       `Expected studying plan version ${STUDYING_PLAN_JSON_VERSION}`,
     );
   }
-  if (!Array.isArray(raw.phases) || raw.phases.length === 0) {
-    throw new StudyingPlanParseError("phases must be a non-empty array");
+  if (!Array.isArray(raw.phases) || raw.phases.length < 4) {
+    throw new StudyingPlanParseError("phases must contain at least 4 items");
   }
   const phases = raw.phases.map((p, i) => parsePhase(p, i));
   const weeklyHabitsRaw = raw.weeklyHabits;
