@@ -25,13 +25,8 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
             alt={featured.title}
             className="h-full w-full object-cover object-[75%_center] opacity-90"
           />
-          {/* Градієнт зліва направо: текст буде читабельним, картинка плавно виринає справа */}
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent sm:via-background/70" />
-
-          {/* НОВИЙ Градієнт справа наліво: затемнює край перед скролбаром і затемнює щілину */}
           <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background via-background/80 to-transparent" />
-
-          {/* Градієнт знизу: щоб банер плавно перетікав у список каталогів */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         </div>
       ) : (

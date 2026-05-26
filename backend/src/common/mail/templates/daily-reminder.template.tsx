@@ -23,7 +23,7 @@ export const DailyReminderTemplate = ({ name }: DailyReminderTemplateProps) => {
           <Text style={text}>Hi {name},</Text>
           <Text style={text}>
             This is your daily reminder to keep learning! Every session brings
-            you closer to your goal. 🚀
+            you closer to your goal. 
           </Text>
           <Section style={buttonContainer}>
             <Text style={text}>Keep up the great work!</Text>
