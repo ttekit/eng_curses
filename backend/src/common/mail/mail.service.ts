@@ -30,7 +30,11 @@ export class MailService {
     private readonly prisma: PrismaService,
   ) {}
 
-  public async sendConfirmationEmail(email: string, code: string) {
+  public async sendConfirmationEmail(
+    email: string,
+    code: string,
+    isLogin: boolean = false,
+  ) {
     if (isOutboundMailDisabled(this.configService)) {
       this.logger.warn(
         `Outbound mail disabled (DISABLE_EMAIL); skipping confirmation to ${email}`,
@@ -38,15 +42,16 @@ export class MailService {
       return;
     }
     const isDomainValid = await this.validateEmailDomain(email);
+
     const html = await render(
-      React.createElement(ConfirmationTemplate, { code }),
+      React.createElement(ConfirmationTemplate, { code, isLogin }),
     );
 
-    return this.sendMail(
-      email,
-      "Registration confirmation code — Explys",
-      html,
-    );
+    const subject = isLogin
+      ? "Verify your email to log in — Explys"
+      : "Registration confirmation code — Explys";
+
+    return this.sendMail(email, subject, html);
   }
 
   public async sendPasswordResetEmail(email: string, token: string) {

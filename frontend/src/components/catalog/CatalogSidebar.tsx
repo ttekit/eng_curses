@@ -27,6 +27,7 @@ interface CatalogSidebarProps {
   onSelectCategory: (category: string) => void;
   welcomeName?: string;
   englishLevel?: string;
+  avatarUrl?: string;
   selectedLevel?: string;
   onSelectLevel?: (level: string) => void;
   genres?: string[];
@@ -45,6 +46,7 @@ export function CatalogSidebar({
   onSelectCategory,
   welcomeName,
   englishLevel,
+  avatarUrl,
   selectedLevel = "All",
   onSelectLevel,
   genres = [],
@@ -109,8 +111,8 @@ export function CatalogSidebar({
         >
           <Link to="/profileMain">
             <img
-              src="/LandingProfile.svg"
-              className="w-8 h-8 m-2 hover:cursor-pointer shrink-0"
+              src={avatarUrl || "/LandingProfile.svg"}
+              className="w-8 h-8 m-2 hover:cursor-pointer shrink-0 rounded-full object-cover"
             />
           </Link>
 

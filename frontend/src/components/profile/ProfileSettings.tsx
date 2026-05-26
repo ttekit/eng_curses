@@ -1348,7 +1348,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
                 <div className="mt-4 space-y-2">
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Пароль <span className="text-red-500">*</span>
+                    Password <span className="text-red-500">*</span>
                   </label>
 
                   {/* Защита от автозаполнения браузерами */}
@@ -1379,7 +1379,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       setResetError("");
                     }}
                   >
-                    Отмена
+                    cancel
                   </button>
                   <button
                     type="button"
@@ -1387,7 +1387,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     disabled={isResetting || !resetPassword}
                     className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
                   >
-                    {isResetting ? "Сброс..." : "Сбросить прогресс"}
+                    {isResetting ? "Reset..." : "Reset progress"}
                   </button>
                 </div>
               </>

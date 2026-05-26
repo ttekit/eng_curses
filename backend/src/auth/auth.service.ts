@@ -142,7 +142,7 @@ export class AuthService {
       .toUpperCase();
     const roleLabel = allowedRegisterRoles.has(requestedRole)
       ? requestedRole
-      : "ADULT";
+      : "REGULAR";
 
     let otpCode: string | null = null;
     let otpExpires: Date | null = null;
@@ -380,7 +380,10 @@ export class AuthService {
 
     await this.prisma.token.delete({ where: { id: tokenRecord.id } });
 
-    return { success: true, message: "Your account has been successfully restored!" };
+    return {
+      success: true,
+      message: "Your account has been successfully restored!",
+    };
   }
 
   public async confirmEmail(token: string) {
@@ -391,9 +394,7 @@ export class AuthService {
     });
 
     if (!existingToken) {
-      throw new BadRequestException(
-        "Invalid or expired verification token",
-      );
+      throw new BadRequestException("Invalid or expired verification token");
     }
 
     const user = await this.prisma.user.findUnique({
@@ -498,7 +499,8 @@ export class AuthService {
           data: { isVerified: true },
         });
       } else {
-        await this.emailConfirmationService.sendVerificationToken(user);
+        await this.emailConfirmationService.sendVerificationToken(user, true);
+
         throw new ForbiddenException({
           message: "Email not verified. Please check your mail.",
           error: "EMAIL_NOT_VERIFIED",
