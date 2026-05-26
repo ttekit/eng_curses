@@ -170,6 +170,11 @@ model AdditionalUserData {
   /// UTC instant when the learner entered `activeStudyingPhaseIndex` (phase-scoped task windows).
   activePhaseEnteredAt     DateTime? @map("active_phase_entered_at")
 
+  /// Scoring draft for the in-progress phase final test iframe.
+  phaseFinalTestDraft      Json?     @map("phase_final_test_draft")
+  /// Passed phase final tests: `{ "passedPhaseIndices": [0, 1, …] }`.
+  phaseFinalTestProgress   Json?     @map("phase_final_test_progress")
+
   teacherGrades        String?
   teacherTopics        String[]
   /// Roster of pupils as JSON, e.g. [{ "name", "surname" }] — matches DB JSONB

@@ -39,6 +39,7 @@ import { UsersService } from "src/users/users.service";
 import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
 import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
+import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan-regeneration.service";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -47,6 +48,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
+    private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
   ) { }
 
   @Post("register")
@@ -239,6 +241,21 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
+  @Post("profile/refresh-knowledge-tags")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      "DEV_MODE only: re-run topic knowledge inference and return tag aggregates",
+  })
+  @ApiResponse({ status: 200, description: "Tag aggregates refreshed." })
+  @ApiResponse({ status: 403, description: "DEV_MODE is not enabled" })
+  refreshKnowledgeTags(@Req() req: any) {
+    const userId = Number(req.user.sub);
+    return this.authService.refreshKnowledgeTagProgress(userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
   @Get("profile/progress-details")
   @ApiOperation({
     summary: "Get aggregated profile metrics for dashboard progress charts",
@@ -250,6 +267,22 @@ export class AuthController {
   getProgressDetails(@Req() req: any) {
     const userId = Number(req.user.sub);
     return this.authService.getProgressDetails(userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Post("profile/regenerate-studying-plan")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Regenerate personalised studying plan (v2 JSON with DB topics per phase)",
+  })
+  @ApiResponse({ status: 200, description: "Studying plan regenerated and saved." })
+  async regenerateStudyingPlan(@Req() req: { user?: { sub?: unknown; id?: unknown } }) {
+    const userId = Number(req.user?.sub ?? req.user?.id);
+    if (!Number.isFinite(userId)) {
+      throw new UnauthorizedException("User id not found in token");
+    }
+    return this.studyingPlanRegeneration.regenerateForUser(userId);
   }
 
   @Get("/oauth/callback/:provider")

@@ -1,11 +1,20 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle, ChevronRight, Lock, PlayCircle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Lock,
+  PlayCircle,
+  RefreshCw,
+} from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { cn } from "../../lib/utils";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { pct01, SkillBar } from "./KnowledgeMeters";
+import { subscriptionDevModeEnabled } from "../../lib/subscriptionAccess";
 
 type KnowledgeTagRow = {
   name: string;
@@ -15,6 +24,36 @@ type KnowledgeTagRow = {
   grammar: number;
   topicCount: number;
 };
+
+function parseKnowledgeTagsPayload(raw: unknown): KnowledgeTagRow[] {
+  if (!raw || typeof raw !== "object") {
+    return [];
+  }
+  const tags = (raw as { tags?: unknown }).tags;
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  const parsed: KnowledgeTagRow[] = [];
+  for (const row of tags) {
+    if (!row || typeof row !== "object") {
+      continue;
+    }
+    const o = row as Record<string, unknown>;
+    const name = typeof o.name === "string" ? o.name.trim() : "";
+    if (!name) {
+      continue;
+    }
+    parsed.push({
+      name,
+      score: Number(o.score) || 0,
+      listening: Number(o.listening) || 0,
+      vocabulary: Number(o.vocabulary) || 0,
+      grammar: Number(o.grammar) || 0,
+      topicCount: Number(o.topicCount) || 0,
+    });
+  }
+  return parsed;
+}
 
 type ProgressDetails = {
   vocabularyProgress: {
@@ -48,7 +87,26 @@ export function ProfileProgress() {
   const [tagRows, setTagRows] = useState<KnowledgeTagRow[] | null>(null);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [isTagsExpanded, setIsTagsExpanded] = useState(false);
+  const [isRefreshingTags, setIsRefreshingTags] = useState(false);
   const [details, setDetails] = useState<ProgressDetails | null>(null);
+  const showDevRefresh = subscriptionDevModeEnabled();
+
+  const loadKnowledgeTags = useCallback(async (): Promise<void> => {
+    if (!user?.id) {
+      return;
+    }
+    setTagsError(null);
+    const r = await apiFetch("/auth/profile/knowledge-tags", {
+      method: "GET",
+    });
+    if (!r.ok) {
+      setTagRows([]);
+      setTagsError("Could not load tag knowledge.");
+      return;
+    }
+    const raw: unknown = await r.json();
+    setTagRows(parseKnowledgeTagsPayload(raw));
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -56,51 +114,40 @@ export function ProfileProgress() {
     }
     let cancelled = false;
     void (async () => {
-      setTagsError(null);
-      const r = await apiFetch("/auth/profile/knowledge-tags", {
-        method: "GET",
-      });
-      if (!r.ok) {
-        if (!cancelled) {
-          setTagRows([]);
-          setTagsError("Could not load tag knowledge.");
-        }
+      await loadKnowledgeTags();
+      if (cancelled) {
         return;
       }
-      const raw: unknown = await r.json();
-      if (cancelled || !raw || typeof raw !== "object") {
-        return;
-      }
-      const tags = (raw as { tags?: unknown }).tags;
-      if (!Array.isArray(tags)) {
-        setTagRows([]);
-        return;
-      }
-      const parsed: KnowledgeTagRow[] = [];
-      for (const row of tags) {
-        if (!row || typeof row !== "object") {
-          continue;
-        }
-        const o = row as Record<string, unknown>;
-        const name = typeof o.name === "string" ? o.name.trim() : "";
-        if (!name) {
-          continue;
-        }
-        parsed.push({
-          name,
-          score: Number(o.score) || 0,
-          listening: Number(o.listening) || 0,
-          vocabulary: Number(o.vocabulary) || 0,
-          grammar: Number(o.grammar) || 0,
-          topicCount: Number(o.topicCount) || 0,
-        });
-      }
-      setTagRows(parsed);
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, loadKnowledgeTags]);
+
+  async function refreshKnowledgeTags(): Promise<void> {
+    if (!user?.id || isRefreshingTags) {
+      return;
+    }
+    setIsRefreshingTags(true);
+    setTagsError(null);
+    try {
+      const r = await apiFetch("/auth/profile/refresh-knowledge-tags", {
+        method: "POST",
+      });
+      if (!r.ok) {
+        setTagsError(await getResponseErrorMessage(r));
+        return;
+      }
+      const raw: unknown = await r.json();
+      setTagRows(parseKnowledgeTagsPayload(raw));
+    } catch (err) {
+      setTagsError(
+        err instanceof Error ? err.message : "Could not refresh tag knowledge.",
+      );
+    } finally {
+      setIsRefreshingTags(false);
+    }
+  }
 
   useEffect(() => {
     if (!user?.id) return;
@@ -123,7 +170,24 @@ export function ProfileProgress() {
   return (
     <div className="space-y-6">
 
-      <ProfileCard title="Knowledge by tag">
+      <ProfileCard
+        title="Knowledge by tag"
+        action={
+          showDevRefresh ?
+            <button
+              type="button"
+              onClick={() => void refreshKnowledgeTags()}
+              disabled={isRefreshingTags || tagRows === null}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/30 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary/60 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {isRefreshingTags ?
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              : <RefreshCw className="size-3.5" aria-hidden />}
+              Refresh
+            </button>
+          : undefined
+        }
+      >
         {tagRows === null ? (
           <p className="text-sm text-muted-foreground">Loading tags…</p>
         ) : tagsError ? (

@@ -14,6 +14,9 @@ const CEFR_UNIT: Record<string, number> = {
 
 const CEFR_ALLOWED = new Set<string>(VIDEO_SYSTEM_TAG_LEVELS as unknown as string[]);
 
+const USER_CEFR_BLEND = 0.4;
+const PHASE_CEFR_BLEND = 0.6;
+
 /**
  * User-reported or profile CEFR / English level string → unit on [0,1].
  */
@@ -26,6 +29,17 @@ export function userEnglishLevelToCefrUnit(level: string | null | undefined): nu
     return CEFR_UNIT[t];
   }
   return getBaseLevel(t.toUpperCase());
+}
+
+/**
+ * Blends profile and active-phase target CEFR for recommendation difficulty.
+ */
+export function blendCefrUnits(userUnit: number, phaseUnit: number): number {
+  return clamp(
+    USER_CEFR_BLEND * userUnit + PHASE_CEFR_BLEND * phaseUnit,
+    0,
+    1,
+  );
 }
 
 /**
@@ -85,27 +99,33 @@ function tokenSet(tokens: string[]): Set<string> {
 }
 
 /**
- * Hobbies, interests, topic names, tag names, work/education nuggets for theme matching to video `userTags`.
+ * Hobbies, interests, job, genres, topic names, and work/education for theme matching to video `userTags`.
  */
 export function buildUserThemeTokens(input: {
   hobbies: string[];
   interests: string[];
   workField: string | null;
   education: string | null;
+  job: string | null;
   selectedTopicNames: string[];
   strongTopicTagNames: string[];
+  favoriteGenreNames: string[];
 }): Set<string> {
   const parts: string[] = [
     ...input.hobbies,
     ...input.interests,
     ...input.selectedTopicNames,
     ...input.strongTopicTagNames,
+    ...input.favoriteGenreNames,
   ];
   if (input.workField?.trim()) {
     parts.push(input.workField);
   }
   if (input.education?.trim()) {
     parts.push(input.education);
+  }
+  if (input.job?.trim()) {
+    parts.push(input.job);
   }
   return tokenSet(parts);
 }
@@ -192,29 +212,143 @@ export function topicKnowledgeFit(
   return clamp(s / videoTopicIds.length, 0, 1);
 }
 
+/**
+ * Alignment with topics assigned to the learner's active studying-plan phase.
+ */
+export function phaseTopicsFit(
+  videoTopicIds: number[],
+  phaseTopicIds: number[],
+  phaseTopicNames: string[],
+  phaseTopicTagNames: string[],
+  videoUserTags: string[],
+): number {
+  if (phaseTopicIds.length === 0) {
+    return 0.55;
+  }
+  const phaseIdSet = new Set(phaseTopicIds);
+  for (const id of videoTopicIds) {
+    if (phaseIdSet.has(id)) {
+      return 1;
+    }
+  }
+  const nameTokens = tokenSet([
+    ...phaseTopicNames,
+    ...phaseTopicTagNames,
+  ]);
+  if (nameTokens.size > 0) {
+    for (const rawName of phaseTopicNames) {
+      const name = rawName.trim().toLowerCase();
+      if (name.length < 2) {
+        continue;
+      }
+      for (const rawTag of videoUserTags) {
+        const tag = rawTag.trim().toLowerCase();
+        if (
+          tag.length > 1 &&
+          (name.includes(tag) || tag.includes(name))
+        ) {
+          return 0.85;
+        }
+      }
+    }
+    const soft = userThemeMatchScore(videoUserTags, nameTokens);
+    if (soft >= 0.4) {
+      return clamp(0.65 + soft * 0.35, 0, 1);
+    }
+  }
+  return 0.35;
+}
+
+function normalizeTag(tag: string): string {
+  return tag.trim().toLowerCase();
+}
+
+/**
+ * Favorite / hated genre names vs video `userTags` (case-insensitive).
+ */
+export function genrePreferenceFit(
+  videoUserTags: string[],
+  favoriteGenreNames: string[],
+  hatedGenreNames: string[],
+): number {
+  if (videoUserTags.length === 0) {
+    return favoriteGenreNames.length === 0 && hatedGenreNames.length === 0 ?
+        0.55
+      : 0.45;
+  }
+  const favorites = new Set(
+    favoriteGenreNames.map((g) => normalizeTag(g)).filter((g) => g.length > 0),
+  );
+  const hated = new Set(
+    hatedGenreNames.map((g) => normalizeTag(g)).filter((g) => g.length > 0),
+  );
+  if (favorites.size === 0 && hated.size === 0) {
+    return 0.55;
+  }
+  let favoriteHits = 0;
+  let hatedHits = 0;
+  for (const raw of videoUserTags) {
+    const v = normalizeTag(raw);
+    if (!v) {
+      continue;
+    }
+    for (const fav of favorites) {
+      if (v === fav || (v.length > 2 && (v.includes(fav) || fav.includes(v)))) {
+        favoriteHits += 1;
+        break;
+      }
+    }
+    for (const hate of hated) {
+      if (v === hate || (v.length > 2 && (v.includes(hate) || hate.includes(v)))) {
+        hatedHits += 1;
+        break;
+      }
+    }
+  }
+  const favoriteFit =
+    favorites.size === 0 ? 0.5 : clamp(favoriteHits / videoUserTags.length, 0, 1);
+  const penalty = hatedHits * 0.7;
+  return clamp(favoriteFit - penalty, 0, 1);
+}
+
 export type ScoreWeights = {
   cefr: number;
   complexity: number;
   themes: number;
   topicKnowledge: number;
+  phaseTopics: number;
+  genres: number;
+};
+
+export type RecommendationScoreParts = {
+  cefr: number;
+  complexity: number;
+  themes: number;
+  topicKnowledge: number;
+  phaseTopics: number;
+  genres: number;
 };
 
 const DEFAULT_WEIGHTS: ScoreWeights = {
-  cefr: 0.3,
-  complexity: 0.2,
-  themes: 0.25,
-  topicKnowledge: 0.25,
+  cefr: 0.22,
+  complexity: 0.15,
+  themes: 0.18,
+  topicKnowledge: 0.13,
+  phaseTopics: 0.22,
+  genres: 0.1,
 };
 
 export function totalWeightedScore(
-  parts: { cefr: number; complexity: number; themes: number; topicKnowledge: number },
+  parts: RecommendationScoreParts,
   weights: ScoreWeights = DEFAULT_WEIGHTS,
 ): number {
   return clamp(
     parts.cefr * weights.cefr +
       parts.complexity * weights.complexity +
       parts.themes * weights.themes +
-      parts.topicKnowledge * weights.topicKnowledge,
+      parts.topicKnowledge * weights.topicKnowledge +
+      parts.phaseTopics * weights.phaseTopics +
+      parts.genres * weights.genres,
     0,
     1,
   );

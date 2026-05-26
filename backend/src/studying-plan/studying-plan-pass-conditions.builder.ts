@@ -1,4 +1,7 @@
-import { DISTINCT_PASSED_LESSONS_PER_PHASE_STEP } from "./studying-plan.constants";
+import {
+  DISTINCT_PASSED_LESSONS_PER_PHASE_STEP,
+  PHASE_FINAL_TEST_MIN_SCORE_PCT,
+} from "./studying-plan.constants";
 import type { HorizonBudget } from "./studying-plan-horizon.util";
 import type { CoarseLevelTier } from "./studying-plan-level.util";
 import {
@@ -13,9 +16,8 @@ export function richPassConditionsForPhase(options: {
   phaseIndex: number;
   budget: HorizonBudget;
   tier: CoarseLevelTier;
-  learningGoal: string;
 }): string[] {
-  const { phaseIndex, budget, tier, learningGoal } = options;
+  const { phaseIndex, budget, tier } = options;
   const base = standardPhasePassConditionLines();
 
   const streak = streakTargetForPhase(phaseIndex, budget.structuredStudyWeeks);
@@ -27,7 +29,6 @@ export function richPassConditionsForPhase(options: {
     `Reach a **${streak}-day** study streak at least once (each day with meaningful catalog practice counts).`,
     `Pass **at least ${videos}** distinct videos at **≥70%** on comprehension checks (the app advances after **${DISTINCT_PASSED_LESSONS_PER_PHASE_STEP}** distinct passes — treat **${videos}** as your depth target for this phase).`,
     `Learn or consolidate **~${words}** new words from lessons (saved words + reviews in the app).`,
-    `Keep clip and quiz choices aligned with your goal: **${learningGoal}**.`,
   );
   return out;
 }
@@ -76,5 +77,14 @@ export function buildPlanTasksForPhase(options: {
       kind: "min_phase_calendar_days" as const,
       minDays: minPhaseDays,
     },
+    ...(phaseIndex < 3 ?
+      [
+        {
+          id: `p${idx}-final-test`,
+          kind: "phase_final_test_passed" as const,
+          minScorePct: PHASE_FINAL_TEST_MIN_SCORE_PCT,
+        },
+      ]
+    : []),
   ];
 }

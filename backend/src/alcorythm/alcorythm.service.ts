@@ -4,16 +4,13 @@ import { AlcorythmGeminiTagScoreClient } from './alcorythm-gemini-tag-score.clie
 import { TagKnowledgeItem, TopicKnowledgeItem } from './alcorythm.types';
 import {
   AI_ALGORITHM_VERSION,
-  aggregateSkillScore,
   buildProfileContext,
   calculateConfidence,
   clamp,
-  getBaseLevel,
+  computeTopicKnowledgePrior,
   getDeterministicTagScore,
-  getLanguageBackgroundBoost,
   keywordMatchStrength,
   normalizeKeywords,
-  splitTopicSkillScores,
 } from './alcorythm-scoring.util';
 
 @Injectable()
@@ -78,14 +75,6 @@ export class AlcorythmService {
     ]);
     const secondaryKeywords = normalizeKeywords(profileContext.hobbies ?? []);
 
-    const base = clamp(
-      getBaseLevel(profileContext.englishLevel) +
-        getLanguageBackgroundBoost({
-          nativeLanguage: profileContext.nativeLanguage,
-          knownLanguages: profileContext.knownLanguages,
-          knownLanguageLevels: profileContext.knownLanguageLevels,
-        }),
-    );
     const confidence = calculateConfidence({
       hasEnglishLevel: Boolean(profileContext.englishLevel),
       hasLanguageBackground:
@@ -97,73 +86,74 @@ export class AlcorythmService {
       hasSelectedTopics: profileContext.selectedTopicIds.size > 0,
     });
 
-    const items = topics.map((topic) => {
-      let boost = 0;
-      let matchedSignals = 0;
-      const totalSignals = 3;
+    const measuredTopicIds = await this.loadMeasuredTopicIds(userId);
+    const existingRows = await prisma.userLanguageData.findMany({
+      where: { userId },
+    });
+    const existingByTopicId = new Map<number, (typeof existingRows)[number]>(
+      existingRows.map((row: (typeof existingRows)[number]) => [row.topicId, row]),
+    );
 
+    const items = topics.map((topic: any) => {
+      if (measuredTopicIds.has(topic.id) && existingByTopicId.has(topic.id)) {
+        const row = existingByTopicId.get(topic.id)!;
+        return {
+          topicId: topic.id,
+          score: row.score,
+          listeningScore: row.listeningScore,
+          vocabularyScore: row.vocabularyScore,
+          grammarScore: row.grammarScore,
+          confidence: row.confidence,
+          coverage: row.coverage,
+          algorithmVersion: row.algorithmVersion,
+          preserve: true as const,
+        };
+      }
+
+      const tagNames = topic.tags.map((tag: { name: string }) => tag.name);
       const primaryStrength = keywordMatchStrength(
         topic.name,
-        topic.tags.map((tag) => tag.name),
+        tagNames,
         primaryKeywords,
       );
       const secondaryStrength = keywordMatchStrength(
         topic.name,
-        topic.tags.map((tag) => tag.name),
+        tagNames,
         secondaryKeywords,
       );
-      /** Work, education, and job — stronger lift for matching topics. */
-      boost += 0.32 * primaryStrength;
-      /** Hobbies — stronger secondary signal for leisure / interest alignment. */
-      boost += 0.18 * secondaryStrength;
-      matchedSignals += primaryStrength + secondaryStrength;
-
-      if (profileContext.selectedTopicIds.has(topic.id)) {
-        boost += 0.2;
-        matchedSignals += 1;
-      }
-
-      const normalizedComplexity = clamp((topic.complexity ?? 1) / 3);
-      const complexityFit = clamp(1 - Math.abs(base - normalizedComplexity));
-      boost += 0.1 * complexityFit;
-
-      const blended = clamp(base + boost);
-      const tagNames = topic.tags.map((tag: { name: string }) => tag.name);
-      const skills = splitTopicSkillScores({
-        blended,
+      const prior = computeTopicKnowledgePrior({
+        profile: profileContext,
         topicName: topic.name,
         tagNames,
+        topicComplexity: topic.complexity ?? 5,
         primaryStrength,
         secondaryStrength,
-        normalizedComplexity,
-        profile: profileContext,
+        isSelectedTopic: profileContext.selectedTopicIds.has(topic.id),
+        confidence,
       });
-      const score = aggregateSkillScore(
-        skills.listening,
-        skills.vocabulary,
-        skills.grammar,
-      );
-      const coverage = clamp(matchedSignals / totalSignals);
 
       return {
         topicId: topic.id,
-        score,
-        listeningScore: skills.listening,
-        vocabularyScore: skills.vocabulary,
-        grammarScore: skills.grammar,
-        confidence,
-        coverage,
+        score: prior.score,
+        listeningScore: prior.listeningScore,
+        vocabularyScore: prior.vocabularyScore,
+        grammarScore: prior.grammarScore,
+        confidence: prior.confidence,
+        coverage: prior.coverage,
         algorithmVersion: AI_ALGORITHM_VERSION,
+        preserve: false as const,
       };
     });
 
-    await prisma.userLanguageData.deleteMany({
-      where: { userId },
-    });
-
-    try {
-      await prisma.userLanguageData.createMany({
-        data: items.map((item) => ({
+    for (const item of items) {
+      if (item.preserve) {
+        continue;
+      }
+      await prisma.userLanguageData.upsert({
+        where: {
+          userId_topicId: { userId, topicId: item.topicId },
+        },
+        create: {
           userId,
           topicId: item.topicId,
           score: item.score,
@@ -173,32 +163,53 @@ export class AlcorythmService {
           confidence: item.confidence,
           coverage: item.coverage,
           algorithmVersion: item.algorithmVersion,
-        })),
+        },
+        update: {
+          score: item.score,
+          listeningScore: item.listeningScore,
+          vocabularyScore: item.vocabularyScore,
+          grammarScore: item.grammarScore,
+          confidence: item.confidence,
+          coverage: item.coverage,
+          algorithmVersion: item.algorithmVersion,
+        },
       });
-    } catch (firstError: unknown) {
-      try {
-        await prisma.userLanguageData.createMany({
-          data: items.map((item) => ({
-            userId,
-            topicId: item.topicId,
-            score: item.score,
-            listeningScore: item.listeningScore,
-            vocabularyScore: item.vocabularyScore,
-            grammarScore: item.grammarScore,
-          })),
-        });
-      } catch (secondError: unknown) {
-        this.logger.error(
-          "userLanguageData createMany failed after fallback",
-          secondError instanceof Error ? secondError.stack : secondError,
-        );
-        throw firstError;
-      }
     }
 
     void this.analizeUsersLevel(userId).catch(() => {});
 
-    return items;
+    return items.map(({ preserve: _preserve, ...rest }) => rest);
+  }
+
+  /** Topic ids linked to videos the learner has attempted (quiz evidence). */
+  private async loadMeasuredTopicIds(userId: number): Promise<Set<number>> {
+    const attempts = await this.prisma.comprehensionTestAttempt.findMany({
+      where: { userId },
+      select: {
+        contentVideo: {
+          select: {
+            content: {
+              select: {
+                stats: {
+                  select: {
+                    topics: { select: { id: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const measured = new Set<number>();
+    for (const attempt of attempts) {
+      const topics =
+        attempt.contentVideo?.content?.stats?.topics ?? [];
+      for (const topic of topics) {
+        measured.add(topic.id);
+      }
+    }
+    return measured;
   }
 
   async analizeUsersLevel(userId: number): Promise<TagKnowledgeItem[]> {
@@ -241,37 +252,43 @@ export class AlcorythmService {
           select: {
             id: true,
             name: true,
+            complexity: true,
           },
         },
       },
     });
 
     const profileContext = buildProfileContext(profile);
-    const base = clamp(
-      getBaseLevel(profileContext.englishLevel) +
-        getLanguageBackgroundBoost({
-          nativeLanguage: profileContext.nativeLanguage,
-          knownLanguages: profileContext.knownLanguages,
-          knownLanguageLevels: profileContext.knownLanguageLevels,
-        }),
-    );
     const primaryKeywords = normalizeKeywords([
       profileContext.workField,
       profileContext.education,
       profileContext.job,
     ]);
     const secondaryKeywords = normalizeKeywords(profileContext.hobbies);
+    const confidence = calculateConfidence({
+      hasEnglishLevel: Boolean(profileContext.englishLevel),
+      hasLanguageBackground:
+        Boolean(profileContext.nativeLanguage) ||
+        profileContext.knownLanguages.length > 0 ||
+        profileContext.knownLanguageLevels.length > 0,
+      hasPrimarySignals: primaryKeywords.length > 0,
+      hasSecondarySignals: secondaryKeywords.length > 0,
+      hasSelectedTopics: profileContext.selectedTopicIds.size > 0,
+    });
 
     const deterministicByTag: Record<string, number> = {};
     for (const tag of tags) {
       deterministicByTag[tag.name] = getDeterministicTagScore({
-        base,
+        profile: profileContext,
         tagName: tag.name,
-        topicNames: (tag.topics ?? []).map((t: any) => t.name),
+        topics: (tag.topics ?? []).map((topic: { id: number; name: string; complexity: number }) => ({
+          id: topic.id,
+          name: topic.name,
+          complexity: topic.complexity ?? 2,
+        })),
         primaryKeywords,
         secondaryKeywords,
-        selectedTopicIds: profileContext.selectedTopicIds,
-        tagTopicIds: (tag.topics ?? []).map((t: any) => t.id),
+        confidence,
       });
     }
 

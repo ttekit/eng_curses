@@ -3,7 +3,7 @@ import { generateContentVideoIframe } from "src/common/content-video-iframe.util
 import { PrismaService } from "src/prisma.service";
 import { CreateContentVideoDto } from "./dto/create-content-video.dto";
 import { UpdateContentVideoDto } from "./dto/update-content-video.dto";
-import { Redis } from "ioredis";
+import type { RedisCatalogCacheClient } from "src/redis/in-memory-redis.client";
 
 export function compareContentVideosPlaylistOrder(
   a: {
@@ -32,7 +32,7 @@ export const CATALOG_CONTENT_VISIBILITY_PUBLIC = "public" as const;
 export class ContentVideoService {
   constructor(
     private prisma: PrismaService,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis
+    @Inject('REDIS_CLIENT') private readonly redis: RedisCatalogCacheClient
   ) { }
 
   async create(createContentVideoDto: CreateContentVideoDto) {

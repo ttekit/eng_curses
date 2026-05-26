@@ -14,6 +14,10 @@ export type PlacementTestPayload = {
   knowledgeTags: string[];
   cefrHint: string;
   questions: PlacementQuestion[];
+  /** Override POST path for iframe submit (default `/placement-test/complete`). */
+  completePath?: string;
+  /** Override `postMessage` type after success (default `placement_test_complete`). */
+  completeEventType?: string;
 };
 
 export type ThemesFile = {

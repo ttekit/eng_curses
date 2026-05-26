@@ -29,11 +29,11 @@ export class ContentRecommendationsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiOperation({
-    summary: "Rank videos for a user",
+    summary: "Rank videos for a user (deterministic, no AI)",
     description:
-      "Uses user CEFR (englishLevel), per-topic knowledge as vocabulary strength, " +
-      "hobbies/interests/selected topics vs video theme tags, video CEFR and processing complexity, " +
-      "and topic overlap when the video is linked to topics on ContentStats.",
+      "Rule-based ranking: blended profile + active studying-plan phase CEFR, " +
+      "phase catalogue topics, per-topic knowledge scores, hobbies/job/work field, " +
+      "favorite and hated genres vs video userTags, and video CEFR / processing complexity.",
   })
   @ApiParam({ name: "userId", type: "integer" })
   forUser(

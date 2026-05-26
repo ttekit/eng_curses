@@ -29,7 +29,15 @@ Transcript:
 
 export const DEFAULT_PROMPT_TAG_SCORE = `You are scoring user knowledge for language-learning tags.
 Return ONLY valid JSON object where keys are tag names and values are numbers from 0 to 1.
-Example: {"Greetings":0.4,"Travel":0.8}
+Example: {"Greetings":0.08,"Banking":0}
+Rules:
+- Each tag is a separate domain. Scores must NOT copy the learner's global CEFR level to every tag.
+- Default for tags with no profile match and no quiz evidence in deterministic scores: **0** (especially finance, banking, work, politics, abstract topics for A1–A2).
+- Foundational tags clearly at/below the learner band (greetings, numbers) may be **0.05–0.10** for A1, **0.08–0.15** for A2 — never higher without evidence.
+- Raise a tag only when deterministic scores or profile data (job, work field, education, hobbies, selected topics) clearly support that domain.
+- ONLY when English level is B2 or higher: matched work/hobby tags may reach up to +0.15 above their deterministic value.
+- For A1–B1, even matched work/hobby tags stay modest (typically ≤0.20 unless deterministic score is already higher).
+- Prefer deterministic fallback values; stay within ±0.04 unless profile strongly supports a small adjustment.
 Tags: {{TAGS}}
 English level: {{ENGLISH_LEVEL}}
 Native language: {{NATIVE_LANGUAGE}}
@@ -64,30 +72,39 @@ export const DEFAULT_PROMPT_STUDYING_PLAN_TASK_SCHEMA = `Each phase MUST include
   vocabulary_terms_added: { id, kind, minCount (int >= 1), scope: "phase" }
   watch_time_minutes: { id, kind, minMinutes (int >= 1), scope: "phase" }
   min_phase_calendar_days: { id, kind, minDays (int >= 1) }
-Every phase should include at least one **distinct_videos_passed**, **streak_days**, **vocabulary_terms_added**, **watch_time_minutes**, and **min_phase_calendar_days** task matching the numeric hints for that phase.`;
+  phase_final_test_passed: { id, kind, minScorePct (number 0–100) } — required for phases 1–3 (not the last phase)
+Every phase should include at least one **distinct_videos_passed**, **streak_days**, **vocabulary_terms_added**, **watch_time_minutes**, and **min_phase_calendar_days** task matching the numeric hints for that phase. Non-final phases MUST also include **phase_final_test_passed** with minScorePct 70.`;
 
-export const DEFAULT_PROMPT_STUDYING_PLAN = `You write a structured English learning roadmap for one adult learner using video lessons with comprehension checks (multiple choice + short summary).
-Return ONLY valid JSON (no markdown) with this exact top-level shape: { "phases": [ exactly {{PHASE_COUNT}} objects ], "weeklyHabits": [ exactly {{WEEKLY_HABITS_COUNT}} strings ] }. Use the key name **weeklyHabits** exactly.
+export const DEFAULT_PROMPT_STUDYING_PLAN = `You write a structured English learning roadmap for one adult learner using video lessons with comprehension checks.
+The plan MUST help them reach their stated goal across exactly {{PHASE_COUNT}} phases.
 
-Each phase object MUST have: "title" (string, <= 90 chars), "summary" (string, 1-2 sentences), "actions" (array of 3-5 short actionable strings), "passConditions" (array of 5-7 strings), "tasks" (array of structured task objects — see TASK SCHEMA below).
+Return ONLY valid JSON (no markdown):
+{ "phases": [ exactly {{PHASE_COUNT}} objects ], "weeklyHabits": [ exactly {{WEEKLY_HABITS_COUNT}} strings ] }
+
+{{PHASE_SCHEMA_BLOCK}}
 
 TASK SCHEMA:
 {{TASK_SCHEMA}}
 
 {{TIMELINE_BLOCK}}
 
-{{PASS_BLOCK}}
-
-Suggested per-phase floors (meet or exceed; round sensibly but do not go below):
+Suggested per-phase targets (meet or exceed):
 {{PHASE_HINT_LINES}}
 
-Phases should progress logically: 1) build habit, 2) stretch input, 3) apply/output, 4) sustain until horizon.
-weeklyHabits: three concrete weekly rhythms (catalog videos, quizzes, vocabulary review), scaled to tier and horizon length.
+{{TOPICS_BLOCK}}
 
-Learner goal: {{LEARNING_GOAL}}
-Time horizon (verbatim): {{TIME_HORIZON}}
-CEFR / level (raw): {{ENGLISH_LEVEL}}
-Hobbies / interests: {{HOBBIES}}`;
+LEARNER PROFILE (use job, education, hobbies, and tags to tailor summaries and actions):
+{{PROFILE_BLOCK}}
+
+Goal: {{LEARNING_GOAL}}
+Horizon: {{TIME_HORIZON}}
+Current level: {{ENGLISH_LEVEL}}
+Job: {{JOB}}
+Education: {{EDUCATION}}
+Hobbies: {{HOBBIES}}
+Tags: {{TAGS}}
+
+weeklyHabits: three concrete weekly rhythms tied to the goal and profile tags.`;
 
 export const DEFAULT_PROMPT_POST_WATCH_SURVEY = `You create a short post-video survey for English language learners.
 Return ONLY valid JSON: {"questions":[...]} with exactly 4 items.
