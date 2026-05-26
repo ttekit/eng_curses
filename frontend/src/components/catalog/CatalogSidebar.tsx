@@ -10,6 +10,7 @@ import {
   Trophy,
   User,
 } from "lucide-react";
+import { useUser } from "../../context/UserContext";
 
 const sidebarLinks = [
   { icon: LayoutGrid, label: "Catalog", to: "/catalog" },
@@ -25,9 +26,9 @@ interface CatalogSidebarProps {
   categories: string[];
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
-  welcomeName?: string;
-  englishLevel?: string;
-  avatarUrl?: string;
+  // welcomeName?: string;
+  // englishLevel?: string;
+  // avatarUrl?: string;
   selectedLevel?: string;
   onSelectLevel?: (level: string) => void;
   genres?: string[];
@@ -44,9 +45,9 @@ export function CatalogSidebar({
   categories,
   selectedCategory,
   onSelectCategory,
-  welcomeName,
-  englishLevel,
-  avatarUrl,
+  // welcomeName,
+  // englishLevel,
+  // avatarUrl,
   selectedLevel = "All",
   onSelectLevel,
   genres = [],
@@ -60,6 +61,12 @@ export function CatalogSidebar({
 }: CatalogSidebarProps) {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
+  const { user } = useUser();
+
+  const welcomeName = user?.name;
+  const avatarUrl = user?.avatarUrl;
+  const englishLevel = user?.englishLevel;
+
   const sortedCategories = ["All", ...categories.filter(Boolean).sort()];
   const sortedGenres = ["All", ...genres.filter(Boolean).sort()];
 

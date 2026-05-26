@@ -422,17 +422,121 @@ export class AuthService {
   }
 
   async updateUserPreferences(userId: number, data: any) {
-    return this.prisma.user.update({
+    const prisma = this.prisma as any;
+    const generatedStudents: GeneratedStudent[] = [];
+
+    if (data.role === "TEACHER" && Array.isArray(data.studentNames)) {
+      for (const pupil of data.studentNames) {
+        const randomId = Math.floor(1000 + Math.random() * 9000);
+        let firstName = "student";
+        let lastName = randomId.toString();
+
+        if (typeof pupil === "object" && pupil !== null) {
+          firstName = pupil.name || "student";
+          lastName = pupil.surname || randomId.toString();
+        } else if (typeof pupil === "string") {
+          const parts = pupil.split(" ");
+          firstName = parts[0] || "student";
+          lastName = parts[1] || randomId.toString();
+        }
+
+        const studentEmail =
+          `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${randomId}@explys.com`.replace(
+            /\s+/g,
+            "",
+          );
+        const chars =
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const tempPassword = Array.from(
+          { length: 12 },
+          () => chars[Math.floor(Math.random() * chars.length)],
+        ).join("");
+
+        const hashedStudentPassword = await bcrypt.hash(tempPassword, 10);
+
+        await prisma.user.create({
+          data: {
+            email: studentEmail.toLowerCase(),
+            password: hashedStudentPassword,
+            name: `${firstName} ${lastName}`.trim(),
+            role: "STUDENT",
+            method: "CREDENTIALS",
+            teacherId: userId,
+            isVerified: true,
+          },
+        });
+
+        generatedStudents.push({
+          name: `${firstName} ${lastName}`.trim(),
+          email: studentEmail,
+          password: tempPassword,
+        });
+      }
+    }
+
+    const baseData: any = {};
+    if (data.teacherGrades !== undefined)
+      baseData.teacherGrades = data.teacherGrades;
+    if (data.teacherTopics !== undefined) {
+      baseData.teacherTopics = Array.isArray(data.teacherTopics)
+        ? data.teacherTopics.map((t: any) => String(t))
+        : data.teacherTopics;
+    }
+    if (data.studentNames !== undefined)
+      baseData.studentNames = data.studentNames;
+    if (data.learningGoal !== undefined)
+      baseData.learningGoal = data.learningGoal;
+    if (data.timeToAchieve !== undefined)
+      baseData.timeToAchieve = data.timeToAchieve;
+    if (data.hobbies !== undefined) baseData.hobbies = data.hobbies;
+    if (data.knownLanguages !== undefined)
+      baseData.knownLanguages = data.knownLanguages;
+
+    const createData: any = { ...baseData };
+    const updateData: any = { ...baseData };
+
+    if (data.favoriteGenres) {
+      const favoriteGenreIds = await this.filterExistingGenreIds(
+        data.favoriteGenres,
+      );
+      if (favoriteGenreIds.length > 0) {
+        const mappedIds = favoriteGenreIds.map((id: number) => ({ id }));
+        createData.favoriteGenres = { connect: mappedIds };
+        updateData.favoriteGenres = { set: mappedIds };
+      }
+    }
+
+    if (data.hatedGenres) {
+      const hatedGenreIds = await this.filterExistingGenreIds(data.hatedGenres);
+      if (hatedGenreIds.length > 0) {
+        const mappedIds = hatedGenreIds.map((id: number) => ({ id }));
+        createData.hatedGenres = { connect: mappedIds };
+        updateData.hatedGenres = { set: mappedIds };
+      }
+    }
+
+    const hasAdditionalData = Object.keys(updateData).length > 0;
+
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        additionalUserData: {
-          update: {
-            hobbies: data.hobbies,
-            knownLanguages: data.knownLanguages,
-          },
-        },
+        ...(data.role ? { role: data.role } : {}),
+        additionalUserData: hasAdditionalData
+          ? {
+              upsert: {
+                create: createData,
+                update: updateData,
+              },
+            }
+          : undefined,
       },
     });
+
+    return {
+      ...updatedUser,
+      generatedStudents:
+        generatedStudents.length > 0 ? generatedStudents : undefined,
+    };
   }
 
   public async resendConfirmationEmail(email: string) {

@@ -594,16 +594,16 @@ export class UsersService {
   async updateProfile(id: number, updateUserDto: UpdateUserDto) {
     const { role, isSuspended, hasCompletedPlacement, ...safeData } =
       updateUserDto as any;
-
-    if (
-      role ||
-      isSuspended !== undefined ||
-      hasCompletedPlacement !== undefined
-    ) {
-      this.logger.warn(
-        `Security Warning: User ${id} attempted privilege escalation!`,
-      );
-    }
+    //пускай пока что будет, не надо удалять
+    // if (
+    //   role ||
+    //   isSuspended !== undefined ||
+    //   hasCompletedPlacement !== undefined
+    // ) {
+    //   this.logger.warn(
+    //     `Security Warning: User ${id} attempted privilege escalation!`,
+    //   );
+    // }
 
     return this.update(id, safeData as UpdateUserDto);
   }
