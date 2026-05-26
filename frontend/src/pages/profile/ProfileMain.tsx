@@ -311,6 +311,7 @@ export default function ProfileMain() {
             user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
           }
           englishLevel={user?.englishLevel || undefined}
+          avatarUrl={user?.avatarUrl}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
         />

@@ -31,11 +31,46 @@ function postLoginNavigateTarget(
   explicit: string | undefined,
   profile: UserData | null,
 ): string {
-  if (explicit) return explicit;
   if (!profile) return "/subscribe";
+
   if (profile.role === "admin") return "/admin";
   if (profile.role === "teacher") return "/catalog";
+
+  if (
+    !profile.role ||
+    profile.role === "choose" ||
+    profile.role === "regular"
+  ) {
+    return "/registrationDetails";
+  }
+
+  if (
+    (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
+    (!profile.hatedGenres || profile.hatedGenres.length === 0)
+  ) {
+    return "/registrationPreferences";
+  }
+
+  if (!profile.subscriptionPlan && !profile.subscriptionStatus) {
+    return "/subscribe";
+  }
+
+  if (
+    !profile.englishLevel ||
+    profile.englishLevel === "choose" ||
+    profile.englishLevel === ""
+  ) {
+    return "/registrationDetails";
+  }
+
+  if (!profile.hasCompletedPlacement) {
+    return "/level-test";
+  }
+
+  if (explicit) return explicit;
+
   if (userMayUseLearnerApp(profile)) return "/catalog";
+
   return "/subscribe";
 }
 
@@ -172,171 +207,175 @@ export default function LoginForm() {
         path="/loginForm"
       />
       <AuthSplitLayout
-      rightTitle="Ready to continue?"
-      rightSubtitle="Pick up right where you left off with your personalized learning path."
-    >
-      <div className="mb-2 flex items-center gap-3">
-        <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
-        <h1 className="font-display text-2xl font-bold">Welcome back</h1>
-      </div>
-      <p className="mb-8 text-muted-foreground">
-        Continue your learning journey
-      </p>
+        rightTitle="Ready to continue?"
+        rightSubtitle="Pick up right where you left off with your personalized learning path."
+      >
+        <div className="mb-2 flex items-center gap-3">
+          <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
+          <h1 className="font-display text-2xl font-bold">Welcome back</h1>
+        </div>
+        <p className="mb-8 text-muted-foreground">
+          Continue your learning journey
+        </p>
 
-      <form onSubmit={handleLogin} tabIndex={0} className="space-y-5">
-        {!show2FA ? (
-          <>
-            <div className="space-y-2">
-              <LabelRegister isRequired={true}>Email</LabelRegister>
-              <InputText
-                name="email"
-                value={loginData.email}
-                onChange={handleChange}
-                type="email"
-                placeholder="you@example.com"
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <LabelRegister isRequired={true}>Password</LabelRegister>
-                <Link
-                  to="#"
-                  className="text-sm text-primary hover:underline"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative">
+        <form onSubmit={handleLogin} tabIndex={0} className="space-y-5">
+          {!show2FA ? (
+            <>
+              <div className="space-y-2">
+                <LabelRegister isRequired={true}>Email</LabelRegister>
                 <InputText
-                  name="password"
-                  value={loginData.password}
+                  name="email"
+                  value={loginData.email}
                   onChange={handleChange}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  className="pr-12"
+                  type="email"
+                  placeholder="you@example.com"
+                  autoComplete="email"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <LabelRegister isRequired={true}>Password</LabelRegister>
+                  <Link
+                    to="#"
+                    className="text-sm text-primary hover:underline"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <InputText
+                    name="password"
+                    value={loginData.password}
+                    onChange={handleChange}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    className="pr-12"
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    aria-pressed={showPassword}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="hover:cursor-pointer size-5 opacity-70" />
+                    ) : (
+                      <Eye className="hover:cursor-pointer size-5 opacity-70" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-center mb-6">
+                <p className="text-sm text-muted-foreground">
+                  We sent a 6-digit code to <br />
+                  <span className="font-medium text-primary">
+                    {maskEmail(loginData.email)}
+                  </span>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <LabelRegister isRequired={true}>
+                  Verification Code
+                </LabelRegister>
+                <InputText
+                  name="twoFactorCode"
+                  value={twoFactorCode}
+                  onChange={(e) =>
+                    setTwoFactorCode(
+                      e.target.value.replace(/\D/g, "").slice(0, 6),
+                    )
+                  }
+                  type="text"
+                  placeholder="000000"
+                  className="text-center text-2xl tracking-[0.5em]"
+                  autoComplete="one-time-code"
+                />
+              </div>
+
+              <div className="flex justify-center pt-2">
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  aria-pressed={showPassword}
-                  className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => setShowPassword((prev) => !prev)}
+                  onClick={() => {
+                    setShow2FA(false);
+                    setTwoFactorCode("");
+                  }}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeOff className="hover:cursor-pointer size-5 opacity-70" />
-                  ) : (
-                    <Eye className="hover:cursor-pointer size-5 opacity-70" />
-                  )}
+                  ← Back to login
                 </button>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <p className="text-sm text-muted-foreground">
-                We sent a 6-digit code to <br />
-                <span className="font-medium text-primary">
-                  {maskEmail(loginData.email)}
-                </span>
-              </p>
-            </div>
+          )}
 
-            <div className="space-y-2">
-              <LabelRegister isRequired={true}>Verification Code</LabelRegister>
-              <InputText
-                name="twoFactorCode"
-                value={twoFactorCode}
-                onChange={(e) =>
-                  setTwoFactorCode(
-                    e.target.value.replace(/\D/g, "").slice(0, 6),
-                  )
-                }
-                type="text"
-                placeholder="000000"
-                className="text-center text-2xl tracking-[0.5em]"
-                autoComplete="one-time-code"
+          {!show2FA && (
+            <div className="flex justify-center py-2">
+              <Turnstile
+                key={captchaKey}
+                sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+                onVerify={(token) => setCaptchaToken(token)}
+                onLoad={() => console.log("Turnstile loaded")}
+                onExpire={() => {
+                  setCaptchaToken(null);
+                  setCaptchaKey((prev) => prev + 1);
+                }}
+                onError={() => {
+                  setCaptchaToken(null);
+                  setCaptchaKey((prev) => prev + 1);
+                }}
+                theme="light"
               />
             </div>
+          )}
 
-            <div className="flex justify-center pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShow2FA(false);
-                  setTwoFactorCode("");
-                }}
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                ← Back to login
-              </button>
-            </div>
-          </div>
-        )}
+          {emptyError && (
+            <ValidateError>
+              {show2FA
+                ? "Please enter the 6-digit code."
+                : "Please fill in all required fields."}
+            </ValidateError>
+          )}
+
+          <Button
+            type="submit"
+            disabled={
+              (show2FA && twoFactorCode.length !== 6) ||
+              (!show2FA && !captchaToken)
+            }
+            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {show2FA ? "Verify Code" : "Log in"}
+          </Button>
+        </form>
 
         {!show2FA && (
-          <div className="flex justify-center py-2">
-            <Turnstile
-              key={captchaKey}
-              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
-              onVerify={(token) => setCaptchaToken(token)}
-              onLoad={() => console.log("Turnstile loaded")}
-              onExpire={() => {
-                setCaptchaToken(null);
-                setCaptchaKey((prev) => prev + 1);
-              }}
-              onError={() => {
-                setCaptchaToken(null);
-                setCaptchaKey((prev) => prev + 1);
-              }}
-              theme="light"
-            />
-          </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link
+              to="/registrationMain"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
         )}
 
-        {emptyError && (
-          <ValidateError>
-            {show2FA
-              ? "Please enter the 6-digit code."
-              : "Please fill in all required fields."}
-          </ValidateError>
-        )}
-
-        <Button
-          type="submit"
-          disabled={
-            (show2FA && twoFactorCode.length !== 6) ||
-            (!show2FA && !captchaToken)
-          }
-          className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+        <Link
+          to="/"
+          className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          {show2FA ? "Verify Code" : "Log in"}
-        </Button>
-      </form>
-
-      {!show2FA && (
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            to="/registrationMain"
-            className="font-medium text-primary hover:underline"
-          >
-            Sign up
-          </Link>
-        </p>
-      )}
-
-      <Link
-        to="/"
-        className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        ← Back home
-      </Link>
-    </AuthSplitLayout>
+          ← Back home
+        </Link>
+      </AuthSplitLayout>
     </>
   );
 }

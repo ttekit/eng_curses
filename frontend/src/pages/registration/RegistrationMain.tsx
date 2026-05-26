@@ -154,7 +154,7 @@ export default function RegistrationMain() {
         confirmPassword,
         token: captchaToken,
         captchaToken: captchaToken,
-        role: "ADULT",
+        role: formData.role,
       } as any)) as any;
 
       if (result.success) {

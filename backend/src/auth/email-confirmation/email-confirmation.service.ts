@@ -14,31 +14,32 @@ import type { ConfirmationDto } from "./dto/confirmation.dto";
 export class EmailConfirmationService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mail: MailService,
+    private readonly mailService: MailService,
   ) {}
 
-  async sendVerificationToken(user: {
-    id: number;
-    email: string;
-    verificationCode?: string | null;
-  }): Promise<void> {
+  async sendVerificationToken(
+    user: {
+      id: number;
+      email: string;
+      verificationCode?: string | null;
+    },
+    isLogin: boolean = false,
+  ): Promise<void> {
     const email = user.email.toLowerCase();
     let code = user.verificationCode;
 
-    if (!code) {
-      code = randomInt(100000, 1000000).toString();
-      const expires = new Date(Date.now() + 15 * 60 * 1000);
+    code = randomInt(100000, 1000000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationCode: code,
-          verificationCodeExpires: expires,
-        },
-      });
-    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationCode: code,
+        verificationCodeExpires: expires,
+      },
+    });
 
-    await this.mail.sendConfirmationEmail(email, code);
+    await this.mailService.sendConfirmationEmail(user.email, code, isLogin);
   }
 
   async newVerification(

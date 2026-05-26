@@ -2,10 +2,12 @@ import * as React from "react";
 
 interface ConfirmationTemplateProps {
   code: string;
+  isLogin?: boolean;
 }
 
 export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
   code,
+  isLogin = false,
 }) => {
   return (
     <div
@@ -74,7 +76,7 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                       fontWeight: 700,
                     }}
                   >
-                    Welcome!
+                    {isLogin ? "Verify your email" : "Welcome!"}
                   </h2>
                   <p
                     style={{
@@ -84,8 +86,9 @@ export const ConfirmationTemplate: React.FC<ConfirmationTemplateProps> = ({
                       lineHeight: "1.6",
                     }}
                   >
-                    Glad to see you in Explys. To complete your registration,
-                    please enter this verification code:
+                    {isLogin
+                      ? "We noticed you're trying to log in, but your email isn't verified yet. Please enter this verification code to continue:"
+                      : "Glad to see you in Explys. To complete your registration, please enter this verification code:"}
                   </p>
                 </td>
               </tr>
