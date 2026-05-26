@@ -28,7 +28,7 @@ export class MailService {
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   public async sendConfirmationEmail(email: string, code: string) {
     if (isOutboundMailDisabled(this.configService)) {
@@ -38,21 +38,15 @@ export class MailService {
       return;
     }
     const isDomainValid = await this.validateEmailDomain(email);
-
-    if (!isDomainValid) {
-      this.logger.warn(
-        `Registration blocked: Domain for email ${email} does not exist.`,
-      );
-      throw new BadRequestException(
-        "The specified email address does not exist or cannot accept mail. Please check that it is entered correctly..",
-      );
-    }
-
     const html = await render(
       React.createElement(ConfirmationTemplate, { code }),
     );
 
-    return this.sendMail(email, "Registration confirmation code — Explys", html);
+    return this.sendMail(
+      email,
+      "Registration confirmation code — Explys",
+      html,
+    );
   }
 
   public async sendPasswordResetEmail(email: string, token: string) {
@@ -94,7 +88,7 @@ export class MailService {
       });
     } catch (error) {
       throw new InternalServerErrorException(
-        "Не вдалося відправити лист з кодом",
+        "The email containing the code could not be sent",
       );
     }
   }
@@ -107,7 +101,6 @@ export class MailService {
         subject,
         html,
       });
-      this.logger.debug(`Mail sent to user: ${subject}`);
       return result;
     } catch (error) {
       this.logger.error(`Mail send failed for user`, error as Error);
@@ -157,9 +150,7 @@ export class MailService {
         subject: "Account Deletion Notice (Action Required)",
         html: htmlContent,
       });
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   private readonly disposableDomains = new Set([
@@ -184,11 +175,6 @@ export class MailService {
 
     const domain = email.split("@")[1]?.toLowerCase();
     if (!domain) return false;
-
-    if (!trustedDomains.includes(domain)) {
-      this.logger.warn(`Domain ${domain} is not in whitelist.`);
-      return false;
-    }
 
     if (this.disposableDomains.has(domain)) return false;
 

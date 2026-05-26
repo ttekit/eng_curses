@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Calendar, Edit2, Flame } from "lucide-react";
 import { formatMessage } from "../../lib/formatMessage";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { updateUserAvatar } from "../../lib/api"; // Импортируем нашу функцию
+import { AvatarPickerModal } from "./AvatarPickerModal"; // Импортируем модалку
 
 export type ProfileHeaderRole = "adult" | "student" | "teacher" | "admin";
 
@@ -24,6 +27,10 @@ function initialsFromName(name: string): string {
 export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
   const { messages } = useLandingLocale();
   const h: any = (messages as any).profileHeader || {};
+  
+  // Добавляем стейт для управления модалкой
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const initials = initialsFromName(user.name);
   const roleLabel =
     user.role === "teacher"
@@ -33,6 +40,17 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
         : user.role === "admin"
           ? h.roleAdmin || "Admin"
           : h.roleAdult || "Learner";
+
+  // Функция, которая сработает, когда юзер нажмет "Save" в модалке
+  const handleAvatarSave = async (newUrl: string) => {
+    try {
+      await updateUserAvatar(newUrl);
+      window.location.reload(); // Перезагружаем страницу, чтобы профиль обновился
+    } catch (error) {
+      console.error(error);
+      alert("Не удалось сохранить аватарку");
+    }
+  };
 
   return (
     <div className="relative">
@@ -54,10 +72,12 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
                 </div>
               )}
             </div>
+            {/* Кнопка открытия модалки */}
             <button
               type="button"
+              onClick={() => setIsModalOpen(true)} 
               title={h.photoSoonAria || "Change photo"}
-              className="absolute hover:cursor-pointer -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground shadow-md"
+              className="absolute hover:cursor-pointer -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground shadow-md transition-transform hover:scale-105"
             >
               <Edit2 className="size-4" />
             </button>
@@ -113,6 +133,14 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
           </div>
         </div>
       </div>
+
+      {/* Рендерим саму модалку */}
+      <AvatarPickerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        currentAvatarUrl={user.avatarUrl}
+        onSave={handleAvatarSave}
+      />
     </div>
   );
 }

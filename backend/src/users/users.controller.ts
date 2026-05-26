@@ -68,12 +68,6 @@ export class UsersController {
   updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     const userId = req.user?.id || req.user?.sub;
 
-    if (!userId) {
-      throw new BadRequestException(
-        "Не вдалося визначити користувача з токена",
-      );
-    }
-
     return this.usersService.updateProfile(Number(userId), updateUserDto);
   }
 
@@ -129,22 +123,16 @@ export class UsersController {
   @Post("profile/progress/reset")
   @UseGuards(ApiTokenOrJwtAuthGuard)
   @ApiBearerAuth("JWT-auth")
-  @ApiOperation({ summary: "Сброс прогресса обучения с валидацией пароля" })
-  @ApiResponse({ status: 200, description: "Прогресс успешно сброшен." })
+  @ApiOperation({ summary: "Reset learning progress with password verification." })
+  @ApiResponse({ status: 200, description: "Progress has been successfully reset." })
   @ApiResponse({
     status: 400,
-    description: "Неверный пароль или ошибка запроса.",
+    description: "Incorrect password or request error.",
   })
   async resetProfileProgress(@Req() req: any, @Body() dto: ResetProgressDto) {
     const userId = req.user?.id || req.user?.sub;
 
-    if (!userId) {
-      throw new BadRequestException(
-        "Не удалось определить пользователя из токена",
-      );
-    }
-
     await this.usersService.resetProgress(Number(userId), dto);
-    return { success: true, message: "Прогресс успешно сброшен." };
+    return { success: true, message: "Progress has been successfully reset." };
   }
 }

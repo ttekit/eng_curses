@@ -122,9 +122,8 @@ export class AuthController {
     const userId = req.user?.id || req.user?.sub;
 
     if (!userId) {
-      console.error("DEBUG: ID пользователя не найден в req.user:", req.user);
       throw new UnauthorizedException(
-        "Авторизація не вдалася: ID користувача відсутній",
+        "Login failed: User ID is missing",
       );
     }
 
@@ -177,11 +176,11 @@ export class AuthController {
 
     if (!userId || isNaN(Number(userId))) {
       console.error(
-        "DEBUG PROFILE: Неверный или отсутствующий ID в req.user:",
+        "DEBUG PROFILE: Invalid or missing ID in req.user:",
         req.user,
       );
       throw new UnauthorizedException(
-        "Не удалось определить профиль пользователя",
+        "Unable to determine the user's profile",
       );
     }
 

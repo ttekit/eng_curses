@@ -69,7 +69,7 @@ export class ContentStatsService {
       data: {
         ...rest,
         topics: {
-          set: topicIds?.map((id) => ({ id })), // Disconnects existing and connects new ones
+          set: topicIds?.map((id) => ({ id })),
         },
       },
       include: {
