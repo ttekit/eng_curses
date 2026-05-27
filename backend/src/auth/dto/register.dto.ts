@@ -1,4 +1,12 @@
-import { IsEmail, IsString, IsOptional, IsArray, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsOptional,
+  IsArray,
+  MinLength,
+  IsDateString,
+  ValidateIf,
+} from "class-validator";
 
 export class RegisterDto {
   @IsEmail()
@@ -7,6 +15,14 @@ export class RegisterDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @IsOptional()
+  @ValidateIf((object, value) => value !== "" && value !== null)
+  @IsDateString(
+    {},
+    { message: "Invalid date format. Please use the YYYY-MM-DD format" },
+  )
+  dateOfBirth?: string;
 
   @IsString()
   name: string;

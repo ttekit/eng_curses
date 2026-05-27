@@ -15,6 +15,7 @@ export interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
+  dateOfBirth?: string;
   token?: string | null;
   role: string;
   teacherGrades: string;

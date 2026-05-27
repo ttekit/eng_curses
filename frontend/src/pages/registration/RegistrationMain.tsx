@@ -3,14 +3,60 @@ import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
 import { Link, useNavigate } from "react-router";
-import { useContext, useState, ChangeEvent, FormEvent } from "react";
+import {
+  useContext,
+  useState,
+  ChangeEvent,
+  FormEvent,
+  forwardRef,
+} from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
-import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import Turnstile from "react-turnstile";
 import { registerUser } from "../../lib/registerUser";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+  const { onClick } = props;
+  const context = useContext(RegistrationContext);
+
+  return (
+    <div className="relative w-full">
+      <input
+        type="date"
+        ref={ref}
+        name="dateOfBirth"
+        value={context?.formData.dateOfBirth || ""}
+        onChange={(e) => {
+          context?.updateFormData({ dateOfBirth: e.target.value } as Record<
+            string,
+            string
+          >);
+        }}
+        max={new Date().toISOString().split("T")[0]}
+        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+      />
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors flex items-center justify-center"
+      >
+        <CalendarIcon className="size-5" />
+      </button>
+    </div>
+  );
+});
+CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -88,6 +134,33 @@ export default function RegistrationMain() {
     return true;
   };
 
+  const validateDateOfBirth = (value: string) => {
+    if (!value) {
+      setErrorText("Date of birth is required.");
+      return false;
+    }
+
+    const birthDate = new Date(value);
+    const today = new Date();
+
+    if (isNaN(birthDate.getTime()) || birthDate > today) {
+      setErrorText("Please enter a valid date of birth.");
+      return false;
+    }
+
+    const ageDiffMs = today.getTime() - birthDate.getTime();
+    const ageDate = new Date(ageDiffMs);
+    const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+
+    if (age < 13) {
+      setErrorText("You must be at least 13 years old to register.");
+      return false;
+    }
+
+    setErrorText(null);
+    return true;
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement>,
     type: "password" | "email" | "confirmPassword" | "other",
@@ -100,6 +173,7 @@ export default function RegistrationMain() {
       e.currentTarget.form?.querySelector<HTMLInputElement>(
         'input[name="password"]',
       )?.value ?? formData.password;
+
     if (type === "confirmPassword") {
       validateField(value, "confirmPassword", passFromForm);
     } else {
@@ -116,6 +190,7 @@ export default function RegistrationMain() {
     const email = String(fd.get("email") ?? "").trim();
     const password = String(fd.get("password") ?? "");
     const confirmPassword = String(fd.get("confirmPassword") ?? "");
+    const dateOfBirth = formData.dateOfBirth || "";
 
     if (!name) {
       setErrorText("Username is required.");
@@ -141,6 +216,10 @@ export default function RegistrationMain() {
       setErrorText("Please wait for the captcha verification to complete.");
       return;
     }
+    if (!validateDateOfBirth(dateOfBirth)) {
+      resetCaptcha();
+      return;
+    }
 
     setErrorText(null);
 
@@ -152,6 +231,7 @@ export default function RegistrationMain() {
         email,
         password,
         confirmPassword,
+        dateOfBirth,
         token: captchaToken,
         captchaToken: captchaToken,
         role: formData.role,
@@ -182,6 +262,7 @@ export default function RegistrationMain() {
       email: "",
       password: "",
       confirmPassword: "",
+      dateOfBirth: "",
       englishLevel: "choose",
       hobbies: [],
       education: "",
@@ -208,7 +289,7 @@ export default function RegistrationMain() {
         rightSubtitle="Join thousands of learners improving their English through personalized video content."
       >
         <div className="mb-1 flex items-center gap-3">
-          <img src="/Icon.svg" className="w-15 h-18 mr-4" />
+          <img src="/Icon.svg" className="w-15 h-18 mr-4" alt="Icon" />
           <h1 className="font-display text-2xl font-bold">Join Explys</h1>
         </div>
         <p className="mb-8 text-muted-foreground">
@@ -238,6 +319,35 @@ export default function RegistrationMain() {
               placeholder="you@example.com"
               autoComplete="email"
             />
+          </div>
+
+          <div className="space-y-2">
+            <LabelRegister isRequired={true}>Date of Birth</LabelRegister>
+            <div className="relative">
+              <DatePicker
+                selected={
+                  formData.dateOfBirth && !isNaN(new Date(formData.dateOfBirth).getTime())
+                    ? new Date(formData.dateOfBirth)
+                    : null
+                }
+                onChange={(date: Date | null) => {
+                  if (date && !isNaN(date.getTime())) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, "0");
+                    const d = String(date.getDate()).padStart(2, "0");
+                    const formatted = `${y}-${m}-${d}`; 
+                    updateFormData({ dateOfBirth: formatted } as Record<string, string>);
+                  }
+                }}
+                dateFormat="yyyy-MM-dd"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                maxDate={new Date()} 
+                wrapperClassName="w-full"
+                customInput={<CustomDateInput />} 
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -13,6 +13,8 @@ import {
   IsInt,
   Min,
   Allow,
+  IsDateString,
+  ValidateIf,
 } from "class-validator";
 
 export class CreateUserDto {
@@ -28,6 +30,11 @@ export class CreateUserDto {
       "Password must include at least one uppercase letter, one lowercase letter, and one number",
   })
   password: string;
+
+  @IsOptional()
+  @ValidateIf((object, value) => value !== "" && value !== null) // <--- ДОБАВЬ ЭТО
+  @IsDateString({}, { message: "Invalid date format. Please use the YYYY-MM-DD format" })
+  dateOfBirth?: string;
 
   @IsString()
   @IsNotEmpty()

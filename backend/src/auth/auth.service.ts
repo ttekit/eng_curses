@@ -162,6 +162,7 @@ export class AuthService {
         isVerified: outboundMailDisabled,
         verificationCode: otpCode,
         verificationCodeExpires: otpExpires,
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
             string,
@@ -1024,6 +1025,7 @@ export class AuthService {
       id: (user as any).id,
       name: (user as any).name,
       email: (user as any).email,
+      dateOfBirth: (user as any).dateOfBirth,
       avatarUrl: (user as any).avatarUrl,
       isTwoFactorEnable: (user as any).isTwoFactorEnable,
       isVerified: (user as any).isVerified,
