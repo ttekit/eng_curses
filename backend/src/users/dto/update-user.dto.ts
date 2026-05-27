@@ -3,11 +3,13 @@ import { ApiPropertyOptional, OmitType, PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  ValidateIf,
 } from "class-validator";
 import { CreateUserDto } from "./create-user.dto";
 
@@ -67,6 +69,7 @@ export class UpdateUserDto extends PartialType(
   @IsOptional()
   @IsString()
   avatarUrl?: string;
+
 }
 
 export class AdminUpdateUserDto extends UpdateUserDto {

@@ -11,11 +11,11 @@ export type GeneratedStudentAccount = {
 
 export type RegisterResult =
   | {
-    success: true;
-    generatedStudents?: GeneratedStudentAccount[];
-    /** JWT from `POST /auth/register` when registration succeeds. */
-    accessToken?: string;
-  }
+      success: true;
+      generatedStudents?: GeneratedStudentAccount[];
+      /** JWT from `POST /auth/register` when registration succeeds. */
+      accessToken?: string;
+    }
   | { success: false; message: string };
 
 /** Matches backend `@IsEmail` + `@MinLength(6)`; returns a user-facing error or `null`. */
@@ -52,6 +52,7 @@ export function buildRegisterBody(formData: FormData): Record<string, unknown> {
     email: formData.email.trim(),
     password: formData.password,
     captchaToken: formData.token,
+    dateOfBirth: formData.dateOfBirth,
   };
 
   if (formData.role && formData.role !== CHOOSE) {

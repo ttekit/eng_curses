@@ -53,6 +53,7 @@ export class UsersService {
     id: true,
     name: true,
     email: true,
+    dateOfBirth: true,
     avatarUrl: true,
     role: true,
     isSuspended: true,
@@ -186,6 +187,8 @@ export class UsersService {
       name,
       password: hashedPassword,
       ...(role ? { role } : {}),
+      dateOfBirth: createUserDto.dateOfBirth ? new Date(createUserDto.dateOfBirth) : null,
+      hasCompletedPlacement: role === "TEACHER" || role === "ADMIN",
     };
 
     let created: any;
@@ -314,6 +317,12 @@ export class UsersService {
       } else {
         delete dataToUpdate.role;
       }
+    }
+    
+    if (dataToUpdate.dateOfBirth !== undefined) {
+      dataToUpdate.dateOfBirth = dataToUpdate.dateOfBirth
+        ? new Date(dataToUpdate.dateOfBirth)
+        : null;
     }
 
     if (

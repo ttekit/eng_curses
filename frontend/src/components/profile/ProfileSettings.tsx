@@ -38,6 +38,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
+  const [dateOfBirth, setDateOfBirth] = useState(() => {
+    if (!user?.dateOfBirth) return "";
+    return new Date(user.dateOfBirth).toISOString().split("T")[0];
+  });
   const [job, setJob] = useState(user?.workField || "");
   const [education, setEducation] = useState(user?.education || "");
 
@@ -353,7 +357,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       showSubtitles: ui.showSubtitles,
       playbackSpeed:
         user.playbackSpeed != null &&
-          Number.isFinite(Number(user.playbackSpeed))
+        Number.isFinite(Number(user.playbackSpeed))
           ? String(user.playbackSpeed)
           : prev.playbackSpeed || "1",
       videoQuality: user.videoQuality?.trim() || prev.videoQuality || "auto",
@@ -427,6 +431,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: trimmed,
+          dateOfBirth: dateOfBirth === "" ? null : dateOfBirth,
           workField: job.trim(),
           education: education.trim(),
           hobbies,
@@ -452,6 +457,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     }
   }, [
     name,
+    dateOfBirth,
     job,
     education,
     hobbies,
@@ -605,6 +611,22 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               />
             </label>
           </div>
+          {/* ПОЛЕ ДАТЫ РОЖДЕНИЯ */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Date of Birth
+                  </label>
+                  <InputText
+                    name="dateOfBirth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    min="1900-01-01"
+                    max={new Date().toISOString().split("T")[0]}
+                    // Используем те же стили для темной темы, что и при регистрации
+                    className="w-full text-foreground [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
+                  />
+                </div>
 
           <div>
             <span className="mb-2 block text-sm font-medium text-foreground">
@@ -672,20 +694,22 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <button
                       type="button"
                       onClick={() => toggleGenrePair(g.id, "favorite")}
-                      className={`rounded-l-lg px-3 py-1.5 text-sm hover:cursor-pointer font-medium transition-colors ${loved
+                      className={`rounded-l-lg px-3 py-1.5 text-sm hover:cursor-pointer font-medium transition-colors ${
+                        loved
                           ? "bg-accent text-accent-foreground"
                           : "bg-secondary text-muted-foreground hover:bg-muted"
-                        }`}
+                      }`}
                     >
                       {g.name}
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleGenrePair(g.id, "hated")}
-                      className={`rounded-r-lg px-2 py-1.5 hover:cursor-pointer transition-colors ${hated
+                      className={`rounded-r-lg px-2 py-1.5 hover:cursor-pointer transition-colors ${
+                        hated
                           ? "bg-destructive text-destructive-foreground"
                           : "bg-secondary/80 text-muted-foreground hover:bg-muted"
-                        }`}
+                      }`}
                       aria-label={formatMessage(
                         s?.avoidGenreAria || "Avoid {name}",
                         {
@@ -1334,10 +1358,9 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             {dangerOpen === "reset" ? (
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  This action cannot be undone. All your saved words,
-                  video viewing history, XP, and test results will be
-                  permanently deleted. To confirm, enter your current
-                  password.
+                  This action cannot be undone. All your saved words, video
+                  viewing history, XP, and test results will be permanently
+                  deleted. To confirm, enter your current password.
                 </p>
 
                 {resetError && (

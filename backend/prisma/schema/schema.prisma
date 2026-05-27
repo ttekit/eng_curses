@@ -12,6 +12,7 @@ model User {
   name                  String
   email                 String        @unique
   password              String?
+  dateOfBirth           DateTime?     @map("date_of_birth")
   avatarUrl             String?       @map("avatar_url")
   role                  UserRole      @default(REGULAR)
   hasCompletedPlacement Boolean       @default(false) @map("has_completed_placement")
