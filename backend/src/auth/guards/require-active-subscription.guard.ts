@@ -25,7 +25,7 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
-  ) {}
+  ) { }
 
   private static readonly ALLOWLIST: ReadonlySet<string> = new Set([
     "POST /auth/register",
@@ -41,6 +41,8 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     "GET /status",
     "GET /health",
     "GET /genres",
+    "GET /topics",
+    "GET /tags",
     "GET /placement-test/status",
     "GET /placement-test/document",
     "POST /placement-test/complete",
@@ -82,7 +84,7 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     if (RequireActiveSubscriptionGuard.ALLOWLIST.has(key)) {
       return true;
     }
-    
+
     if (req.method === "GET" && path.replace(/\/$/, "") === "/genres") {
       return true;
     }

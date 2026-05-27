@@ -14,8 +14,10 @@ export type PricingCardsProps = {
   onSelectConsumerPlan?: (
     planId: Extract<PricingPlanId, "light" | "smart" | "family">,
   ) => void;
+  onSelectTeacherPlan?: () => void;
   checkoutDisabled?: boolean;
   className?: string;
+  onlyPlanId?: string;
 };
 
 function overlayPlan(
@@ -36,16 +38,32 @@ function overlayPlan(
 function CtaButton({
   plan,
   onSelectConsumerPlan,
+  onSelectTeacherPlan,
   checkoutDisabled,
 }: {
   plan: PricingPlan;
   onSelectConsumerPlan?: PricingCardsProps["onSelectConsumerPlan"];
+  onSelectTeacherPlan?: PricingCardsProps["onSelectTeacherPlan"];
   checkoutDisabled?: boolean;
 }) {
   const base =
     "mt-auto w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50";
 
   if (plan.isContactSales) {
+    if (plan.id === "teacher" && onSelectTeacherPlan) {
+      return (
+        <button
+          type="button"
+          onClick={onSelectTeacherPlan}
+          className={cn(
+            base,
+            "inline-flex items-center justify-center border-2 border-border bg-transparent text-foreground hover:bg-muted/60 hover:cursor-pointer",
+          )}
+        >
+          {plan.ctaLabel}
+        </button>
+      );
+    }
     return (
       <a
         href={getSalesContactHref()}
@@ -72,9 +90,9 @@ function CtaButton({
       className={cn(
         base,
         isPrimary &&
-          "flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
+        "flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
         isSecondary &&
-          "flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10",
+        "flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10",
       )}
     >
       {plan.ctaLabel}
@@ -87,12 +105,14 @@ function PricingCard({
   popularBadge,
   teacherPriceTitle,
   onSelectConsumerPlan,
+  onSelectTeacherPlan,
   checkoutDisabled,
 }: {
   plan: PricingPlan;
   popularBadge: string;
   teacherPriceTitle: string;
   onSelectConsumerPlan?: PricingCardsProps["onSelectConsumerPlan"];
+  onSelectTeacherPlan?: PricingCardsProps["onSelectTeacherPlan"];
   checkoutDisabled?: boolean;
 }) {
   const popular = plan.isPopular === true;
@@ -165,6 +185,7 @@ function PricingCard({
       <CtaButton
         plan={plan}
         onSelectConsumerPlan={onSelectConsumerPlan}
+        onSelectTeacherPlan={onSelectTeacherPlan}
         checkoutDisabled={checkoutDisabled}
       />
     </div>
@@ -173,21 +194,27 @@ function PricingCard({
 
 export default function PricingCards({
   onSelectConsumerPlan,
+  onSelectTeacherPlan,
   checkoutDisabled = false,
   className,
+  onlyPlanId,
 }: PricingCardsProps) {
   const { messages } = useLandingLocale();
   const pc = messages.pricingCards;
 
-  const plans = useMemo(
-    () => PRICING_PLANS.map((p) => overlayPlan(p, pc)),
-    [pc],
-  );
+  const plans = useMemo(() => {
+    let basePlans = PRICING_PLANS.map((p) => overlayPlan(p, pc));
+    if (onlyPlanId) {
+      basePlans = basePlans.filter((p) => p.id === onlyPlanId);
+    }
+    return basePlans;
+  }, [pc, onlyPlanId]);
 
   return (
     <div
       className={cn(
-        "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 xl:items-stretch xl:gap-5",
+        "grid grid-cols-1 gap-6",
+        onlyPlanId ? "max-w-md mx-auto" : "md:grid-cols-2 xl:grid-cols-4 xl:items-stretch xl:gap-5",
         className,
       )}
     >
@@ -198,6 +225,7 @@ export default function PricingCards({
           popularBadge={pc.popularBadge}
           teacherPriceTitle={pc.teacherPriceTitle}
           onSelectConsumerPlan={onSelectConsumerPlan}
+          onSelectTeacherPlan={onSelectTeacherPlan}
           checkoutDisabled={checkoutDisabled}
         />
       ))}

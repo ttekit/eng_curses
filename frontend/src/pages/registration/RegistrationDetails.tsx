@@ -241,8 +241,8 @@ export default function RegistrationDetails() {
         }
 
         if (userRole === "teacher") {
-          navigate("/registrationSuccess", {
-            state: { generatedStudents: students },
+          navigate("/subscribe", {
+            state: { isTeacherRegistration: true, generatedStudents: students },
           });
         } else {
           navigate("/registrationPreferences");
@@ -268,185 +268,185 @@ export default function RegistrationDetails() {
         path="/registrationDetails"
       />
       <AuthSplitLayout
-      progressStep={2}
-      progressTotal={3}
-      mainClassName="max-w-2xl"
-      rightTitle="Who are you?"
-      rightSubtitle="Tell us your role so we can customize your experience."
-    >
-      <Link
-        to="/registrationMain"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        progressStep={2}
+        progressTotal={3}
+        mainClassName="max-w-2xl"
+        rightTitle="Who are you?"
+        rightSubtitle="Tell us your role so we can customize your experience."
       >
-        <ArrowLeft className="size-4" />
-        Back
-      </Link>
+        <Link
+          to="/registrationMain"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Back
+        </Link>
 
-      <form className="flex flex-col gap-8" onSubmit={handleNext}>
-        <section>
-          <h1 className="font-display text-2xl font-bold mb-2">
-            How will you use Explys?
-          </h1>
-          <p className="mb-6 text-muted-foreground">
-            Pick the option that fits you best—we&apos;ll tailor the setup.
-          </p>
-          <RegistrationRoleCards
-            value={formData.role}
-            onChange={handleRoleSelect}
-          />
-        </section>
+        <form className="flex flex-col gap-8" onSubmit={handleNext}>
+          <section>
+            <h1 className="font-display text-2xl font-bold mb-2">
+              How will you use Explys?
+            </h1>
+            <p className="mb-6 text-muted-foreground">
+              Pick the option that fits you best—we&apos;ll tailor the setup.
+            </p>
+            <RegistrationRoleCards
+              value={formData.role}
+              onChange={handleRoleSelect}
+            />
+          </section>
 
-        {formData.role === "teacher" && (
-          <section className="space-y-4 border-border border-t pt-8">
-            <div className="flex items-start gap-3">
-              <img src="TeacherIcon.svg" className="w-12 h-15" />
-              <div>
-                <h2 className="font-display text-xl font-semibold">
-                  Teacher profile
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Grades you teach, optional topics, and your class list.
-                </p>
+          {formData.role === "teacher" && (
+            <section className="space-y-4 border-border border-t pt-8">
+              <div className="flex items-start gap-3">
+                <img src="TeacherIcon.svg" className="w-12 h-15" />
+                <div>
+                  <h2 className="font-display text-xl font-semibold">
+                    Teacher profile
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Grades you teach, optional topics, and your class list.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <LabelRegister isRequired={true}>Student grades</LabelRegister>
-              <SelectRegister
-                name="teacherGrades"
-                value={formData.teacherGrades}
-                onChange={handleChange}
-                options={gradeOptions}
-              />
-            </div>
+              <div className="space-y-2">
+                <LabelRegister isRequired={true}>Student grades</LabelRegister>
+                <SelectRegister
+                  name="teacherGrades"
+                  value={formData.teacherGrades}
+                  onChange={handleChange}
+                  options={gradeOptions}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <LabelRegister isRequired={false}>Learning topics</LabelRegister>
-              <MultiSelect<
-                LearningTopicOption,
-                true,
-                GroupBase<LearningTopicOption>
-              >
-                inputId="teacher-topics"
-                options={learningTopicGroups}
-                isMulti
-                isLoading={topicsLoading}
-                value={selectedLearningTopics}
-                onChange={handleTeacherTopicsChange}
-                placeholder={
-                  topicsLoadError
-                    ? "Topics unavailable — you can continue without them"
-                    : "Choose topics or tags"
-                }
-                noOptionsMessage={() =>
-                  topicsLoadError ? topicsLoadError : "No topics or tags found"
-                }
-              />
-              {topicsLoadError && (
-                <p className="text-destructive mt-1 text-sm">
-                  {topicsLoadError}
-                </p>
-              )}
-            </div>
-
-            <div className="border-border border-t pt-6">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <LabelRegister isRequired={false}>Pupils list</LabelRegister>
-                <button
-                  type="button"
-                  onClick={addPupil}
-                  className="rounded-[15px] bg-primary px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+              <div className="space-y-2">
+                <LabelRegister isRequired={false}>Learning topics</LabelRegister>
+                <MultiSelect<
+                  LearningTopicOption,
+                  true,
+                  GroupBase<LearningTopicOption>
                 >
-                  + Add pupil
-                </button>
-              </div>
-
-              <div className="bg-input border-border max-h-60 overflow-y-auto rounded-xl border p-3">
-                <table className="w-full table-fixed text-left text-sm">
-                  <thead>
-                    <tr className="text-muted-foreground border-border border-b">
-                      <th className="pb-2 font-medium">Name</th>
-                      <th className="pb-2 font-medium">Surname</th>
-                      <th className="w-12 pb-2" aria-hidden />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pupils.map((pupil, index) => (
-                      <tr
-                        key={index}
-                        className="border-border border-b align-top last:border-0"
-                      >
-                        <td className="py-2 pr-2">
-                          <input
-                            type="text"
-                            value={pupil.name}
-                            onChange={(e) =>
-                              updatePupil(index, "name", e.target.value)
-                            }
-                            placeholder="Name"
-                            className="bg-background border-border w-full rounded-lg border px-2 py-1.5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                          />
-                        </td>
-                        <td className="py-2 pr-2">
-                          <input
-                            type="text"
-                            value={pupil.surname}
-                            onChange={(e) =>
-                              updatePupil(index, "surname", e.target.value)
-                            }
-                            placeholder="Surname"
-                            className="bg-background border-border w-full rounded-lg border px-2 py-1.5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                          />
-                        </td>
-                        <td className="py-2">
-                          <button
-                            type="button"
-                            aria-label={`Remove pupil ${index + 1}`}
-                            onClick={() => removePupil(index)}
-                            className="text-destructive/70 hover:cursor-pointer hover:text-destructive px-2 pt-2 font-bold transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {pupils.length === 0 && (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
-                    No pupils added yet.
+                  inputId="teacher-topics"
+                  options={learningTopicGroups}
+                  isMulti
+                  isLoading={topicsLoading}
+                  value={selectedLearningTopics}
+                  onChange={handleTeacherTopicsChange}
+                  placeholder={
+                    topicsLoadError
+                      ? "Topics unavailable — you can continue without them"
+                      : "Choose topics or tags"
+                  }
+                  noOptionsMessage={() =>
+                    topicsLoadError ? topicsLoadError : "No topics or tags found"
+                  }
+                />
+                {topicsLoadError && (
+                  <p className="text-destructive mt-1 text-sm">
+                    {topicsLoadError}
                   </p>
                 )}
               </div>
-            </div>
-          </section>
-        )}
 
-        {emptyError && (
-          <ValidateError>
-            Please select how you&apos;ll use Explys.
-          </ValidateError>
-        )}
-        {formError && <ValidateError>{formError}</ValidateError>}
+              <div className="border-border border-t pt-6">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <LabelRegister isRequired={false}>Pupils list</LabelRegister>
+                  <button
+                    type="button"
+                    onClick={addPupil}
+                    className="rounded-[15px] bg-primary px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                  >
+                    + Add pupil
+                  </button>
+                </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-stretch">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-          >
-            {formData.role === "teacher" ? "Register" : "Next"}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => navigate("/registrationMain")}
-            className="text-sm font-medium bg-transparent text-foreground/70 hover:text-white py-2.5 px-6 transition-all rounded-[15px] hover:bg-muted-foreground/10 hover:cursor-pointer"
-          >
-            Previous step
-          </Button>
-        </div>
-      </form>
-    </AuthSplitLayout>
+                <div className="bg-input border-border max-h-60 overflow-y-auto rounded-xl border p-3">
+                  <table className="w-full table-fixed text-left text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground border-border border-b">
+                        <th className="pb-2 font-medium">Name</th>
+                        <th className="pb-2 font-medium">Surname</th>
+                        <th className="w-12 pb-2" aria-hidden />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pupils.map((pupil, index) => (
+                        <tr
+                          key={index}
+                          className="border-border border-b align-top last:border-0"
+                        >
+                          <td className="py-2 pr-2">
+                            <input
+                              type="text"
+                              value={pupil.name}
+                              onChange={(e) =>
+                                updatePupil(index, "name", e.target.value)
+                              }
+                              placeholder="Name"
+                              className="bg-background border-border w-full rounded-lg border px-2 py-1.5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            />
+                          </td>
+                          <td className="py-2 pr-2">
+                            <input
+                              type="text"
+                              value={pupil.surname}
+                              onChange={(e) =>
+                                updatePupil(index, "surname", e.target.value)
+                              }
+                              placeholder="Surname"
+                              className="bg-background border-border w-full rounded-lg border px-2 py-1.5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            />
+                          </td>
+                          <td className="py-2">
+                            <button
+                              type="button"
+                              aria-label={`Remove pupil ${index + 1}`}
+                              onClick={() => removePupil(index)}
+                              className="text-destructive/70 hover:cursor-pointer hover:text-destructive px-2 pt-2 font-bold transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {pupils.length === 0 && (
+                    <p className="text-muted-foreground py-8 text-center text-sm">
+                      No pupils added yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {emptyError && (
+            <ValidateError>
+              Please select how you&apos;ll use Explys.
+            </ValidateError>
+          )}
+          {formError && <ValidateError>{formError}</ValidateError>}
+
+          <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-stretch">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            >
+              {formData.role === "teacher" ? "Register" : "Next"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => navigate("/registrationMain")}
+              className="text-sm font-medium bg-transparent text-foreground/70 hover:text-white py-2.5 px-6 transition-all rounded-[15px] hover:bg-muted-foreground/10 hover:cursor-pointer"
+            >
+              Previous step
+            </Button>
+          </div>
+        </form>
+      </AuthSplitLayout>
     </>
   );
 }
