@@ -163,6 +163,7 @@ export class AuthService {
         verificationCode: otpCode,
         verificationCodeExpires: otpExpires,
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
+        hasCompletedPlacement: roleLabel === "TEACHER",
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
             string,

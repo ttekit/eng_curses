@@ -188,6 +188,7 @@ export class UsersService {
       password: hashedPassword,
       ...(role ? { role } : {}),
       dateOfBirth: createUserDto.dateOfBirth ? new Date(createUserDto.dateOfBirth) : null,
+      hasCompletedPlacement: role === "TEACHER" || role === "ADMIN",
     };
 
     let created: any;
