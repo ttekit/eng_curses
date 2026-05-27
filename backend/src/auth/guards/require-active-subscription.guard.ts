@@ -25,13 +25,14 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
-  ) { }
+  ) {}
 
   private static readonly ALLOWLIST: ReadonlySet<string> = new Set([
     "POST /auth/register",
     "POST /auth/login",
     "GET /auth/profile",
     "POST /auth/update-preferences",
+    "PATCH /users/profile",
     "POST /auth/profile/regenerate-studying-plan",
     "POST /billing/checkout",
     "GET /billing/stripe-publishable-key",
@@ -81,6 +82,10 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     if (RequireActiveSubscriptionGuard.ALLOWLIST.has(key)) {
       return true;
     }
+    
+    if (req.method === "GET" && path.replace(/\/$/, "") === "/genres") {
+      return true;
+    }
 
     const token = extractAccessTokenFromRequest(req);
     if (!token) {
@@ -115,7 +120,11 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
       throw new UnauthorizedException("User not found");
     }
 
-    if (user.role === UserRole.TEACHER || user.role === UserRole.ADMIN || user.teacherId != null) {
+    if (
+      user.role === UserRole.TEACHER ||
+      user.role === UserRole.ADMIN ||
+      user.teacherId != null
+    ) {
       return true;
     }
 

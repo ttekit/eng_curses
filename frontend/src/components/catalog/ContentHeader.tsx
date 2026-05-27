@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import { useCallback, useEffect, useId, useState } from "react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { LandingLanguageToggle } from "../landing/LandingLanguageToggle";
+import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 
 export type ContentHeaderVariant = "app" | "landing";
 
@@ -21,8 +22,10 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
   const landingI18n = messages.header;
   const { pathname, hash } = useLocation();
   const { isLoggedIn, user } = useUser();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
+  const isFullyRegistered = isLoggedIn && user?.hasCompletedPlacement;
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -50,10 +53,12 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
 
   const appNavLinks = [
     { label: "Home", to: "/" },
-    { label: "Catalog", to: "/catalog" },
     { label: "Pricing", to: "/pricing" },
-    ...(isLoggedIn && user?.hasCompletedPlacement
-      ? [{ label: "Learning plan", to: "/learning-plan" as const }]
+    ...(isFullyRegistered
+      ? [
+          { label: "Catalog", to: "/catalog" },
+          { label: "Learning plan", to: "/learning-plan" as const },
+        ]
       : []),
     { label: "Level test", to: "/level-test" },
   ];
@@ -131,7 +136,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
           {variant === "landing" ? <LandingLanguageToggle /> : null}
 
           <div className="hidden items-center gap-2 sm:gap-4 lg:flex">
-            {isLoggedIn ? (
+            {isFullyRegistered ? (
               <Link
                 to="/catalog"
                 className="rounded-[15px] bg-primary px-4 py-2.5 text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:px-6"
@@ -281,7 +286,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
               )}
 
               <div className="mt-3 flex flex-col gap-2 border-border border-t pt-4">
-                {isLoggedIn ? (
+                {isFullyRegistered ? (
                   <Link
                     to="/catalog"
                     onClick={closeMenu}
