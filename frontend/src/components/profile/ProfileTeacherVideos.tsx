@@ -3,13 +3,16 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Video, Plus, Upload } from "lucide-react";
-import toast from "react-hot-toast"; // Добавил тосты для уведомлений
+import { Loader2, Video, Plus, Upload, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
-// Импортируем UI-компоненты (проверь, чтобы путь был правильным для твоего проекта)
-import { AdminButton, AdminModal, AdminInput } from "../../components/admin/adminUi";
+import {
+  AdminButton,
+  AdminModal,
+  AdminInput,
+} from "../../components/admin/adminUi";
 
 export type TeacherSeriesItem = {
   contentId: number;
@@ -30,11 +33,15 @@ export function ProfileTeacherVideos() {
   const [series, setSeries] = useState<TeacherSeriesItem[]>([]);
   const [visibilityBusyId, setVisibilityBusyId] = useState<number | null>(null);
 
-  // --- НОВЫЕ СТЕЙТЫ ДЛЯ ЗАГРУЗКИ ВИДЕО ---
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletePhrase, setDeletePhrase] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadSeries = useCallback(async () => {
     setLoading(true);
@@ -65,6 +72,17 @@ export function ProfileTeacherVideos() {
   useEffect(() => {
     void loadSeries();
   }, [loadSeries]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (uploadOpen && !uploadSaving) setUploadOpen(false);
+        if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [uploadOpen, uploadSaving, deleteModalOpen, isDeleting]);
 
   async function updateVisibility(
     contentId: number,
@@ -106,7 +124,6 @@ export function ProfileTeacherVideos() {
     }
   }
 
-  // --- ФУНКЦИЯ ЗАГРУЗКИ НОВОГО ВИДЕО ---
   const handleUpload = async () => {
     const name = uploadTitle.trim();
     if (name.length < 2) {
@@ -123,15 +140,11 @@ export function ProfileTeacherVideos() {
       const fd = new FormData();
       fd.append("file", uploadFile);
       fd.append("name", name);
-      // Устанавливаем unlisted по умолчанию, чтобы видео не попало в общий каталог
-      fd.append("visibility", "unlisted"); 
+      fd.append("visibility", "unlisted");
 
-      // ВАЖНО: Убедись, что этот URL совпадает с эндпоинтом в твоем контроллере!
-      // Если ты оставил старый контроллер, это может быть "/contents/teacher-upload"
-      // Если используешь новый модуль, это "/teacher-content/upload"
       const res = await apiFetch("/contents/teacher/upload", {
         method: "POST",
-        body: fd, // FormData отправляется без Content-Type
+        body: fd,
       });
 
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
@@ -140,11 +153,41 @@ export function ProfileTeacherVideos() {
       setUploadOpen(false);
       setUploadTitle("");
       setUploadFile(null);
-      await loadSeries(); // Перезагружаем список видео после успешной загрузки
+      await loadSeries();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setUploadSaving(false);
+    }
+  };
+
+  const openDeleteModal = (id: number) => {
+    setDeletingId(id);
+    setDeletePhrase("");
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteVideo = async () => {
+    if (deletePhrase.trim().toLowerCase() !== "delete video") {
+      toast.error("Incorrect phrase. Please type 'delete video'.");
+      return;
+    }
+    if (!deletingId) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await apiFetch(`/contents/teacher/my-series/${deletingId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
+      toast.success("Video deleted successfully");
+      setDeleteModalOpen(false);
+      await loadSeries();
+    } catch (e: any) {
+      toast.error(e.message || "Delete failed");
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -167,8 +210,6 @@ export function ProfileTeacherVideos() {
 
   return (
     <div className="space-y-6">
-      
-      {/* --- ШАПКА С КНОПКОЙ ЗАГРУЗКИ --- */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <p className="text-sm text-muted-foreground flex-1">
           Series you uploaded: open a lesson, jump to the series page, or change
@@ -189,17 +230,23 @@ export function ProfileTeacherVideos() {
         </p>
       ) : null}
 
-      {/* --- МОДАЛКА ЗАГРУЗКИ --- */}
       <AdminModal
         open={uploadOpen}
         onClose={() => !uploadSaving && setUploadOpen(false)}
         title="Upload new lesson"
         footer={
           <>
-            <AdminButton variant="outline" onClick={() => setUploadOpen(false)} disabled={uploadSaving}>
+            <AdminButton
+              variant="outline"
+              onClick={() => setUploadOpen(false)}
+              disabled={uploadSaving}
+            >
               Cancel
             </AdminButton>
-            <AdminButton disabled={uploadSaving} onClick={() => void handleUpload()}>
+            <AdminButton
+              disabled={uploadSaving}
+              onClick={() => void handleUpload()}
+            >
               {uploadSaving ? "Publishing…" : "Publish"}
             </AdminButton>
           </>
@@ -216,7 +263,9 @@ export function ProfileTeacherVideos() {
             <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">Browse for MP4</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {uploadFile ? uploadFile.name : "This video will be available to your students"}
+              {uploadFile
+                ? uploadFile.name
+                : "This video will be available to your students"}
             </p>
           </label>
           <div className="space-y-2">
@@ -230,13 +279,73 @@ export function ProfileTeacherVideos() {
         </div>
       </AdminModal>
 
-      {/* --- СПИСОК ВИДЕО (ИЛИ ПУСТОЙ СТЕЙТ) --- */}
+      <AdminModal
+        open={deleteModalOpen}
+        onClose={() => !isDeleting && setDeleteModalOpen(false)}
+        title="Delete Video"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton
+              disabled={
+                isDeleting ||
+                deletePhrase.trim().toLowerCase() !== "delete video"
+              }
+              onClick={confirmDeleteVideo}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {isDeleting ? "Deleting…" : "Delete Video"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this video? This action cannot be
+            undone.
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              To confirm, type{" "}
+              <span className="font-black text-destructive text-base">
+                delete video
+              </span>{" "}
+              below:
+            </label>
+            <AdminInput
+              type="text"
+              placeholder="delete video"
+              value={deletePhrase}
+              onChange={(e) => setDeletePhrase(e.target.value)}
+              autoComplete="off"
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  deletePhrase.trim().toLowerCase() === "delete video" &&
+                  !isDeleting
+                ) {
+                  e.preventDefault();
+                  void confirmDeleteVideo();
+                }
+              }}
+            />
+          </div>
+        </div>
+      </AdminModal>
+
       {series.length === 0 ? (
         <ProfileCard title="Your videos">
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <Video className="size-12 text-muted-foreground opacity-50" />
             <p className="max-w-md text-muted-foreground">
-              You have not uploaded any lessons yet. Click "Upload lesson" above to publish your first video.
+              You have not uploaded any lessons yet. Click "Upload lesson" above
+              to publish your first video.
             </p>
           </div>
         </ProfileCard>
@@ -250,6 +359,7 @@ export function ProfileTeacherVideos() {
                   <th className="p-3 font-medium">Captions</th>
                   <th className="p-3 font-medium">Catalog</th>
                   <th className="p-3 font-medium">Open</th>
+                  <th className="p-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -264,7 +374,9 @@ export function ProfileTeacherVideos() {
                       className="border-border/60 hover:bg-muted/20 border-b transition-colors"
                     >
                       <td className="p-3 align-top">
-                        <div className="text-foreground font-medium">{s.name}</div>
+                        <div className="text-foreground font-medium">
+                          {s.name}
+                        </div>
                         <div className="text-muted-foreground mt-1 text-xs">
                           /{s.friendlyLink}
                         </div>
@@ -331,6 +443,15 @@ export function ProfileTeacherVideos() {
                             Series page
                           </Link>
                         </div>
+                      </td>
+                      <td className="p-3 align-top text-right">
+                        <button
+                          onClick={() => openDeleteModal(s.contentId)}
+                          className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors inline-flex"
+                          title="Delete video"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
                       </td>
                     </tr>
                   );

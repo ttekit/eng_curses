@@ -282,16 +282,20 @@ export class ContentsController {
 
   @Get("teacher/my-students/export")
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Export students to CSV (Excel)" })
-  @Header("Content-Type", "text/csv")
-  @Header("Content-Disposition", 'attachment; filename="students.csv"')
+  @ApiOperation({ summary: "Export students to Excel (.xlsx)" })
+  @Header(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  )
+  @Header("Content-Disposition", 'attachment; filename="students.xlsx"')
   async exportStudents(
     @Req() req: Request & { user?: unknown },
     @Res() res: Response,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    const csvData = await this.contentsService.exportStudentsCsv(teacherId);
-    res.send(csvData);
+    // Вызываем новый метод для Excel
+    const buffer = await this.contentsService.exportStudentsExcel(teacherId);
+    res.send(buffer);
   }
 
   @Get("teacher/my-students/results")
@@ -312,5 +316,15 @@ export class ContentsController {
   @Delete("delete/:id")
   deleteContent(@Param("id", ParseIntPipe) id: number) {
     return this.contentsService.deleteContent(id);
+  }
+
+  @Delete("teacher/my-series/:id")
+  @UseGuards(AuthGuard)
+  async deleteTeacherSeries(
+    @Req() req: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = Number(req.user.sub || req.user.id);
+    return this.contentsService.deleteTeacherContent(teacherId, id);
   }
 }

@@ -22,6 +22,8 @@ import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
 import { buildSafeS3ObjectKey, publicS3ObjectUrl } from "../common/s3-key.util";
 import { AuthMethod, UserRole } from "@generated/prisma/enums";
+import * as XLSX from "xlsx";
+import * as bcrypt from "bcrypt";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -738,6 +740,8 @@ export class ContentsService {
 
   // --- НОВЫЕ МЕТОДЫ ДЛЯ УПРАВЛЕНИЯ УЧЕНИКАМИ ---
 
+  // --- ДОБАВЛЕНИЕ УЧЕНИКА (СО СЛАБЫМ ПАРОЛЕМ) ---
+  // --- ДОБАВЛЕНИЕ УЧЕНИКА (С ГЕНЕРАЦИЕЙ ПАРОЛЯ) ---
   async addStudent(teacherId: number, data: { name: string; email: string }) {
     const existing = await this.prisma.user.findUnique({
       where: { email: data.email },
@@ -746,15 +750,71 @@ export class ContentsService {
       throw new ForbiddenException("Пользователь с таким email уже существует");
     }
 
-    return this.prisma.user.create({
+    // Генерируем надежный случайный пароль (8 символов: буквы и цифры)
+    const chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const tempPassword = Array.from(
+      { length: 8 },
+      () => chars[Math.floor(Math.random() * chars.length)],
+    ).join("");
+
+    // Хэшируем для базы
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const created = await this.prisma.user.create({
       data: {
         name: data.name,
-        email: data.email,
-        role: UserRole.STUDENT,
+        email: data.email.toLowerCase(),
+        password: hashedPassword,
+        role: "STUDENT",
         teacherId: teacherId,
-        method: AuthMethod.CREDENTIALS,
+        method: "CREDENTIALS",
+        isVerified: true,
       },
     });
+
+    // Возвращаем пароль на фронтенд ТОЛЬКО ОДИН РАЗ
+    return { student: created, tempPassword };
+  }
+
+  // --- ЧИСТЫЙ EXCEL ЭКСПОРТ (Без паролей) ---
+  async exportStudentsExcel(teacherId: number): Promise<Buffer> {
+    const students = await this.prisma.user.findMany({
+      where: { teacherId },
+      select: {
+        name: true,
+        email: true,
+        additionalUserData: { select: { englishLevel: true } },
+        watchSessions: { where: { completed: true } },
+        comprehensionTestAttempts: true,
+      },
+    });
+
+    const data = students.map((s) => {
+      const attemptsCount = s.comprehensionTestAttempts.length;
+      const avgScore =
+        attemptsCount > 0
+          ? s.comprehensionTestAttempts.reduce(
+              (acc, curr) => acc + curr.scorePct,
+              0,
+            ) / attemptsCount
+          : 0;
+
+      return {
+        "Student Name": s.name,
+        "Email Address": s.email,
+        "English Level": s.additionalUserData?.englishLevel || "-",
+        "Completed Videos": s.watchSessions.length,
+        "Quiz Attempts": attemptsCount,
+        "Average Score (%)": Math.round(avgScore * 10) / 10,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "My Students");
+
+    return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
   }
 
   async updateStudent(
@@ -829,5 +889,21 @@ export class ContentsService {
     return (
       "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
     );
+  }
+
+  async deleteTeacherContent(teacherId: number, contentId: number) {
+    const content = await this.prisma.content.findFirst({
+      where: { id: contentId, ownerUserId: teacherId },
+    });
+
+    if (!content) {
+      throw new ForbiddenException("Video not found or you are not the owner");
+    }
+
+    await this.prisma.content.delete({
+      where: { id: contentId },
+    });
+
+    return { success: true };
   }
 }

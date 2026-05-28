@@ -1,12 +1,24 @@
 import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { ChevronDown, ChevronRight, GraduationCap, Loader2, Download, Plus, Edit, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  GraduationCap,
+  Loader2,
+  Download,
+  Plus,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
-import { AdminButton, AdminModal, AdminInput } from "../../components/admin/adminUi"; 
-import { AdminRowMenu, AdminRowMenuItem } from "../../components/admin/AdminRowMenu";
+import {
+  AdminButton,
+  AdminModal,
+  AdminInput,
+} from "../../components/admin/adminUi";
 
 export type TeacherStudentResult = {
   id: number;
@@ -42,16 +54,28 @@ export function ProfileTeacherStudents() {
   const [students, setStudents] = useState<TeacherStudentResult[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
-  // --- СТЕЙТЫ ДЛЯ CRM ---
+  // Стейты для создания/редактирования
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  // Изменили стейт: теперь у нас раздельные имя и фамилия
-  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "" });
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+  });
   const [isSaving, setIsSaving] = useState(false);
+  const [randomId, setRandomId] = useState<number>(0);
+
+  // Стейты для красивой модалки УДАЛЕНИЯ
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletePhrase, setDeletePhrase] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadStudents = async () => {
     try {
-      const res = await apiFetch("/contents/teacher/my-students/results", { method: "GET" });
+      const res = await apiFetch("/contents/teacher/my-students/results", {
+        method: "GET",
+      });
       if (!res.ok) {
         setError(await getResponseErrorMessage(res));
         setStudents([]);
@@ -71,6 +95,20 @@ export function ProfileTeacherStudents() {
   useEffect(() => {
     void loadStudents();
   }, []);
+  // --- ЗАКРЫТИЕ МОДАЛОК ПО КЛАВИШЕ ESCAPE ---
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        // Закрываем модалку создания/редактирования, если она открыта и мы не в процессе сохранения
+        if (isModalOpen && !isSaving) setIsModalOpen(false);
+        // Закрываем модалку удаления, если она открыта и мы не в процессе удаления
+        if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isModalOpen, isSaving, deleteModalOpen, isDeleting]);
 
   const toggleRow = (id: number) => {
     setExpanded((prev) => {
@@ -81,59 +119,60 @@ export function ProfileTeacherStudents() {
     });
   };
 
-  // --- ЛОГИКА CRM ---
-
   const handleExport = async () => {
     try {
-      const res = await apiFetch("/contents/teacher/my-students/export", { method: "GET" });
+      const res = await apiFetch("/contents/teacher/my-students/export", {
+        method: "GET",
+      });
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "my_students.csv";
+      a.download = "my_students.xlsx";
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success("Excel downloaded!");
+      toast.success("Excel file downloaded!");
     } catch (e) {
       toast.error("Failed to download Excel file");
     }
   };
 
-  // ВАЛИДАЦИЯ И ГЕНЕРАЦИЯ EMAIL
   const handleNameChange = (field: "firstName" | "lastName", value: string) => {
-    // ЖЕСТКАЯ ВАЛИДАЦИЯ: Только английские буквы, пробелы и дефисы
     if (!/^[A-Za-z\s-]*$/.test(value)) {
-      toast.error("Please use English letters only", { id: "lang-error" }); // id нужен, чтобы тост не спамил
-      return; 
+      toast.error("Please use English letters only", { id: "lang-error" });
+      return;
     }
 
     setFormData((prev) => {
       const next = { ...prev, [field]: value };
-      
-      // Генерируем email на лету только если это создание нового ученика
-      if (!editingId) {
-        const first = next.firstName.toLowerCase().replace(/[^a-z]/g, "");
-        const last = next.lastName.toLowerCase().replace(/[^a-z]/g, "");
-        // Если хоть что-то введено, собираем почту
-        next.email = (first || last) ? `${first}.${last}@explys.com` : "";
-      }
+      const first = next.firstName.toLowerCase().replace(/[^a-z]/g, "");
+      const last = next.lastName.toLowerCase().replace(/[^a-z]/g, "");
+      next.email =
+        first || last ? `${first}.${last}.${randomId}@explys.com` : "";
       return next;
     });
   };
 
   const openAddModal = () => {
     setEditingId(null);
+    const newRandom = Math.floor(1000 + Math.random() * 9000);
+    setRandomId(newRandom);
     setFormData({ firstName: "", lastName: "", email: "" });
     setIsModalOpen(true);
   };
 
   const openEditModal = (student: TeacherStudentResult) => {
     setEditingId(student.id);
-    // Разбиваем полное имя с бэкенда обратно на Имя и Фамилию
     const parts = student.name.split(" ");
     const firstName = parts[0] || "";
     const lastName = parts.slice(1).join(" ") || "";
+
+    const match = student.email.match(/\.(\d+)@/);
+    const existingRandomId = match
+      ? parseInt(match[1])
+      : Math.floor(1000 + Math.random() * 9000);
+    setRandomId(existingRandomId);
 
     setFormData({ firstName, lastName, email: student.email });
     setIsModalOpen(true);
@@ -146,10 +185,11 @@ export function ProfileTeacherStudents() {
     }
     setIsSaving(true);
     try {
-      const url = editingId ? `/contents/teacher/my-students/${editingId}` : "/contents/teacher/my-students";
+      const url = editingId
+        ? `/contents/teacher/my-students/${editingId}`
+        : "/contents/teacher/my-students";
       const method = editingId ? "PATCH" : "POST";
-      
-      // Склеиваем имя и фамилию для отправки на бэкенд
+
       const payload = {
         name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
         email: formData.email,
@@ -162,10 +202,19 @@ export function ProfileTeacherStudents() {
       });
 
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      
-      toast.success(editingId ? "Student updated!" : "Student added!");
+
+      const responseData = await res.json();
+
       setIsModalOpen(false);
       await loadStudents();
+
+      if (!editingId && responseData.tempPassword) {
+        window.alert(
+          `Student created successfully!\n\nEmail: ${formData.email}\nPassword: ${responseData.tempPassword}\n\nPlease copy and save this password now. It will not be shown again.`,
+        );
+      } else {
+        toast.success("Student updated!");
+      }
     } catch (e: any) {
       toast.error(e.message || "Operation failed");
     } finally {
@@ -173,15 +222,35 @@ export function ProfileTeacherStudents() {
     }
   };
 
-  const handleDeleteStudent = async (id: number) => {
-    if (!window.confirm("Are you sure you want to remove this student from your list?")) return;
+  // --- ЛОГИКА НОВОЙ МОДАЛКИ УДАЛЕНИЯ ---
+  const openDeleteModal = (id: number) => {
+    setDeletingId(id);
+    setDeletePhrase("");
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteStudent = async () => {
+    if (deletePhrase.trim().toLowerCase() !== "delete account") {
+      toast.error("Incorrect phrase. Please type 'delete account'.");
+      return;
+    }
+    if (!deletingId) return;
+
+    setIsDeleting(true);
     try {
-      const res = await apiFetch(`/contents/teacher/my-students/${id}`, { method: "DELETE" });
+      const res = await apiFetch(
+        `/contents/teacher/my-students/${deletingId}`,
+        { method: "DELETE" },
+      );
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      toast.success("Student removed");
+      toast.success("Student removed successfully");
+      setDeleteModalOpen(false);
       await loadStudents();
     } catch (e: any) {
       toast.error(e.message || "Delete failed");
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -204,15 +273,18 @@ export function ProfileTeacherStudents() {
 
   return (
     <div className="space-y-6">
-      
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <p className="text-sm text-muted-foreground max-w-xl">
-          Overview of learners assigned to you: completed watches,
-          comprehension quizzes, and recent quiz scores per lesson.
+          Overview of learners assigned to you: completed watches, comprehension
+          quizzes, and recent quiz scores per lesson.
         </p>
-        
+
         <div className="flex items-center gap-3 shrink-0">
-          <AdminButton variant="outline" className="gap-2" onClick={handleExport}>
+          <AdminButton
+            variant="outline"
+            className="gap-2"
+            onClick={handleExport}
+          >
             <Download className="h-4 w-4" />
             Download Excel
           </AdminButton>
@@ -223,17 +295,24 @@ export function ProfileTeacherStudents() {
         </div>
       </div>
 
-      {/* --- ОБНОВЛЕННАЯ МОДАЛКА --- */}
+      {/* МОДАЛКА СОЗДАНИЯ/РЕДАКТИРОВАНИЯ */}
       <AdminModal
         open={isModalOpen}
         onClose={() => !isSaving && setIsModalOpen(false)}
         title={editingId ? "Edit Student" : "Register New Student"}
         footer={
           <>
-            <AdminButton variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
+            <AdminButton
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+              disabled={isSaving}
+            >
               Cancel
             </AdminButton>
-            <AdminButton disabled={isSaving} onClick={() => void handleSaveStudent()}>
+            <AdminButton
+              disabled={isSaving}
+              onClick={() => void handleSaveStudent()}
+            >
               {isSaving ? "Saving…" : "Save Student"}
             </AdminButton>
           </>
@@ -242,7 +321,9 @@ export function ProfileTeacherStudents() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">First Name (English)</label>
+              <label className="text-sm font-medium">
+                First Name (English)
+              </label>
               <AdminInput
                 placeholder="e.g. John"
                 value={formData.firstName}
@@ -259,20 +340,72 @@ export function ProfileTeacherStudents() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email Address</label>
+            <label className="text-sm font-medium">
+              Generated Email Address
+            </label>
             <AdminInput
               type="email"
               placeholder="Auto-generated email"
               value={formData.email}
-              readOnly={!editingId} // Запрещаем ручной ввод при создании
-              className={!editingId ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              readOnly
+              className="bg-muted text-muted-foreground cursor-not-allowed"
             />
             {!editingId && (
               <p className="text-xs text-muted-foreground mt-1">
-                Generated automatically. The student will log in using this email.
+                A secure random password will be generated and shown to you
+                after clicking Save.
               </p>
             )}
+          </div>
+        </div>
+      </AdminModal>
+
+      {/* НОВАЯ МОДАЛКА УДАЛЕНИЯ С ПОДТВЕРЖДЕНИЕМ */}
+      <AdminModal
+        open={deleteModalOpen}
+        onClose={() => !isDeleting && setDeleteModalOpen(false)}
+        title="Remove Student"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </AdminButton>
+            {/* Добавляем стили для красной кнопки */}
+            <AdminButton
+              disabled={
+                isDeleting ||
+                deletePhrase.trim().toLowerCase() !== "delete account"
+              }
+              onClick={confirmDeleteStudent}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {isDeleting ? "Removing…" : "Remove Student"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to remove this student from your list? This
+            action cannot be undone.
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              To confirm, type{" "}
+              <span className="font-bold text-foreground">delete account</span>{" "}
+              below:
+            </label>
+            <AdminInput
+              type="text"
+              placeholder="delete account"
+              value={deletePhrase}
+              onChange={(e) => setDeletePhrase(e.target.value)}
+              autoComplete="off"
+            />
           </div>
         </div>
       </AdminModal>
@@ -283,7 +416,8 @@ export function ProfileTeacherStudents() {
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <GraduationCap className="size-12 text-muted-foreground opacity-50" />
             <p className="max-w-md text-muted-foreground">
-              No students are linked to your teacher account yet. Click "Add Student" above to register them.
+              No students are linked to your teacher account yet. Click "Add
+              Student" above to register them.
             </p>
           </div>
         </ProfileCard>
@@ -299,7 +433,7 @@ export function ProfileTeacherStudents() {
                   <th className="p-3 text-center font-medium">Videos done</th>
                   <th className="p-3 text-center font-medium">Quizzes</th>
                   <th className="p-3 text-center font-medium">Avg score</th>
-                  <th className="p-3 font-medium w-12" />
+                  <th className="p-3 font-medium w-24 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,28 +449,53 @@ export function ProfileTeacherStudents() {
                             className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg p-1.5"
                             aria-expanded={isOpen}
                           >
-                            {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                            {isOpen ? (
+                              <ChevronDown className="size-4" />
+                            ) : (
+                              <ChevronRight className="size-4" />
+                            )}
                           </button>
                         </td>
                         <td className="p-3">
-                          <div className="text-foreground font-medium">{s.name}</div>
-                          <div className="text-muted-foreground text-xs">{s.email}</div>
+                          <div className="text-foreground font-medium">
+                            {s.name}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            {s.email}
+                          </div>
                         </td>
-                        <td className="text-foreground p-3">{s.englishLevel?.trim() || "—"}</td>
-                        <td className="p-3 text-center tabular-nums">{s.videosCompleted}</td>
-                        <td className="p-3 text-center tabular-nums">{s.quizAttempts}</td>
+                        <td className="text-foreground p-3">
+                          {s.englishLevel?.trim() || "—"}
+                        </td>
                         <td className="p-3 text-center tabular-nums">
-                          {s.avgQuizScorePct != null ? `${s.avgQuizScorePct}%` : "—"}
+                          {s.videosCompleted}
+                        </td>
+                        <td className="p-3 text-center tabular-nums">
+                          {s.quizAttempts}
+                        </td>
+                        <td className="p-3 text-center tabular-nums">
+                          {s.avgQuizScorePct != null
+                            ? `${s.avgQuizScorePct}%`
+                            : "—"}
                         </td>
                         <td className="p-3 text-right">
-                          <AdminRowMenu>
-                            <AdminRowMenuItem onClick={() => openEditModal(s)}>
-                              <Edit className="h-4 w-4" /> Edit
-                            </AdminRowMenuItem>
-                            <AdminRowMenuItem danger onClick={() => handleDeleteStudent(s.id)}>
-                              <Trash2 className="h-4 w-4" /> Remove
-                            </AdminRowMenuItem>
-                          </AdminRowMenu>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEditModal(s)}
+                              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                              title="Edit student"
+                            >
+                              <Edit className="size-4" />
+                            </button>
+                            {/* ТЕПЕРЬ КНОПКА ОТКРЫВАЕТ КРАСИВУЮ МОДАЛКУ */}
+                            <button
+                              onClick={() => openDeleteModal(s.id)}
+                              className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                              title="Remove student"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {isOpen ? (
@@ -365,14 +524,18 @@ export function ProfileTeacherStudents() {
                                           {q.videoName}
                                         </Link>
                                         <div className="text-muted-foreground text-xs">
-                                          {new Date(q.createdAt).toLocaleString()}
+                                          {new Date(
+                                            q.createdAt,
+                                          ).toLocaleString()}
                                         </div>
                                       </div>
                                       <div className="flex shrink-0 items-center gap-3 text-sm">
                                         <span
                                           className={cn(
                                             "font-semibold tabular-nums",
-                                            q.passed ? "text-accent" : "text-muted-foreground",
+                                            q.passed
+                                              ? "text-accent"
+                                              : "text-muted-foreground",
                                           )}
                                         >
                                           {Math.round(q.scorePct)}%
@@ -383,7 +546,9 @@ export function ProfileTeacherStudents() {
                                         <span
                                           className={cn(
                                             "rounded px-2 py-0.5 text-xs font-medium",
-                                            q.passed ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground",
+                                            q.passed
+                                              ? "bg-accent/15 text-accent"
+                                              : "bg-muted text-muted-foreground",
                                           )}
                                         >
                                           {q.passed ? "Passed" : "Review"}

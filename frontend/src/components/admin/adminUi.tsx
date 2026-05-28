@@ -1,4 +1,9 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import {
+  useEffect,
+  type ButtonHTMLAttributes,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react";
 import { cn } from "../../lib/utils";
 
 export function AdminCard({ className, ...p }: HTMLAttributes<HTMLDivElement>) {
@@ -155,9 +160,7 @@ export function AdminSelectNative({
         className,
       )}
       {...p}
-    >
-      {children}
-    </select>
+    />
   );
 }
 
@@ -197,7 +200,24 @@ export function AdminModal({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  // --- ГЛОБАЛЬНОЕ ЗАКРЫТИЕ ПО ESCAPE ---
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) {
+        onClose();
+      }
+    };
+
+    if (open) {
+      window.addEventListener("keydown", handleEsc);
+    }
+
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [open, onClose]);
+  // ---------------------------------------
+
   if (!open) return null;
+
   return (
     <div className="fixed h-full inset-0 z-[100] flex items-center justify-center p-4">
       <button
@@ -220,12 +240,22 @@ export function AdminModal({
             {title}
           </h2>
           <AdminButton
-            variant="ghost"
-            size="icon"
             onClick={onClose}
-            aria-label="Close"
+            className="p-1.5 rounded-lg text-muted-foreground bg-transparent hover:bg-[#3eb685] hover:text-white transition-colors"
           >
-            ×
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </AdminButton>
         </div>
         <div className="overflow-y-auto p-6">{children}</div>
