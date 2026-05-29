@@ -62,11 +62,15 @@ export function VideoQuiz({
     Record<string, number | string>
   >({});
 
+  // Добавляем стейт для вывода понятных ошибок пользователю
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const question = questions[currentQuestion];
   const isOpen = question ? isOpenQuestion(question) : false;
 
   useEffect(() => {
     if (!question) return;
+    setErrorMsg(null); // Сбрасываем ошибку при переходе на новый вопрос
     if (isOpenQuestion(question)) {
       const stored = answersById[question.id];
       setOpenDraft(typeof stored === "string" ? stored : "");
@@ -119,10 +123,17 @@ export function VideoQuiz({
 
   function handleSubmit() {
     if (!question) return;
+    setErrorMsg(null); // Очищаем ошибку при новой попытке
 
     if (isOpen) {
       if (!isAnswered) {
-        if (!openAnswerIsValid(openDraft)) return;
+        if (!openAnswerIsValid(openDraft)) {
+          // Если текст не прошел валидацию - показываем понятную ошибку!
+          setErrorMsg(
+            `Your answer is too short. Please write at least ${OPEN_MIN_CHARS} characters and 2 full sentences.`,
+          );
+          return;
+        }
         setIsAnswered(true);
         setAnswersById((prev) => ({
           ...prev,
@@ -140,9 +151,12 @@ export function VideoQuiz({
       return;
     }
 
-    if (selectedAnswer === null) return;
-
     if (!isAnswered) {
+      if (selectedAnswer === null) {
+        // Ошибка, если ученик не выбрал вариант ответа
+        setErrorMsg("Please select an option to continue.");
+        return;
+      }
       setIsAnswered(true);
       setAnswersById((prev) => ({
         ...prev,
@@ -163,22 +177,14 @@ export function VideoQuiz({
     }
   }
 
-  const primaryDisabled = isOpen
-    ? !isAnswered
-      ? !openAnswerIsValid(openDraft)
-      : false
-    : !isAnswered
-      ? selectedAnswer === null
-      : false;
-
   const categoryLabel =
-    question.category === "grammar"
+    question?.category === "grammar"
       ? "Grammar"
-      : question.category === "vocabulary"
+      : question?.category === "vocabulary"
         ? "Vocabulary"
-        : question.category === "comprehension"
+        : question?.category === "comprehension"
           ? "Comprehension"
-          : question.category === "open"
+          : question?.category === "open"
             ? "Summary"
             : null;
 
@@ -189,7 +195,7 @@ export function VideoQuiz({
           Question {currentQuestion + 1} of {questions.length}
         </span>
         <span className="flex items-center gap-1 text-muted-foreground">
-          <Clock className="h-3 w-3" />≈ {question.timestamp}
+          <Clock className="h-3 w-3" />≈ {question?.timestamp}
         </span>
       </div>
 
@@ -209,18 +215,24 @@ export function VideoQuiz({
       ) : null}
 
       <h3 className="text-lg leading-relaxed font-semibold text-foreground">
-        {question.question}
+        {question?.question}
       </h3>
 
       {isOpen ? (
         <>
           <textarea
             value={openDraft}
-            onChange={(e) => setOpenDraft(e.target.value)}
+            onChange={(e) => {
+              setOpenDraft(e.target.value);
+              if (errorMsg) setErrorMsg(null); // Убираем ошибку, как только ученик начал печатать
+            }}
             disabled={isAnswered}
             rows={5}
             placeholder="Write 2–3 clear sentences in English."
-            className="focus:ring-primary/40 w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:outline-none disabled:opacity-80"
+            className={cn(
+              "focus:ring-primary/40 w-full resize-y rounded-lg border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:outline-none disabled:opacity-80",
+              errorMsg ? "border-destructive" : "border-border",
+            )}
           />
           {!isAnswered ? (
             <p className="text-xs text-muted-foreground">
@@ -230,7 +242,7 @@ export function VideoQuiz({
         </>
       ) : (
         <div className="space-y-2">
-          {question.options.map((option, index) => {
+          {question?.options.map((option, index) => {
             const isSelected = selectedAnswer === index;
             const lockedInThis = isAnswered && isSelected;
 
@@ -240,16 +252,19 @@ export function VideoQuiz({
                 type="button"
                 disabled={isAnswered}
                 onClick={() => {
-                  if (!isAnswered) setSelectedAnswer(index);
+                  if (!isAnswered) {
+                    setSelectedAnswer(index);
+                    if (errorMsg) setErrorMsg(null);
+                  }
                 }}
                 className={cn(
                   "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
                   !isAnswered && isSelected && "border-primary bg-primary/10",
                   !isAnswered &&
-                  !isSelected &&
-                  "border-border bg-card hover:border-primary/50",
+                    !isSelected &&
+                    "border-border bg-card hover:border-primary/50",
                   lockedInThis &&
-                  "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
+                    "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
                   isAnswered && !isSelected && "opacity-45",
                 )}
               >
@@ -257,15 +272,15 @@ export function VideoQuiz({
                   className={cn(
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
                     !isAnswered &&
-                    isSelected &&
-                    "bg-primary text-primary-foreground",
+                      isSelected &&
+                      "bg-primary text-primary-foreground",
                     !isAnswered &&
-                    !isSelected &&
-                    "bg-muted text-muted-foreground",
+                      !isSelected &&
+                      "bg-muted text-muted-foreground",
                     lockedInThis && "bg-primary/80 text-primary-foreground",
                     isAnswered &&
-                    !isSelected &&
-                    "bg-muted text-muted-foreground",
+                      !isSelected &&
+                      "bg-muted text-muted-foreground",
                   )}
                 >
                   {lockedInThis ? (
@@ -280,6 +295,13 @@ export function VideoQuiz({
           })}
         </div>
       )}
+
+      {/* ЕСЛИ ЕСТЬ ОШИБКА, ВЫВОДИМ ЕЕ КРАСНЫМ БЛОКОМ */}
+      {errorMsg ? (
+        <div className="rounded-lg bg-destructive/15 border border-destructive/30 p-3 text-sm text-destructive font-medium">
+          {errorMsg}
+        </div>
+      ) : null}
 
       {isAnswered ? (
         <div
@@ -298,7 +320,7 @@ export function VideoQuiz({
 
       <button
         type="button"
-        disabled={primaryDisabled}
+        // Убрали жесткую блокировку disabled={primaryDisabled}, теперь кнопка всегда нажимается!
         onClick={handleSubmit}
         className={cn(
           "flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",

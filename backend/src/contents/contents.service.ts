@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  Inject,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -24,6 +25,7 @@ import { buildSafeS3ObjectKey, publicS3ObjectUrl } from "../common/s3-key.util";
 import { AuthMethod, UserRole } from "@generated/prisma/enums";
 import * as XLSX from "xlsx";
 import * as bcrypt from "bcrypt";
+import { Redis } from "ioredis";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -64,6 +66,7 @@ export class ContentsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly videoCaptionsService: VideoCaptionsService,
+    @Inject("REDIS_CLIENT") private readonly redis: Redis,
   ) {
     this.bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET_NAME");
     this.region =
@@ -462,6 +465,8 @@ export class ContentsService {
     }
     const captionsRow =
       await this.videoCaptionsService.generateCaptions(contentVideoId);
+    await this.redis.del(`catalog:videos:teacher:${userId}`);
+    await this.redis.del("catalog:videos");
     return {
       ...created,
       contentVideoId,
@@ -546,7 +551,8 @@ export class ContentsService {
         'visibility must be "public" or "unlisted"',
       );
     }
-    return this.prisma.content.update({
+
+    const updatedContent = this.prisma.content.update({
       where: { id: contentId },
       data: { visibility },
       select: {
@@ -556,6 +562,10 @@ export class ContentsService {
         visibility: true,
       },
     });
+    await this.redis.del(`catalog:videos:teacher:${userId}`);
+    await this.redis.del("catalog:videos");
+
+    return updatedContent;
   }
 
   async getVideosForStudent(studentId: number) {
@@ -903,6 +913,9 @@ export class ContentsService {
     await this.prisma.content.delete({
       where: { id: contentId },
     });
+
+    await this.redis.del(`catalog:videos:teacher:${teacherId}`);
+    await this.redis.del("catalog:videos");
 
     return { success: true };
   }

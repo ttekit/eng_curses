@@ -417,7 +417,7 @@ export function ProfileTeacherVideos() {
                           }}
                         >
                           <option value="public">Public</option>
-                          <option value="unlisted">Unlisted</option>
+                          <option value="unlisted">Private</option>
                         </select>
                         {busy ? (
                           <span className="text-muted-foreground ml-2 inline-flex items-center gap-1 text-xs">

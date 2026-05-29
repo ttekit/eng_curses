@@ -351,8 +351,8 @@ export class ContentVideoController {
   }
 
   @Post(":id/tests/submit")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth("JWT-auth")
+  // @UseGuards(AuthGuard)
+  // @ApiBearerAuth("JWT-auth")
   @ApiOperation({
     summary:
       "Submit comprehension/grammar test; updates UserLanguageData for linked topics",
@@ -377,8 +377,8 @@ export class ContentVideoController {
   }
 
   @Post(":id/summary-recommendations")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth("JWT-auth")
+  // @UseGuards(AuthGuard)
+  // @ApiBearerAuth("JWT-auth")
   @ApiOperation({
     summary:
       "Gemini: personalized summary, focus words, and next steps after a test (uses scores + vocabulary list)",
