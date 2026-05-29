@@ -32,8 +32,8 @@ export const CATALOG_CONTENT_VISIBILITY_PUBLIC = "public" as const;
 export class ContentVideoService {
   constructor(
     private prisma: PrismaService,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis
-  ) { }
+    @Inject("REDIS_CLIENT") private readonly redis: Redis,
+  ) {}
 
   async create(createContentVideoDto: CreateContentVideoDto) {
     const maxRow = await this.prisma.contentVideo.aggregate({
@@ -44,21 +44,48 @@ export class ContentVideoService {
     const newVideo = await this.prisma.contentVideo.create({
       data: { ...createContentVideoDto, playlistPosition },
     });
-    await this.redis.del('catalog:videos');
+    await this.redis.del("catalog:videos");
     return newVideo;
   }
 
-  async findAll() {
-    const cachedVideos = await this.redis.get('catalog:videos');
+  async findAll(userId?: number) {
+    let teacherId: number | undefined = undefined;
+
+    // 1. Узнаем, есть ли у пользователя привязанный учитель
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { teacherId: true }
+      });
+      if (user?.teacherId) {
+        teacherId = user.teacherId;
+      }
+    }
+
+    // 2. Делаем кэш уникальным: для учеников каждого учителя — свой кэш
+    const cacheKey = teacherId ? `catalog:videos:teacher:${teacherId}` : 'catalog:videos';
+    
+    const cachedVideos = await this.redis.get(cacheKey);
     if (cachedVideos) {
       return JSON.parse(cachedVideos);
     }
 
     const videos = await this.prisma.contentVideo.findMany({
       where: {
-        content: {
-          category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
-        },
+        OR: [
+          // Условие А: Показываем ВСЕ публичные видео
+          {
+            content: {
+              category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
+            },
+          },
+          // Условие Б: ЕСЛИ это ученик, подтягиваем скрытые (unlisted) видео его учителя
+          ...(teacherId ? [{
+            content: {
+              category: { ownerUserId: teacherId } // <-- Правильный путь к автору в БД
+            }
+          }] : [])
+        ]
       },
       orderBy: [
         { content: { categoryId: "asc" } },
@@ -83,7 +110,7 @@ export class ContentVideoService {
       },
     });
 
-    await this.redis.set('catalog:videos', JSON.stringify(videos), 'EX', 300);
+    await this.redis.set(cacheKey, JSON.stringify(videos), 'EX', 300);
     return videos;
   }
 
@@ -111,7 +138,9 @@ export class ContentVideoService {
         content: {
           include: {
             category: true,
-            stats: { include: { topics: { select: { id: true, name: true } } } },
+            stats: {
+              include: { topics: { select: { id: true, name: true } } },
+            },
           },
         },
       },
@@ -128,7 +157,9 @@ export class ContentVideoService {
         content: {
           include: {
             category: true,
-            stats: { include: { topics: { select: { id: true, name: true } } } },
+            stats: {
+              include: { topics: { select: { id: true, name: true } } },
+            },
           },
         },
       },
@@ -159,7 +190,7 @@ export class ContentVideoService {
       where: { id },
       data: updateContentVideoDto,
     });
-    await this.redis.del('catalog:videos');
+    await this.redis.del("catalog:videos");
     return updatedVideo;
   }
 
@@ -171,8 +202,10 @@ export class ContentVideoService {
     if (!contentVideo) {
       throw new NotFoundException(`ContentVideo with ID ${id} not found`);
     }
-    const deletedVideo = await this.prisma.contentVideo.delete({ where: { id } });
-    await this.redis.del('catalog:videos');
+    const deletedVideo = await this.prisma.contentVideo.delete({
+      where: { id },
+    });
+    await this.redis.del("catalog:videos");
     return deletedVideo;
   }
 }
