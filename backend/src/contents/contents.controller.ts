@@ -68,29 +68,43 @@ export class ContentsController {
   @Post("teacher/upload")
   @UseGuards(AuthGuard)
   @UseInterceptors(
-    FileInterceptor("file", {
-      limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
-    }),
+    FileFieldsInterceptor(
+      [
+        { name: "file", maxCount: 1 },
+        { name: "thumbnailFile", maxCount: 1 }, // <--- НАУЧИЛИ ПРИНИМАТЬ ПРЕВЬЮ
+      ],
+      {
+        limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
+      },
+    ),
   )
   @ApiOperation({
     summary:
-      "Teacher: upload a lesson (MP4). Creates a series with one clip; captions and tags are generated automatically.",
+      "Teacher: upload a lesson (MP4). Generates captions, tags, and accepts thumbnail.",
   })
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
     @Body() dto: TeacherUploadContentDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: CONTENT_VIDEO_MAX_FILE_BYTES }),
-          new FileTypeValidator({ fileType: "video/mp4" }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      file?: Express.Multer.File[];
+      thumbnailFile?: Express.Multer.File[];
+    },
   ) {
     const userId = jwtSubToUserId(req.user);
-    return this.contentsService.createTeacherUpload(userId, dto, file);
+    const videoFile = files?.file?.[0];
+    const thumbnailFile = files?.thumbnailFile?.[0];
+
+    if (!videoFile) {
+      throw new BadRequestException("Video file is required");
+    }
+
+    return this.contentsService.createTeacherUpload(
+      userId,
+      dto,
+      videoFile,
+      thumbnailFile,
+    );
   }
 
   @Get("teacher/my-series")

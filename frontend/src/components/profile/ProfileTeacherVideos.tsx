@@ -1,7 +1,7 @@
 /**
  * Teacher profile tab: lists series this account uploaded, with links and catalog visibility.
  */
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Loader2, Video, Plus, Upload, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -12,6 +12,7 @@ import {
   AdminButton,
   AdminModal,
   AdminInput,
+  AdminTextarea,
 } from "../../components/admin/adminUi";
 
 export type TeacherSeriesItem = {
@@ -25,6 +26,59 @@ export type TeacherSeriesItem = {
   userTags: string[];
   processingComplexity: string | null;
 };
+
+// МАГИЯ 1: Автоматически делает скриншот первого кадра видео
+function generateVideoThumbnailBlob(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.playsInline = true;
+    video.muted = true;
+    video.src = URL.createObjectURL(file);
+    video.onloadeddata = () => {
+      video.currentTime = 0.1;
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(video.src);
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Canvas blob generation failed"));
+          }
+        },
+        "image/jpeg",
+        0.85,
+      );
+    };
+    video.onerror = (e) => {
+      URL.revokeObjectURL(video.src);
+      reject(e);
+    };
+  });
+}
+
+// МАГИЯ 2: Генерирует красивую URL-ссылку для базы данных
+function slugFriendly(label: string): string {
+  const base = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  const suffix = Date.now().toString(36);
+  const slug = `${base}-${suffix}`;
+  const trimmed =
+    slug.length > 100 ? slug.slice(0, 100).replace(/-[^-]*$/, "") : slug;
+  return trimmed?.length >= 4 ? trimmed : `video-${suffix}`;
+}
 
 export function ProfileTeacherVideos() {
   const [loading, setLoading] = useState(true);
@@ -130,6 +184,8 @@ export function ProfileTeacherVideos() {
   }
 
   const handleUpload = async () => {
+    if (uploadSaving) return;
+
     const name = uploadTitle.trim();
     const description = uploadDesc.trim().slice(0, 250);
 
@@ -144,11 +200,21 @@ export function ProfileTeacherVideos() {
 
     try {
       const fd = new FormData();
-      fd.append("file", uploadFile);
+
       fd.append("name", name);
+      fd.append("visibility", "unlisted");
       fd.append("description", description);
 
-      await apiFetch("/contents/create", {
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (thumbErr) {
+        console.warn("Thumbnail generation failed:", thumbErr);
+      }
+
+      fd.append("file", uploadFile);
+
+      await apiFetch("/contents/teacher/upload", {
         method: "POST",
         body: fd,
         signal: controller.signal,
@@ -175,7 +241,7 @@ export function ProfileTeacherVideos() {
 
   const cancelUpload = () => {
     if (abortController) {
-      abortController.abort(); // Это мгновенно прервет запрос
+      abortController.abort();
       setCancelConfirmOpen(false);
       setUploadOpen(false);
       setUploadSaving(false);
@@ -279,7 +345,7 @@ export function ProfileTeacherVideos() {
           id="upload-lesson-form"
           className="space-y-4"
           onSubmit={(e) => {
-            e.preventDefault(); // Предотвращаем перезагрузку страницы
+            e.preventDefault();
             void handleUpload();
           }}
         >
@@ -308,7 +374,40 @@ export function ProfileTeacherVideos() {
               required
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Description (optional)
+            </label>
+            <AdminTextarea
+              placeholder="Short lesson summary..."
+              value={uploadDesc}
+              onChange={(e) => setUploadDesc(e.target.value)}
+              maxLength={250}
+            />
+          </div>
         </form>
+      </AdminModal>
+
+      <AdminModal
+        open={cancelConfirmOpen}
+        onClose={() => setCancelConfirmOpen(false)}
+        title="Cancel Upload?"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setCancelConfirmOpen(false)}
+            >
+              No, continue
+            </AdminButton>
+            <AdminButton variant="danger" onClick={cancelUpload}>
+              Yes, cancel
+            </AdminButton>
+          </>
+        }
+      >
+        <p>Are you sure you want to cancel the video upload?</p>
       </AdminModal>
 
       <AdminModal
@@ -324,26 +423,6 @@ export function ProfileTeacherVideos() {
             >
               Cancel
             </AdminButton>
-            <AdminModal
-              open={cancelConfirmOpen}
-              onClose={() => setCancelConfirmOpen(false)}
-              title="Cancel Upload?"
-              footer={
-                <>
-                  <AdminButton
-                    variant="outline"
-                    onClick={() => setCancelConfirmOpen(false)}
-                  >
-                    No, continue
-                  </AdminButton>
-                  <AdminButton variant="danger" onClick={cancelUpload}>
-                    Yes, cancel
-                  </AdminButton>
-                </>
-              }
-            >
-              <p>Are you sure you want to cancel the video upload?</p>
-            </AdminModal>
             <AdminButton
               disabled={
                 isDeleting ||
@@ -376,16 +455,6 @@ export function ProfileTeacherVideos() {
               value={deletePhrase}
               onChange={(e) => setDeletePhrase(e.target.value)}
               autoComplete="off"
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  deletePhrase.trim().toLowerCase() === "delete video" &&
-                  !isDeleting
-                ) {
-                  e.preventDefault();
-                  void confirmDeleteVideo();
-                }
-              }}
             />
           </div>
         </div>

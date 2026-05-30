@@ -395,6 +395,7 @@ export class ContentsService {
     userId: number,
     dto: TeacherUploadContentDto,
     file: Express.Multer.File,
+    thumbnailFile?: Express.Multer.File,
   ) {
     await this.requireTeacherAccount(userId);
     let friendlyLink = "";
@@ -413,6 +414,7 @@ export class ContentsService {
         );
       }
     }
+
     const key = buildSafeS3ObjectKey(file.originalname);
     await this.s3Client.send(
       new PutObjectCommand({
@@ -422,6 +424,20 @@ export class ContentsService {
       }),
     );
     const videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+
+    let thumbnailUrl: string | null = null;
+    if (thumbnailFile) {
+      const thumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: thumbKey,
+          Body: thumbnailFile.buffer,
+        }),
+      );
+      thumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+    }
+
     const name = dto.name.trim();
     const visibility = dto.visibility.trim();
     if (visibility !== "public" && visibility !== "unlisted") {
@@ -444,6 +460,7 @@ export class ContentsService {
                 videoLink: videoUrl,
                 videoName: name,
                 playlistPosition: 0,
+                thumbnailUrl: thumbnailUrl, // <--- ПИШЕМ ССЫЛКУ НА ПРЕВЬЮ В БАЗУ
               },
             },
           },
