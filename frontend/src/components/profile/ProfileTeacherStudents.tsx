@@ -9,6 +9,7 @@ import {
   Plus,
   Edit,
   Trash2,
+  Copy,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
@@ -74,6 +75,12 @@ export function ProfileTeacherStudents() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // СОСТОЯНИЕ ДЛЯ КРАСИВОГО ОКНА С ПАРОЛЕМ
+  const [newStudentCreds, setNewStudentCreds] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
 
   const loadStudents = async () => {
     try {
@@ -211,9 +218,10 @@ export function ProfileTeacherStudents() {
       await loadStudents();
 
       if (!editingId && responseData.tempPassword) {
-        window.alert(
-          `Student created successfully!\n\nEmail: ${formData.email}\nPassword: ${responseData.tempPassword}\n\nPlease copy and save this password now. It will not be shown again.`,
-        );
+        setNewStudentCreds({
+          email: formData.email,
+          password: responseData.tempPassword,
+        });
       } else {
         toast.success("Student updated!");
       }
@@ -231,8 +239,8 @@ export function ProfileTeacherStudents() {
   };
 
   const confirmDeleteStudent = async () => {
-    if (deletePhrase.trim().toLowerCase() !== "delete account") {
-      toast.error("Incorrect phrase. Please type 'delete account'.");
+    if (deletePhrase.trim().toLowerCase() !== "delete student") {
+      toast.error("Incorrect phrase. Please type 'delete student'.");
       return;
     }
     if (!deletingId) return;
@@ -310,15 +318,24 @@ export function ProfileTeacherStudents() {
               Cancel
             </AdminButton>
             <AdminButton
+              type="submit"
+              form="add-student-form"
               disabled={isSaving}
-              onClick={() => void handleSaveStudent()}
             >
               {isSaving ? "Saving…" : "Save Student"}
             </AdminButton>
           </>
         }
       >
-        <div className="space-y-4">
+        <form
+          id="add-student-form"
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isSaving) return;
+            void handleSaveStudent();
+          }}
+        >
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">
@@ -328,6 +345,7 @@ export function ProfileTeacherStudents() {
                 placeholder="e.g. John"
                 value={formData.firstName}
                 onChange={(e) => handleNameChange("firstName", e.target.value)}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -336,6 +354,7 @@ export function ProfileTeacherStudents() {
                 placeholder="e.g. Doe"
                 value={formData.lastName}
                 onChange={(e) => handleNameChange("lastName", e.target.value)}
+                required
               />
             </div>
           </div>
@@ -357,6 +376,94 @@ export function ProfileTeacherStudents() {
               </p>
             )}
           </div>
+        </form>
+      </AdminModal>
+
+      <AdminModal
+        open={!!newStudentCreds}
+        onClose={() => setNewStudentCreds(null)}
+        title="🎉 Student Registered!"
+        footer={
+          <AdminButton onClick={() => setNewStudentCreds(null)}>
+            I have saved the credentials
+          </AdminButton>
+        }
+      >
+        <div className="space-y-5">
+          <p className="text-sm text-muted-foreground">
+            Please copy and save these credentials now. For security reasons,{" "}
+            <strong className="text-foreground">
+              the password will not be shown again.
+            </strong>
+          </p>
+
+          <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Email Address
+              </label>
+              <div className="flex gap-2">
+                <AdminInput
+                  value={newStudentCreds?.email || ""}
+                  readOnly
+                  className="bg-background text-foreground"
+                />
+                <AdminButton
+                  variant="outline"
+                  className="px-3"
+                  onClick={() => {
+                    navigator.clipboard.writeText(newStudentCreds?.email || "");
+                    toast.success("Email copied!");
+                  }}
+                  title="Copy Email"
+                >
+                  <Copy className="size-4" />
+                </AdminButton>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Temporary Password
+              </label>
+              <div className="flex gap-2">
+                <AdminInput
+                  value={newStudentCreds?.password || ""}
+                  readOnly
+                  className="bg-background font-mono text-foreground font-bold"
+                />
+                <AdminButton
+                  variant="outline"
+                  className="px-3"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      newStudentCreds?.password || "",
+                    );
+                    toast.success("Password copied!");
+                  }}
+                  title="Copy Password"
+                >
+                  <Copy className="size-4" />
+                </AdminButton>
+              </div>
+            </div>
+          </div>
+
+          <AdminButton
+            variant="outline"
+            className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/10"
+            onClick={() => {
+              if (newStudentCreds) {
+                navigator.clipboard.writeText(
+                  `Email: ${newStudentCreds.email}\nPassword: ${newStudentCreds.password}`,
+                );
+                toast.success("Both copied to clipboard!");
+              }
+            }}
+          >
+            <Copy className="size-4" />
+            Copy Both
+          </AdminButton>
         </div>
       </AdminModal>
 
@@ -403,12 +510,21 @@ export function ProfileTeacherStudents() {
               value={deletePhrase}
               autoComplete="off"
               onChange={(e) => setDeletePhrase(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  deletePhrase.trim().toLowerCase() === "delete student" &&
+                  !isDeleting
+                ) {
+                  e.preventDefault();
+                  void confirmDeleteStudent();
+                }
+              }}
             />
           </div>
         </div>
       </AdminModal>
 
-      {/* НОВОЕ ОКНО: Детализация ответов в хронологическом порядке */}
       <AdminModal
         open={!!selectedQuiz}
         onClose={() => setSelectedQuiz(null)}
@@ -458,7 +574,6 @@ export function ProfileTeacherStudents() {
               {(() => {
                 const answers = selectedQuiz.answers;
 
-                // Заглушка для очень старых тестов без JSON-объекта
                 if (!answers || typeof answers !== "object") {
                   return selectedQuiz.summaryText ? (
                     <div className="bg-card border border-border rounded-lg p-4 mb-4">
@@ -476,7 +591,6 @@ export function ProfileTeacherStudents() {
                   );
                 }
 
-                // Вытаскиваем только главные ключи вопросов (порядок сохраняется благодаря движку JS)
                 const baseKeys = Object.keys(answers).filter(
                   (k) => !k.includes("_"),
                 );
@@ -497,7 +611,6 @@ export function ProfileTeacherStudents() {
                         } catch (e) {}
                       }
 
-                      // Если значение — это строка, значит это вопрос с развернутым ответом (Summary)
                       const isWritten = typeof value === "string";
                       if (isWritten) renderedSummary = true;
 
@@ -580,7 +693,6 @@ export function ProfileTeacherStudents() {
                               })}
                             </div>
                           ) : (
-                            // Заглушка для старых тестов до сохранения вариантов
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-xs font-bold text-foreground bg-background border border-border px-2 py-1 rounded shrink-0">
                                 Option {Number(value) + 1}
@@ -600,7 +712,6 @@ export function ProfileTeacherStudents() {
                       );
                     })}
 
-                    {/* Если саммари почему-то не было в ответах, но лежит отдельным текстом — показываем в самом низу */}
                     {!renderedSummary && selectedQuiz.summaryText && (
                       <div className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3">
                         <span className="text-sm text-foreground font-medium">

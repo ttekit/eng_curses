@@ -455,6 +455,16 @@ export function ProfileTeacherVideos() {
               value={deletePhrase}
               onChange={(e) => setDeletePhrase(e.target.value)}
               autoComplete="off"
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  deletePhrase.trim().toLowerCase() === "delete video" &&
+                  !isDeleting
+                ) {
+                  e.preventDefault();
+                  void confirmDeleteVideo();
+                }
+              }}
             />
           </div>
         </div>

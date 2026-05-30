@@ -98,6 +98,7 @@ export function AdminButton({
   className,
   variant = "primary",
   size = "default",
+  type = "button",
   ...p
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: BtnVariant;
@@ -111,7 +112,7 @@ export function AdminButton({
         : "";
   return (
     <button
-      type="button"
+      type={type}
       className={cn(btnBase, btnVariant[variant], sizeCls, className)}
       {...p}
     />
@@ -200,7 +201,6 @@ export function AdminModal({
   children: ReactNode;
   footer?: ReactNode;
 }) {
-  // --- ГЛОБАЛЬНОЕ ЗАКРЫТИЕ ПО ESCAPE ---
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape" && open) {
@@ -214,7 +214,6 @@ export function AdminModal({
 
     return () => window.removeEventListener("keydown", handleEsc);
   }, [open, onClose]);
-  // ---------------------------------------
 
   if (!open) return null;
 
@@ -239,9 +238,10 @@ export function AdminModal({
           >
             {title}
           </h2>
-          <AdminButton
+          <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground bg-transparent hover:bg-[#3eb685] hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <svg
               width="16"
@@ -256,7 +256,7 @@ export function AdminModal({
               <path d="M18 6 6 18" />
               <path d="m6 6 12 12" />
             </svg>
-          </AdminButton>
+          </button>
         </div>
         <div className="overflow-y-auto p-6">{children}</div>
         {footer ? (
