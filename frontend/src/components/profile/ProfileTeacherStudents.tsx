@@ -45,8 +45,12 @@ export type TeacherStudentResult = {
     scorePct: number;
     passed: boolean;
     createdAt: string;
+    answers?: any;
+    summaryText?: string | null;
   }[];
 };
+
+type QuizRow = TeacherStudentResult["recentQuizzes"][0];
 
 export function ProfileTeacherStudents() {
   const [loading, setLoading] = useState(true);
@@ -54,7 +58,8 @@ export function ProfileTeacherStudents() {
   const [students, setStudents] = useState<TeacherStudentResult[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
-  // Стейты для создания/редактирования
+  const [selectedQuiz, setSelectedQuiz] = useState<QuizRow | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -65,7 +70,6 @@ export function ProfileTeacherStudents() {
   const [isSaving, setIsSaving] = useState(false);
   const [randomId, setRandomId] = useState<number>(0);
 
-  // Стейты для красивой модалки УДАЛЕНИЯ
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletePhrase, setDeletePhrase] = useState("");
@@ -73,7 +77,7 @@ export function ProfileTeacherStudents() {
 
   const loadStudents = async () => {
     try {
-      const res = await apiFetch("/contents/teacher/my-students/results", {
+      const res = await apiFetch("/teacher/my-students/results", {
         method: "GET",
       });
       if (!res.ok) {
@@ -95,20 +99,18 @@ export function ProfileTeacherStudents() {
   useEffect(() => {
     void loadStudents();
   }, []);
-  // --- ЗАКРЫТИЕ МОДАЛОК ПО КЛАВИШЕ ESCAPE ---
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        // Закрываем модалку создания/редактирования, если она открыта и мы не в процессе сохранения
         if (isModalOpen && !isSaving) setIsModalOpen(false);
-        // Закрываем модалку удаления, если она открыта и мы не в процессе удаления
         if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+        if (selectedQuiz) setSelectedQuiz(null);
       }
     };
-
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isModalOpen, isSaving, deleteModalOpen, isDeleting]);
+  }, [isModalOpen, isSaving, deleteModalOpen, isDeleting, selectedQuiz]);
 
   const toggleRow = (id: number) => {
     setExpanded((prev) => {
@@ -222,7 +224,6 @@ export function ProfileTeacherStudents() {
     }
   };
 
-  // --- ЛОГИКА НОВОЙ МОДАЛКИ УДАЛЕНИЯ ---
   const openDeleteModal = (id: number) => {
     setDeletingId(id);
     setDeletePhrase("");
@@ -295,7 +296,6 @@ export function ProfileTeacherStudents() {
         </div>
       </div>
 
-      {/* МОДАЛКА СОЗДАНИЯ/РЕДАКТИРОВАНИЯ */}
       <AdminModal
         open={isModalOpen}
         onClose={() => !isSaving && setIsModalOpen(false)}
@@ -360,7 +360,6 @@ export function ProfileTeacherStudents() {
         </div>
       </AdminModal>
 
-      {/* НОВАЯ МОДАЛКА УДАЛЕНИЯ С ПОДТВЕРЖДЕНИЕМ */}
       <AdminModal
         open={deleteModalOpen}
         onClose={() => !isDeleting && setDeleteModalOpen(false)}
@@ -374,11 +373,10 @@ export function ProfileTeacherStudents() {
             >
               Cancel
             </AdminButton>
-            {/* Добавляем стили для красной кнопки */}
             <AdminButton
               disabled={
                 isDeleting ||
-                deletePhrase.trim().toLowerCase() !== "delete account"
+                deletePhrase.trim().toLowerCase() !== "delete student"
               }
               onClick={confirmDeleteStudent}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
@@ -396,21 +394,236 @@ export function ProfileTeacherStudents() {
           <div className="space-y-2">
             <label className="text-sm font-medium">
               To confirm, type{" "}
-              <span className="font-bold text-foreground">delete account</span>{" "}
+              <span className="font-bold text-destructive">delete student</span>{" "}
               below:
             </label>
             <AdminInput
               type="text"
-              placeholder="delete account"
+              placeholder="delete student"
               value={deletePhrase}
-              onChange={(e) => setDeletePhrase(e.target.value)}
               autoComplete="off"
+              onChange={(e) => setDeletePhrase(e.target.value)}
             />
           </div>
         </div>
       </AdminModal>
 
-      {/* Таблица */}
+      {/* НОВОЕ ОКНО: Детализация ответов в хронологическом порядке */}
+      <AdminModal
+        open={!!selectedQuiz}
+        onClose={() => setSelectedQuiz(null)}
+        title={
+          selectedQuiz
+            ? `Quiz Details: ${selectedQuiz.videoName}`
+            : "Quiz Details"
+        }
+        footer={
+          <AdminButton onClick={() => setSelectedQuiz(null)}>Close</AdminButton>
+        }
+      >
+        {selectedQuiz && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border border-border">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Final Score
+                </p>
+                <p
+                  className={cn(
+                    "text-3xl font-bold",
+                    selectedQuiz.passed ? "text-accent" : "text-destructive",
+                  )}
+                >
+                  {Math.round(selectedQuiz.scorePct)}%
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Result
+                </p>
+                <p className="text-xl font-bold text-foreground">
+                  {selectedQuiz.correct}{" "}
+                  <span className="text-muted-foreground text-sm">
+                    / {selectedQuiz.total} correct
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Student's Inputs
+              </h4>
+
+              {(() => {
+                const answers = selectedQuiz.answers;
+
+                // Заглушка для очень старых тестов без JSON-объекта
+                if (!answers || typeof answers !== "object") {
+                  return selectedQuiz.summaryText ? (
+                    <div className="bg-card border border-border rounded-lg p-4 mb-4">
+                      <p className="text-[10px] font-bold text-primary tracking-wider mb-2">
+                        WRITTEN SUMMARY
+                      </p>
+                      <p className="text-sm italic text-foreground">
+                        "{selectedQuiz.summaryText}"
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No multiple-choice data saved for this attempt.
+                    </p>
+                  );
+                }
+
+                // Вытаскиваем только главные ключи вопросов (порядок сохраняется благодаря движку JS)
+                const baseKeys = Object.keys(answers).filter(
+                  (k) => !k.includes("_"),
+                );
+                let renderedSummary = false;
+
+                return (
+                  <div className="flex flex-col gap-3">
+                    {baseKeys.map((key) => {
+                      const value = answers[key];
+                      const questionText = answers[`${key}_question`];
+                      const answerText = answers[`${key}_text`];
+                      let optionsArray = answers[`${key}_options`];
+                      const correctIndex = answers[`${key}_correct`];
+
+                      if (typeof optionsArray === "string") {
+                        try {
+                          optionsArray = JSON.parse(optionsArray);
+                        } catch (e) {}
+                      }
+
+                      // Если значение — это строка, значит это вопрос с развернутым ответом (Summary)
+                      const isWritten = typeof value === "string";
+                      if (isWritten) renderedSummary = true;
+
+                      return (
+                        <div
+                          key={key}
+                          className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3"
+                        >
+                          <span className="text-sm text-foreground font-medium">
+                            {questionText
+                              ? questionText
+                              : `Question ID: ${key.replace("q_", "").substring(0, 4)}...`}
+                          </span>
+
+                          {isWritten ? (
+                            <div className="mt-1 rounded-md bg-background/50 border border-border/50 p-3">
+                              <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
+                                WRITTEN SUMMARY
+                              </p>
+                              <p className="text-sm italic text-foreground">
+                                "{value}"
+                              </p>
+                            </div>
+                          ) : Array.isArray(optionsArray) ? (
+                            <div className="flex flex-col gap-2 mt-1">
+                              {optionsArray.map((opt, idx) => {
+                                const isStudentChoice = Number(value) === idx;
+                                const isCorrectChoice = correctIndex === idx;
+
+                                let variantClass =
+                                  "border-border/50 bg-background/50 text-muted-foreground";
+                                let badgeClass =
+                                  "bg-background border border-border/50 text-muted-foreground";
+                                let statusText = null;
+
+                                if (isCorrectChoice && isStudentChoice) {
+                                  variantClass =
+                                    "border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400 font-medium";
+                                  badgeClass =
+                                    "bg-green-500 text-white border-green-500";
+                                  statusText = "Correct";
+                                } else if (isStudentChoice) {
+                                  variantClass =
+                                    "border-destructive/50 bg-destructive/10 text-destructive font-medium";
+                                  badgeClass =
+                                    "bg-destructive text-white border-destructive";
+                                  statusText = "Student's choice";
+                                } else if (isCorrectChoice) {
+                                  variantClass =
+                                    "border-green-500/30 bg-background text-green-600 dark:text-green-400";
+                                  badgeClass =
+                                    "bg-green-500/20 text-green-600 border-green-500/30";
+                                  statusText = "Correct answer";
+                                }
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
+                                      variantClass,
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
+                                        badgeClass,
+                                      )}
+                                    >
+                                      {String.fromCharCode(65 + idx)}
+                                    </span>
+                                    <span>{opt}</span>
+                                    {statusText && (
+                                      <span className="ml-auto text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                                        {statusText}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            // Заглушка для старых тестов до сохранения вариантов
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-xs font-bold text-foreground bg-background border border-border px-2 py-1 rounded shrink-0">
+                                Option {Number(value) + 1}
+                              </span>
+                              {answerText ? (
+                                <span className="text-sm font-semibold text-primary/90">
+                                  {String(answerText)}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-muted-foreground italic">
+                                  (No text saved)
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Если саммари почему-то не было в ответах, но лежит отдельным текстом — показываем в самом низу */}
+                    {!renderedSummary && selectedQuiz.summaryText && (
+                      <div className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3">
+                        <span className="text-sm text-foreground font-medium">
+                          Summary (Legacy)
+                        </span>
+                        <div className="mt-1 rounded-md bg-background/50 border border-border/50 p-3">
+                          <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
+                            WRITTEN SUMMARY
+                          </p>
+                          <p className="text-sm italic text-foreground">
+                            "{selectedQuiz.summaryText}"
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+      </AdminModal>
+
       {students.length === 0 ? (
         <ProfileCard title="Student results">
           <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -487,7 +700,6 @@ export function ProfileTeacherStudents() {
                             >
                               <Edit className="size-4" />
                             </button>
-                            {/* ТЕПЕРЬ КНОПКА ОТКРЫВАЕТ КРАСИВУЮ МОДАЛКУ */}
                             <button
                               onClick={() => openDeleteModal(s.id)}
                               className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
@@ -510,52 +722,93 @@ export function ProfileTeacherStudents() {
                                   No quiz attempts recorded yet.
                                 </p>
                               ) : (
-                                <ul className="space-y-2">
-                                  {s.recentQuizzes.map((q) => (
-                                    <li
-                                      key={q.id}
-                                      className="border-border/40 bg-card/80 flex flex-col gap-1 rounded-lg border px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                      <div className="min-w-0 flex-1">
-                                        <Link
-                                          to={`/content/${q.contentVideoId}`}
-                                          className="text-primary font-medium hover:underline"
-                                        >
-                                          {q.videoName}
-                                        </Link>
-                                        <div className="text-muted-foreground text-xs">
-                                          {new Date(
-                                            q.createdAt,
-                                          ).toLocaleString()}
+                                <ul className="space-y-3">
+                                  {s.recentQuizzes.map((q) => {
+                                    let writtenText = q.summaryText;
+                                    if (
+                                      !writtenText &&
+                                      q.answers &&
+                                      typeof q.answers === "object"
+                                    ) {
+                                      const found = Object.values(
+                                        q.answers,
+                                      ).find(
+                                        (v) =>
+                                          typeof v === "string" &&
+                                          !String(v).includes("_text") &&
+                                          !String(v).includes("["),
+                                      );
+                                      if (found) writtenText = found as string;
+                                    }
+
+                                    return (
+                                      <li
+                                        key={q.id}
+                                        className="border-border/40 bg-card/80 flex flex-col gap-2 rounded-lg border px-4 py-3"
+                                      >
+                                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                          <div className="min-w-0 flex-1">
+                                            <Link
+                                              to={`/content/${q.contentVideoId}`}
+                                              className="text-primary font-medium hover:underline"
+                                            >
+                                              {q.videoName}
+                                            </Link>
+                                            <div className="text-muted-foreground mt-0.5 text-xs">
+                                              {new Date(
+                                                q.createdAt,
+                                              ).toLocaleString()}
+                                            </div>
+                                          </div>
+                                          <div className="flex shrink-0 items-center gap-3 text-sm mt-2 sm:mt-0">
+                                            <span
+                                              className={cn(
+                                                "font-semibold tabular-nums",
+                                                q.passed
+                                                  ? "text-accent"
+                                                  : "text-muted-foreground",
+                                              )}
+                                            >
+                                              {Math.round(q.scorePct)}%
+                                            </span>
+                                            <span className="text-muted-foreground tabular-nums">
+                                              {q.correct}/{q.total}
+                                            </span>
+                                            <span
+                                              className={cn(
+                                                "rounded px-2 py-0.5 text-xs font-medium",
+                                                q.passed
+                                                  ? "bg-accent/15 text-accent"
+                                                  : "bg-muted text-muted-foreground",
+                                              )}
+                                            >
+                                              {q.passed ? "Passed" : "Review"}
+                                            </span>
+                                          </div>
                                         </div>
-                                      </div>
-                                      <div className="flex shrink-0 items-center gap-3 text-sm">
-                                        <span
-                                          className={cn(
-                                            "font-semibold tabular-nums",
-                                            q.passed
-                                              ? "text-accent"
-                                              : "text-muted-foreground",
-                                          )}
-                                        >
-                                          {Math.round(q.scorePct)}%
-                                        </span>
-                                        <span className="text-muted-foreground tabular-nums">
-                                          {q.correct}/{q.total}
-                                        </span>
-                                        <span
-                                          className={cn(
-                                            "rounded px-2 py-0.5 text-xs font-medium",
-                                            q.passed
-                                              ? "bg-accent/15 text-accent"
-                                              : "bg-muted text-muted-foreground",
-                                          )}
-                                        >
-                                          {q.passed ? "Passed" : "Review"}
-                                        </span>
-                                      </div>
-                                    </li>
-                                  ))}
+
+                                        {writtenText ? (
+                                          <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                                              Written Summary
+                                            </span>
+                                            <p className="text-sm text-foreground italic line-clamp-2">
+                                              "{writtenText}"
+                                            </p>
+                                          </div>
+                                        ) : null}
+
+                                        <div className="mt-1">
+                                          <button
+                                            onClick={() => setSelectedQuiz(q)}
+                                            className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-md transition-colors"
+                                          >
+                                            View all answers
+                                          </button>
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
                                 </ul>
                               )}
                             </div>

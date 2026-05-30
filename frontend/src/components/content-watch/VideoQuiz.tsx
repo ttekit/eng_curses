@@ -10,7 +10,6 @@ function isOpenQuestion(q: QuizQuestion): boolean {
   return q.questionType === "open" || q.category === "open";
 }
 
-/** Rough sentence count for learner-written text (period / ? / !). */
 function sentenceCount(text: string): number {
   return text
     .trim()
@@ -34,10 +33,8 @@ export type QuizWrongReviewItem = {
 };
 
 export type VideoQuizCompleteSummary = {
-  /** MCQ items only until the server merges in the written score on submit. */
   correctCount: number;
   totalQuestions: number;
-  /** MCQ index or open-ended text per question id — must match backend token ids. */
   answersById: Record<string, number | string>;
   wrongReview: QuizWrongReviewItem[];
 };
@@ -62,7 +59,6 @@ export function VideoQuiz({
     Record<string, number | string>
   >({});
 
-  // Добавляем стейт для вывода понятных ошибок пользователю
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const question = questions[currentQuestion];
@@ -70,7 +66,7 @@ export function VideoQuiz({
 
   useEffect(() => {
     if (!question) return;
-    setErrorMsg(null); // Сбрасываем ошибку при переходе на новый вопрос
+    setErrorMsg(null);
     if (isOpenQuestion(question)) {
       const stored = answersById[question.id];
       setOpenDraft(typeof stored === "string" ? stored : "");
@@ -123,12 +119,11 @@ export function VideoQuiz({
 
   function handleSubmit() {
     if (!question) return;
-    setErrorMsg(null); // Очищаем ошибку при новой попытке
+    setErrorMsg(null);
 
     if (isOpen) {
       if (!isAnswered) {
         if (!openAnswerIsValid(openDraft)) {
-          // Если текст не прошел валидацию - показываем понятную ошибку!
           setErrorMsg(
             `Your answer is too short. Please write at least ${OPEN_MIN_CHARS} characters and 2 full sentences.`,
           );
@@ -138,6 +133,7 @@ export function VideoQuiz({
         setAnswersById((prev) => ({
           ...prev,
           [question.id]: openDraft.trim(),
+          [`${question.id}_question`]: question.question,
         }));
         return;
       }
@@ -153,15 +149,22 @@ export function VideoQuiz({
 
     if (!isAnswered) {
       if (selectedAnswer === null) {
-        // Ошибка, если ученик не выбрал вариант ответа
         setErrorMsg("Please select an option to continue.");
         return;
       }
       setIsAnswered(true);
+      const answerText = question.options[selectedAnswer];
+
       setAnswersById((prev) => ({
         ...prev,
         [question.id]: selectedAnswer,
+        [`${question.id}_text`]: answerText,
+        [`${question.id}_question`]: question.question,
+        // Оборачиваем массив в JSON.stringify, чтобы превратить его в строку!
+        [`${question.id}_options`]: JSON.stringify(question.options),
+        [`${question.id}_correct`]: question.correct,
       }));
+
       if (selectedAnswer === question.correct) {
         setCorrectCount((prev) => prev + 1);
       }
@@ -224,7 +227,7 @@ export function VideoQuiz({
             value={openDraft}
             onChange={(e) => {
               setOpenDraft(e.target.value);
-              if (errorMsg) setErrorMsg(null); // Убираем ошибку, как только ученик начал печатать
+              if (errorMsg) setErrorMsg(null);
             }}
             disabled={isAnswered}
             rows={5}
@@ -296,7 +299,6 @@ export function VideoQuiz({
         </div>
       )}
 
-      {/* ЕСЛИ ЕСТЬ ОШИБКА, ВЫВОДИМ ЕЕ КРАСНЫМ БЛОКОМ */}
       {errorMsg ? (
         <div className="rounded-lg bg-destructive/15 border border-destructive/30 p-3 text-sm text-destructive font-medium">
           {errorMsg}
@@ -320,7 +322,6 @@ export function VideoQuiz({
 
       <button
         type="button"
-        // Убрали жесткую блокировку disabled={primaryDisabled}, теперь кнопка всегда нажимается!
         onClick={handleSubmit}
         className={cn(
           "flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",

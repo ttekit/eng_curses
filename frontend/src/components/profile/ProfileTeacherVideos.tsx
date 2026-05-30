@@ -35,6 +35,7 @@ export function ProfileTeacherVideos() {
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadDesc, setUploadDesc] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
 
@@ -42,6 +43,10 @@ export function ProfileTeacherVideos() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const loadSeries = useCallback(async () => {
     setLoading(true);
@@ -126,37 +131,53 @@ export function ProfileTeacherVideos() {
 
   const handleUpload = async () => {
     const name = uploadTitle.trim();
-    if (name.length < 2) {
-      toast.error("Title must be at least 2 characters");
-      return;
-    }
-    if (!uploadFile) {
-      toast.error("Choose an MP4 file.");
+    const description = uploadDesc.trim().slice(0, 250);
+
+    if (name.length < 2 || !uploadFile) {
+      toast.error("Title and video file are required.");
       return;
     }
 
     setUploadSaving(true);
+    const controller = new AbortController();
+    setAbortController(controller);
+
     try {
       const fd = new FormData();
       fd.append("file", uploadFile);
       fd.append("name", name);
-      fd.append("visibility", "unlisted");
+      fd.append("description", description);
 
-      const res = await apiFetch("/contents/teacher/upload", {
+      await apiFetch("/contents/create", {
         method: "POST",
         body: fd,
+        signal: controller.signal,
       });
 
-      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-
-      toast.success("Lesson uploaded successfully!");
+      toast.success("Video uploaded!");
       setUploadOpen(false);
+
       setUploadTitle("");
+      setUploadDesc("");
       setUploadFile(null);
       await loadSeries();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } catch (e: any) {
+      if (e.name === "AbortError") {
+        toast.error("Upload cancelled.");
+      } else {
+        toast.error(e.message || "Upload failed");
+      }
     } finally {
+      setUploadSaving(false);
+      setAbortController(null);
+    }
+  };
+
+  const cancelUpload = () => {
+    if (abortController) {
+      abortController.abort(); // Это мгновенно прервет запрос
+      setCancelConfirmOpen(false);
+      setUploadOpen(false);
       setUploadSaving(false);
     }
   };
@@ -238,21 +259,30 @@ export function ProfileTeacherVideos() {
           <>
             <AdminButton
               variant="outline"
-              onClick={() => setUploadOpen(false)}
-              disabled={uploadSaving}
+              onClick={() =>
+                uploadSaving ? setCancelConfirmOpen(true) : setUploadOpen(false)
+              }
             >
-              Cancel
+              {uploadSaving ? "Cancel upload" : "Cancel"}
             </AdminButton>
             <AdminButton
+              type="submit"
+              form="upload-lesson-form"
               disabled={uploadSaving}
-              onClick={() => void handleUpload()}
             >
               {uploadSaving ? "Publishing…" : "Publish"}
             </AdminButton>
           </>
         }
       >
-        <div className="space-y-4">
+        <form
+          id="upload-lesson-form"
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault(); // Предотвращаем перезагрузку страницы
+            void handleUpload();
+          }}
+        >
           <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
             <input
               type="file"
@@ -268,15 +298,17 @@ export function ProfileTeacherVideos() {
                 : "This video will be available to your students"}
             </p>
           </label>
+
           <div className="space-y-2">
             <label className="text-sm font-medium">Lesson Title</label>
             <AdminInput
               placeholder="e.g., Present Simple Explained"
               value={uploadTitle}
               onChange={(e) => setUploadTitle(e.target.value)}
+              required
             />
           </div>
-        </div>
+        </form>
       </AdminModal>
 
       <AdminModal
@@ -292,6 +324,26 @@ export function ProfileTeacherVideos() {
             >
               Cancel
             </AdminButton>
+            <AdminModal
+              open={cancelConfirmOpen}
+              onClose={() => setCancelConfirmOpen(false)}
+              title="Cancel Upload?"
+              footer={
+                <>
+                  <AdminButton
+                    variant="outline"
+                    onClick={() => setCancelConfirmOpen(false)}
+                  >
+                    No, continue
+                  </AdminButton>
+                  <AdminButton variant="danger" onClick={cancelUpload}>
+                    Yes, cancel
+                  </AdminButton>
+                </>
+              }
+            >
+              <p>Are you sure you want to cancel the video upload?</p>
+            </AdminModal>
             <AdminButton
               disabled={
                 isDeleting ||

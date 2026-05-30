@@ -8,7 +8,10 @@ import { createHash } from "node:crypto";
 import { Prisma } from "../generated/prisma/client";
 import { webVttToPlainText } from "src/contents/webvtt-to-plain-text.util";
 import { PrismaService } from "src/prisma.service";
-import { aggregateSkillScore, clamp } from "src/alcorythm/alcorythm-scoring.util";
+import {
+  aggregateSkillScore,
+  clamp,
+} from "src/alcorythm/alcorythm-scoring.util";
 import {
   applyOpenResult,
   createGradingToken,
@@ -156,7 +159,7 @@ export class ContentVideoComprehensionTestsService {
     private readonly openAnswerGrader: ContentVideoOpenAnswerGraderClient,
     private readonly userVocabulary: UserVocabularyService,
     private readonly postWatchSurveyService: PostWatchSurveyService,
-  ) { }
+  ) {}
 
   /**
    * Always generates fresh tests (no server-side cache). Issues a new `gradingToken` each time.
@@ -223,28 +226,30 @@ export class ContentVideoComprehensionTestsService {
             video as {
               content?: { stats?: { userTags?: string[] } | null } | null;
             }
-          ).content?.stats?.userTags ??
-          ([] as string[])
+          ).content?.stats?.userTags ?? ([] as string[])
         )
           .map((t) => t.trim())
           .filter((t) => t.length > 0),
       ),
     ];
 
-    const { source, tests, keyVocabulary: rawKeyVocab } =
-      await this.buildFreshTests(
-        video.videoName,
-        video.videoDescription,
-        transcriptPlain,
-        cefr,
-        vocabularyTerms,
-        videoThemeTags,
-        learnerThemeKnowledge,
-        priorWeakSpots,
-        learningGoal,
-        timeToAchieve,
-        hobbies,
-      );
+    const {
+      source,
+      tests,
+      keyVocabulary: rawKeyVocab,
+    } = await this.buildFreshTests(
+      video.videoName,
+      video.videoDescription,
+      transcriptPlain,
+      cefr,
+      vocabularyTerms,
+      videoThemeTags,
+      learnerThemeKnowledge,
+      priorWeakSpots,
+      learningGoal,
+      timeToAchieve,
+      hobbies,
+    );
     let keyVocabulary = rawKeyVocab;
     if (!keyVocabulary.length) {
       keyVocabulary = fallbackKeyVocabulary({
@@ -288,7 +293,9 @@ export class ContentVideoComprehensionTestsService {
     const input = {
       videoName: (body.videoName || v.videoName).trim() || v.videoName,
       learnerCefr: body.learnerCefr ?? null,
-      vocabularyTerms: Array.isArray(body.vocabularyTerms) ? body.vocabularyTerms : [],
+      vocabularyTerms: Array.isArray(body.vocabularyTerms)
+        ? body.vocabularyTerms
+        : [],
       correct: body.correct,
       total: body.total,
       percentage: body.percentage,
@@ -380,18 +387,18 @@ export class ContentVideoComprehensionTestsService {
     const items: GradingItem[] = p.tests.map((t) =>
       t.questionType === "open"
         ? {
-          kind: "open" as const,
-          id: t.id,
-          category: "open" as const,
-          questionStem: t.question.slice(0, 400),
-        }
+            kind: "open" as const,
+            id: t.id,
+            category: "open" as const,
+            questionStem: t.question.slice(0, 400),
+          }
         : {
-          kind: "mcq" as const,
-          id: t.id,
-          correctIndex: t.correctIndex,
-          category: t.category,
-          questionStem: t.question.slice(0, 400),
-        },
+            kind: "mcq" as const,
+            id: t.id,
+            correctIndex: t.correctIndex,
+            category: t.category,
+            questionStem: t.question.slice(0, 400),
+          },
     );
     const gradingToken = createGradingToken(
       { contentVideoId: p.contentVideoId, userId: p.userId, exp, items },
@@ -443,8 +450,7 @@ export class ContentVideoComprehensionTestsService {
 
     let buckets = scoreMcqBuckets(p.items, numericAnswers);
     const openEntry = p.items.find(
-      (it): it is Extract<GradingItem, { kind: "open" }> =>
-        it.kind === "open",
+      (it): it is Extract<GradingItem, { kind: "open" }> => it.kind === "open",
     );
     let openEndedFeedback: string | null = null;
     let writtenSummaryScore: number | null = null;
@@ -465,8 +471,9 @@ export class ContentVideoComprehensionTestsService {
         videoMeta?.videoCaption?.subtitlesFileLink,
       );
       const { cefr: cefrForOpen } = await this.loadLearnerContext(p.userId);
-      const learnerProfile =
-        await this.loadAdditionalProfileForOpenGrading(p.userId);
+      const learnerProfile = await this.loadAdditionalProfileForOpenGrading(
+        p.userId,
+      );
       const graded = await this.openAnswerGrader.gradeOpenSummary({
         videoName: videoMeta?.videoName ?? "",
         videoDescription: videoMeta?.videoDescription ?? null,
@@ -486,8 +493,8 @@ export class ContentVideoComprehensionTestsService {
           ? graded.feedback.trim()
           : offlineOpenSummaryFeedback(openPass);
       openEndedFeedback =
-        writtenSummaryScore != null ?
-          `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
+        writtenSummaryScore != null
+          ? `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
           : baseFeedback;
     }
 
@@ -496,13 +503,13 @@ export class ContentVideoComprehensionTestsService {
     const deltas = knowledgeDeltasFromSkillBuckets(buckets);
     const legacy = legacyComprehensionGrammarStats(buckets);
 
-    const { cefr, vocabularyTerms: vocabSubmit } = await this.loadLearnerContext(
-      p.userId,
-    );
+    const { cefr, vocabularyTerms: vocabSubmit } =
+      await this.loadLearnerContext(p.userId);
 
     if (p.userId != null) {
-
-      await this.postWatchSurveyService.awardXpAndCheckAchievements(p.userId, 150).catch(() => undefined);
+      await this.postWatchSurveyService
+        .awardXpAndCheckAchievements(p.userId, 150)
+        .catch(() => undefined);
 
       await this.recordWeakSpotsFromSubmit(
         p.userId,
@@ -512,7 +519,9 @@ export class ContentVideoComprehensionTestsService {
         numericAnswers,
         buckets,
       );
-      const keyTerms = normalizeSubmitKeyVocabularyTerms(body.keyVocabularyTerms);
+      const keyTerms = normalizeSubmitKeyVocabularyTerms(
+        body.keyVocabularyTerms,
+      );
       const keyDetails = normalizeSubmitKeyVocabularyDetails(
         body.keyVocabularyDetails,
       );
@@ -584,6 +593,7 @@ export class ContentVideoComprehensionTestsService {
         total,
         pct,
         buckets,
+        rawAnswers, // <--- ИСПРАВЛЕНИЕ 1: ПЕРЕДАЕМ ОТВЕТЫ В БАЗУ!
       );
       return {
         correct,
@@ -664,6 +674,7 @@ export class ContentVideoComprehensionTestsService {
       total,
       pct,
       buckets,
+      rawAnswers, // <--- ИСПРАВЛЕНИЕ 2: ПЕРЕДАЕМ ОТВЕТЫ В БАЗУ!
     );
 
     return {
@@ -812,6 +823,7 @@ export class ContentVideoComprehensionTestsService {
     total: number,
     pct: number,
     buckets: SkillBucketStats,
+    answers: Record<string, number | string>,
   ): Promise<void> {
     const scorePct = Math.round(1000 * pct) / 10;
     const passed = total > 0 && scorePct >= COMPREHENSION_PASS_SCORE_PCT;
@@ -834,6 +846,7 @@ export class ContentVideoComprehensionTestsService {
           },
           grammar: { correct: buckets.grammar.c, total: buckets.grammar.t },
           open: { correct: buckets.open.c, total: buckets.open.t },
+          answers: answers,
         } as unknown as Prisma.InputJsonValue,
       },
     });
@@ -888,9 +901,7 @@ export class ContentVideoComprehensionTestsService {
     const learningGoal = effectiveLearningGoal(extra?.learningGoal);
     const timeToAchieve = effectiveTimeHorizon(extra?.timeToAchieve);
     const hobbies = Array.isArray(extra?.hobbies)
-      ? extra.hobbies
-        .map((h) => String(h).trim())
-        .filter((h) => h.length > 0)
+      ? extra.hobbies.map((h) => String(h).trim()).filter((h) => h.length > 0)
       : [];
 
     const cefr = extra?.englishLevel?.trim() ?? null;
@@ -954,7 +965,9 @@ export class ContentVideoComprehensionTestsService {
   }
 
   /** Job, education, hobbies from `AdditionalUserData` for open-summary coaching. */
-  private async loadAdditionalProfileForOpenGrading(userId: number | null): Promise<{
+  private async loadAdditionalProfileForOpenGrading(
+    userId: number | null,
+  ): Promise<{
     job: string | null;
     education: string | null;
     hobbies: string[];
