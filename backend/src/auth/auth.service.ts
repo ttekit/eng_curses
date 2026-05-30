@@ -1048,6 +1048,7 @@ export class AuthService {
       subscriptionPlan: (user as any).subscriptionPlan ?? "",
       subscriptionStatus: (user as any).subscriptionStatus ?? "",
       stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
+      teacherId: (user as any).teacherId ?? null,
     };
   }
 

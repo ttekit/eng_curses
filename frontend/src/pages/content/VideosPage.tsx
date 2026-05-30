@@ -27,7 +27,10 @@ import {
   CatalogSpotlight,
   type CatalogSpotlightItem,
 } from "../../components/catalog/CatalogSpotlight";
-import { CatalogVideoCard, type CatalogCardVideo } from "../../components/catalog/CatalogVideoCard";
+import {
+  CatalogVideoCard,
+  type CatalogCardVideo,
+} from "../../components/catalog/CatalogVideoCard";
 import { cn } from "../../lib/utils";
 import {
   buildClientRecommendedVideos,
@@ -114,6 +117,12 @@ export default function VideoPage() {
   const [recommendedCards, setRecommendedCards] = useState<CatalogCardVideo[]>(
     [],
   );
+
+  // ===== НОВЫЙ СТЕЙТ ДЛЯ ВИДЕО УЧИТЕЛЯ/УЧЕНИКА =====
+  const [classroomVideos, setClassroomVideos] = useState<CatalogCardVideo[]>(
+    [],
+  );
+
   const { user, isLoading: userLoading, refreshProfile } = useUser();
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
@@ -131,7 +140,7 @@ export default function VideoPage() {
         });
       }
     },
-    []
+    [],
   );
 
   const cb = locale === "uk" ? appUk.catalogBrowse : appEn.catalogBrowse;
@@ -295,6 +304,7 @@ export default function VideoPage() {
     };
   }, [showPlacementTest, accessToken]);
 
+  // ===== ЗАГРУЗКА ОСНОВНОГО КАТАЛОГА =====
   useEffect(() => {
     const fetchVideos = async () => {
       try {
@@ -308,6 +318,61 @@ export default function VideoPage() {
     };
     fetchVideos();
   }, []);
+
+  // ===== ЗАГРУЗКА СПЕЦИАЛЬНЫХ ВИДЕО (ДЛЯ УЧИТЕЛЕЙ / УЧЕНИКОВ) =====
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    async function loadClassroom() {
+      try {
+        const role = user?.role?.toLowerCase();
+        if (role === "student") {
+          const res = await apiFetch("/contents/student/teacher-videos");
+          if (res.ok) {
+            const data = await res.json();
+            if (!cancelled && Array.isArray(data)) {
+              setClassroomVideos(
+                data
+                  .map((d: any) => ({
+                    id: d.contentVideoId || d.contentId,
+                    title: d.name,
+                    categoryLabel: "Teacher's Lesson",
+                    thumbnailUrl: d.thumbnailUrl,
+                    videoLink: d.videoLink,
+                  }))
+                  .filter((v: any) => v.id != null),
+              );
+            }
+          }
+        } else if (role === "teacher") {
+          const res = await apiFetch("/contents/teacher/my-series");
+          if (res.ok) {
+            const data = await res.json();
+            if (!cancelled && Array.isArray(data)) {
+              setClassroomVideos(
+                data
+                  .map((d: any) => ({
+                    id: d.contentVideoId || d.contentId,
+                    title: d.name,
+                    categoryLabel: "My Lesson",
+                    thumbnailUrl: d.thumbnailUrl,
+                  }))
+                  .filter((v: any) => v.id != null),
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load classroom videos", e);
+      }
+    }
+
+    void loadClassroom();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const thumbnailByVideoId = useMemo(() => {
     const map = new Map<number, string | undefined>();
@@ -433,8 +498,41 @@ export default function VideoPage() {
     return ["All", ...genreNames.filter(Boolean)];
   }, [genreNames]);
 
+  // ===== ГЛОБАЛЬНАЯ ФИЛЬТРАЦИЯ И БЛОКИРОВКА 18+ =====
+  const isTeacherLinkedStudent =
+    user?.role?.toLowerCase() === "student" && !!user?.teacherId;
+
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
+      // 1. ВЫРЕЗАЕМ ВИДЕО УЧИТЕЛЯ (Они будут только в верхней карусели)
+      if (v.content?.category?.friendlyLink?.startsWith("t-")) {
+        return false;
+      }
+
+      // 2. БЛОКИРУЕМ КОНТЕНТ 18+ ДЛЯ УЧЕНИКОВ
+      if (isTeacherLinkedStudent) {
+        const sysTags = v.content?.stats?.systemTags || [];
+        const usrTags = v.content?.stats?.userTags || [];
+        const catName = v.content?.category?.name?.toLowerCase() || "";
+
+        const has18Plus =
+          sysTags.some(
+            (t: string) =>
+              t && (t.includes("18+") || t.toLowerCase().includes("adult")),
+          ) ||
+          usrTags.some(
+            (t: string) =>
+              t && (t.includes("18+") || t.toLowerCase().includes("adult")),
+          ) ||
+          catName.includes("18+") ||
+          catName.includes("adult");
+
+        if (has18Plus) {
+          return false;
+        }
+      }
+
+      // 3. СТАНДАРТНЫЕ ФИЛЬТРЫ КАТАЛОГА (Уровни, Жанры)
       const matchCategory =
         selectedCategory === "All" ||
         v.content.category.name === selectedCategory;
@@ -446,23 +544,30 @@ export default function VideoPage() {
         selectedGenre === "All" ||
         (v.content.stats?.userTags &&
           v.content.stats.userTags.includes(selectedGenre));
+
       return matchCategory && matchLevel && matchGenre;
     });
-  }, [videos, selectedCategory, selectedLevel, selectedGenre]);
+  }, [
+    videos,
+    selectedCategory,
+    selectedLevel,
+    selectedGenre,
+    isTeacherLinkedStudent,
+  ]);
 
   const featured = filteredVideos[0] ?? null;
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
@@ -542,8 +647,15 @@ export default function VideoPage() {
           videos: sorted.map(toCardVideo),
         };
       });
-  }, [filteredVideos, selectedCategory, selectedLevel, selectedGenre, hasFilters]);
+  }, [
+    filteredVideos,
+    selectedCategory,
+    selectedLevel,
+    selectedGenre,
+    hasFilters,
+  ]);
 
+  // Вырезаем отфильтрованные видео (например 18+ или учительские) из рекомендаций
   const visibleRecommended = useMemo(() => {
     if (recommendedCards.length === 0) {
       return [];
@@ -585,8 +697,6 @@ export default function VideoPage() {
             genres={genreNames}
             selectedGenre={selectedGenre}
             onSelectGenre={setSelectedGenre}
-            welcomeName={user?.name ? user.name.split(" ")[0] : undefined}
-            englishLevel={user?.englishLevel || undefined}
             collapsed={sidebarCollapsed}
             onCollapsedChange={setSidebarCollapsed}
             catalogSpotlightOpen={spotlightOpen}
@@ -599,7 +709,7 @@ export default function VideoPage() {
               "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8",
               sidebarCollapsed
                 ? "lg:ml-20 lg:max-w-[calc(100vw-5rem)]"
-                : "lg:ml-64 lg:max-w-[calc(100vw-16rem)]"
+                : "lg:ml-64 lg:max-w-[calc(100vw-16rem)]",
             )}
           >
             <CatalogHero featured={featuredHero} />
@@ -727,9 +837,10 @@ export default function VideoPage() {
                       "Loading catalog..."}
                   </p>
                 </div>
-              ) : filteredVideos.length === 0 ? (
+              ) : filteredVideos.length === 0 &&
+                classroomVideos.length === 0 ? (
                 <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
-                  <img src="/SadIcon.svg" className="w-25 h-30 mb-3" />
+                  <img src="/SadIcon.svg" className="w-25 h-30 mb-3" alt="" />
                   <h2 className="font-display text-2xl font-bold">
                     {(messages.catalogPage as any)?.emptyTitle ||
                       "No lessons found"}
@@ -737,9 +848,9 @@ export default function VideoPage() {
                   <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
                       ? (messages.catalogPage as any)?.emptyNoVideos ||
-                      "There are no videos in the catalog yet."
+                        "There are no videos in the catalog yet."
                       : (messages.catalogPage as any)?.emptyFiltered ||
-                      "No videos match your filters."}
+                        "No videos match your filters."}
                   </p>
                 </div>
               ) : hasFilters ? (
@@ -751,12 +862,37 @@ export default function VideoPage() {
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {filteredVideos.map((video) => (
-                      <CatalogVideoCard key={video.id} video={toCardVideo(video)} />
+                      <CatalogVideoCard
+                        key={video.id}
+                        video={toCardVideo(video)}
+                      />
                     ))}
                   </div>
                 </div>
               ) : (
                 <>
+                  {/* ===== БЛОК ДЛЯ УЧИТЕЛЕЙ И УЧЕНИКОВ (КАРУСЕЛЬ) ===== */}
+                  {!hasFilters && classroomVideos.length > 0 && (
+                    <CatalogVideoRow
+                      title={
+                        user?.role?.toLowerCase() === "teacher"
+                          ? "👨‍🏫 My Uploaded Lessons"
+                          : "🎓 Lessons from your Teacher"
+                      }
+                      description={
+                        user?.role?.toLowerCase() === "teacher"
+                          ? "Videos you have published for your students."
+                          : "Exclusive content assigned to your class."
+                      }
+                      videos={classroomVideos.map((v) => ({
+                        ...v,
+                        thumbnailUrl:
+                          v.thumbnailUrl || thumbnailByVideoId.get(v.id),
+                      }))}
+                    />
+                  )}
+
+                  {/* ===== ОБЫЧНЫЕ БЛОКИ КАТАЛОГА ===== */}
                   {visibleRecommended.length > 0 ? (
                     <CatalogVideoRow
                       title={cb.recommendedTitle}
@@ -786,7 +922,7 @@ export default function VideoPage() {
             <div className="mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4">
               <div aria-hidden="true" />
               <div className="flex items-center gap-2">
-                <img src="/Icon.svg" className="w-10 h-13" />
+                <img src="/Icon.svg" className="w-10 h-13" alt="" />
                 <span className="font-display text-lg font-bold tracking-tight text-foreground">
                   Explys
                 </span>
@@ -819,7 +955,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
+                        "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>
@@ -848,7 +984,7 @@ export default function VideoPage() {
               <div className="mx-auto flex max-w-4xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="mb-3 flex items-center gap-2">
-                    <img src="/Icon.svg" className="w-8 h-10" />
+                    <img src="/Icon.svg" className="w-8 h-10" alt="" />
                     <span className="font-display text-lg font-bold tracking-tight text-foreground">
                       Explys
                     </span>
