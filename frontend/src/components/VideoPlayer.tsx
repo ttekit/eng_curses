@@ -5,6 +5,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import Hls from "hls.js";
 import { cn } from "../lib/utils";
 import {
   Volume2,
@@ -40,13 +41,41 @@ export default function VideoPlayer({
   className,
   ...rest
 }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
   function setVideoNode(node: HTMLVideoElement | null) {
     videoRef.current = node;
     onVideoMount?.(node);
+
+    if (!node) {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      return;
+    }
+
+    if (src && src.includes(".m3u8")) {
+      if (Hls.isSupported()) {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+        }
+        const hls = new Hls({
+          maxMaxBufferLength: 10,
+          enableWorker: true
+        });
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(node);
+      } else if (node.canPlayType("application/vnd.apple.mpegurl")) {
+        node.src = src;
+      }
+    } else if (src) {
+      node.src = src;
+    }
   }
 
   const [playing, setPlaying] = useState(false);
@@ -375,7 +404,6 @@ export default function VideoPlayer({
     >
       <video
         ref={setVideoNode}
-        src={src}
         preload="auto"
         className="absolute inset-0 w-full h-full object-cover"
         onTimeUpdate={handleTimeUpdate}
