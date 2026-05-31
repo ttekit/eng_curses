@@ -45,48 +45,53 @@ export class ContentVideoService {
       data: { ...createContentVideoDto, playlistPosition },
     });
     await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
     return newVideo;
   }
 
   async findAll(userId?: number) {
     let teacherId: number | undefined = undefined;
+    let isAdmin = false;
 
-    // 1. Узнаем, есть ли у пользователя привязанный учитель
     if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { teacherId: true }
+        select: { teacherId: true, role: true }
       });
       if (user?.teacherId) {
         teacherId = user.teacherId;
       }
+      if (user?.role === 'ADMIN') {
+        isAdmin = true;
+      }
     }
 
-    // 2. Делаем кэш уникальным: для учеников каждого учителя — свой кэш
-    const cacheKey = teacherId ? `catalog:videos:teacher:${teacherId}` : 'catalog:videos';
-    
+    const cacheKey = isAdmin
+      ? 'catalog:videos:admin'
+      : (teacherId ? `catalog:videos:teacher:${teacherId}` : 'catalog:videos');
+
     const cachedVideos = await this.redis.get(cacheKey);
     if (cachedVideos) {
       return JSON.parse(cachedVideos);
     }
 
-    const videos = await this.prisma.contentVideo.findMany({
-      where: {
-        OR: [
-          // Условие А: Показываем ВСЕ публичные видео
-          {
-            content: {
-              category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
-            },
+    const whereClause = isAdmin ? {} : {
+      OR: [
+        {
+          content: {
+            category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
           },
-          // Условие Б: ЕСЛИ это ученик, подтягиваем скрытые (unlisted) видео его учителя
-          ...(teacherId ? [{
-            content: {
-              category: { ownerUserId: teacherId } // <-- Правильный путь к автору в БД
-            }
-          }] : [])
-        ]
-      },
+        },
+        ...(teacherId ? [{
+          content: {
+            category: { ownerUserId: teacherId }
+          }
+        }] : [])
+      ]
+    };
+
+    const videos = await this.prisma.contentVideo.findMany({
+      where: whereClause,
       orderBy: [
         { content: { categoryId: "asc" } },
         { content: { playlistPosition: "asc" } },
@@ -191,6 +196,7 @@ export class ContentVideoService {
       data: updateContentVideoDto,
     });
     await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
     return updatedVideo;
   }
 
@@ -206,6 +212,7 @@ export class ContentVideoService {
       where: { id },
     });
     await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
     return deletedVideo;
   }
 }
