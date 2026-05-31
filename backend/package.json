@@ -3,6 +3,7 @@
   "type": "commonjs",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1033.0",
+    "@aws-sdk/s3-request-presigner": "^3.1055.0",
     "@deepgram/captions": "^1.2.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@nestjs-modules/ioredis": "^2.2.1",

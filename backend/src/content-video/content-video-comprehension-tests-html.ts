@@ -13,7 +13,6 @@ type GradeIframeConfig = {
   submitPath: string;
   contentVideoId: number;
   videoName: string;
-  /** Full URL to the app’s summary page (e.g. Next origin + /test/comprehension-summary). */
   summaryBase: string | null;
 };
 
@@ -24,11 +23,6 @@ function jsonEmbedConfig(obj: GradeIframeConfig): string {
     .replace(/\u2029/g, "\\u2029");
 }
 
-/**
- * Standalone HTML document for `<iframe src="…/content-video/:id/tests/iframe">`.
- * `apiOrigin` e.g. `https://api.example.com` (no trailing slash) for same-origin `fetch` to submit.
- * @param options.summaryBase — e.g. `https://app.example.com/test/comprehension-summary` (add ?summaryBase=… to the iframe URL).
- */
 export function renderComprehensionTestsIframeHtml(
   result: GenerateComprehensionTestsResult,
   apiOrigin: string,
@@ -151,9 +145,10 @@ export function renderComprehensionTestsIframeHtml(
       border-radius: 10px;
       padding: 1rem 1rem 0.75rem;
       margin-bottom: 1rem;
+      transition: border-color 0.2s;
     }
     .q.ok { border-color: rgba(34, 197, 94, 0.45); }
-    .q.bad { border-color: rgba(248, 113, 113, 0.5); }
+    .q.bad { border-color: rgba(248, 113, 113, 0.8); }
     .qnum {
       font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
       display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
@@ -191,10 +186,12 @@ export function renderComprehensionTestsIframeHtml(
       font: inherit; cursor: pointer;
       background: var(--accent); color: #0c1118; border: 0;
       padding: 0.55rem 1rem; border-radius: 8px; font-weight: 600;
+      transition: all 0.2s;
     }
-    button:hover { filter: brightness(1.08); }
+    button:hover:not(:disabled) { filter: brightness(1.08); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
     .reveal, .sec { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-    .reveal:hover, .sec:hover { color: var(--text); }
+    .reveal:hover:not(:disabled), .sec:hover:not(:disabled) { color: var(--text); }
     .sec { color: #e7ecf3; }
     #resultPanel {
       display: none; margin-top: 1.25rem; padding: 1rem; border-radius: 10px;
@@ -209,7 +206,7 @@ export function renderComprehensionTestsIframeHtml(
   <div class="wrap">
     <h1>${escapeHtml(result.videoName)}</h1>
     <p class="meta">${meta}</p>
-    <p class="hint">Includes grammar, vocabulary, comprehension, and one short written summary. Use <em>Check</em>, then <strong>Save results &amp; update my topic knowledge</strong> (add <code>?userId=…</code> to the iframe URL to update scores).</p>
+    <p class="hint">Includes grammar, vocabulary, comprehension, and one short written summary. Use <em>Check</em>, then <strong>Save results &amp; update my topic knowledge</strong>.</p>
     ${questionsHtml}
     <div class="bar">
       <button type="button" class="sec" id="checkBtn">Check answers</button>
@@ -228,6 +225,7 @@ export function renderComprehensionTestsIframeHtml(
 (function () {
   var cfg = JSON.parse(document.getElementById("gradeConfig").textContent);
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  
   document.getElementById("checkBtn").addEventListener("click", function () {
     each("fieldset.q", function (fs) {
       var feedback = fs.querySelector(".feedback");
@@ -257,6 +255,7 @@ export function renderComprehensionTestsIframeHtml(
       feedback.hidden = false;
     });
   });
+
   document.getElementById("revealBtn").addEventListener("click", function () {
     each("fieldset.q", function (fs) {
       if (fs.getAttribute("data-kind") === "open") return;
@@ -269,26 +268,38 @@ export function renderComprehensionTestsIframeHtml(
       feedback.textContent = "Correct option highlighted."; feedback.hidden = false;
     });
   });
+
   document.getElementById("submitBtn").addEventListener("click", function () {
     var answers = {};
+    var missing = 0;
+    
+    // Собираем ответы и ищем пропущенные
     each("fieldset.q", function (fs) {
+      fs.classList.remove("bad");
       var qid = fs.getAttribute("data-qid");
       if (fs.getAttribute("data-kind") === "open") {
         var ta = fs.querySelector("textarea.open-answer");
         var txt = ta && ta.value.trim();
         if (txt) { answers[qid] = txt; }
+        else { missing++; fs.classList.add("bad"); }
         return;
       }
       var sel = fs.querySelector('input[name="q_' + qid + '"]:checked');
       if (sel) { answers[qid] = parseInt(sel.value, 10); }
+      else { missing++; fs.classList.add("bad"); }
     });
-    if (Object.keys(answers).length < document.querySelectorAll("fieldset.q").length) {
-      document.getElementById("resultPanel").className = "on";
-      document.getElementById("resultMessage").textContent = "Please answer every question first.";
+
+    // Если хоть что-то не заполнено — ругаемся жестким алертом
+    if (missing > 0) {
+      alert("Please answer all questions! You missed " + missing + " question(s) — they are highlighted in red.");
       return;
     }
+
     var btn = document.getElementById("submitBtn");
+    var ogText = btn.textContent;
     btn.disabled = true;
+    btn.textContent = "Sending...";
+
     fetch(cfg.submitPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -305,6 +316,7 @@ export function renderComprehensionTestsIframeHtml(
       });
     })
     .then(function (d) {
+      btn.textContent = "Sent successfully!";
       if (cfg.summaryBase) {
         try {
           var dest = new URL(cfg.summaryBase);
@@ -326,10 +338,14 @@ export function renderComprehensionTestsIframeHtml(
             dest.searchParams.set("ku", JSON.stringify(d.knowledgeUpdates));
           }
           var top = window.top;
-          if (top) { top.location.assign(dest.toString()); }
+          if (top) { window.top.location.href = dest.toString(); }
           else { window.location.assign(dest.toString()); }
-        } catch (e) { /* stay on page; show inline result */ }
+          return;
+        } catch (e) { 
+          console.error("Navigation error:", e); 
+        }
       }
+      
       var panel = document.getElementById("resultPanel");
       panel.className = "on";
       document.getElementById("resultScore").textContent = d.correct + " / " + d.total + " (" + d.percentage + "%)";
@@ -345,13 +361,19 @@ export function renderComprehensionTestsIframeHtml(
         li.textContent = "Topic " + k.topicId + ": " + k.previousScore + " -> " + k.newScore;
         ul.appendChild(li);
       });
+      panel.scrollIntoView({ behavior: 'smooth' });
     })
     .catch(function (e) {
+      alert("Error submitting test: " + e.message);
       var panel = document.getElementById("resultPanel");
       panel.className = "on";
       document.getElementById("resultMessage").textContent = e && e.message ? e.message : "Submit failed";
+      panel.scrollIntoView({ behavior: 'smooth' });
     })
-    .finally(function () { btn.disabled = false; });
+    .finally(function () { 
+      if(btn.textContent === "Sending...") btn.textContent = ogText;
+      btn.disabled = false; 
+    });
   });
 })();
   </script>

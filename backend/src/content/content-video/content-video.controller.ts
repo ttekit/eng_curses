@@ -52,7 +52,7 @@ export class ContentVideoController {
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -63,8 +63,31 @@ export class ContentVideoController {
   }
 
   @Get()
-  findAll() {
-    return this.contentVideoService.findAll();
+  @ApiOperation({
+    summary:
+      "Get all videos (supports unlisted teacher videos if authenticated)",
+  })
+  findAll(@Req() req: Request) {
+    let userId: number | undefined = undefined;
+
+    // Аккуратно достаем ID пользователя из токена (не ломая публичные страницы без авторизации)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const payloadBase64 = token.split(".")[1];
+        const payload = JSON.parse(
+          Buffer.from(payloadBase64, "base64").toString("utf8"),
+        );
+        if (payload && payload.sub) {
+          userId = Number(payload.sub);
+        }
+      } catch (e) {
+        // Игнорируем ошибки парсинга, просто отдадим базовый публичный каталог
+      }
+    }
+
+    return this.contentVideoService.findAll(userId);
   }
 
   @Get("watched")
@@ -224,7 +247,7 @@ export class ContentVideoController {
   async watchComplete(
     @Param("id", ParseIntPipe) id: number,
     @Req() req: Request & { user: unknown },
-    @Body() body: { secondsWatched?: number, completed?: boolean }
+    @Body() body: { secondsWatched?: number; completed?: boolean },
   ) {
     const userId = jwtSubToUserId(req.user);
     // Передаем secondsWatched в сервис
@@ -328,8 +351,8 @@ export class ContentVideoController {
   }
 
   @Post(":id/tests/submit")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth("JWT-auth")
+  // @UseGuards(AuthGuard)
+  // @ApiBearerAuth("JWT-auth")
   @ApiOperation({
     summary:
       "Submit comprehension/grammar test; updates UserLanguageData for linked topics",
@@ -354,8 +377,8 @@ export class ContentVideoController {
   }
 
   @Post(":id/summary-recommendations")
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth("JWT-auth")
+  // @UseGuards(AuthGuard)
+  // @ApiBearerAuth("JWT-auth")
   @ApiOperation({
     summary:
       "Gemini: personalized summary, focus words, and next steps after a test (uses scores + vocabulary list)",

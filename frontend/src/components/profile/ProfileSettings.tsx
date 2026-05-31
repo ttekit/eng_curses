@@ -612,21 +612,21 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             </label>
           </div>
           {/* ПОЛЕ ДАТЫ РОЖДЕНИЯ */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Date of Birth
-                  </label>
-                  <InputText
-                    name="dateOfBirth"
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    min="1900-01-01"
-                    max={new Date().toISOString().split("T")[0]}
-                    // Используем те же стили для темной темы, что и при регистрации
-                    className="w-full text-foreground [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
-                  />
-                </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">
+              Date of Birth
+            </label>
+            <InputText
+              name="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              min="1900-01-01"
+              max={new Date().toISOString().split("T")[0]}
+              // Используем те же стили для темной темы, что и при регистрации
+              className="w-full text-foreground [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
+            />
+          </div>
 
           <div>
             <span className="mb-2 block text-sm font-medium text-foreground">
@@ -1201,6 +1201,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         placeholder="Enter your password"
                         autoFocus
                         className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setIsToggling2FA(false);
+                            setError("");
+                          }
+                        }}
                       />
                     </div>
                   </div>
@@ -1389,6 +1395,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     placeholder="••••••••"
                     autoFocus
                     className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setDangerOpen(null);
+                        setResetPassword("");
+                        setResetError("");
+                      }
+                    }}
                   />
                 </div>
 
@@ -1447,6 +1460,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     placeholder="••••••••"
                     autoFocus
                     className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        setDangerOpen(null);
+                        setDeletePassword("");
+                        setDeleteError("");
+                      }
+                    }}
                   />
                 </div>
 

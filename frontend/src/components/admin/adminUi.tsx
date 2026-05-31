@@ -1,4 +1,9 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import {
+  useEffect,
+  type ButtonHTMLAttributes,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react";
 import { cn } from "../../lib/utils";
 
 export function AdminCard({ className, ...p }: HTMLAttributes<HTMLDivElement>) {
@@ -93,6 +98,7 @@ export function AdminButton({
   className,
   variant = "primary",
   size = "default",
+  type = "button",
   ...p
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: BtnVariant;
@@ -106,7 +112,7 @@ export function AdminButton({
         : "";
   return (
     <button
-      type="button"
+      type={type}
       className={cn(btnBase, btnVariant[variant], sizeCls, className)}
       {...p}
     />
@@ -155,9 +161,7 @@ export function AdminSelectNative({
         className,
       )}
       {...p}
-    >
-      {children}
-    </select>
+    />
   );
 }
 
@@ -197,7 +201,22 @@ export function AdminModal({
   children: ReactNode;
   footer?: ReactNode;
 }) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) {
+        onClose();
+      }
+    };
+
+    if (open) {
+      window.addEventListener("keydown", handleEsc);
+    }
+
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [open, onClose]);
+
   if (!open) return null;
+
   return (
     <div className="fixed h-full inset-0 z-[100] flex items-center justify-center p-4">
       <button
@@ -219,14 +238,25 @@ export function AdminModal({
           >
             {title}
           </h2>
-          <AdminButton
-            variant="ghost"
-            size="icon"
+          <button
+            type="button"
             onClick={onClose}
-            aria-label="Close"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            ×
-          </AdminButton>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
         </div>
         <div className="overflow-y-auto p-6">{children}</div>
         {footer ? (

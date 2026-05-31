@@ -10,7 +10,6 @@ function isOpenQuestion(q: QuizQuestion): boolean {
   return q.questionType === "open" || q.category === "open";
 }
 
-/** Rough sentence count for learner-written text (period / ? / !). */
 function sentenceCount(text: string): number {
   return text
     .trim()
@@ -34,10 +33,8 @@ export type QuizWrongReviewItem = {
 };
 
 export type VideoQuizCompleteSummary = {
-  /** MCQ items only until the server merges in the written score on submit. */
   correctCount: number;
   totalQuestions: number;
-  /** MCQ index or open-ended text per question id — must match backend token ids. */
   answersById: Record<string, number | string>;
   wrongReview: QuizWrongReviewItem[];
 };
@@ -62,11 +59,14 @@ export function VideoQuiz({
     Record<string, number | string>
   >({});
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const question = questions[currentQuestion];
   const isOpen = question ? isOpenQuestion(question) : false;
 
   useEffect(() => {
     if (!question) return;
+    setErrorMsg(null);
     if (isOpenQuestion(question)) {
       const stored = answersById[question.id];
       setOpenDraft(typeof stored === "string" ? stored : "");
@@ -119,6 +119,7 @@ export function VideoQuiz({
 
   function handleSubmit() {
     if (!question) return;
+    setErrorMsg(null);
 
     if (isOpen) {
       if (!isAnswered) {
@@ -128,6 +129,7 @@ export function VideoQuiz({
         setAnswersById((prev) => ({
           ...prev,
           [question.id]: openDraft.trim(),
+          [`${question.id}_question`]: question.question,
         }));
         return;
       }
@@ -141,14 +143,24 @@ export function VideoQuiz({
       return;
     }
 
-    if (selectedAnswer === null) return;
-
     if (!isAnswered) {
+      if (selectedAnswer === null) {
+        setErrorMsg("Please select an option to continue.");
+        return;
+      }
       setIsAnswered(true);
+      const answerText = question.options[selectedAnswer];
+
       setAnswersById((prev) => ({
         ...prev,
         [question.id]: selectedAnswer,
+        [`${question.id}_text`]: answerText,
+        [`${question.id}_question`]: question.question,
+        // Оборачиваем массив в JSON.stringify, чтобы превратить его в строку!
+        [`${question.id}_options`]: JSON.stringify(question.options),
+        [`${question.id}_correct`]: question.correct,
       }));
+
       if (selectedAnswer === question.correct) {
         setCorrectCount((prev) => prev + 1);
       }
@@ -175,13 +187,13 @@ export function VideoQuiz({
       : false;
 
   const categoryLabel =
-    question.category === "grammar"
+    question?.category === "grammar"
       ? "Grammar"
-      : question.category === "vocabulary"
+      : question?.category === "vocabulary"
         ? "Vocabulary"
-        : question.category === "comprehension"
+        : question?.category === "comprehension"
           ? "Comprehension"
-          : question.category === "open"
+          : question?.category === "open"
             ? "Summary"
             : null;
 
@@ -192,7 +204,7 @@ export function VideoQuiz({
           Question {currentQuestion + 1} of {questions.length}
         </span>
         <span className="flex items-center gap-1 text-muted-foreground">
-          <Clock className="h-3 w-3" />≈ {question.timestamp}
+          <Clock className="h-3 w-3" />≈ {question?.timestamp}
         </span>
       </div>
 
@@ -212,14 +224,17 @@ export function VideoQuiz({
       ) : null}
 
       <h3 className="text-lg leading-relaxed font-semibold text-foreground">
-        {question.question}
+        {question?.question}
       </h3>
 
       {isOpen ? (
         <>
           <textarea
             value={openDraft}
-            onChange={(e) => setOpenDraft(e.target.value)}
+            onChange={(e) => {
+              setOpenDraft(e.target.value);
+              if (errorMsg) setErrorMsg(null);
+            }}
             disabled={isAnswered}
             rows={5}
             placeholder="Write 2–3 clear sentences in English or leave blank to skip."
@@ -233,7 +248,7 @@ export function VideoQuiz({
         </>
       ) : (
         <div className="space-y-2">
-          {question.options.map((option, index) => {
+          {question?.options.map((option, index) => {
             const isSelected = selectedAnswer === index;
             const lockedInThis = isAnswered && isSelected;
 
@@ -243,16 +258,19 @@ export function VideoQuiz({
                 type="button"
                 disabled={isAnswered}
                 onClick={() => {
-                  if (!isAnswered) setSelectedAnswer(index);
+                  if (!isAnswered) {
+                    setSelectedAnswer(index);
+                    if (errorMsg) setErrorMsg(null);
+                  }
                 }}
                 className={cn(
                   "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
                   !isAnswered && isSelected && "border-primary bg-primary/10",
                   !isAnswered &&
-                  !isSelected &&
-                  "border-border bg-card hover:border-primary/50",
+                    !isSelected &&
+                    "border-border bg-card hover:border-primary/50",
                   lockedInThis &&
-                  "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
+                    "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
                   isAnswered && !isSelected && "opacity-45",
                 )}
               >
@@ -260,15 +278,15 @@ export function VideoQuiz({
                   className={cn(
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
                     !isAnswered &&
-                    isSelected &&
-                    "bg-primary text-primary-foreground",
+                      isSelected &&
+                      "bg-primary text-primary-foreground",
                     !isAnswered &&
-                    !isSelected &&
-                    "bg-muted text-muted-foreground",
+                      !isSelected &&
+                      "bg-muted text-muted-foreground",
                     lockedInThis && "bg-primary/80 text-primary-foreground",
                     isAnswered &&
-                    !isSelected &&
-                    "bg-muted text-muted-foreground",
+                      !isSelected &&
+                      "bg-muted text-muted-foreground",
                   )}
                 >
                   {lockedInThis ? (
@@ -283,6 +301,12 @@ export function VideoQuiz({
           })}
         </div>
       )}
+
+      {errorMsg ? (
+        <div className="rounded-lg bg-destructive/15 border border-destructive/30 p-3 text-sm text-destructive font-medium">
+          {errorMsg}
+        </div>
+      ) : null}
 
       {isAnswered ? (
         <div
@@ -303,7 +327,6 @@ export function VideoQuiz({
 
       <button
         type="button"
-        disabled={primaryDisabled}
         onClick={handleSubmit}
         className={cn(
           "flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",

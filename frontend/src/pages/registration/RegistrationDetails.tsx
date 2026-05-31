@@ -183,6 +183,30 @@ export default function RegistrationDetails() {
         setFormError("Please select the student grades you teach.");
         return;
       }
+
+      const currentPupils = (formData.studentNames as Pupil[]) || [];
+
+      const nameRegex = /^[A-Za-z]+$/;
+
+      for (let i = 0; i < currentPupils.length; i++) {
+        const p = currentPupils[i];
+
+        if (!p.name?.trim() || !p.surname?.trim()) {
+          setFormError(
+            `Please enter both Name and Surname for pupil #${i + 1}, or remove the empty row.`,
+          );
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!nameRegex.test(p.name) || !nameRegex.test(p.surname)) {
+          setFormError(
+            `Only English letters are allowed for pupil #${i + 1}. No numbers, spaces, or symbols.`,
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
     }
 
     setIsSubmitting(true);
@@ -190,11 +214,11 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-          formData.teacherTopics.length > 0
+        formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-            const num = parseInt(t.replace("topic:", ""), 10);
-            return isNaN(num) ? t : num;
-          })
+              const num = parseInt(t.replace("topic:", ""), 10);
+              return isNaN(num) ? t : num;
+            })
           : undefined;
 
       const userEmail = formData.email || localStorage.getItem("temp_email");
@@ -225,8 +249,7 @@ export default function RegistrationDetails() {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(cleanPayload),
-      },
-      );
+      });
 
       const result = await response.json();
 

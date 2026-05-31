@@ -5,6 +5,7 @@ import {
   Delete,
   FileTypeValidator,
   Get,
+  Header,
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
@@ -12,6 +13,7 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -22,7 +24,7 @@ import {
   FileFieldsInterceptor,
 } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import { Express, Request } from "express";
+import { Express, Request, Response } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
@@ -66,29 +68,43 @@ export class ContentsController {
   @Post("teacher/upload")
   @UseGuards(AuthGuard)
   @UseInterceptors(
-    FileInterceptor("file", {
-      limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
-    }),
+    FileFieldsInterceptor(
+      [
+        { name: "file", maxCount: 1 },
+        { name: "thumbnailFile", maxCount: 1 }, // <--- НАУЧИЛИ ПРИНИМАТЬ ПРЕВЬЮ
+      ],
+      {
+        limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
+      },
+    ),
   )
   @ApiOperation({
     summary:
-      "Teacher: upload a lesson (MP4). Creates a series with one clip; captions and tags are generated automatically.",
+      "Teacher: upload a lesson (MP4). Generates captions, tags, and accepts thumbnail.",
   })
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
     @Body() dto: TeacherUploadContentDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: CONTENT_VIDEO_MAX_FILE_BYTES }),
-          new FileTypeValidator({ fileType: "video/mp4" }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFiles()
+    files: {
+      file?: Express.Multer.File[];
+      thumbnailFile?: Express.Multer.File[];
+    },
   ) {
     const userId = jwtSubToUserId(req.user);
-    return this.contentsService.createTeacherUpload(userId, dto, file);
+    const videoFile = files?.file?.[0];
+    const thumbnailFile = files?.thumbnailFile?.[0];
+
+    if (!videoFile) {
+      throw new BadRequestException("Video file is required");
+    }
+
+    return this.contentsService.createTeacherUpload(
+      userId,
+      dto,
+      videoFile,
+      thumbnailFile,
+    );
   }
 
   @Get("teacher/my-series")
@@ -230,6 +246,80 @@ export class ContentsController {
     return this.contentsService.updateContent(id, dto, file);
   }
 
+  @Get("student/teacher-videos")
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: "Student: Get videos uploaded by their assigned teacher",
+  })
+  async getStudentTeacherVideos(@Req() req: Request & { user?: unknown }) {
+    const studentId = jwtSubToUserId(req.user);
+    return this.contentsService.getVideosForStudent(studentId);
+  }
+
+  // ==========================================
+  // УПРАВЛЕНИЕ УЧЕНИКАМИ (CRM)
+  // ==========================================
+
+  @Post("teacher/my-students")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Add a new student" })
+  async addStudent(
+    @Req() req: Request & { user?: unknown },
+    @Body() body: { name: string; email: string },
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.addStudent(teacherId, body);
+  }
+
+  @Patch("teacher/my-students/:id")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Edit student details" })
+  async updateStudent(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body() body: { name: string; email: string },
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.updateStudent(teacherId, id, body);
+  }
+
+  @Delete("teacher/my-students/:id")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Remove a student" })
+  async removeStudent(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.removeStudent(teacherId, id);
+  }
+
+  @Get("teacher/my-students/export")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Export students to Excel (.xlsx)" })
+  @Header(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  )
+  @Header("Content-Disposition", 'attachment; filename="students.xlsx"')
+  async exportStudents(
+    @Req() req: Request & { user?: unknown },
+    @Res() res: Response,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    // Вызываем новый метод для Excel
+    const buffer = await this.contentsService.exportStudentsExcel(teacherId);
+    res.send(buffer);
+  }
+
+  @Get("teacher/my-students/results")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Get students results for teacher" })
+  async myStudentsResults(@Req() req: Request & { user?: unknown }) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.getMyStudentsResults(teacherId);
+  }
+
   @Delete("episode/:id")
   @UseGuards(JwtAdminGuard)
   @ApiOperation({ summary: "Admin: Delete a specific episode from a series" })
@@ -240,5 +330,15 @@ export class ContentsController {
   @Delete("delete/:id")
   deleteContent(@Param("id", ParseIntPipe) id: number) {
     return this.contentsService.deleteContent(id);
+  }
+
+  @Delete("teacher/my-series/:id")
+  @UseGuards(AuthGuard)
+  async deleteTeacherSeries(
+    @Req() req: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = Number(req.user.sub || req.user.id);
+    return this.contentsService.deleteTeacherContent(teacherId, id);
   }
 }
