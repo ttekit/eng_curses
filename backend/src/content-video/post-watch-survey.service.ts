@@ -90,6 +90,8 @@ export class PostWatchSurveyService {
       },
     });
 
+    await this.updateUserStreak(userId);
+
     if (isCompleted) {
       await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
     }
@@ -222,29 +224,35 @@ export class PostWatchSurveyService {
     if (!user) return;
 
     const now = new Date();
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayStr = now.toISOString().split("T")[0];
 
     let newStreak = user.currentStreak || 0;
 
     if (!user.lastActivityDate) {
-      newStreak = 1;
+      newStreak = newStreak > 0 ? newStreak + 1 : 1;
     } else {
-      const lastActivity = new Date(user.lastActivityDate);
-      const lastActivityDay = new Date(Date.UTC(lastActivity.getUTCFullYear(), lastActivity.getUTCMonth(), lastActivity.getUTCDate()));
+      const lastActivityStr = new Date(user.lastActivityDate).toISOString().split("T")[0];
 
-      const diffTime = today.getTime() - lastActivityDay.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: { lastActivityDate: now },
-        });
-        return;
-      } else if (diffDays === 1) {
-        newStreak += 1;
+      if (todayStr === lastActivityStr) {
+        if (newStreak === 0) {
+          newStreak = 1;
+        } else {
+          await this.prisma.user.update({
+            where: { id: userId },
+            data: { lastActivityDate: now },
+          });
+          return;
+        }
       } else {
-        newStreak = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+        if (lastActivityStr === yesterdayStr) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
       }
     }
 
