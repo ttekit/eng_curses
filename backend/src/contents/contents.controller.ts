@@ -50,7 +50,7 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) {}
+  constructor(private readonly contentsService: ContentsService) { }
 
   @Get("all")
   getContent() {
@@ -71,7 +71,7 @@ export class ContentsController {
     FileFieldsInterceptor(
       [
         { name: "file", maxCount: 1 },
-        { name: "thumbnailFile", maxCount: 1 }, // <--- НАУЧИЛИ ПРИНИМАТЬ ПРЕВЬЮ
+        { name: "thumbnailFile", maxCount: 1 },
       ],
       {
         limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
@@ -80,7 +80,7 @@ export class ContentsController {
   )
   @ApiOperation({
     summary:
-      "Teacher: upload a lesson (MP4). Generates captions, tags, and accepts thumbnail.",
+      "Teacher: upload a lesson (MP4) or M3U8 link. Generates captions, tags, and accepts thumbnail.",
   })
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
@@ -95,8 +95,8 @@ export class ContentsController {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
 
-    if (!videoFile) {
-      throw new BadRequestException("Video file is required");
+    if (!videoFile && !(dto as any).videoLink) {
+      throw new BadRequestException("Video file or M3U8 link is required");
     }
 
     return this.contentsService.createTeacherUpload(
@@ -163,9 +163,11 @@ export class ContentsController {
   ) {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
-    if (!videoFile) {
-      throw new BadRequestException("Video file is required");
+
+    if (!videoFile && !(createContentDto as any).videoLink) {
+      throw new BadRequestException("Video file or M3U8 link is required");
     }
+
     return await this.contentsService.createContent(
       createContentDto,
       videoFile,
@@ -212,9 +214,11 @@ export class ContentsController {
   ) {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
-    if (!videoFile) {
-      throw new BadRequestException("Video file is required");
+
+    if (!videoFile && !(dto as any).videoLink) {
+      throw new BadRequestException("Video file or M3U8 link is required");
     }
+
     return await this.contentsService.addEpisode(
       id,
       dto,
@@ -307,7 +311,6 @@ export class ContentsController {
     @Res() res: Response,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    // Вызываем новый метод для Excel
     const buffer = await this.contentsService.exportStudentsExcel(teacherId);
     res.send(buffer);
   }
