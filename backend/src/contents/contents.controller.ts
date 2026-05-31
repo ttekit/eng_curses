@@ -236,17 +236,18 @@ export class ContentsController {
   }
 
   @Patch(":id")
+  @UseGuards(JwtAdminGuard)
   @UseInterceptors(
-    FileInterceptor("file", {
-      limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
+    FileInterceptor("thumbnailFile", {
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   updateContent(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateContentDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() thumbnailFile?: Express.Multer.File,
   ) {
-    return this.contentsService.updateContent(id, dto, file);
+    return this.contentsService.updateContent(id, dto, thumbnailFile);
   }
 
   @Get("student/teacher-videos")

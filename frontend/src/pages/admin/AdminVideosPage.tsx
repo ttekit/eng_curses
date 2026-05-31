@@ -353,23 +353,20 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      if (editThumb) {
-        const fd = new FormData();
-        fd.append("videoName", name);
-        fd.append("videoDescription", editDesc.trim() || "");
-        fd.append("thumbnailFile", editThumb);
+      const fd = new FormData();
+      fd.append("name", name);
+      fd.append("description", editDesc.trim());
 
-        const res = await apiFetch(`/contents/${editing.id}`, {
-          method: "PATCH",
-          body: fd,
-        });
-        if (!res.ok) throw new Error("Update with thumbnail failed");
-      } else {
-        await patchAdminContentVideo(editing.id, {
-          videoName: name,
-          videoDescription: editDesc.trim() || null,
-        });
+      if (editThumb) {
+        fd.append("thumbnailFile", editThumb);
       }
+
+      const res = await apiFetch(`/contents/${editing.id}`, {
+        method: "PATCH",
+        body: fd,
+      });
+
+      if (!res.ok) throw new Error("Failed to update series metadata");
 
       toast.success("Video updated");
       setEditing(null);
