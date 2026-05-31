@@ -79,24 +79,31 @@ export class ContentsService {
     });
   }
 
-  private async processAndUploadZip(file: Express.Multer.File): Promise<string> {
+  private async processAndUploadZip(file: Express.Multer.File): Promise<{ videoUrl: string, zipThumbnailUrl: string | null }> {
     const zip = new AdmZip(file.buffer);
     const zipEntries = zip.getEntries();
     const folderUuid = randomUUID();
     let m3u8Url: string | null = null;
+    let zipThumbUrl: string | null = null;
 
     const uploadPromises = zipEntries.map(async (entry) => {
       if (entry.isDirectory) return;
 
+      const entryName = entry.entryName;
       const fileName = entry.name;
-      if (!fileName) return;
+
+      if (!fileName || fileName.startsWith("._") || entryName.includes("__MACOSX") || fileName === ".DS_Store") {
+        return;
+      }
 
       const fileBuffer = entry.getData();
-      const s3Key = `m3u8_videos/${folderUuid}/${fileName}`;
+      const s3Key = `m3u8_videos/${folderUuid}/${entryName}`;
 
       let contentType = "application/octet-stream";
-      if (fileName.endsWith(".m3u8")) contentType = "application/x-mpegURL";
+      if (fileName.endsWith(".m3u8")) contentType = "application/vnd.apple.mpegurl";
       else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
+      else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
+      else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
 
       await this.s3Client.send(
         new PutObjectCommand({
@@ -107,18 +114,27 @@ export class ContentsService {
         })
       );
 
+      const currentUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
+
       if (fileName.endsWith(".m3u8")) {
-        m3u8Url = publicS3ObjectUrl(this.bucket, this.region, s3Key);
+        const lower = fileName.toLowerCase();
+        const isMaster = lower.includes("master") || lower.includes("playlist") || lower.includes("index");
+
+        if (!m3u8Url || isMaster) {
+          m3u8Url = currentUrl;
+        }
+      } else if (contentType.startsWith("image/")) {
+        if (!zipThumbUrl) zipThumbUrl = currentUrl;
       }
     });
 
     await Promise.all(uploadPromises);
 
     if (!m3u8Url) {
-      throw new BadRequestException("Invalid ZIP: No .m3u8 file found inside the archive.");
+      throw new BadRequestException("Invalid ZIP: No valid .m3u8 file found inside the archive.");
     }
 
-    return m3u8Url;
+    return { videoUrl: m3u8Url, zipThumbnailUrl: zipThumbUrl };
   }
 
   async createContent(
@@ -127,10 +143,13 @@ export class ContentsService {
     thumbnailFile?: Express.Multer.File,
   ) {
     let videoUrl = dto.videoLink;
+    let zipThumb: string | null = null;
 
     if (file) {
       if (file.originalname.toLowerCase().endsWith(".zip")) {
-        videoUrl = await this.processAndUploadZip(file);
+        const zipResult = await this.processAndUploadZip(file);
+        videoUrl = zipResult.videoUrl;
+        zipThumb = zipResult.zipThumbnailUrl;
       } else {
         const safeKey = buildSafeS3ObjectKey(file.originalname);
         const key = `uploads/${safeKey}`;
@@ -149,7 +168,7 @@ export class ContentsService {
       throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
     }
 
-    let thumbnailUrl: string | null = null;
+    let thumbnailUrl: string | null = zipThumb;
     if (thumbnailFile) {
       const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
       const thumbKey = `uploads/${safeThumbKey}`;
@@ -256,8 +275,12 @@ export class ContentsService {
         }
 
         let newUrl = "";
+        let zipThumb: string | null = null;
+
         if (file.originalname.toLowerCase().endsWith(".zip")) {
-          newUrl = await this.processAndUploadZip(file);
+          const zipResult = await this.processAndUploadZip(file);
+          newUrl = zipResult.videoUrl;
+          zipThumb = zipResult.zipThumbnailUrl;
         } else {
           const safeKey = buildSafeS3ObjectKey(file.originalname);
           const key = `uploads/${safeKey}`;
@@ -273,7 +296,10 @@ export class ContentsService {
 
         await this.prisma.contentVideo.updateMany({
           where: { contentId: contentMedia.id },
-          data: { videoLink: newUrl },
+          data: {
+            videoLink: newUrl,
+            ...(zipThumb ? { thumbnailUrl: zipThumb } : {})
+          },
         });
       }
     }
@@ -400,10 +426,13 @@ export class ContentsService {
     const playlistPosition = (maxRow._max.playlistPosition ?? -1) + 1;
 
     let videoUrl = dto.videoLink;
+    let zipThumb: string | null = null;
 
     if (file) {
       if (file.originalname.toLowerCase().endsWith(".zip")) {
-        videoUrl = await this.processAndUploadZip(file);
+        const zipResult = await this.processAndUploadZip(file);
+        videoUrl = zipResult.videoUrl;
+        zipThumb = zipResult.zipThumbnailUrl;
       } else {
         const safeKey = buildSafeS3ObjectKey(file.originalname);
         const key = `uploads/${safeKey}`;
@@ -422,7 +451,7 @@ export class ContentsService {
       throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
     }
 
-    let thumbnailUrl: string | null = null;
+    let thumbnailUrl: string | null = zipThumb;
     if (thumbnailFile) {
       const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
       const thumbKey = `uploads/${safeThumbKey}`;
@@ -507,10 +536,13 @@ export class ContentsService {
     }
 
     let videoUrl = dto.videoLink;
+    let zipThumb: string | null = null;
 
     if (file) {
       if (file.originalname.toLowerCase().endsWith(".zip")) {
-        videoUrl = await this.processAndUploadZip(file);
+        const zipResult = await this.processAndUploadZip(file);
+        videoUrl = zipResult.videoUrl;
+        zipThumb = zipResult.zipThumbnailUrl;
       } else {
         const safeKey = buildSafeS3ObjectKey(file.originalname);
         const key = `uploads/${safeKey}`;
@@ -529,7 +561,7 @@ export class ContentsService {
       throw new BadRequestException("You must provide either a video file or a videoLink");
     }
 
-    let thumbnailUrl: string | null = null;
+    let thumbnailUrl: string | null = zipThumb;
     if (thumbnailFile) {
       const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
       const thumbKey = `uploads/${safeThumbKey}`;
