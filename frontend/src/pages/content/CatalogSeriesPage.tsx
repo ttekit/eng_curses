@@ -9,6 +9,7 @@ import {
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
 import { cn } from "../../lib/utils";
 
 /**
@@ -21,6 +22,7 @@ export default function CatalogSeriesPage() {
   const friendlyLink = friendlyLinkParam ? decodeURIComponent(friendlyLinkParam) : "";
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
+  const series = useAppMessages().catalogSeriesPage;
 
   const [payload, setPayload] = useState<SeriesPlaylistPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ export default function CatalogSeriesPage() {
     if (!friendlyLink.trim()) {
       setPayload(null);
       setLoading(false);
-      setError("Missing series link.");
+      setError(series.missingLink);
       return;
     }
     let cancelled = false;
@@ -52,12 +54,12 @@ export default function CatalogSeriesPage() {
         const parsed = parseSeriesPlaylistPayload(json);
         if (!cancelled) {
           setPayload(parsed);
-          setError(parsed ? null : "Could not read playlist data.");
+          setError(parsed ? null : series.readError);
         }
       } catch (e) {
         if (!cancelled) {
           setPayload(null);
-          setError(e instanceof Error ? e.message : "Request failed.");
+          setError(e instanceof Error ? e.message : series.requestFailed);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -66,14 +68,14 @@ export default function CatalogSeriesPage() {
     return () => {
       cancelled = true;
     };
-  }, [friendlyLink]);
+  }, [friendlyLink, series]);
 
   const title = useMemo(() => {
     if (payload?.name?.trim()) {
-      return `${payload.name} — playlist`;
+      return `${payload.name}${series.playlistSuffix}`;
     }
-    return `${catalogSeo.title} — playlist`;
-  }, [payload?.name, catalogSeo.title]);
+    return `${catalogSeo.title}${series.playlistSuffix}`;
+  }, [payload?.name, catalogSeo.title, series.playlistSuffix]);
 
   const canonicalPath = `/catalog/series/${encodeURIComponent(friendlyLink)}`;
 
@@ -95,14 +97,14 @@ export default function CatalogSeriesPage() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Catalog
+            {series.backToCatalog}
           </Link>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8 pb-24">
         {loading ?
-          <p className="text-sm text-muted-foreground">Loading playlist…</p>
+          <p className="text-sm text-muted-foreground">{series.loadingPlaylist}</p>
         : error ?
           <p className="text-sm text-destructive">{error}</p>
         : payload ?
@@ -125,7 +127,9 @@ export default function CatalogSeriesPage() {
                 : null}
                 <p className="mt-2 text-xs text-muted-foreground">
                   {payload.episodes.length}{" "}
-                  {payload.episodes.length === 1 ? "episode" : "episodes"}
+                  {payload.episodes.length === 1
+                    ? series.episode
+                    : series.episodes}
                 </p>
               </div>
             </div>
@@ -155,7 +159,7 @@ export default function CatalogSeriesPage() {
                     </div>
                     <span className="flex shrink-0 items-center text-primary">
                       <Play className="h-5 w-5" aria-hidden />
-                      <span className="sr-only">Open lesson</span>
+                      <span className="sr-only">{series.openLessonAria}</span>
                     </span>
                   </Link>
                 </li>

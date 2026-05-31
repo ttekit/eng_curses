@@ -15,6 +15,8 @@ import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 import {
   AdminButton,
   AdminModal,
@@ -54,6 +56,7 @@ export type TeacherStudentResult = {
 type QuizRow = TeacherStudentResult["recentQuizzes"][0];
 
 export function ProfileTeacherStudents() {
+  const t = useAppMessages().profileTeacherStudents;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [students, setStudents] = useState<TeacherStudentResult[]>([]);
@@ -96,7 +99,7 @@ export function ProfileTeacherStudents() {
       const list = (data as { students?: TeacherStudentResult[] }).students;
       setStudents(Array.isArray(list) ? list : []);
     } catch {
-      setError("Could not load student results.");
+      setError(t.loadError);
       setStudents([]);
     } finally {
       setLoading(false);
@@ -133,7 +136,7 @@ export function ProfileTeacherStudents() {
       const res = await apiFetch("/contents/teacher/my-students/export", {
         method: "GET",
       });
-      if (!res.ok) throw new Error("Export failed");
+      if (!res.ok) throw new Error(t.exportFailed);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -141,15 +144,15 @@ export function ProfileTeacherStudents() {
       a.download = "my_students.xlsx";
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success("Excel file downloaded!");
-    } catch (e) {
-      toast.error("Failed to download Excel file");
+      toast.success(t.exportSuccess);
+    } catch {
+      toast.error(t.exportError);
     }
   };
 
   const handleNameChange = (field: "firstName" | "lastName", value: string) => {
     if (!/^[A-Za-z\s-]*$/.test(value)) {
-      toast.error("Please use English letters only", { id: "lang-error" });
+      toast.error(t.englishLettersOnly, { id: "lang-error" });
       return;
     }
 
@@ -189,7 +192,7 @@ export function ProfileTeacherStudents() {
 
   const handleSaveStudent = async () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast.error("First and Last name are required");
+      toast.error(t.namesRequired);
       return;
     }
     setIsSaving(true);
@@ -223,10 +226,10 @@ export function ProfileTeacherStudents() {
           password: responseData.tempPassword,
         });
       } else {
-        toast.success("Student updated!");
+        toast.success(t.studentUpdated);
       }
     } catch (e: any) {
-      toast.error(e.message || "Operation failed");
+      toast.error(e.message || t.operationFailed);
     } finally {
       setIsSaving(false);
     }
@@ -239,8 +242,8 @@ export function ProfileTeacherStudents() {
   };
 
   const confirmDeleteStudent = async () => {
-    if (deletePhrase.trim().toLowerCase() !== "delete student") {
-      toast.error("Incorrect phrase. Please type 'delete student'.");
+    if (deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase) {
+      toast.error(t.deleteWrongPhrase);
       return;
     }
     if (!deletingId) return;
@@ -252,11 +255,11 @@ export function ProfileTeacherStudents() {
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      toast.success("Student removed successfully");
+      toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);
       await loadStudents();
     } catch (e: any) {
-      toast.error(e.message || "Delete failed");
+      toast.error(e.message || t.deleteFailed);
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
@@ -267,14 +270,14 @@ export function ProfileTeacherStudents() {
     return (
       <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-8 animate-spin text-primary" />
-        <p>Loading student results…</p>
+        <p>{t.loading}</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <ProfileCard title="Student results">
+      <ProfileCard title={t.cardTitle}>
         <p className="text-destructive">{error}</p>
       </ProfileCard>
     );
@@ -283,10 +286,7 @@ export function ProfileTeacherStudents() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <p className="text-sm text-muted-foreground max-w-xl">
-          Overview of learners assigned to you: completed watches, comprehension
-          quizzes, and recent quiz scores per lesson.
-        </p>
+        <p className="text-sm text-muted-foreground max-w-xl">{t.intro}</p>
 
         <div className="flex items-center gap-3 shrink-0">
           <AdminButton
@@ -295,11 +295,11 @@ export function ProfileTeacherStudents() {
             onClick={handleExport}
           >
             <Download className="h-4 w-4" />
-            Download Excel
+            {t.downloadExcel}
           </AdminButton>
           <AdminButton className="gap-2" onClick={openAddModal}>
             <Plus className="h-4 w-4" />
-            Add Student
+            {t.addStudent}
           </AdminButton>
         </div>
       </div>
@@ -307,7 +307,7 @@ export function ProfileTeacherStudents() {
       <AdminModal
         open={isModalOpen}
         onClose={() => !isSaving && setIsModalOpen(false)}
-        title={editingId ? "Edit Student" : "Register New Student"}
+        title={editingId ? t.editStudent : t.registerStudent}
         footer={
           <>
             <AdminButton
@@ -315,14 +315,14 @@ export function ProfileTeacherStudents() {
               onClick={() => setIsModalOpen(false)}
               disabled={isSaving}
             >
-              Cancel
+              {t.cancel}
             </AdminButton>
             <AdminButton
               type="submit"
               form="add-student-form"
               disabled={isSaving}
             >
-              {isSaving ? "Saving…" : "Save Student"}
+              {isSaving ? t.saving : t.saveStudent}
             </AdminButton>
           </>
         }
@@ -338,20 +338,18 @@ export function ProfileTeacherStudents() {
         >
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                First Name (English)
-              </label>
+              <label className="text-sm font-medium">{t.firstNameLabel}</label>
               <AdminInput
-                placeholder="e.g. John"
+                placeholder={t.firstNamePlaceholder}
                 value={formData.firstName}
                 onChange={(e) => handleNameChange("firstName", e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Last Name (English)</label>
+              <label className="text-sm font-medium">{t.lastNameLabel}</label>
               <AdminInput
-                placeholder="e.g. Doe"
+                placeholder={t.lastNamePlaceholder}
                 value={formData.lastName}
                 onChange={(e) => handleNameChange("lastName", e.target.value)}
                 required
@@ -359,21 +357,16 @@ export function ProfileTeacherStudents() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Generated Email Address
-            </label>
+            <label className="text-sm font-medium">{t.generatedEmailLabel}</label>
             <AdminInput
               type="email"
-              placeholder="Auto-generated email"
+              placeholder={t.generatedEmailPlaceholder}
               value={formData.email}
               readOnly
               className="bg-muted text-muted-foreground cursor-not-allowed"
             />
             {!editingId && (
-              <p className="text-xs text-muted-foreground mt-1">
-                A secure random password will be generated and shown to you
-                after clicking Save.
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">{t.passwordHint}</p>
             )}
           </div>
         </form>
@@ -382,25 +375,23 @@ export function ProfileTeacherStudents() {
       <AdminModal
         open={!!newStudentCreds}
         onClose={() => setNewStudentCreds(null)}
-        title="🎉 Student Registered!"
+        title={`🎉 ${t.registeredTitle}`}
         footer={
           <AdminButton onClick={() => setNewStudentCreds(null)}>
-            I have saved the credentials
+            {t.credentialsSaved}
           </AdminButton>
         }
       >
         <div className="space-y-5">
           <p className="text-sm text-muted-foreground">
-            Please copy and save these credentials now. For security reasons,{" "}
-            <strong className="text-foreground">
-              the password will not be shown again.
-            </strong>
+            {t.credentialsLead}{" "}
+            <strong className="text-foreground">{t.credentialsPasswordNote}</strong>
           </p>
 
           <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Email Address
+                {t.emailAddressLabel}
               </label>
               <div className="flex gap-2">
                 <AdminInput
@@ -413,9 +404,9 @@ export function ProfileTeacherStudents() {
                   className="px-3"
                   onClick={() => {
                     navigator.clipboard.writeText(newStudentCreds?.email || "");
-                    toast.success("Email copied!");
+                    toast.success(t.emailCopied);
                   }}
-                  title="Copy Email"
+                  title={t.copyEmail}
                 >
                   <Copy className="size-4" />
                 </AdminButton>
@@ -424,7 +415,7 @@ export function ProfileTeacherStudents() {
 
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Temporary Password
+                {t.tempPasswordLabel}
               </label>
               <div className="flex gap-2">
                 <AdminInput
@@ -439,9 +430,9 @@ export function ProfileTeacherStudents() {
                     navigator.clipboard.writeText(
                       newStudentCreds?.password || "",
                     );
-                    toast.success("Password copied!");
+                    toast.success(t.passwordCopied);
                   }}
-                  title="Copy Password"
+                  title={t.copyPassword}
                 >
                   <Copy className="size-4" />
                 </AdminButton>
@@ -457,12 +448,12 @@ export function ProfileTeacherStudents() {
                 navigator.clipboard.writeText(
                   `Email: ${newStudentCreds.email}\nPassword: ${newStudentCreds.password}`,
                 );
-                toast.success("Both copied to clipboard!");
+                toast.success(t.bothCopied);
               }
             }}
           >
             <Copy className="size-4" />
-            Copy Both
+            {t.copyBoth}
           </AdminButton>
         </div>
       </AdminModal>
@@ -470,7 +461,7 @@ export function ProfileTeacherStudents() {
       <AdminModal
         open={deleteModalOpen}
         onClose={() => !isDeleting && setDeleteModalOpen(false)}
-        title="Remove Student"
+        title={t.removeStudentTitle}
         footer={
           <>
             <AdminButton
@@ -478,42 +469,41 @@ export function ProfileTeacherStudents() {
               onClick={() => setDeleteModalOpen(false)}
               disabled={isDeleting}
             >
-              Cancel
+              {t.cancel}
             </AdminButton>
             <AdminButton
               disabled={
                 isDeleting ||
-                deletePhrase.trim().toLowerCase() !== "delete student"
+                deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase
               }
               onClick={confirmDeleteStudent}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {isDeleting ? "Removing…" : "Remove Student"}
+              {isDeleting ? t.removing : t.removeStudentCta}
             </AdminButton>
           </>
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to remove this student from your list? This
-            action cannot be undone.
-          </p>
+          <p className="text-sm text-muted-foreground">{t.removeStudentBody}</p>
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              To confirm, type{" "}
-              <span className="font-bold text-destructive">delete student</span>{" "}
+              {t.deleteConfirmPrompt}{" "}
+              <span className="font-bold text-destructive">
+                {t.deleteConfirmPhrase}
+              </span>{" "}
               below:
             </label>
             <AdminInput
               type="text"
-              placeholder="delete student"
+              placeholder={t.deleteConfirmPhrase}
               value={deletePhrase}
               autoComplete="off"
               onChange={(e) => setDeletePhrase(e.target.value)}
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
-                  deletePhrase.trim().toLowerCase() === "delete student" &&
+                  deletePhrase.trim().toLowerCase() === t.deleteConfirmPhrase &&
                   !isDeleting
                 ) {
                   e.preventDefault();
@@ -530,11 +520,13 @@ export function ProfileTeacherStudents() {
         onClose={() => setSelectedQuiz(null)}
         title={
           selectedQuiz
-            ? `Quiz Details: ${selectedQuiz.videoName}`
-            : "Quiz Details"
+            ? formatMessage(t.quizDetailsNamed, {
+                name: selectedQuiz.videoName,
+              })
+            : t.quizDetailsTitle
         }
         footer={
-          <AdminButton onClick={() => setSelectedQuiz(null)}>Close</AdminButton>
+          <AdminButton onClick={() => setSelectedQuiz(null)}>{t.close}</AdminButton>
         }
       >
         {selectedQuiz && (
@@ -542,7 +534,7 @@ export function ProfileTeacherStudents() {
             <div className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border border-border">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Final Score
+                  {t.finalScore}
                 </p>
                 <p
                   className={cn(
@@ -555,12 +547,14 @@ export function ProfileTeacherStudents() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Result
+                  {t.result}
                 </p>
                 <p className="text-xl font-bold text-foreground">
                   {selectedQuiz.correct}{" "}
                   <span className="text-muted-foreground text-sm">
-                    / {selectedQuiz.total} correct
+                  {formatMessage(t.correctFraction, {
+                    total: String(selectedQuiz.total),
+                  })}
                   </span>
                 </p>
               </div>
@@ -568,7 +562,7 @@ export function ProfileTeacherStudents() {
 
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Student's Inputs
+                {t.studentInputs}
               </h4>
 
               {(() => {
@@ -578,7 +572,7 @@ export function ProfileTeacherStudents() {
                   return selectedQuiz.summaryText ? (
                     <div className="bg-card border border-border rounded-lg p-4 mb-4">
                       <p className="text-[10px] font-bold text-primary tracking-wider mb-2">
-                        WRITTEN SUMMARY
+                        {t.writtenSummaryCaps}
                       </p>
                       <p className="text-sm italic text-foreground">
                         "{selectedQuiz.summaryText}"
@@ -586,7 +580,7 @@ export function ProfileTeacherStudents() {
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No multiple-choice data saved for this attempt.
+                      {t.noMcData}
                     </p>
                   );
                 }
@@ -622,13 +616,15 @@ export function ProfileTeacherStudents() {
                           <span className="text-sm text-foreground font-medium">
                             {questionText
                               ? questionText
-                              : `Question ID: ${key.replace("q_", "").substring(0, 4)}...`}
+                              : formatMessage(t.questionIdFallback, {
+                                  id: key.replace("q_", "").substring(0, 4),
+                                })}
                           </span>
 
                           {isWritten ? (
                             <div className="mt-1 rounded-md bg-background/50 border border-border/50 p-3">
                               <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
-                                WRITTEN SUMMARY
+                                {t.writtenSummaryCaps}
                               </p>
                               <p className="text-sm italic text-foreground">
                                 "{value}"
@@ -651,19 +647,19 @@ export function ProfileTeacherStudents() {
                                     "border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400 font-medium";
                                   badgeClass =
                                     "bg-green-500 text-white border-green-500";
-                                  statusText = "Correct";
+                                  statusText = t.correct;
                                 } else if (isStudentChoice) {
                                   variantClass =
                                     "border-destructive/50 bg-destructive/10 text-destructive font-medium";
                                   badgeClass =
                                     "bg-destructive text-white border-destructive";
-                                  statusText = "Student's choice";
+                                  statusText = t.studentChoice;
                                 } else if (isCorrectChoice) {
                                   variantClass =
                                     "border-green-500/30 bg-background text-green-600 dark:text-green-400";
                                   badgeClass =
                                     "bg-green-500/20 text-green-600 border-green-500/30";
-                                  statusText = "Correct answer";
+                                  statusText = t.correctAnswer;
                                 }
 
                                 return (
@@ -695,7 +691,9 @@ export function ProfileTeacherStudents() {
                           ) : (
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-xs font-bold text-foreground bg-background border border-border px-2 py-1 rounded shrink-0">
-                                Option {Number(value) + 1}
+                                {formatMessage(t.optionN, {
+                                  n: String(Number(value) + 1),
+                                })}
                               </span>
                               {answerText ? (
                                 <span className="text-sm font-semibold text-primary/90">
@@ -703,7 +701,7 @@ export function ProfileTeacherStudents() {
                                 </span>
                               ) : (
                                 <span className="text-sm text-muted-foreground italic">
-                                  (No text saved)
+                                  {t.noTextSaved}
                                 </span>
                               )}
                             </div>
@@ -715,11 +713,11 @@ export function ProfileTeacherStudents() {
                     {!renderedSummary && selectedQuiz.summaryText && (
                       <div className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3">
                         <span className="text-sm text-foreground font-medium">
-                          Summary (Legacy)
+                          {t.summaryLegacy}
                         </span>
                         <div className="mt-1 rounded-md bg-background/50 border border-border/50 p-3">
                           <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
-                            WRITTEN SUMMARY
+                            {t.writtenSummaryCaps}
                           </p>
                           <p className="text-sm italic text-foreground">
                             "{selectedQuiz.summaryText}"
@@ -736,13 +734,10 @@ export function ProfileTeacherStudents() {
       </AdminModal>
 
       {students.length === 0 ? (
-        <ProfileCard title="Student results">
+        <ProfileCard title={t.cardTitle}>
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <GraduationCap className="size-12 text-muted-foreground opacity-50" />
-            <p className="max-w-md text-muted-foreground">
-              No students are linked to your teacher account yet. Click "Add
-              Student" above to register them.
-            </p>
+            <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
           </div>
         </ProfileCard>
       ) : (
@@ -752,12 +747,12 @@ export function ProfileTeacherStudents() {
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
                   <th className="p-3 font-medium w-10" />
-                  <th className="p-3 font-medium">Student</th>
-                  <th className="p-3 font-medium">Level</th>
-                  <th className="p-3 text-center font-medium">Videos done</th>
-                  <th className="p-3 text-center font-medium">Quizzes</th>
-                  <th className="p-3 text-center font-medium">Avg score</th>
-                  <th className="p-3 font-medium w-24 text-right">Actions</th>
+                  <th className="p-3 font-medium">{t.colStudent}</th>
+                  <th className="p-3 font-medium">{t.colLevel}</th>
+                  <th className="p-3 text-center font-medium">{t.colVideosDone}</th>
+                  <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
+                  <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
+                  <th className="p-3 font-medium w-24 text-right">{t.colActions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -807,14 +802,14 @@ export function ProfileTeacherStudents() {
                             <button
                               onClick={() => openEditModal(s)}
                               className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                              title="Edit student"
+                              title={t.editStudentAria}
                             >
                               <Edit className="size-4" />
                             </button>
                             <button
                               onClick={() => openDeleteModal(s.id)}
                               className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                              title="Remove student"
+                              title={t.removeStudentAria}
                             >
                               <Trash2 className="size-4" />
                             </button>
@@ -826,11 +821,11 @@ export function ProfileTeacherStudents() {
                           <td colSpan={7} className="p-0">
                             <div className="border-border border-t px-4 py-4">
                               <h4 className="text-muted-foreground mb-3 text-xs font-semibold uppercase tracking-wide">
-                                Recent comprehension quizzes
+                                {t.recentQuizzesHeading}
                               </h4>
                               {s.recentQuizzes.length === 0 ? (
                                 <p className="text-muted-foreground text-sm">
-                                  No quiz attempts recorded yet.
+                                  {t.noQuizzesYet}
                                 </p>
                               ) : (
                                 <ul className="space-y-3">
@@ -893,7 +888,7 @@ export function ProfileTeacherStudents() {
                                                   : "bg-muted text-muted-foreground",
                                               )}
                                             >
-                                              {q.passed ? "Passed" : "Review"}
+                                              {q.passed ? t.passed : t.review}
                                             </span>
                                           </div>
                                         </div>
@@ -901,7 +896,7 @@ export function ProfileTeacherStudents() {
                                         {writtenText ? (
                                           <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
-                                              Written Summary
+                                              {t.writtenSummary}
                                             </span>
                                             <p className="text-sm text-foreground italic line-clamp-2">
                                               "{writtenText}"
@@ -914,7 +909,7 @@ export function ProfileTeacherStudents() {
                                             onClick={() => setSelectedQuiz(q)}
                                             className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-md transition-colors"
                                           >
-                                            View all answers
+                                            {t.viewAllAnswers}
                                           </button>
                                         </div>
                                       </li>

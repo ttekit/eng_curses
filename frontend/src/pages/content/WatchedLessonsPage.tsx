@@ -230,9 +230,6 @@ export default function WatchedLessonsPage() {
       />
       <div className="flex">
         <CatalogSidebar
-          categories={[]}
-          selectedCategory="All"
-          onSelectCategory={() => {}}
           onSelectLevel={() => {}}
           reserveTopNavSpace={false}
           welcomeName={

@@ -103,7 +103,6 @@ const LEVELS_LIST = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
 export default function VideoPage() {
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -141,6 +140,20 @@ export default function VideoPage() {
   );
 
   const cb = locale === "uk" ? appUk.catalogBrowse : appEn.catalogBrowse;
+
+  const filterLabel = (value: string): string => {
+    if (value === "All") return cb.filterAll;
+    if (value === "Recommended") return cb.filterRecommended;
+    return value;
+  };
+
+  const buildFilteredTitle = (): string => {
+    if (selectedGenre === "Recommended") return cb.filterRecommendedForYou;
+    let title = cb.filterFilteredResults;
+    if (selectedLevel !== "All") title += ` - ${selectedLevel}`;
+    if (selectedGenre !== "All") title += ` - ${filterLabel(selectedGenre)}`;
+    return title;
+  };
 
   const catalogCheckoutReturn = useMemo(() => {
     return new URLSearchParams(location.search).get("checkout") === "success";
@@ -395,11 +408,6 @@ export default function VideoPage() {
     }));
   }, [videos]);
 
-  const categoryNames = useMemo(() => {
-    const names = videos.map((v) => v.content.category.name);
-    return [...new Set(names)];
-  }, [videos]);
-
   const genreNames = useMemo(() => {
     const tags = new Set<string>();
     videos.forEach((v) => {
@@ -444,9 +452,6 @@ export default function VideoPage() {
         if (has18Plus) return false;
       }
 
-      const matchCategory =
-        selectedCategory === "All" ||
-        v.content.category.name === selectedCategory;
       const matchLevel =
         selectedLevel === "All" ||
         (v.content.stats?.systemTags &&
@@ -462,11 +467,10 @@ export default function VideoPage() {
         );
       }
 
-      return matchCategory && matchLevel && matchGenre;
+      return matchLevel && matchGenre;
     });
   }, [
     videos,
-    selectedCategory,
     selectedLevel,
     selectedGenre,
     recommendedVideoIds,
@@ -490,7 +494,6 @@ export default function VideoPage() {
   }, [featured]);
 
   const hasFilters =
-    selectedCategory !== "All" ||
     selectedLevel !== "All" ||
     selectedGenre !== "All";
 
@@ -516,14 +519,7 @@ export default function VideoPage() {
       });
       const link = sorted[0]?.content.category.friendlyLink?.trim() ?? "";
 
-      let dynamicTitle =
-        selectedCategory !== "All" ? selectedCategory : "Filtered Results";
-      if (selectedLevel !== "All") dynamicTitle += ` - ${selectedLevel}`;
-      if (selectedGenre !== "All")
-        dynamicTitle =
-          selectedGenre === "Recommended"
-            ? "Recommended For You"
-            : `${dynamicTitle} - ${selectedGenre}`;
+      let dynamicTitle = buildFilteredTitle();
 
       return [
         {
@@ -571,7 +567,6 @@ export default function VideoPage() {
       });
   }, [
     filteredVideos,
-    selectedCategory,
     selectedLevel,
     selectedGenre,
     hasFilters,
@@ -609,9 +604,6 @@ export default function VideoPage() {
       <div>
         <div className="flex w-full">
           <CatalogSidebar
-            categories={categoryNames}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
             selectedLevel={selectedLevel}
             onSelectLevel={setSelectedLevel}
             genres={genreNames}
@@ -638,7 +630,7 @@ export default function VideoPage() {
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
                 <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                    <Layers className="size-3.5" /> Level
+                    <Layers className="size-3.5" /> {cb.filterLevel}
                   </span>
                   <div className="relative group/level flex w-full items-center">
                     <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
@@ -671,7 +663,7 @@ export default function VideoPage() {
                               : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
                           )}
                         >
-                          {lvl}
+                          {filterLabel(lvl)}
                         </button>
                       ))}
                     </div>
@@ -694,7 +686,7 @@ export default function VideoPage() {
                         className="size-3.5 grayscale opacity-70"
                         alt=""
                       />{" "}
-                      Genre
+                      {cb.filterGenre}
                     </span>
                     <div className="relative group/genre flex w-full items-center">
                       <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
@@ -727,7 +719,7 @@ export default function VideoPage() {
                                 : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground ",
                             )}
                           >
-                            {gen}
+                            {filterLabel(gen)}
                           </button>
                         ))}
                       </div>
@@ -753,37 +745,25 @@ export default function VideoPage() {
                 <div className="flex h-60 bg-card/30 flex-col items-center rounded-[30px] justify-center space-y-4">
                   <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
                   <p className="animate-pulse text-muted-foreground text-sm">
-                    {(messages.catalogPage as any)?.loadingCatalog ||
-                      "Loading catalog..."}
+                    {cb.loadingCatalog}
                   </p>
                 </div>
               ) : filteredVideos.length === 0 ? (
                 <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
                   <img src="/SadIcon.svg" className="w-25 h-30 mb-3" alt="" />
                   <h2 className="font-display text-2xl font-bold">
-                    {(messages.catalogPage as any)?.emptyTitle ||
-                      "No lessons found"}
+                    {cb.emptyTitle}
                   </h2>
                   <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
-                      ? (messages.catalogPage as any)?.emptyNoVideos ||
-                        "There are no videos in the catalog yet."
-                      : (messages.catalogPage as any)?.emptyFiltered ||
-                        "No videos match your filters."}
+                      ? cb.emptyNoVideos
+                      : cb.emptyFiltered}
                   </p>
                 </div>
               ) : hasFilters ? (
                 <div className="space-y-6">
                   <h2 className="font-display text-xl font-bold text-foreground">
-                    {selectedGenre === "Recommended" ? (
-                      "Recommended For You"
-                    ) : (
-                      <>
-                        Filtered Results
-                        {selectedLevel !== "All" ? ` - ${selectedLevel}` : ""}
-                        {selectedGenre !== "All" ? ` - ${selectedGenre}` : ""}
-                      </>
-                    )}
+                    {buildFilteredTitle()}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {filteredVideos.map((video) => (

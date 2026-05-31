@@ -23,9 +23,8 @@ export default function PricingPage() {
   const checkoutOk = searchParams.get("checkout") === "success";
 
   const heroSubtitle = useMemo(
-    () =>
-      "Choose a plan that fits how you learn. Upgrade anytime. B2B? Talk to us for Teacher / Enterprise.",
-    [],
+    () => pricingMeta.heroSubtitle,
+    [pricingMeta.heroSubtitle],
   );
 
   return (
@@ -43,7 +42,7 @@ export default function PricingPage() {
       <main className="mx-auto max-w-7xl px-4 pb-24 pt-28 sm:px-6 lg:px-8 lg:pt-32">
         <div className="mx-auto mb-14 max-w-3xl text-center">
           <h1 className="font-display text-4xl font-bold tracking-tight md:text-5xl">
-            Pricing
+            {pricingMeta.title}
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">{heroSubtitle}</p>
           {checkoutOk ?
@@ -51,8 +50,7 @@ export default function PricingPage() {
               className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200"
               role="status"
             >
-              Thanks — your checkout completed. It may take a moment for your
-              subscription to show on your account.
+              {pricingMeta.checkoutSuccess}
             </p>
           : null}
           {!isLoggedIn ?
@@ -62,9 +60,9 @@ export default function PricingPage() {
                 state={{ from: "/pricing" }}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
-                Sign in
+                {pricingMeta.signInPromptBefore}
               </Link>{" "}
-              to subscribe to Light, Smart, or Family.
+              {pricingMeta.signInPromptAfter}
             </p>
           : null}
         </div>
@@ -75,8 +73,7 @@ export default function PricingPage() {
         />
 
         <p className="mx-auto mt-12 max-w-2xl text-center text-xs text-muted-foreground">
-          Payments are processed securely by Stripe. By continuing you agree to
-          our terms for your selected plan.
+          {pricingMeta.stripeTerms}
         </p>
 
         {showPaywallLogout ?

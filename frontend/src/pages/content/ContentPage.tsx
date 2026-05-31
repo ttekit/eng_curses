@@ -35,9 +35,9 @@ import { parseSeriesPlaylistPayload } from "../../lib/catalogPlaylist";
 import { parseWebVttTranscriptLines } from "../../lib/parseWebVtt";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
-import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
 import { appEn } from "../../locales/app/en";
-import { appUk } from "../../locales/app/uk";
+import { formatMessage } from "../../lib/formatMessage";
 import { useIsLgUp } from "../../hooks/useMediaQuery";
 import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
 
@@ -341,17 +341,21 @@ function readWrittenSummaryScoreFromSubmit(
 }
 
 type TabId = "vocabulary" | "transcript" | "quiz";
+type LessonLabels = typeof appEn.lesson;
 
-const tabs: { id: TabId; label: string; icon: typeof BookOpen }[] = [
-  { id: "vocabulary", label: "Vocabulary", icon: BookOpen },
-  { id: "transcript", label: "Transcript", icon: FileText },
-  { id: "quiz", label: "Quiz", icon: HelpCircle },
-];
+const tabsFromLabels = (L: LessonLabels) =>
+  [
+    { id: "vocabulary" as const, label: L.vocabularyTab, icon: BookOpen },
+    { id: "transcript" as const, label: L.transcriptTab, icon: FileText },
+    { id: "quiz" as const, label: L.quizTab, icon: HelpCircle },
+  ] as const;
 
 function ContentWatchHeader({
+  L,
   rightLabel,
   playlistRibbon,
 }: {
+  L: LessonLabels;
   rightLabel?: string;
   playlistRibbon?: {
     friendlyLink: string;
@@ -370,7 +374,7 @@ function ContentWatchHeader({
             className="flex shrink-0 items-center gap-2 justify-self-start text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm whitespace-nowrap">Back to catalog</span>
+            <span className="text-sm whitespace-nowrap">{L.backToCatalog}</span>
           </Link>
 
           <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center">
@@ -393,12 +397,12 @@ function ContentWatchHeader({
                   className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  {L.previous}
                 </Link>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-muted-foreground/50">
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
+                  {L.previous}
                 </span>
               )}
             </div>
@@ -406,7 +410,10 @@ function ContentWatchHeader({
               to={`/catalog/series/${encodeURIComponent(playlistRibbon.friendlyLink)}`}
               className="text-center text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:text-sm"
             >
-              Series {playlistRibbon.position} / {playlistRibbon.total}
+              {formatMessage(L.seriesProgress, {
+                current: String(playlistRibbon.position),
+                total: String(playlistRibbon.total),
+              })}
             </Link>
             <div className="flex items-center gap-2">
               {playlistRibbon.nextVideoId != null ? (
@@ -414,12 +421,12 @@ function ContentWatchHeader({
                   to={`/content/${playlistRibbon.nextVideoId}`}
                   className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
                 >
-                  Next
+                  {L.next}
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-1.5 text-sm text-muted-foreground/50">
-                  Next
+                  {L.next}
                   <ChevronRight className="h-4 w-4" />
                 </span>
               )}
@@ -431,17 +438,17 @@ function ContentWatchHeader({
   );
 }
 
-function LoadingView() {
+function LoadingView({ L }: { L: LessonLabels }) {
   return (
     <div className="min-h-screen bg-background">
-      <ContentWatchHeader />
+      <ContentWatchHeader L={L} />
       <div className="mx-auto flex min-h-[70vh] max-w-7xl flex-col items-center justify-center gap-4 px-4 pt-20">
         <div
           className="border-muted h-14 w-14 animate-spin rounded-full border-4 border-t-primary border-solid"
           aria-hidden
         />
         <p className="text-sm font-medium text-muted-foreground">
-          Loading lesson…
+          {L.loadingLesson}
         </p>
       </div>
     </div>
@@ -449,17 +456,19 @@ function LoadingView() {
 }
 
 function EmptyState({
+  L,
   title,
   description,
   cta,
 }: {
+  L: LessonLabels;
   title: string;
   description: string;
   cta: { to: string; label: string };
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <ContentWatchHeader />
+      <ContentWatchHeader L={L} />
       <main className="mx-auto max-w-lg px-4 pt-28 pb-20 text-center sm:px-6">
         <div className="rounded-[2rem] border-2 border-dashed border-border bg-card/50 px-8 py-14">
           <div className="mb-4 text-4xl" aria-hidden>
@@ -484,14 +493,17 @@ function EmptyState({
 }
 
 function TabBar({
+  L,
   activeTab,
   onTabChange,
   className,
 }: {
+  L: LessonLabels;
   activeTab: TabId;
   onTabChange: (t: TabId) => void;
   className?: string;
 }) {
+  const tabs = tabsFromLabels(L);
   return (
     <div className={cn("flex border-border border-b", className)}>
       {tabs.map((tab) => (
@@ -515,6 +527,7 @@ function TabBar({
 }
 
 function TabPanels({
+  L,
   activeTab,
   vocabulary,
   sideLoading,
@@ -524,6 +537,7 @@ function TabPanels({
   onSeekTranscript,
   quizPanel,
 }: {
+  L: LessonLabels;
   activeTab: TabId;
   vocabulary: VocabularyItem[];
   sideLoading: boolean;
@@ -541,7 +555,7 @@ function TabPanels({
       >
         {sideLoading ? (
           <p className="text-center text-sm text-muted-foreground">
-            Preparing personalised key vocabulary…
+            {L.preparingVocabulary}
           </p>
         ) : (
           <VideoVocabulary vocabulary={vocabulary} />
@@ -575,8 +589,7 @@ export default function ContentPage() {
   const navigate = useNavigate();
   // ОБ'ЄДНАНО: отримуємо і user, і refreshProfile
   const { user, refreshProfile } = useUser();
-  const { locale } = useLandingLocale();
-  const lessonSeo = locale === "uk" ? appUk.lesson : appEn.lesson;
+  const L = useAppMessages().lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
   const [isVideoComplete, setIsVideoComplete] = useState(false);
   const [videoData, setVideoData] = useState<{
@@ -886,8 +899,8 @@ export default function ContentPage() {
   }, [id]);
 
   const headerRight = isVideoComplete
-    ? "Quiz unlocked"
-    : `${LESSON_XP} XP available`;
+    ? L.quizUnlocked
+    : formatMessage(L.xpAvailable, { xp: String(LESSON_XP) });
 
   const displayVocabulary = useMemo((): VocabularyItem[] => {
     const api = lessonSideBundle?.vocabulary;
@@ -1091,8 +1104,7 @@ export default function ContentPage() {
             if (fb !== undefined) {
               writtenSummaryFeedback = fb;
             } else if (writtenSummaryText?.trim()) {
-              writtenSummaryFeedback =
-                "Your answer was submitted, but no coach comment was included in the response. Ensure the backend sets GEMINI_API_KEY (or rely on offline feedback from the server) and try submitting again.";
+              writtenSummaryFeedback = L.coachCommentFallback;
             }
             const sc = readWrittenSummaryScoreFromSubmit(d);
             if (sc !== undefined) {
@@ -1111,18 +1123,15 @@ export default function ContentPage() {
               }
             }
           } else if (writtenSummaryText?.trim()) {
-            writtenSummaryFeedback =
-              "Grading request failed. Check your connection and try again from the lesson quiz (Complete lesson).";
+            writtenSummaryFeedback = L.gradingFailed;
           }
         } catch {
           if (writtenSummaryText?.trim()) {
-            writtenSummaryFeedback =
-              "Could not reach the grading server. Check your connection and try “Complete lesson” again.";
+            writtenSummaryFeedback = L.gradingUnreachable;
           }
         }
       } else if (writtenSummaryText) {
-        writtenSummaryFeedback =
-          "Quiz data was not ready in time. Stay on the Quiz tab until questions load, then tap “Complete lesson” again. If this persists, refresh the page.";
+        writtenSummaryFeedback = L.quizNotReady;
       }
       const stats = videoData.content.stats;
       const lessonTopics = Array.isArray(stats?.topics)
@@ -1173,6 +1182,7 @@ export default function ContentPage() {
       enrichedDisplayVocabulary,
       waitForLessonSideBundleWithToken,
       refreshProfile,
+      L,
     ],
   );
 
@@ -1180,12 +1190,12 @@ export default function ContentPage() {
     return (
       <>
         <SEO
-          title={lessonSeo.seoLoadingTitle}
-          description={lessonSeo.seoLoadingDescription}
+          title={L.seoLoadingTitle}
+          description={L.seoLoadingDescription}
           canonicalUrl={resolveCanonicalUrl(id ? `/content/${id}` : "/catalog")}
           noindex
         />
-        <LoadingView />
+        <LoadingView L={L} />
       </>
     );
   }
@@ -1194,15 +1204,16 @@ export default function ContentPage() {
     return (
       <>
         <SEO
-          title={lessonSeo.seoPickTitle}
-          description={lessonSeo.seoPickDescription}
+          title={L.seoPickTitle}
+          description={L.seoPickDescription}
           canonicalUrl={resolveCanonicalUrl("/catalog")}
           noindex
         />
         <EmptyState
-          title="No video selected"
-          description="Pick a lesson from your catalog."
-          cta={{ to: "/catalog", label: "Browse catalog" }}
+          L={L}
+          title={L.noVideoSelectedTitle}
+          description={L.pickLessonDescription}
+          cta={{ to: "/catalog", label: L.browseCatalogCta }}
         />
       </>
     );
@@ -1212,15 +1223,16 @@ export default function ContentPage() {
     return (
       <>
         <SEO
-          title={lessonSeo.seoNotFoundTitle}
-          description={lessonSeo.seoNotFoundDescription}
+          title={L.seoNotFoundTitle}
+          description={L.seoNotFoundDescription}
           canonicalUrl={resolveCanonicalUrl(`/content/${id}`)}
           noindex
         />
         <EmptyState
-          title="Video not found"
-          description="This clip may have been removed or the link is wrong."
-          cta={{ to: "/catalog", label: "Back to catalog" }}
+          L={L}
+          title={L.notFoundTitle}
+          description={L.notFoundBody}
+          cta={{ to: "/catalog", label: L.backToCatalog }}
         />
       </>
     );
@@ -1229,7 +1241,7 @@ export default function ContentPage() {
   const descriptionBlurb =
     videoData.videoDescription?.trim() ||
     videoData.content.category.description?.trim() ||
-    "Practice listening and speaking with curated clips from your catalog.";
+    L.descriptionFallback;
 
   const quizWaitingForServer =
     isVideoComplete &&
@@ -1256,19 +1268,15 @@ export default function ContentPage() {
         className="border-muted mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-primary border-solid"
         aria-hidden
       />
-      <p className="text-sm font-medium text-foreground">Loading your quiz…</p>
+      <p className="text-sm font-medium text-foreground">{L.loadingQuiz}</p>
       <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-muted-foreground">
-        Wait until questions from this lesson finish loading — then answers and
-        written feedback will match grading.
+        {L.loadingQuizHint}
       </p>
     </div>
   ) : quizServerFailed ? (
     <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-6 text-center text-sm">
-      <p className="font-semibold text-foreground">Quiz couldn’t be loaded.</p>
-      <p className="mt-2 text-muted-foreground">
-        Refresh the page. If the problem continues, the lesson tests service may
-        be unavailable.
-      </p>
+      <p className="font-semibold text-foreground">{L.quizFailedTitle}</p>
+      <p className="mt-2 text-muted-foreground">{L.quizFailedBody}</p>
     </div>
   ) : (
     <VideoQuiz
@@ -1288,6 +1296,7 @@ export default function ContentPage() {
         noindex
       />
       <ContentWatchHeader
+        L={L}
         rightLabel={headerRight}
         playlistRibbon={playlistRibbon}
       />
@@ -1320,11 +1329,12 @@ export default function ContentPage() {
                     {videoData.content.category.name}
                   </span>
                   {isVideoComplete ? (
-                    <span className="text-sm text-accent">Watched</span>
+                    <span className="text-sm text-accent">{L.watched}</span>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      Watch {Math.round(WATCHED_COMPLETED_RATIO * 100)}% to
-                      unlock quiz
+                      {formatMessage(L.watchToUnlock, {
+                        pct: String(Math.round(WATCHED_COMPLETED_RATIO * 100)),
+                      })}
                     </span>
                   )}
                 </div>
@@ -1339,8 +1349,13 @@ export default function ContentPage() {
               <div className="lg:hidden">
                 {!isLgUp ? (
                   <>
-                    <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+                    <TabBar
+                      L={L}
+                      activeTab={activeTab}
+                      onTabChange={setActiveTab}
+                    />
                     <TabPanels
+                      L={L}
                       activeTab={activeTab}
                       vocabulary={enrichedDisplayVocabulary}
                       sideLoading={sideBundleLoading}
@@ -1358,7 +1373,11 @@ export default function ContentPage() {
             <div className="hidden lg:block">
               {isLgUp ? (
                 <>
-                  <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+                  <TabBar
+                    L={L}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                  />
                   <div className="mt-0 max-h-[min(600px,70vh)] overflow-y-auto rounded-xl border border-border bg-card p-4">
                     <div
                       className={
@@ -1368,7 +1387,7 @@ export default function ContentPage() {
                     >
                       {sideBundleLoading ? (
                         <p className="text-center text-sm text-muted-foreground">
-                          Preparing personalised key vocabulary…
+                          {L.preparingVocabulary}
                         </p>
                       ) : (
                         <VideoVocabulary

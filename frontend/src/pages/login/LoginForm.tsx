@@ -117,13 +117,13 @@ export default function LoginForm() {
       return;
     }
     if (consumePendingRegistrationLoginWelcome()) {
-      toast.success("Account created. Sign in with your email and password.");
+      toast.success(loginSeo.toastAccountCreated);
     }
     navigate("/loginForm", {
       replace: true,
       state: s.from ? { from: s.from } : undefined,
     });
-  }, [location.state, navigate]);
+  }, [location.state, navigate, loginSeo.toastAccountCreated]);
 
   const isEmpty = !show2FA
     ? [loginData.email, loginData.password].some((value) => value.trim() === "")
@@ -138,7 +138,7 @@ export default function LoginForm() {
     e.preventDefault();
 
     if (!show2FA && !captchaToken) {
-      toast.error("Please wait for captcha verification.");
+      toast.error(loginSeo.captchaWait);
       return;
     }
 
@@ -162,7 +162,7 @@ export default function LoginForm() {
 
           if (data.requiresTwoFactor) {
             setShow2FA(true);
-            toast.success("Verification code sent to your email.");
+            toast.success(loginSeo.verificationCodeSent);
 
             setCaptchaToken(null);
             setCaptchaKey((prev) => prev + 1);
@@ -174,13 +174,13 @@ export default function LoginForm() {
 
           if (!token) {
             const next = postLoginNavigateTarget(fromState, null);
-            toast.success("Signed in successfully.");
+            toast.success(loginSeo.toastSignedIn);
             navigate(next);
           } else {
             setStoredAccessToken(token);
             const profile = await refreshProfile();
             const next = postLoginNavigateTarget(fromState, profile);
-            toast.success("Signed in successfully.");
+            toast.success(loginSeo.toastSignedIn);
             navigate(next);
           }
         } else {
@@ -192,12 +192,12 @@ export default function LoginForm() {
           }
 
           if (errorData?.error === "EMAIL_NOT_VERIFIED") {
-            toast.error("Please verify your email to continue.");
+            toast.error(loginSeo.emailNotVerified);
             navigate("/verify-email", {
               state: { email: loginData.email, isLoginFlow: true },
             });
           } else {
-            toast.error(errorData?.message || "Could not sign in");
+            toast.error(errorData?.message || loginSeo.toastSignInError);
           }
         }
       } catch (error) {
@@ -206,7 +206,7 @@ export default function LoginForm() {
           setCaptchaKey((prev) => prev + 1);
         }
 
-        toast.error("Network error. Please try again later.");
+        toast.error(loginSeo.networkError);
       }
     } else {
       setEmptyError(true);
@@ -221,41 +221,43 @@ export default function LoginForm() {
         path="/loginForm"
       />
       <AuthSplitLayout
-        rightTitle="Ready to continue?"
-        rightSubtitle="Pick up right where you left off with your personalized learning path."
+        rightTitle={loginSeo.rightTitle}
+        rightSubtitle={loginSeo.rightSubtitle}
       >
         <div className="mb-2 flex items-center gap-3">
           <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
-          <h1 className="font-display text-2xl font-bold">Welcome back</h1>
+          <h1 className="font-display text-2xl font-bold">
+            {loginSeo.welcomeBack}
+          </h1>
         </div>
-        <p className="mb-8 text-muted-foreground">
-          Continue your learning journey
-        </p>
+        <p className="mb-8 text-muted-foreground">{loginSeo.lead}</p>
 
         <form onSubmit={handleLogin} tabIndex={0} className="space-y-5">
           {!show2FA ? (
             <>
               <div className="space-y-2">
-                <LabelRegister isRequired={true}>Email</LabelRegister>
+                <LabelRegister isRequired={true}>{loginSeo.email}</LabelRegister>
                 <InputText
                   name="email"
                   value={loginData.email}
                   onChange={handleChange}
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={loginSeo.placeholderEmail}
                   autoComplete="email"
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <LabelRegister isRequired={true}>Password</LabelRegister>
+                  <LabelRegister isRequired={true}>
+                    {loginSeo.password}
+                  </LabelRegister>
                   <Link
                     to="#"
                     className="text-sm text-primary hover:underline"
                     onClick={(e) => e.preventDefault()}
                   >
-                    Forgot password?
+                    {loginSeo.forgotPassword}
                   </Link>
                 </div>
                 <div className="relative">
@@ -264,14 +266,16 @@ export default function LoginForm() {
                     value={loginData.password}
                     onChange={handleChange}
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder={loginSeo.placeholderPassword}
                     autoComplete="current-password"
                     className="pr-12"
                   />
                   <button
                     type="button"
                     aria-label={
-                      showPassword ? "Hide password" : "Show password"
+                      showPassword
+                        ? loginSeo.hidePassword
+                        : loginSeo.showPassword
                     }
                     aria-pressed={showPassword}
                     className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
@@ -290,7 +294,7 @@ export default function LoginForm() {
             <div className="space-y-4">
               <div className="text-center mb-6">
                 <p className="text-sm text-muted-foreground">
-                  We sent a 6-digit code to <br />
+                  {loginSeo.twoFactorLeadPrefix} <br />
                   <span className="font-medium text-primary">
                     {maskEmail(loginData.email)}
                   </span>
@@ -299,7 +303,7 @@ export default function LoginForm() {
 
               <div className="space-y-2">
                 <LabelRegister isRequired={true}>
-                  Verification Code
+                  {loginSeo.twoFactorTitle}
                 </LabelRegister>
                 <InputText
                   name="twoFactorCode"
@@ -310,7 +314,7 @@ export default function LoginForm() {
                     )
                   }
                   type="text"
-                  placeholder="000000"
+                  placeholder={loginSeo.twoFactorPlaceholder}
                   className="text-center text-2xl tracking-[0.5em]"
                   autoComplete="one-time-code"
                 />
@@ -325,7 +329,7 @@ export default function LoginForm() {
                   }}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  ← Back to login
+                  {loginSeo.backToLogin}
                 </button>
               </div>
             </div>
@@ -354,8 +358,8 @@ export default function LoginForm() {
           {emptyError && (
             <ValidateError>
               {show2FA
-                ? "Please enter the 6-digit code."
-                : "Please fill in all required fields."}
+                ? loginSeo.codeRequired
+                : loginSeo.fillRequired}
             </ValidateError>
           )}
 
@@ -367,18 +371,18 @@ export default function LoginForm() {
             }
             className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {show2FA ? "Verify Code" : "Log in"}
+            {show2FA ? loginSeo.verifyCode : loginSeo.submit}
           </Button>
         </form>
 
         {!show2FA && (
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {loginSeo.noAccount}{" "}
             <Link
               to="/registrationMain"
               className="font-medium text-primary hover:underline"
             >
-              Sign up
+              {loginSeo.signUp}
             </Link>
           </p>
         )}
@@ -387,7 +391,7 @@ export default function LoginForm() {
           to="/"
           className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          ← Back home
+          {loginSeo.backHome}
         </Link>
       </AuthSplitLayout>
     </>

@@ -1,10 +1,10 @@
 import { Link, useLocation, useParams } from "react-router";
 import { useMemo, useEffect, useState } from "react";
 import { ArrowLeft, BookOpen, Tags } from "lucide-react";
-import { ChameleonMascot } from "../../components/ChameleonMascot";
 import { ProfileCard } from "../../components/profile/ProfileCard";
 import { KnowledgeShiftBar } from "../../components/profile/KnowledgeMeters";
 import { apiFetch } from "../../lib/api";
+import { formatMessage } from "../../lib/formatMessage";
 import { cn } from "../../lib/utils";
 import {
   estimatedLessonKnowledgeFromQuizPct,
@@ -13,9 +13,7 @@ import {
 import type { QuizWrongReviewItem } from "../../components/content-watch/VideoQuiz";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
-import { useLandingLocale } from "../../context/LandingLocaleContext";
-import { appEn } from "../../locales/app/en";
-import { appUk } from "../../locales/app/uk";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 export type LessonWordEntry = {
   word: string;
@@ -205,7 +203,7 @@ function parseVideoJson(data: unknown): VideoMeta | null {
     videoDescription?: unknown;
     content?: unknown;
   };
-  const name = typeof d.videoName === "string" ? d.videoName : "Lesson";
+  const name = typeof d.videoName === "string" ? d.videoName : "";
   const desc =
     typeof d.videoDescription === "string" || d.videoDescription === null
       ? d.videoDescription
@@ -289,18 +287,21 @@ export default function LessonSummaryPage() {
   const fromNav = location.state as LessonSummaryState | null;
   const [stored, setStored] = useState<LessonSummaryState | null>(null);
   const [metaOnly, setMetaOnly] = useState<VideoMeta | null>(null);
+  const messages = useAppMessages();
+  const lesson = messages.lesson;
+  const page = messages.lessonSummaryPage;
+  const progress = messages.profileProgress;
+  const stats = messages.profileStats;
 
   const summary = coerceSummary(fromNav) ?? coerceSummary(stored);
-  const { locale } = useLandingLocale();
-  const lessonSeo = locale === "uk" ? appUk.lesson : appEn.lesson;
   const summaryTitle =
     summary?.videoName?.trim() ||
     metaOnly?.videoName?.trim() ||
-    lessonSeo.seoLoadingTitle;
+    lesson.seoLoadingTitle;
   const summaryDescription =
     summary?.videoDescription?.trim() ||
     metaOnly?.videoDescription?.trim() ||
-    lessonSeo.seoLoadingDescription;
+    lesson.seoLoadingDescription;
 
   useEffect(() => {
     if (!videoId || fromNav) return;
@@ -348,10 +349,10 @@ export default function LessonSummaryPage() {
             : ("thinking" as const);
       const message =
         knowledgeEstimate.pct >= 80
-          ? "Strong work — you’re ready for the next lesson."
+          ? page.moodStrong
           : knowledgeEstimate.pct >= 50
-            ? "Good effort — skim vocabulary once more."
-            : "Review the clip and vocabulary, then retry.";
+            ? page.moodGood
+            : page.moodReview;
       return {
         kind: "full" as const,
         summary,
@@ -367,17 +368,17 @@ export default function LessonSummaryPage() {
       };
     }
     return { kind: "empty" as const };
-  }, [summary, metaOnly, knowledgeEstimate]);
+  }, [summary, metaOnly, knowledgeEstimate, page]);
 
   if (!videoId) {
     return (
       <div className="min-h-screen bg-background px-4 pt-24 text-center">
-        <p className="text-muted-foreground">Missing lesson.</p>
+        <p className="text-muted-foreground">{page.missingLesson}</p>
         <Link
           to="/catalog"
           className="mt-4 inline-block text-sm font-medium text-primary"
         >
-          Back to catalog
+          {lesson.backToCatalog}
         </Link>
       </div>
     );
@@ -400,12 +401,12 @@ export default function LessonSummaryPage() {
             className="inline-flex shrink-0 items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm hidden md:block">Catalog</span>
+            <span className="text-sm hidden md:block">{lesson.backToCatalog}</span>
           </Link>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
             <img src="/Icon.svg" className="w-10 h-13 sm:w-15 sm:h-18" />
             <span className="font-display truncate font-bold">
-              Lesson summary
+              {page.pageTitle}
             </span>
           </div>
           <div className="w-16 shrink-0" aria-hidden />
@@ -415,37 +416,31 @@ export default function LessonSummaryPage() {
       <main className="mx-auto max-w-2xl px-4 py-10 sm:py-14">
         {display.kind === "empty" ? (
           <div className="rounded-2xl border border-border bg-card/50 p-8 text-center">
-            <p className="text-muted-foreground">
-              No results for this lesson. Open the lesson, finish the quiz, and
-              tap “Complete lesson” to see your score here.
-            </p>
+            <p className="text-muted-foreground">{page.emptyLead}</p>
             <Link
               to={`/content/${videoId}`}
               className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
             >
-              Open lesson
+              {page.openLesson}
             </Link>
           </div>
         ) : display.kind === "meta" ? (
           <div className="rounded-2xl border border-border bg-card/50 p-8 text-center">
             <BookOpen className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
             <h1 className="font-display text-xl font-bold">
-              {display.metaOnly.videoName}
+              {display.metaOnly.videoName || page.fallbackLessonTitle}
             </h1>
             {display.metaOnly.categoryName ? (
               <p className="mt-2 text-sm text-primary">
                 {display.metaOnly.categoryName}
               </p>
             ) : null}
-            <p className="mt-4 text-sm text-muted-foreground">
-              Complete the quiz on the lesson page to see your score, words, and
-              topic updates here.
-            </p>
+            <p className="mt-4 text-sm text-muted-foreground">{page.metaLead}</p>
             <Link
               to={`/content/${videoId}`}
               className=" flex rounded-[15px] bg-primary px-6 py-3 mt-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             >
-              Continue lesson
+              {page.continueLesson}
             </Link>
           </div>
         ) : (
@@ -475,7 +470,7 @@ export default function LessonSummaryPage() {
               )}
             >
               <h2 className="font-display text-center text-lg font-semibold">
-                Quiz results
+                {page.quizResults}
               </h2>
               <div className="mt-6 text-center">
                 <p className="font-display text-4xl font-bold text-primary tabular-nums">
@@ -483,7 +478,9 @@ export default function LessonSummaryPage() {
                   {display.summary.totalQuestions}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {display.knowledgeEstimate.pct}% correct
+                  {formatMessage(page.pctCorrect, {
+                    pct: String(display.knowledgeEstimate.pct),
+                  })}
                 </p>
               </div>
               <p className="mt-6 text-center text-sm leading-relaxed text-muted-foreground">
@@ -499,17 +496,18 @@ export default function LessonSummaryPage() {
               display.summary.writtenSummaryFeedback.trim().length > 0) ? (
               <div className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8">
                 <h2 className="font-display text-lg font-semibold">
-                  Your written summary
+                  {page.writtenSummaryHeading}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Personalized comments on your answer, tailored to the lesson
-                  and your profile when you complete the quiz while signed in.
+                  {page.writtenSummaryLead}
                 </p>
                 {typeof display.summary.writtenSummaryScore === "number" &&
                 display.summary.writtenSummaryScore >= 1 &&
                 display.summary.writtenSummaryScore <= 10 ? (
                   <p className="mt-4 text-sm font-semibold tabular-nums text-primary">
-                    Summary score: {display.summary.writtenSummaryScore}/10
+                    {formatMessage(page.summaryScoreLine, {
+                      score: String(display.summary.writtenSummaryScore),
+                    })}
                   </p>
                 ) : null}
                 {display.summary.writtenSummaryText ? (
@@ -524,10 +522,7 @@ export default function LessonSummaryPage() {
                   </p>
                 ) : display.summary.writtenSummaryText?.trim() ? (
                   <p className="mt-4 text-sm text-muted-foreground">
-                    No written-summary coach comment was saved. Finish the
-                    lesson from the quiz tab and tap “Complete lesson” while the
-                    lesson tests have finished loading so the server can attach
-                    feedback.
+                    {page.noCoachComment}
                   </p>
                 ) : null}
               </div>
@@ -537,11 +532,10 @@ export default function LessonSummaryPage() {
             display.summary.quizReview.wrong.length > 0 ? (
               <div className="mt-8 rounded-2xl border border-destructive/25 bg-destructive/5 p-6 sm:p-8">
                 <h2 className="font-display text-center text-lg font-semibold">
-                  Review tricky questions
+                  {page.reviewWrongHeading}
                 </h2>
                 <p className="mt-2 text-center text-sm text-muted-foreground">
-                  Explanations for items you missed — skim these before the next
-                  quiz on this lesson.
+                  {page.reviewWrongLead}
                 </p>
                 <ul className="mt-6 space-y-5 text-left">
                   {display.summary.quizReview.wrong.map((row, i) => (
@@ -551,21 +545,27 @@ export default function LessonSummaryPage() {
                     >
                       {row.category ? (
                         <span className="inline-block rounded bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          {row.category}
+                          {row.category === "grammar"
+                            ? page.quizCategoryGrammar
+                            : row.category === "vocabulary"
+                              ? page.quizCategoryVocabulary
+                              : row.category === "comprehension"
+                                ? page.quizCategoryComprehension
+                                : row.category}
                         </span>
                       ) : null}
                       <p className="mt-2 text-sm font-medium text-foreground">
                         {row.question}
                       </p>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        Your answer:{" "}
+                        {page.yourAnswer}{" "}
                         <span className="font-medium text-destructive">
-                          {row.options[row.selectedIndex] ?? "—"}
+                          {row.options[row.selectedIndex] ?? page.answerDash}
                         </span>
                         {" · "}
-                        Correct:{" "}
+                        {page.correctLabel}{" "}
                         <span className="font-medium text-accent">
-                          {row.options[row.correctIndex] ?? "—"}
+                          {row.options[row.correctIndex] ?? page.answerDash}
                         </span>
                       </p>
                       {row.explanation ? (
@@ -583,18 +583,13 @@ export default function LessonSummaryPage() {
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" aria-hidden />
                 <h2 className="font-display text-lg font-semibold">
-                  Words you explored
+                  {page.wordsHeading}
                 </h2>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Key vocabulary from this lesson — add them to your active study
-                list by revisiting the Vocabulary tab.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{page.wordsLead}</p>
               {display.summary.learnedWords.length === 0 ? (
                 <p className="mt-4 text-sm text-muted-foreground">
-                  No personalised word list was returned for this run. Try again
-                  after the lesson sidebar finishes loading, or open the lesson
-                  to see defaults.
+                  {page.wordsEmpty}
                 </p>
               ) : (
                 <ul className="mt-4 space-y-3">
@@ -620,18 +615,15 @@ export default function LessonSummaryPage() {
               <div className="flex items-center gap-2">
                 <Tags className="h-5 w-5 text-primary" aria-hidden />
                 <h2 className="font-display text-lg font-semibold">
-                  Topics and knowledge
+                  {page.topicsHeading}
                 </h2>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                How this lesson maps to tags and catalogue topics linked to the
-                clip.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{page.topicsLead}</p>
 
               {display.summary.levelTags.length > 0 ? (
                 <div className="mt-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Level focus
+                    {page.levelFocus}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {display.summary.levelTags.map((t) => (
@@ -649,7 +641,7 @@ export default function LessonSummaryPage() {
               {display.summary.lessonTopics.length > 0 ? (
                 <div className="mt-5">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Linked topics
+                    {page.linkedTopics}
                   </p>
                   <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-foreground">
                     {display.summary.lessonTopics.map((t) => (
@@ -662,7 +654,7 @@ export default function LessonSummaryPage() {
               {display.summary.themeTags.length > 0 ? (
                 <div className="mt-5">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Lesson themes
+                    {page.lessonThemes}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {display.summary.themeTags.map((t) => (
@@ -681,27 +673,26 @@ export default function LessonSummaryPage() {
               display.summary.themeTags.length === 0 &&
               display.summary.levelTags.length === 0 ? (
                 <p className="mt-4 text-sm text-muted-foreground">
-                  This clip isn’t tagged to specific catalogue topics yet. Your
-                  score still updates your progress in{" "}
-                  <strong>{display.summary.categoryName}</strong>.
+                  {page.untaggedClipLead}
+                  <strong>{display.summary.categoryName}</strong>
+                  {page.untaggedClipTail}
                 </p>
               ) : null}
             </div>
 
             <div className="mt-8">
-              <ProfileCard title="Estimated knowledge shift from your quiz">
+              <ProfileCard title={page.knowledgeShiftTitle}>
                 <div className="rounded-xl border border-border/40 bg-secondary/25 p-4">
                   <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    This lesson
+                    {page.thisLesson}
                   </p>
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">
-                        Quiz-adjusted skills
+                        {page.quizAdjustedSkills}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Same layout as progress — model points on a 0–100 scale.
-                        Listening includes the small watch-complete boost.
+                        {page.quizAdjustedLead}
                       </p>
                     </div>
                     <span className="shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-primary">
@@ -709,7 +700,7 @@ export default function LessonSummaryPage() {
                     </span>
                   </div>
                   <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Overall
+                    {page.overall}
                   </p>
                   <div className="mb-3 h-2 overflow-hidden rounded-full bg-secondary">
                     <div
@@ -721,7 +712,7 @@ export default function LessonSummaryPage() {
                   </div>
                   <div className="space-y-2.5 pt-1">
                     <KnowledgeShiftBar
-                      label="Listening"
+                      label={progress.listening}
                       deltaPoints={
                         display.knowledgeEstimate.listening +
                         WATCH_COMPLETE_LISTENING_POINTS
@@ -730,13 +721,13 @@ export default function LessonSummaryPage() {
                       suffix=""
                     />
                     <KnowledgeShiftBar
-                      label="Vocabulary"
+                      label={progress.vocabulary}
                       deltaPoints={display.knowledgeEstimate.vocabulary}
                       barClass="bg-violet-500/80 dark:bg-violet-400/85"
                       suffix=""
                     />
                     <KnowledgeShiftBar
-                      label="Grammar"
+                      label={progress.grammar}
                       deltaPoints={0}
                       barClass="bg-amber-500/75 dark:bg-amber-400/80"
                       suffix=""
@@ -748,23 +739,26 @@ export default function LessonSummaryPage() {
 
             <div className="mt-8 rounded-2xl border border-border bg-card p-6 text-center">
               <p className="text-sm font-medium text-muted-foreground">
-                Experience earned
+                {page.experienceEarned}
               </p>
               <p className="font-display mt-2 text-3xl font-bold text-foreground tabular-nums">
-                +{display.summary.xpEarned} XP
+                {formatMessage(page.xpEarnedLine, {
+                  xp: String(display.summary.xpEarned),
+                  xpUnit: stats.xpUnit,
+                })}
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Link
                   to="/catalog"
                   className="flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                 >
-                  Next in catalog
+                  {page.nextInCatalog}
                 </Link>
                 <Link
                   to={`/content/${videoId}`}
                   className="flex text-foreground/70 hover:text-white rounded-[15px] px-6 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
                 >
-                  Review lesson
+                  {page.reviewLesson}
                 </Link>
               </div>
             </div>

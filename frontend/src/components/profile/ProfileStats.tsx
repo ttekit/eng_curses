@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { parseCefrLevel, cefrIndex, cefrOrder } from "./cefr";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 
 const DAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -66,10 +68,12 @@ function StatTile({
 }
 
 export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
+  const p = useAppMessages().profileStats;
+
   if (!user) {
     return (
       <div className="flex items-center justify-center p-12">
-        <p className="text-muted-foreground italic">Loading statistics...</p>
+        <p className="text-muted-foreground italic">{p.loadingStats}</p>
       </div>
     );
   }
@@ -82,6 +86,16 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
       ? user.weeklyActivity
       : DEFAULT_WEEKLY_ACTIVITY;
 
+  const formatDayLabel = (day: string): string => {
+    const key = day.slice(0, 3) as keyof typeof p.weekdayAbbrev;
+    return p.weekdayAbbrev[key] ?? day;
+  };
+
+  const chartData = weeklyActivity.map((row) => ({
+    ...row,
+    dayLabel: formatDayLabel(row.day),
+  }));
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -92,10 +106,12 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground uppercase">
-                Current Rank
+                {p.currentRank}
               </p>
               <p className="text-4xl font-black text-foreground">
-                Level {user.appLevel || 1}
+                {formatMessage(p.appLevelDisplay, {
+                  n: String(user.appLevel || 1),
+                })}
               </p>
             </div>
           </div>
@@ -109,12 +125,12 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground uppercase">
-                Total Experience
+                {p.totalExperience}
               </p>
               <p className="text-4xl font-black text-foreground">
                 {user.xp || 0}{" "}
                 <span className="text-xl font-normal text-muted-foreground">
-                  XP
+                  {p.xpUnit}
                 </span>
               </p>
             </div>
@@ -128,19 +144,19 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
           icon={Clock}
           iconWrapClass="bg-primary/20 text-primary"
           value={`${Math.floor((user.totalWatchTimeMin || 0) / 60)}h ${(user.totalWatchTimeMin || 0) % 60}m`}
-          label="Watch time"
+          label={p.watchTime}
         />
         <StatTile
           icon={PlayCircle}
           iconWrapClass="bg-accent/20 text-accent"
           value={user.videosCompleted}
-          label="Videos done"
+          label={p.videosDone}
         />
         <StatTile
           icon={CheckCircle}
           iconWrapClass="bg-secondary text-muted-foreground"
           value={user.testsCompleted}
-          label="Quizzes"
+          label={p.quizzes}
         />
         <StatTile
           icon={Target}
@@ -150,15 +166,15 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
               ? `${Math.round(user.averageScore)}%`
               : "—"
           }
-          label="Avg. Score"
+          label={p.avgScore}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ProfileCard title="Weekly activity">
+        <ProfileCard title={p.weeklyCardTitle}>
           <div className="h-[200px] w-full mt-4 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%" debounce={50}>
-              <AreaChart data={weeklyActivity}>
+              <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
                     <stop
@@ -174,7 +190,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
                   </linearGradient>
                 </defs>
                 <XAxis
-                  dataKey="day"
+                  dataKey="dayLabel"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
@@ -200,7 +216,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
           </div>
         </ProfileCard>
 
-        <ProfileCard title="Language proficiency">
+        <ProfileCard title={p.proficiencyCardTitle}>
           <div className="flex items-end gap-2 mt-6">
             {order.map((lp) => {
               const levelIndex = order.indexOf(lp);
@@ -234,7 +250,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
             })}
           </div>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Estimated level:{" "}
+            {p.estimatedLevel}{" "}
             <span className="font-bold text-primary">{current}</span>
           </p>
         </ProfileCard>

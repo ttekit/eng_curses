@@ -3,6 +3,8 @@ import { ChevronDown, Volume2, BookmarkPlus } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "../../lib/utils";
 import { apiFetch } from "../../lib/api";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 import type { VocabularyItem } from "./defaultLessonSides";
 
 interface VideoVocabularyProps {
@@ -18,6 +20,8 @@ function grayHintLine(item: VocabularyItem): string {
 }
 
 export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
+  const L = useAppMessages().lesson;
+  const summary = useAppMessages().lessonSummaryPage;
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [savingStates, setSavingStates] = useState<Record<number, boolean>>({});
 
@@ -35,12 +39,12 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
         }),
       });
       if (response.ok) {
-        toast.success(`"${item.word}" saved to your vocabulary!`);
+        toast.success(formatMessage(L.vocabSavedToast, { word: item.word }));
       } else {
-        toast.error("Failed to save word.");
+        toast.error(L.vocabSaveError);
       }
     } catch {
-      toast.error("Failed to save word.");
+      toast.error(L.vocabSaveError);
     } finally {
       setSavingStates((prev) => ({ ...prev, [index]: false }));
     }
@@ -50,12 +54,9 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
     return (
       <div className="space-y-3">
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Key vocabulary
+          {L.vocabTitle}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          No curated words yet — open this lesson after captions are generated,
-          or sign in so we can personalize terms for your level.
-        </p>
+        <p className="text-sm text-muted-foreground">{L.vocabEmpty}</p>
       </div>
     );
   }
@@ -63,7 +64,7 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
   return (
     <div className="space-y-3">
       <h3 className="mb-4 text-lg font-semibold text-foreground">
-        Key vocabulary
+        {L.vocabTitle}
       </h3>
 
       {vocabulary.map((item, index) => {
@@ -94,6 +95,7 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
                 <button
                   type="button"
                   disabled={savingStates[index]}
+                  aria-label={L.saveWordAria}
                   onClick={() => handleSaveWord(index, item)}
                   className="rounded-md bg-secondary/50 p-1.5 text-muted-foreground transition-colors hover:bg-primary/20 hover:text-primary disabled:opacity-50"
                 >
@@ -114,10 +116,12 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
             {expandedIndex === index ? (
               <div className="space-y-2 px-3 pb-3">
                 <div className="pl-10">
-                  <p className="text-sm text-muted-foreground">{gray || "—"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {gray || summary.answerDash}
+                  </p>
                   <div className="mt-2 rounded-lg bg-muted/50 p-2">
                     <p className="text-sm leading-relaxed text-foreground">
-                      {meaning || "—"}
+                      {meaning || summary.answerDash}
                     </p>
                   </div>
                 </div>

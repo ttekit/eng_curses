@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { CreditCard, ExternalLink } from "lucide-react";
 import type { UserData } from "../../context/UserContext";
 import { PRICING_PLANS } from "../../lib/pricingPlans";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 function planDisplayName(planId: string): string {
   const id = planId.trim().toLowerCase();
@@ -9,17 +10,26 @@ function planDisplayName(planId: string): string {
   return row?.name ?? planId;
 }
 
-function statusLabel(status: string): string {
+function statusLabel(
+  status: string,
+  labels: {
+    statusActive: string;
+    statusCancelled: string;
+    statusPastDue: string;
+    statusTrial: string;
+  },
+): string {
   const s = status.trim().toLowerCase();
   if (!s) return "—";
-  if (s === "active") return "Active";
-  if (s === "canceled" || s === "cancelled") return "Cancelled";
-  if (s === "past_due") return "Past due";
-  if (s === "trialing") return "Trial";
+  if (s === "active") return labels.statusActive;
+  if (s === "canceled" || s === "cancelled") return labels.statusCancelled;
+  if (s === "past_due") return labels.statusPastDue;
+  if (s === "trialing") return labels.statusTrial;
   return status;
 }
 
 export function ProfileSubscriptions({ user }: { user: UserData }) {
+  const p = useAppMessages().profileSubscriptions;
   const planId = user.subscriptionPlan?.trim() ?? "";
   const status = user.subscriptionStatus?.trim() ?? "";
   const subId = user.stripeSubscriptionId?.trim() ?? "";
@@ -29,12 +39,10 @@ export function ProfileSubscriptions({ user }: { user: UserData }) {
     <div className="space-y-6">
       <div>
         <h2 className="font-display text-xl font-semibold tracking-tight">
-          Subscriptions
+          {p.sectionTitle}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your Explys billing plan is handled by Stripe. Changes to payment
-          method or renewal are managed in the Stripe customer portal when
-          enabled.
+          {p.sectionLead}
         </p>
       </div>
 
@@ -47,17 +55,16 @@ export function ProfileSubscriptions({ user }: { user: UserData }) {
             {!hasPlan ?
               <>
                 <p className="font-medium text-foreground">
-                  No active subscription
+                  {p.noSubscriptionTitle}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Choose Light, Smart, or Family on our pricing page. Teacher
-                  and school plans use Contact Sales.
+                  {p.noSubscriptionBody}
                 </p>
                 <Link
                   to="/pricing"
                   className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
-                  View pricing
+                  {p.viewPricing}
                   <ExternalLink className="size-3.5 opacity-80" />
                 </Link>
               </>
@@ -66,21 +73,21 @@ export function ProfileSubscriptions({ user }: { user: UserData }) {
                   {planDisplayName(planId)}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Status:{" "}
+                  {p.statusPrefix}{" "}
                   <span className="font-medium text-foreground">
-                    {status ? statusLabel(status) : "—"}
+                    {status ? statusLabel(status, p) : "—"}
                   </span>
                 </p>
                 {subId ?
                   <p className="mt-2 font-mono text-xs text-muted-foreground break-all">
-                    Subscription ID: {subId}
+                    {p.subscriptionIdPrefix} {subId}
                   </p>
                 : null}
                 <Link
                   to="/pricing"
                   className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
-                  Plans &amp; upgrades
+                  {p.plansUpgrades}
                   <ExternalLink className="size-3.5 opacity-80" />
                 </Link>
               </>

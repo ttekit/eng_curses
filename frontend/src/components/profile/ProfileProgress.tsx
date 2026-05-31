@@ -15,6 +15,7 @@ import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { pct01, SkillBar } from "./KnowledgeMeters";
 import { subscriptionDevModeEnabled } from "../../lib/subscriptionAccess";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 type KnowledgeTagRow = {
   name: string;
@@ -84,6 +85,7 @@ type ProgressDetails = {
 
 export function ProfileProgress() {
   const { user } = useUser();
+  const p = useAppMessages().profileProgress;
   const [tagRows, setTagRows] = useState<KnowledgeTagRow[] | null>(null);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [isTagsExpanded, setIsTagsExpanded] = useState(false);
@@ -101,7 +103,7 @@ export function ProfileProgress() {
     });
     if (!r.ok) {
       setTagRows([]);
-      setTagsError("Could not load tag knowledge.");
+      setTagsError(p.tagsError);
       return;
     }
     const raw: unknown = await r.json();
@@ -142,7 +144,7 @@ export function ProfileProgress() {
       setTagRows(parseKnowledgeTagsPayload(raw));
     } catch (err) {
       setTagsError(
-        err instanceof Error ? err.message : "Could not refresh tag knowledge.",
+        err instanceof Error ? err.message : p.tagsError,
       );
     } finally {
       setIsRefreshingTags(false);
@@ -171,7 +173,7 @@ export function ProfileProgress() {
     <div className="space-y-6">
 
       <ProfileCard
-        title="Knowledge by tag"
+        title={p.knowledgeByTag}
         action={
           showDevRefresh ?
             <button
@@ -189,19 +191,18 @@ export function ProfileProgress() {
         }
       >
         {tagRows === null ? (
-          <p className="text-sm text-muted-foreground">Loading tags…</p>
+          <p className="text-sm text-muted-foreground">{p.loadingTags}</p>
         ) : tagsError ? (
           <p className="text-sm text-destructive">{tagsError}</p>
         ) : tagRows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No tag scores yet. Finish registration details, complete the entry
-            test if prompted, and watch videos with quizzes so your strengths
-            can be estimated. Then check the{" "}
+            {p.noTagsBodyBeforeLink}{" "}
             <Link
               to="/catalog"
               className="text-primary underline-offset-4 hover:underline"
+              aria-label={p.catalogLinkAria}
             >
-              catalog
+              {p.noTagsCatalogLink}
             </Link>
             .
           </p>
@@ -217,8 +218,8 @@ export function ProfileProgress() {
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">{row.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        Averaged over {row.topicCount}{" "}
-                        {row.topicCount === 1 ? "topic" : "topics"}
+                        {p.averagedOver} {row.topicCount}{" "}
+                        {row.topicCount === 1 ? p.topicsOne : p.topicsMany}
                       </p>
                     </div>
                     <span className="shrink-0 rounded-md bg-primary/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-primary">
@@ -226,7 +227,7 @@ export function ProfileProgress() {
                     </span>
                   </div>
                   <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Overall
+                    {p.skillOverall}
                   </p>
                   <div className="mb-3 h-2 overflow-hidden rounded-full bg-secondary">
                     <div
@@ -236,17 +237,17 @@ export function ProfileProgress() {
                   </div>
                   <div className="space-y-2.5 pt-1">
                     <SkillBar
-                      label="Listening"
+                      label={p.listening}
                       value={row.listening}
                       barClass="bg-sky-500/80 dark:bg-sky-400/90"
                     />
                     <SkillBar
-                      label="Vocabulary"
+                      label={p.vocabulary}
                       value={row.vocabulary}
                       barClass="bg-violet-500/80 dark:bg-violet-400/85"
                     />
                     <SkillBar
-                      label="Grammar"
+                      label={p.grammar}
                       value={row.grammar}
                       barClass="bg-amber-500/75 dark:bg-amber-400/80"
                     />
@@ -276,13 +277,13 @@ export function ProfileProgress() {
 
 
       <ProfileCard
-        title="Recent videos"
+        title={p.recentVideos}
         action={
           <Link
             to="/catalog"
             className="text-sm font-medium text-primary hover:underline"
           >
-            View all
+            {p.viewAll}
           </Link>
         }
       >
@@ -321,7 +322,7 @@ export function ProfileProgress() {
               <div className="shrink-0 text-right">
                 {video.completed ? (
                   <span className="rounded-md bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
-                    Score: {video.score}%
+                    {p.scorePrefix} {video.score}%
                   </span>
                 ) : (video.progress ?? 0) > 0 ? (
                   <span className="text-sm text-muted-foreground">
@@ -329,7 +330,7 @@ export function ProfileProgress() {
                   </span>
                 ) : (
                   <span className="text-sm text-muted-foreground">
-                    Not started
+                    {p.notStartedStatus}
                   </span>
                 )}
               </div>
@@ -338,7 +339,7 @@ export function ProfileProgress() {
         </div>
       </ProfileCard>
 
-      <ProfileCard title="Vocabulary progress">
+      <ProfileCard title={p.vocabularyProgress}>
         {details?.vocabularyProgress && (
           <>
             <div className="mb-6 grid grid-cols-2 gap-4">
@@ -346,31 +347,31 @@ export function ProfileProgress() {
                 <p className="text-3xl font-bold text-foreground">
                   {details.vocabularyProgress.total}
                 </p>
-                <p className="text-sm text-muted-foreground">Total words</p>
+                <p className="text-sm text-muted-foreground">{p.vocabTotalWords}</p>
               </div>
               <div className="rounded-xl bg-primary/10 p-4 text-center">
                 <p className="text-3xl font-bold text-primary">
                   {details.vocabularyProgress.learned}
                 </p>
-                <p className="text-sm text-muted-foreground">Learned</p>
+                <p className="text-sm text-muted-foreground">{p.vocabLearned}</p>
               </div>
               <div className="rounded-xl bg-accent/10 p-4 text-center">
                 <p className="text-3xl font-bold text-accent">
                   {details.vocabularyProgress.mastered}
                 </p>
-                <p className="text-sm text-muted-foreground">Mastered</p>
+                <p className="text-sm text-muted-foreground">{p.vocabMastered}</p>
               </div>
               <div className="rounded-xl bg-muted/50 p-4 text-center">
                 <p className="text-3xl font-bold text-foreground">
                   {details.vocabularyProgress.reviewing}
                 </p>
-                <p className="text-sm text-muted-foreground">Reviewing</p>
+                <p className="text-sm text-muted-foreground">{p.vocabReviewing}</p>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Overall progress</span>
+                <span className="text-muted-foreground">{p.overallProgressLabel}</span>
                 <span className="font-medium text-foreground">
                   {Math.round(
                     (details.vocabularyProgress.learned / Math.max(details.vocabularyProgress.total, 1)) * 100,
@@ -394,13 +395,13 @@ export function ProfileProgress() {
               </div>
               <div className="flex gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-accent" /> Mastered
+                  <span className="size-2 rounded-full bg-accent" /> {p.legendMastered}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-primary" /> Learning
+                  <span className="size-2 rounded-full bg-primary" /> {p.legendLearning}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-secondary" /> Remaining
+                  <span className="size-2 rounded-full bg-secondary" /> {p.legendRemaining}
                 </span>
               </div>
             </div>

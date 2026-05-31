@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Calendar, Edit2, Flame } from "lucide-react";
 import { formatMessage } from "../../lib/formatMessage";
-import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
 import { updateUserAvatar } from "../../lib/api"; // Импортируем нашу функцию
 import { AvatarPickerModal } from "./AvatarPickerModal"; // Импортируем модалку
 
@@ -25,8 +25,7 @@ function initialsFromName(name: string): string {
 }
 
 export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
-  const { messages } = useLandingLocale();
-  const h: any = (messages as any).profileHeader || {};
+  const h = useAppMessages().profileHeader;
   
   // Добавляем стейт для управления модалкой
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,7 +47,7 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
       window.location.reload(); // Перезагружаем страницу, чтобы профиль обновился
     } catch (error) {
       console.error(error);
-      alert("Не удалось сохранить аватарку");
+      alert(h.avatarSaveError);
     }
   };
 

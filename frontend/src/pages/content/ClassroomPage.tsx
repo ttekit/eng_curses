@@ -9,13 +9,19 @@ import {
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { cn } from "../../lib/utils";
 import { GraduationCap } from "lucide-react";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { SEO } from "../../components/SEO/SEO";
+import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 export default function ClassroomPage() {
   const [videos, setVideos] = useState<CatalogCardVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const { user } = useUser();
-  const navigate = useNavigate();
+  const { locale } = useLandingLocale();
+  const classroom = useAppMessages().classroomPage;
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
 
   useEffect(() => {
     if (!user) return;
@@ -38,8 +44,9 @@ export default function ClassroomPage() {
                 .map((d: any) => ({
                   id: d.contentVideoId || d.contentId,
                   title: d.name,
-                  categoryLabel:
-                    role === "teacher" ? "My Lesson" : "Teacher's Lesson",
+                  categoryLabel: isTeacher
+                    ? classroom.myLesson
+                    : classroom.teacherLesson,
                   thumbnailUrl: d.thumbnailUrl,
                   videoLink: d.videoLink,
                 }))
@@ -57,14 +64,19 @@ export default function ClassroomPage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, classroom.myLesson, classroom.teacherLesson, isTeacher]);
 
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex">
+      <SEO
+        title={classroom.seoTitle}
+        description={classroom.seoDescription}
+        canonicalUrl={resolveCanonicalUrl("/classroom")}
+        ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
+        ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
+        noindex
+      />
       <CatalogSidebar
-        categories={[]}
-        selectedCategory="All"
-        onSelectCategory={() => {}}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
         reserveTopNavSpace={false}
@@ -82,14 +94,10 @@ export default function ClassroomPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold">
-                {user?.role?.toLowerCase() === "teacher"
-                  ? "My Uploaded Lessons"
-                  : "Classroom"}
+                {isTeacher ? classroom.teacherTitle : classroom.studentTitle}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {user?.role?.toLowerCase() === "teacher"
-                  ? "Videos you have published for your students."
-                  : "Exclusive video lessons assigned by your teacher."}
+                {isTeacher ? classroom.teacherLead : classroom.studentLead}
               </p>
             </div>
           </div>
@@ -103,13 +111,11 @@ export default function ClassroomPage() {
               <img
                 src="/SadIcon.svg"
                 className="w-24 mb-4 opacity-80"
-                alt="Empty"
+                alt=""
               />
-              <h2 className="text-xl font-bold">No lessons yet</h2>
+              <h2 className="text-xl font-bold">{classroom.emptyTitle}</h2>
               <p className="text-muted-foreground mt-2 max-w-md">
-                {user?.role?.toLowerCase() === "teacher"
-                  ? "You haven't uploaded any videos yet. Go to your profile to upload lessons."
-                  : "Your teacher hasn't assigned any videos to you yet."}
+                {isTeacher ? classroom.emptyTeacher : classroom.emptyStudent}
               </p>
             </div>
           ) : (

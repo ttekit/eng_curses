@@ -3,6 +3,7 @@ import { cn } from "../../lib/utils";
 import { useUser } from "../../context/UserContext";
 import { useCallback, useEffect, useId, useState } from "react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
 import { LandingLanguageToggle } from "../landing/LandingLanguageToggle";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 
@@ -20,6 +21,8 @@ const linkApp = "rounded-full px-6 py-2 text-md transition-all";
 export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
   const { messages } = useLandingLocale();
   const landingI18n = messages.header;
+  const appHeader = useAppMessages().appHeader;
+  const common = useAppMessages().common;
   const { pathname, hash } = useLocation();
   const { isLoggedIn, user } = useUser();
 
@@ -52,15 +55,15 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
   }, [pathname, hash]);
 
   const appNavLinks = [
-    { label: "Home", to: "/" },
-    { label: "Pricing", to: "/pricing" },
+    { label: appHeader.home, to: "/" },
+    { label: appHeader.pricing, to: "/pricing" },
     ...(isFullyRegistered
       ? [
-          { label: "Catalog", to: "/catalog" },
-          { label: "Learning plan", to: "/learning-plan" as const },
+          { label: appHeader.catalog, to: "/catalog" },
+          { label: appHeader.learningPlan, to: "/learning-plan" as const },
         ]
       : []),
-    { label: "Level test", to: "/level-test" },
+    { label: appHeader.levelTest, to: "/level-test" },
   ];
 
   return (
@@ -141,7 +144,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 to="/catalog"
                 className="rounded-[15px] bg-primary px-4 py-2.5 text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:px-6"
               >
-                {variant === "landing" ? landingI18n.catalog : "Catalog"}
+                {variant === "landing" ? landingI18n.catalog : appHeader.catalog}
               </Link>
             ) : (
               <>
@@ -150,7 +153,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     type="button"
                     className="rounded-[15px] px-4 py-2.5 text-sm font-medium text-foreground/70 transition-all hover:cursor-pointer hover:bg-muted-foreground/10 hover:text-white sm:px-6"
                   >
-                    {variant === "landing" ? landingI18n.logIn : "Log in"}
+                    {variant === "landing" ? landingI18n.logIn : appHeader.logIn}
                   </button>
                 </Link>
                 <Link to="/registrationMain">
@@ -160,7 +163,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                   >
                     {variant === "landing"
                       ? landingI18n.getStarted
-                      : "Get started"}
+                      : appHeader.getStarted}
                   </button>
                 </Link>
               </>
@@ -178,8 +181,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                   ? landingI18n.closeMenu
                   : landingI18n.openMenu
                 : menuOpen
-                  ? "Close menu"
-                  : "Open menu"
+                  ? common.closeMenu
+                  : common.openMenu
             }
             onClick={() => setMenuOpen((o) => !o)}
           >
@@ -292,7 +295,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     onClick={closeMenu}
                     className="rounded-[15px] bg-primary px-4 py-3 text-center text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:bg-purple-hover hover:text-white"
                   >
-                    {variant === "landing" ? landingI18n.catalog : "Catalog"}
+                    {variant === "landing" ? landingI18n.catalog : appHeader.catalog}
                   </Link>
                 ) : (
                   <>
@@ -301,7 +304,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                         type="button"
                         className="w-full rounded-[15px] py-3 hover:cursor-pointer text-center text-sm font-medium text-foreground/70 transition-all hover:bg-muted-foreground/10 hover:text-white"
                       >
-                        {variant === "landing" ? landingI18n.logIn : "Log in"}
+                        {variant === "landing" ? landingI18n.logIn : appHeader.logIn}
                       </button>
                     </Link>
                     <Link to="/registrationMain" onClick={closeMenu}>
@@ -311,7 +314,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                       >
                         {variant === "landing"
                           ? landingI18n.getStarted
-                          : "Get started"}
+                          : appHeader.getStarted}
                       </button>
                     </Link>
                   </>

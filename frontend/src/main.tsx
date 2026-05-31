@@ -41,6 +41,10 @@ import { EmailVerification } from "./pages/registration/EmailVerification";
 import RestoreAccount from "./pages/login/RestoreAccount";
 import AdminAvatarsPage from "./pages/admin/AdminAvatarsPage";
 import ClassroomPage from "./pages/content/ClassroomPage";
+import AboutPage from "./pages/legal/AboutPage";
+import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
+import FeedbackPage from "./pages/legal/FeedbackPage";
 
 const router = createBrowserRouter([
   {
@@ -58,6 +62,10 @@ const router = createBrowserRouter([
       { path: "/restore-account", element: <RestoreAccount /> },
       { path: "/loginForm", element: <LoginForm /> },
       { path: "/pricing", element: <PricingPage /> },
+      { path: "/about", element: <AboutPage /> },
+      { path: "/privacy", element: <PrivacyPolicyPage /> },
+      { path: "/terms", element: <TermsOfServicePage /> },
+      { path: "/feedback", element: <FeedbackPage /> },
       {
         element: <RequireAuth />,
         children: [

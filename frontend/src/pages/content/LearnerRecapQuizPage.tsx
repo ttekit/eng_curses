@@ -269,9 +269,6 @@ function RecapLayout(props: {
   return (
     <div className="flex">
       <CatalogSidebar
-        categories={[]}
-        selectedCategory="All"
-        onSelectCategory={() => {}}
         onSelectLevel={() => {}}
         reserveTopNavSpace={false}
         welcomeName={

@@ -23,7 +23,7 @@ import {
   saveProfileUiPrefs,
 } from "../../lib/profileUiPrefs";
 import { Lock } from "lucide-react";
-import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { maskEmail } from "../../lib/formatters";
 
@@ -33,8 +33,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const { user, refreshProfile, logout } = useUser();
 
   const navigate = useNavigate();
-  const { messages } = useLandingLocale();
-  const s: any = (messages as any).profileSettings || {};
+  const s = useAppMessages().profileSettings;
 
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
@@ -420,7 +419,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const saveProfile = useCallback(async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error(s?.nameRequiredToast || "Name is required");
+      toast.error(s.nameRequiredToast);
       return;
     }
     setSaving(true);
@@ -443,14 +442,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         toast.error(await getResponseErrorMessage(res));
         return;
       }
-      toast.success(s?.profileSavedToast || "Profile saved successfully");
+      toast.success(s.profileSavedToast);
       await onSaved();
     } catch (e) {
       console.error(e);
       toast.error(
         e instanceof Error
           ? e.message
-          : s?.saveProfileError || "Failed to save profile",
+          : s.saveProfileError,
       );
     } finally {
       setSaving(false);
@@ -465,15 +464,15 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     hatedGenreIds,
     user.id,
     onSaved,
-    s?.nameRequiredToast,
-    s?.profileSavedToast,
-    s?.saveProfileError,
+    s.nameRequiredToast,
+    s.profileSavedToast,
+    s.saveProfileError,
   ]);
 
   const saveLearnerPreferences = useCallback(async () => {
     const speed = Number.parseFloat(preferences.playbackSpeed);
     if (!Number.isFinite(speed) || speed <= 0) {
-      toast.error(s?.playbackSpeedToast || "Invalid playback speed");
+      toast.error(s.playbackSpeedToast);
       return;
     }
 
@@ -502,11 +501,11 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         return;
       }
 
-      toast.success(s?.prefsSavedToast || "Preferences saved successfully");
+      toast.success(s.prefsSavedToast);
       await onSaved();
     } catch (e) {
       console.error(e);
-      toast.error(s?.prefsErrorToast || "Failed to save preferences");
+      toast.error(s.prefsErrorToast);
     } finally {
       setSavingPrefs(false);
     }
@@ -515,14 +514,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     preferences,
     user.id,
     onSaved,
-    s?.playbackSpeedToast,
-    s?.prefsSavedToast,
-    s?.prefsErrorToast,
+    s.playbackSpeedToast,
+    s.prefsSavedToast,
+    s.prefsErrorToast,
   ]);
 
   const handleResetProgress = async () => {
     if (!resetPassword) {
-      return setResetError("Пожалуйста, введите пароль для подтверждения.");
+      return setResetError("Please enter your password to confirm.");
     }
 
     setIsLoading(true);
@@ -537,10 +536,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Не удалось сбросить прогресс");
+        throw new Error(data.message || "Failed to reset progress");
       }
 
-      toast.success(s?.resetSuccessToast || "Прогресс успешно сброшен!");
+      toast.success("Progress reset successfully.");
 
       setResetPassword("");
       setDangerOpen(null);
@@ -560,19 +559,19 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2">
             <User className="size-5 text-primary" />
-            {s?.cardProfileInfo || "Profile Information"}
+            {s.cardProfileInfo || "Profile Information"}
           </span>
         }
       >
         <p className="mb-6 text-sm text-muted-foreground">
-          {s?.cardProfileInfoLead || "Manage your profile details."}
+          {s.cardProfileInfoLead || "Manage your profile details."}
         </p>
 
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
               <span className="text-sm font-medium text-foreground">
-                {s?.labelFullName || "Full Name"}
+                {s.labelFullName || "Full Name"}
               </span>
               <InputText
                 value={name}
@@ -581,7 +580,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             </label>
             <label className="space-y-2">
               <span className="text-sm font-medium text-foreground">
-                {s?.labelEmail || "Email Address"}
+                {s.labelEmail || "Email Address"}
               </span>
               <InputText value={email} disabled className="opacity-70" />
             </label>
@@ -590,23 +589,23 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
               <span className="text-sm font-medium text-foreground">
-                {s?.labelJob || "Field of Work / Profession"}
+                {s.labelJob || "Field of Work / Profession"}
               </span>
               <InputText
                 value={job}
                 onChange={(e) => setJob(e.target.value)}
-                placeholder={s?.placeholderJob || "e.g., Software Engineer"}
+                placeholder={s.placeholderJob || "e.g., Software Engineer"}
               />
             </label>
             <label className="space-y-2">
               <span className="text-sm font-medium text-foreground">
-                {s?.labelEducation || "Education"}
+                {s.labelEducation || "Education"}
               </span>
               <InputText
                 value={education}
                 onChange={(e) => setEducation(e.target.value)}
                 placeholder={
-                  s?.placeholderEducation || "e.g., Bachelor's Degree"
+                  s.placeholderEducation || "e.g., Bachelor's Degree"
                 }
               />
             </label>
@@ -630,7 +629,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
           <div>
             <span className="mb-2 block text-sm font-medium text-foreground">
-              {s?.hobbiesHeading || "Hobbies"}
+              {s.hobbiesHeading || "Hobbies"}
             </span>
             <div className="mb-2 flex flex-wrap gap-2">
               {hobbies.map((hobby) => (
@@ -646,7 +645,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       setHobbies((prev) => prev.filter((h) => h !== hobby))
                     }
                     aria-label={formatMessage(
-                      s?.removeHobbyAria || "Remove {name}",
+                      s.removeHobbyAria || "Remove {name}",
                       {
                         name: hobby,
                       },
@@ -661,7 +660,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               <InputText
                 value={newHobby}
                 onChange={(e) => setNewHobby(e.target.value)}
-                placeholder={s?.placeholderHobby || "Add a hobby..."}
+                placeholder={s.placeholderHobby || "Add a hobby..."}
                 onKeyDown={(e) => e.key === "Enter" && addHobby()}
                 className="flex-1"
               />
@@ -669,7 +668,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 type="button"
                 onClick={addHobby}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-foreground hover:bg-muted"
-                aria-label={s?.addHobbyAria || "Add hobby"}
+                aria-label={s.addHobbyAria || "Add hobby"}
               >
                 <Plus className="size-4" />
               </button>
@@ -680,10 +679,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
           <div>
             <span className="mb-1 block text-sm font-medium text-foreground">
-              {s?.genresHeading || "Genres"}
+              {s.genresHeading || "Genres"}
             </span>
             <p className="mb-4 text-sm text-muted-foreground">
-              {s?.genresLead || "Select your preferred or avoided genres."}
+              {s.genresLead || "Select your preferred or avoided genres."}
             </p>
             <div className="flex flex-wrap gap-2">
               {genreOptions.map((g) => {
@@ -711,7 +710,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           : "bg-secondary/80 text-muted-foreground hover:bg-muted"
                       }`}
                       aria-label={formatMessage(
-                        s?.avoidGenreAria || "Avoid {name}",
+                        s.avoidGenreAria || "Avoid {name}",
                         {
                           name: g.name,
                         },
@@ -726,11 +725,11 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className="size-3 rounded bg-accent" />{" "}
-                {s?.genreLegendPrefer || "Preferred"}
+                {s.genreLegendPrefer || "Preferred"}
               </span>
               <span className="flex items-center gap-1">
                 <span className="size-3 rounded bg-destructive" />{" "}
-                {s?.genreLegendAvoid || "Avoided"}
+                {s.genreLegendAvoid || "Avoided"}
               </span>
             </div>
           </div>
@@ -745,8 +744,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           >
             <Save className="size-4" />
             {saving
-              ? s?.saving || "Saving..."
-              : s?.saveChanges || "Save Changes"}
+              ? s.saving || "Saving..."
+              : s.saveChanges || "Save Changes"}
           </Button>
         </div>
       </ProfileCard>
@@ -755,26 +754,26 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2">
             <Bell className="size-5 text-primary" />
-            {s?.cardNotifications || "Notifications"}
+            {s.cardNotifications || "Notifications"}
           </span>
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          {s?.cardNotificationsLead || "Manage your alert preferences."}
+          {s.cardNotificationsLead || "Manage your alert preferences."}
         </p>
         <div className="divide-y divide-border/50">
           {[
             {
               key: "dailyReminder" as const,
-              label: s?.reminderDaily || "Daily Reminder",
+              label: s.reminderDaily || "Daily Reminder",
               description:
-                s?.reminderDailyDesc || "Receive a daily reminder to study.",
+                s.reminderDailyDesc || "Receive a daily reminder to study.",
             },
             {
               key: "weeklyReport" as const,
-              label: s?.reportWeekly || "Weekly Report",
+              label: s.reportWeekly || "Weekly Report",
               description:
-                s?.reportWeeklyDesc ||
+                s.reportWeeklyDesc ||
                 "Receive a weekly summary of your progress.",
             },
           ].map((item) => (
@@ -1269,7 +1268,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2 text-destructive">
             <Shield className="size-5" />
-            {s?.cardDangerZone || "Danger Zone"}
+            {s.cardDangerZone || "Danger Zone"}
           </span>
         }
         className="border-destructive/30"
@@ -1278,10 +1277,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           <div className="flex flex-col gap-4 rounded-lg bg-destructive/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-foreground">
-                {s?.logoutTitle || "Sign Out"}
+                {s.logoutTitle || "Sign Out"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {s?.logoutDesc || "Sign out of your account."}
+                {s.logoutDesc || "Sign out of your account."}
               </p>
             </div>
             <button
@@ -1289,21 +1288,21 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               className="text-sm flex font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
               onClick={() => {
                 logout();
-                toast.success(s?.signOutToast || "Signed out successfully");
+                toast.success(s.signOutToast || "Signed out successfully");
                 void navigate("/loginForm", { replace: true });
               }}
             >
               <LogOut className="size-4 pt-1 pr-1" />
-              {s?.logoutCta || "Sign Out"}
+              {s.logoutCta || "Sign Out"}
             </button>
           </div>
           <div className="flex flex-col gap-4 rounded-lg bg-destructive/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-foreground">
-                {s?.resetProgressTitle || "Reset Progress"}
+                {s.resetProgressTitle || "Reset Progress"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {s?.resetProgressDesc || "Reset your learning analytics."}
+                {s.resetProgressDesc || "Reset your learning analytics."}
               </p>
             </div>
             <button
@@ -1311,16 +1310,16 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               className="text-sm font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
               onClick={() => setDangerOpen("reset")}
             >
-              {s?.resetProgressCta || "Reset Progress"}
+              {s.resetProgressCta || "Reset Progress"}
             </button>
           </div>
           <div className="flex flex-col gap-4 rounded-lg bg-destructive/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-foreground">
-                {s?.deleteAccountTitle || "Delete Account"}
+                {s.deleteAccountTitle || "Delete Account"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {s?.deleteAccountDesc || "Permanently delete your account."}
+                {s.deleteAccountDesc || "Permanently delete your account."}
               </p>
             </div>
             <button
@@ -1328,7 +1327,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               className="rounded-[15px] w-50 bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
               onClick={() => setDangerOpen("delete")}
             >
-              {s?.deleteAccountCta || "Delete Account"}
+              {s.deleteAccountCta || "Delete Account"}
             </button>
           </div>
         </div>
@@ -1357,8 +1356,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               className={`text-xl font-bold ${dangerOpen === "delete" ? "text-red-500" : "text-foreground"}`}
             >
               {dangerOpen === "reset"
-                ? s?.dangerReset || "Reset Progress"
-                : s?.dangerDelete || "Delete Account"}
+                ? s.dangerReset || "Reset Progress"
+                : s.dangerDelete || "Delete Account"}
             </h4>
 
             {dangerOpen === "reset" ? (

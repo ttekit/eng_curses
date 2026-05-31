@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Loader2, Video, GraduationCap, Play } from "lucide-react";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 export type StudentVideoItem = {
   contentId: number;
@@ -13,6 +14,7 @@ export type StudentVideoItem = {
 };
 
 export function StudentTeacherVideos() {
+  const t = useAppMessages().studentTeacherVideos;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [videos, setVideos] = useState<StudentVideoItem[]>([]);
@@ -23,7 +25,6 @@ export function StudentTeacherVideos() {
       setLoading(true);
       setError(null);
       try {
-        // Вызываем наш новый эндпоинт
         const res = await apiFetch("/contents/student/teacher-videos", {
           method: "GET",
         });
@@ -38,7 +39,7 @@ export function StudentTeacherVideos() {
         }
       } catch {
         if (!cancelled) {
-          setError("Could not load lessons from your teacher.");
+          setError(t.loadError);
           setVideos([]);
         }
       } finally {
@@ -48,7 +49,7 @@ export function StudentTeacherVideos() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t.loadError]);
 
   if (loading) {
     return (
@@ -71,10 +72,9 @@ export function StudentTeacherVideos() {
     return (
       <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center gap-3 text-center">
         <GraduationCap className="size-12 text-muted-foreground opacity-50" />
-        <h3 className="text-lg font-semibold">No teacher lessons yet</h3>
+        <h3 className="text-lg font-semibold">{t.emptyTitle}</h3>
         <p className="max-w-md text-sm text-muted-foreground">
-          Your assigned teacher hasn't uploaded any custom video lessons for
-          your class yet.
+          {t.emptyBody}
         </p>
       </div>
     );
@@ -99,7 +99,6 @@ export function StudentTeacherVideos() {
             key={video.contentId}
             className="rounded-xl border border-border bg-card/50 overflow-hidden transition-all hover:border-primary/40 flex flex-col justify-between"
           >
-            {/* Превьюшка видео */}
             <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
               {video.thumbnailUrl ? (
                 <img
@@ -121,7 +120,6 @@ export function StudentTeacherVideos() {
               )}
             </div>
 
-            {/* Описание и переход */}
             <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
               <div>
                 <h3 className="font-semibold text-foreground line-clamp-2">

@@ -12,6 +12,7 @@ import {
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
 
@@ -22,10 +23,8 @@ export default function SubscribePage() {
   const { user, isLoading, logout } = useUser();
   const { startCheckout, checkoutLoading } = usePricingCheckout();
   const { locale, messages } = useLandingLocale();
-  const sub: any = (messages as any).subscription || {};
-  const toastAccountCreated =
-    (messages.auth as any)?.login?.toastAccountCreated ||
-    "Account created successfully";
+  const sub = useAppMessages().subscription;
+  const toastAccountCreated = messages.auth.login.toastAccountCreated;
 
   const state = location.state as { isTeacherRegistration?: boolean; generatedStudents?: any[] } | null;
   const isTeacherRegistration = state?.isTeacherRegistration;
@@ -53,7 +52,7 @@ export default function SubscribePage() {
 
     if (user && userMayUseLearnerApp(user)) {
       if (checkoutDone) {
-        toast.success("Thank you for subscribing!");
+        toast.success(sub.thankYouSubscribing);
       }
       navigate("/catalog", { replace: true });
       return;
@@ -74,8 +73,8 @@ export default function SubscribePage() {
   return (
     <div className="min-h-screen bg-background font-display text-foreground antialiased">
       <SEO
-        title={sub?.seoTitle || "Subscribe | Explys"}
-        description={sub?.seoDescription || "Choose your subscription plan."}
+        title={sub.seoTitle}
+        description={sub.seoDescription}
         canonicalUrl={resolveCanonicalUrl("/subscribe")}
         ogLocale={locale === "uk" ? "uk_UA" : "en_US"}
         ogLocaleAlternate={locale === "uk" ? "en_US" : "uk_UA"}
@@ -91,10 +90,10 @@ export default function SubscribePage() {
           </div>
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              {sub?.title || "Choose your plan"}
+              {sub.title}
             </h1>
             <p className="mx-auto mt-3 max-w-xl text-muted-foreground text-lg">
-              {sub?.subtitle || "Unlock all features"}
+              {sub.subtitle}
             </p>
           </div>
           {devSkip ? (
@@ -102,7 +101,7 @@ export default function SubscribePage() {
               className="mx-auto max-w-lg rounded-xl border border-primary/35 bg-primary/10 px-4 py-3 text-primary text-sm"
               role="status"
             >
-              {formatMessage(sub?.devModeBanner || "DEV_MODE: {env}", {
+              {formatMessage(sub.devModeBanner, {
                 env: devSkipBannerDetail,
               })}
             </p>
@@ -125,14 +124,14 @@ export default function SubscribePage() {
               className={isTeacherRegistration ? "" : "mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"}
             />
             <p className="mx-auto mt-10 max-w-md text-center text-muted-foreground text-xs">
-              {sub?.paymentsNote || "Secure payment processing. "}
+              {sub.paymentsNote}
               <Link
                 to="/pricing"
                 className="text-primary underline-offset-4 hover:underline"
               >
-                {sub?.pricingLinkLabel || "Pricing"}
+                {sub.pricingLinkLabel}
               </Link>
-              {sub?.teacherPlanNote || ""}
+              {sub.teacherPlanNote}
             </p>
           </>
         ) : (
@@ -140,7 +139,7 @@ export default function SubscribePage() {
             to="/catalog"
             className=" flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           >
-            {sub?.continueCatalog || "Continue to Catalog"}
+            {sub.continueCatalog}
           </Link>
         )}
 
@@ -154,7 +153,7 @@ export default function SubscribePage() {
                 navigate("/loginForm");
               }}
             >
-              {sub?.signOut || "Sign Out"}
+              {sub.signOut}
             </button>
           ) : null}
           {!isTeacherRegistration && (
@@ -162,7 +161,7 @@ export default function SubscribePage() {
               to="/pricing"
               className="underline-offset-4 hover:text-foreground hover:underline"
             >
-              {sub?.comparePlans || "Compare Plans"}
+              {sub.comparePlans}
             </Link>
           )}
         </div>

@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import type { ElementType } from "react";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 
 export type ActivityLogType =
   | "video_completed"
@@ -26,23 +28,6 @@ export interface ActivityLogItem {
   description: string;
   timestamp: string;
 }
-
-const fallbackHistory: ActivityLogItem[] = [
-  {
-    id: "fallback-1",
-    type: "video_completed",
-    title: "Completed: The Office — Business Meeting",
-    description: "Scored 85% on the quiz",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "fallback-2",
-    type: "achievement",
-    title: "Achievement Unlocked: Perfect Score",
-    description: "Got 100% on TED Talk quiz",
-    timestamp: "5 hours ago",
-  },
-];
 
 const getActivityStyles = (type: string): { icon: ElementType; color: string; dotColor: string } => {
   switch (type) {
@@ -78,14 +63,32 @@ export function ProfileActivity({
   averageScore = null,
   activityLogs = [],
 }: ProfileActivityProps) {
-  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const p = useAppMessages().profileActivity;
+  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+  const fallbackHistory: ActivityLogItem[] = [
+    {
+      id: "fallback-1",
+      type: "video_completed",
+      title: p.demoCompleteOffice,
+      description: p.demoQuiz85,
+      timestamp: p.demoAgoHours2,
+    },
+    {
+      id: "fallback-2",
+      type: "achievement",
+      title: p.demoAchievement,
+      description: p.demoQuizPerfectScore,
+      timestamp: p.demoAgoHours5,
+    },
+  ];
 
   const activityMap = new Map(
     weeklyActivity.map((item) => [item.day.slice(0, 3), item.minutes > 0]),
   );
 
   const streakCalendar = daysOfWeek.map((day) => ({
-    date: day,
+    date: p.weekdayAbbrev[day],
     active: activityMap.get(day) || false,
   }));
 
@@ -96,7 +99,7 @@ export function ProfileActivity({
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <ProfileCard title="Activity history">
+        <ProfileCard title={p.historyTitle}>
           <div className="max-h-[500px] overflow-y-auto pr-2">
             <div className="relative">
               <div className="absolute bottom-0 left-4 top-0 w-0.5 bg-border" />
@@ -137,14 +140,14 @@ export function ProfileActivity({
           </div>
           {activityLogs.length === 0 && (
             <p className="mt-4 text-xs text-muted-foreground">
-              Sample timeline — complete videos or quizzes to see your real activity here.
+              {p.historySampleFooter}
             </p>
           )}
         </ProfileCard>
       </div>
 
       <div className="space-y-6">
-        <ProfileCard title="Weekly streak">
+        <ProfileCard title={p.streakTitle}>
           <div className="flex justify-between gap-1">
             {streakCalendar.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-1">
@@ -163,17 +166,20 @@ export function ProfileActivity({
             ))}
           </div>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            {activeDaysCount} out of 7 days this week
+            {formatMessage(p.weekActiveSummary, {
+              count: String(activeDaysCount),
+              total: "7",
+            })}
           </p>
         </ProfileCard>
 
-        <ProfileCard title="This week">
+        <ProfileCard title={p.thisWeekCardTitle}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <PlayCircle className="size-4 text-primary" />
                 <span className="text-sm text-muted-foreground">
-                  Videos watched
+                  {p.videosWatchedLabel}
                 </span>
               </div>
               <span className="font-semibold text-foreground">{videosWatched}</span>
@@ -182,7 +188,7 @@ export function ProfileActivity({
               <div className="flex items-center gap-2">
                 <CheckCircle className="size-4 text-accent" />
                 <span className="text-sm text-muted-foreground">
-                  Quizzes passed
+                  {p.quizzesPassedLabel}
                 </span>
               </div>
               <span className="font-semibold text-foreground">{testsCompleted}</span>
@@ -191,7 +197,7 @@ export function ProfileActivity({
               <div className="flex items-center gap-2">
                 <BookOpen className="size-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  Words learned
+                  {p.wordsLearnedLabel}
                 </span>
               </div>
               <span className="font-semibold text-foreground">0</span>
@@ -200,7 +206,7 @@ export function ProfileActivity({
               <div className="flex items-center gap-2">
                 <Star className="size-4 text-accent" />
                 <span className="text-sm text-muted-foreground">
-                  Average score
+                  {p.averageScoreShort}
                 </span>
               </div>
               <span className="font-semibold text-foreground">
