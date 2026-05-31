@@ -35,7 +35,7 @@ export default function RegistrationPreferences() {
   const { formData, updateFormData } = context;
   const navigate = useNavigate();
   const { user, refreshProfile } = useUser();
-  
+
   const currentRole = user?.role ? user.role : formData.role;
   const isTeacher = currentRole === "teacher";
   const isAdult = currentRole === "adult";
@@ -120,9 +120,9 @@ export default function RegistrationPreferences() {
         await refreshProfile();
 
         if (formData.role === "student") {
-          navigate("/registrationSuccess", { replace: true });
+          navigate("/registrationDetails", { replace: true });
         } else {
-          navigate("/subscribe", { replace: true });
+          navigate("/placement-prep", { replace: true });
         }
       } else {
         const errorData = await response.json();
