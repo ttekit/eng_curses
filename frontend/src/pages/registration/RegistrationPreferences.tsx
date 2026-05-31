@@ -122,7 +122,7 @@ export default function RegistrationPreferences() {
         if (formData.role === "student") {
           navigate("/registrationDetails", { replace: true });
         } else {
-          navigate("/placement-prep", { replace: true });
+          navigate("/catalog", { replace: true });
         }
       } else {
         const errorData = await response.json();
