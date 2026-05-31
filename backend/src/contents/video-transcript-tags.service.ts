@@ -117,36 +117,36 @@ export class VideoTranscriptTagsService {
         ? { userTags: metadata.userTags }
         : scope === "systemTags"
           ? {
-              systemTags: metadata.systemTags,
-              processingComplexity: metadata.complexity,
-            }
+            systemTags: metadata.systemTags,
+            processingComplexity: metadata.complexity,
+          }
           : {
-              systemTags: metadata.systemTags,
-              userTags: metadata.userTags,
-              processingComplexity: metadata.complexity,
-            };
+            systemTags: metadata.systemTags,
+            userTags: metadata.userTags,
+            processingComplexity: metadata.complexity,
+          };
 
     const createPayload =
       scope === "userTags"
         ? {
-            contentMediaId,
-            userTags: metadata.userTags,
-            systemTags: [] as string[],
-            processingComplexity: null as number | null,
-          }
+          contentMediaId,
+          userTags: metadata.userTags,
+          systemTags: [] as string[],
+          processingComplexity: null as number | null,
+        }
         : scope === "systemTags"
           ? {
-              contentMediaId,
-              systemTags: metadata.systemTags,
-              processingComplexity: metadata.complexity,
-              userTags: [] as string[],
-            }
+            contentMediaId,
+            systemTags: metadata.systemTags,
+            processingComplexity: metadata.complexity,
+            userTags: [] as string[],
+          }
           : {
-              contentMediaId,
-              systemTags: metadata.systemTags,
-              userTags: metadata.userTags,
-              processingComplexity: metadata.complexity,
-            };
+            contentMediaId,
+            systemTags: metadata.systemTags,
+            userTags: metadata.userTags,
+            processingComplexity: metadata.complexity,
+          };
 
     const updated = await this.prisma.contentStats.upsert({
       where: { contentMediaId },
