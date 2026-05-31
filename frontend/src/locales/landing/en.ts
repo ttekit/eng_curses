@@ -612,7 +612,6 @@ export const landingEn = {
     messageLabel: "Message",
     messagePlaceholder: "Share your feedback, bug report, or question…",
     messageRequired: "Please enter a message before sending.",
-    note: "This form is frontend-only for now — your message is not sent to our servers yet. Use Telegram in the footer for urgent contact.",
     submit: "Send feedback",
     submitting: "Sending…",
     successToast: "Thanks for your feedback! (Demo — not sent to server yet.)",

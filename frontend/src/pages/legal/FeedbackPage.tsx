@@ -90,8 +90,6 @@ export default function FeedbackPage() {
             />
           </div>
 
-          <p className="text-sm text-muted-foreground">{page.note}</p>
-
           <Button
             type="submit"
             disabled={isSubmitting}
