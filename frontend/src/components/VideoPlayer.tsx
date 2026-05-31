@@ -46,26 +46,28 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  function setVideoNode(node: HTMLVideoElement | null) {
-    videoRef.current = node;
-    onVideoMount?.(node);
-
-    if (!node) {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
+  const setVideoNode = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node) {
+        onVideoMount?.(node);
       }
-      return;
-    }
+    },
+    [onVideoMount]
+  );
 
-    if (src && src.includes(".m3u8")) {
+  useEffect(() => {
+    const node = videoRef.current;
+    if (!node || !src) return;
+
+    if (src.includes(".m3u8")) {
       if (Hls.isSupported()) {
         if (hlsRef.current) {
           hlsRef.current.destroy();
         }
         const hls = new Hls({
           maxMaxBufferLength: 10,
-          enableWorker: true
+          enableWorker: true,
         });
         hlsRef.current = hls;
         hls.loadSource(src);
@@ -73,10 +75,17 @@ export default function VideoPlayer({
       } else if (node.canPlayType("application/vnd.apple.mpegurl")) {
         node.src = src;
       }
-    } else if (src) {
+    } else {
       node.src = src;
     }
-  }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src]);
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
