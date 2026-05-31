@@ -57,20 +57,16 @@ import {
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
 
-
 function generateVideoThumbnailBlob(fileOrUrl: File | string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
-    video.preload = "auto"; // Меняем на auto
+    video.preload = "auto";
     video.playsInline = true;
     video.muted = true;
 
-    // Если это файл (MP4) или прямая ссылка на m3u8
     video.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
 
-    // Ждем, пока видео станет готово к отображению кадра
     video.onloadeddata = () => {
-      // Прыгаем на 1 секунду (кадр не всегда можно снять на 0-й секунде в HLS)
       video.currentTime = 1.0;
     };
 
@@ -171,7 +167,6 @@ export default function AdminVideosPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [seriesFilter, setSeriesFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
-  const [uploadThumb, setUploadThumb] = useState<File | null>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadMode, setUploadMode] = useState<"file" | "link" | "zip">("file");
@@ -179,6 +174,7 @@ export default function AdminVideosPage() {
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadThumb, setUploadThumb] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
 
   const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
@@ -207,8 +203,8 @@ export default function AdminVideosPage() {
     useState<AdminVideoSeriesGroup | null>(null);
   const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
   const [addEpisodeDesc, setAddEpisodeDesc] = useState("");
-  const [addEpisodeThumb, setAddEpisodeThumb] = useState<File | null>(null);
   const [addEpisodeFile, setAddEpisodeFile] = useState<File | null>(null);
+  const [addEpisodeThumb, setAddEpisodeThumb] = useState<File | null>(null);
   const [addEpisodeSaving, setAddEpisodeSaving] = useState(false);
 
   const [inspectMeta, setInspectMeta] = useState<{
@@ -487,7 +483,6 @@ export default function AdminVideosPage() {
       (description || `${name} — learner catalog.`).slice(0, 250),
     );
 
-    // 1. Обработка файлов или ссылок
     if (uploadMode === "file") {
       if (!uploadFile || !uploadFile.type.startsWith("video/mp4")) {
         toast.error("Choose an MP4 video file.");
@@ -509,20 +504,23 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
-    // 2. Логика превью: либо ручной выбор, либо авто-генерация
     if (uploadThumb) {
       fd.append("thumbnailFile", uploadThumb);
     } else if (uploadMode === "file" && uploadFile) {
-      // Для MP4 снимаем кадр браузером
       try {
         const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
       } catch (thumbErr) {
         console.warn("Could not generate thumbnail", thumbErr);
       }
+    } else if (uploadMode === "link") {
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(uploadLink);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (e) {
+        console.warn("Could not auto-generate thumbnail from link", e);
+      }
     }
-    // Для ZIP и Link мы полагаемся на то, что бэкенд вытащит картинку из архива 
-    // или она будет добавлена пользователем вручную.
 
     setUploadSaving(true);
     try {
@@ -541,6 +539,7 @@ export default function AdminVideosPage() {
       setUploadSaving(false);
     }
   };
+
   const handleConfirmDelete = async () => {
     if (!deleteCandidate) return;
     setDeleteSaving(true);
@@ -616,6 +615,7 @@ export default function AdminVideosPage() {
       setAddEpisodeDesc("");
       setAddEpisodeFile(null);
       setAddEpisodeLink("");
+      setAddEpisodeThumb(null);
       setAddEpisodeOpen(true);
     },
     [],
@@ -634,7 +634,6 @@ export default function AdminVideosPage() {
     const d = addEpisodeDesc.trim();
     if (d) fd.append("videoDescription", d);
 
-    // Логика загрузки (файл / зип / ссылка)
     if (addEpisodeMode === "file") {
       if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/mp4")) {
         toast.error("Choose an MP4 video file.");
@@ -656,7 +655,6 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
-    // ИСПОЛЬЗУЕМ addEpisodeThumb ЗДЕСЬ (именно здесь был пропуск!)
     if (addEpisodeThumb) {
       fd.append("thumbnailFile", addEpisodeThumb);
     } else if (addEpisodeMode === "file" && addEpisodeFile) {
@@ -666,6 +664,13 @@ export default function AdminVideosPage() {
       } catch (thumbErr) {
         console.warn("Could not generate thumbnail", thumbErr);
       }
+    } else if (addEpisodeMode === "link") {
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeLink);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (e) {
+        console.warn("Could not auto-generate thumbnail from link", e);
+      }
     }
 
     setAddEpisodeSaving(true);
@@ -674,7 +679,7 @@ export default function AdminVideosPage() {
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
       setAddEpisodeSeries(null);
-      setAddEpisodeThumb(null); // Сброс после успеха
+      setAddEpisodeThumb(null);
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Add episode failed");
@@ -682,7 +687,6 @@ export default function AdminVideosPage() {
       setAddEpisodeSaving(false);
     }
   };
-
 
   const levelFor = videoLevelBadge;
   const ratingProgress = (r: number) =>
@@ -786,7 +790,7 @@ export default function AdminVideosPage() {
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Browse for ZIP archive</p>
               <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
-                {uploadFile ? uploadFile.name : "Select a .zip containing your .m3u8 and .ts chunk files."}
+                {uploadFile ? uploadFile.name : "Select a .zip containing your .m3u8 and .ts files."}
               </p>
             </label>
           ) : (
@@ -799,12 +803,34 @@ export default function AdminVideosPage() {
                 value={uploadLink}
                 onChange={(e) => setUploadLink(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">The direct link to the processed HLS playlist in your S3 bucket.</p>
             </div>
           )}
 
+          <div className="space-y-2 mt-4 border-t border-border pt-4">
+            <label className="text-sm font-medium">Custom Thumbnail (Cover)</label>
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 text-center transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setUploadThumb(f);
+                }}
+              />
+              {uploadThumb ? (
+                <p className="text-sm font-medium text-primary">{uploadThumb.name}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
+              )}
+            </label>
+            <p className="text-[11px] text-muted-foreground">
+              Required for ZIP / M3U8 Link. If uploading MP4, it auto-generates.
+            </p>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2 sm:col-span-2 border-t border-border pt-4">
               <label className="text-sm font-medium" htmlFor="admin-vid-title">
                 Title (video name)
               </label>
@@ -927,11 +953,33 @@ export default function AdminVideosPage() {
                 value={addEpisodeLink}
                 onChange={(e) => setAddEpisodeLink(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">The direct link to the processed HLS playlist in your S3 bucket.</p>
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-2 mt-4 border-t border-border pt-4">
+            <label className="text-sm font-medium">Custom Thumbnail (Cover)</label>
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 text-center transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setAddEpisodeThumb(f);
+                }}
+              />
+              {addEpisodeThumb ? (
+                <p className="text-sm font-medium text-primary">{addEpisodeThumb.name}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
+              )}
+            </label>
+            <p className="text-[11px] text-muted-foreground">
+              Required for ZIP / M3U8 Link. If uploading MP4, it auto-generates.
+            </p>
+          </div>
+
+          <div className="space-y-2 border-t border-border pt-4">
             <label className="text-sm font-medium" htmlFor="admin-ep-title">
               Episode title
             </label>
