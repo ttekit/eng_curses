@@ -16,7 +16,6 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
-import { captureEvent } from "../../lib/analytics";
 import { cn } from "../../lib/utils";
 import VideoPlayer from "../../components/VideoPlayer";
 import { VideoVocabulary } from "../../components/content-watch/VideoVocabulary";

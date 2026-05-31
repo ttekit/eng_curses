@@ -20,6 +20,7 @@ import {
   Video,
   Edit,
   X,
+  Link as LinkIcon
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import {
@@ -166,12 +167,13 @@ export default function AdminVideosPage() {
   const [levelFilter, setLevelFilter] = useState("all");
 
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"file" | "link">("file");
+  const [uploadLink, setUploadLink] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
 
-  // Стейты для редактирования видео
   const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -180,7 +182,6 @@ export default function AdminVideosPage() {
     false | "tags" | "cefr" | "captions"
   >(false);
 
-  // Стейты для редактирования названия серии (плейлиста)
   const [editSeriesGroup, setEditSeriesGroup] = useState<AdminVideoSeriesGroup | null>(null);
   const [editSeriesName, setEditSeriesName] = useState("");
   const [editSeriesSaving, setEditSeriesSaving] = useState(false);
@@ -193,6 +194,8 @@ export default function AdminVideosPage() {
 
   const [reorderBusy, setReorderBusy] = useState(false);
   const [addEpisodeOpen, setAddEpisodeOpen] = useState(false);
+  const [addEpisodeMode, setAddEpisodeMode] = useState<"file" | "link">("file");
+  const [addEpisodeLink, setAddEpisodeLink] = useState("");
   const [addEpisodeSeries, setAddEpisodeSeries] =
     useState<AdminVideoSeriesGroup | null>(null);
   const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
@@ -468,32 +471,44 @@ export default function AdminVideosPage() {
       toast.error("Title ≥ 2 characters; description ≤ 250.");
       return;
     }
-    if (!uploadFile || !uploadFile.type.startsWith("video/")) {
-      toast.error("Choose a video file.");
-      return;
-    }
-    setUploadSaving(true);
-    try {
-      const fd = new FormData();
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("friendlyLink", slugFriendly(name));
+    fd.append(
+      "description",
+      (description || `${name} — learner catalog.`).slice(0, 250),
+    );
+
+    if (uploadMode === "file") {
+      if (!uploadFile || !uploadFile.type.startsWith("video/")) {
+        toast.error("Choose a video file.");
+        return;
+      }
       fd.append("file", uploadFile);
-      fd.append("name", name);
-      fd.append("friendlyLink", slugFriendly(name));
-      fd.append(
-        "description",
-        (description || `${name} — learner catalog.`).slice(0, 250),
-      );
       try {
         const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
       } catch (thumbErr) {
         console.warn(thumbErr);
       }
+    } else {
+      if (!uploadLink.trim()) {
+        toast.error("Provide a valid video link.");
+        return;
+      }
+      fd.append("videoLink", uploadLink.trim());
+    }
+
+    setUploadSaving(true);
+    try {
       await createAdminCatalogVideo(fd);
       toast.success("Video uploaded and published");
       setUploadOpen(false);
       setUploadTitle("");
       setUploadDesc("");
       setUploadFile(null);
+      setUploadLink("");
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -576,6 +591,7 @@ export default function AdminVideosPage() {
       setAddEpisodeTitle("");
       setAddEpisodeDesc("");
       setAddEpisodeFile(null);
+      setAddEpisodeLink("");
       setAddEpisodeOpen(true);
     },
     [],
@@ -588,23 +604,34 @@ export default function AdminVideosPage() {
       toast.error("Episode title required");
       return;
     }
-    if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/")) {
-      toast.error("Choose a video file");
-      return;
-    }
-    setAddEpisodeSaving(true);
-    try {
-      const fd = new FormData();
+
+    const fd = new FormData();
+    fd.append("videoName", name);
+    const d = addEpisodeDesc.trim();
+    if (d) fd.append("videoDescription", d);
+
+    if (addEpisodeMode === "file") {
+      if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/")) {
+        toast.error("Choose a video file");
+        return;
+      }
       fd.append("file", addEpisodeFile);
-      fd.append("videoName", name);
-      const d = addEpisodeDesc.trim();
-      if (d) fd.append("videoDescription", d);
       try {
         const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
       } catch (thumbErr) {
         console.warn(thumbErr);
       }
+    } else {
+      if (!addEpisodeLink.trim()) {
+        toast.error("Provide a valid video link");
+        return;
+      }
+      fd.append("videoLink", addEpisodeLink.trim());
+    }
+
+    setAddEpisodeSaving(true);
+    try {
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
@@ -667,24 +694,54 @@ export default function AdminVideosPage() {
         }
       >
         <div className="space-y-4">
-          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setUploadFile(f);
-              }}
-            />
-            <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">Browse for video</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {uploadFile
-                ? uploadFile.name
-                : "Video only (server-enforced max size)"}
-            </p>
-          </label>
+          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+            <button
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${uploadMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setUploadMode('file')}
+            >
+              Upload MP4 File
+            </button>
+            <button
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${uploadMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setUploadMode('link')}
+            >
+              Paste M3U8 Link
+            </button>
+          </div>
+
+          {uploadMode === "file" ? (
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setUploadFile(f);
+                }}
+              />
+              <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+              <p className="font-medium">Browse for video</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {uploadFile
+                  ? uploadFile.name
+                  : "Video only (server-enforced max size)"}
+              </p>
+            </label>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-muted-foreground" /> HLS Playlist URL (.m3u8)
+              </label>
+              <AdminInput
+                placeholder="https://cdn.explys.com/video/playlist.m3u8"
+                value={uploadLink}
+                onChange={(e) => setUploadLink(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">The direct link to the processed HLS playlist in your S3 bucket.</p>
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <label className="text-sm font-medium" htmlFor="admin-vid-title">
@@ -744,22 +801,52 @@ export default function AdminVideosPage() {
         }
       >
         <div className="space-y-4">
-          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setAddEpisodeFile(f);
-              }}
-            />
-            <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">Video file</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {addEpisodeFile ? addEpisodeFile.name : "Required"}
-            </p>
-          </label>
+          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+            <button
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${addEpisodeMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setAddEpisodeMode('file')}
+            >
+              Upload MP4 File
+            </button>
+            <button
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${addEpisodeMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setAddEpisodeMode('link')}
+            >
+              Paste M3U8 Link
+            </button>
+          </div>
+
+          {addEpisodeMode === "file" ? (
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setAddEpisodeFile(f);
+                }}
+              />
+              <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+              <p className="font-medium">Video file</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {addEpisodeFile ? addEpisodeFile.name : "Required"}
+              </p>
+            </label>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-muted-foreground" /> HLS Playlist URL (.m3u8)
+              </label>
+              <AdminInput
+                placeholder="https://cdn.explys.com/video/playlist.m3u8"
+                value={addEpisodeLink}
+                onChange={(e) => setAddEpisodeLink(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">The direct link to the processed HLS playlist in your S3 bucket.</p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-ep-title">
               Episode title
@@ -895,7 +982,6 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
-      {/* Новая модалка для редактирования названия плейлиста (серии) */}
       <AdminModal
         open={editSeriesGroup != null}
         onClose={() => !editSeriesSaving && setEditSeriesGroup(null)}
@@ -1252,7 +1338,6 @@ export default function AdminVideosPage() {
                 <div key={group.contentRootId} className="space-y-4">
                   <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      {/* Кнопка редактирования добавлена сюда */}
                       <div className="flex items-center gap-2">
                         <h3 className="font-display text-lg font-semibold text-foreground">
                           {group.seriesName}

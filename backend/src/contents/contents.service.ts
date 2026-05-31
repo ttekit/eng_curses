@@ -56,6 +56,7 @@ export type TeacherStudentResultRow = {
   } | null;
   recentQuizzes: TeacherStudentQuizRow[];
 };
+
 @Injectable()
 export class ContentsService {
   private readonly s3Client: S3Client;
@@ -78,19 +79,27 @@ export class ContentsService {
   }
 
   async createContent(
-    dto: CreateContentDto,
-    file: Express.Multer.File,
+    dto: CreateContentDto & { videoLink?: string },
+    file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
-    const key = buildSafeS3ObjectKey(file.originalname);
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: file.buffer,
-      }),
-    );
-    const videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+    let videoUrl = dto.videoLink;
+
+    if (file) {
+      const key = buildSafeS3ObjectKey(file.originalname);
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: file.buffer,
+        }),
+      );
+      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+    }
+
+    if (!videoUrl) {
+      throw new BadRequestException("You must provide either a video file or a videoLink");
+    }
 
     let thumbnailUrl: string | null = null;
     if (thumbnailFile) {
@@ -305,8 +314,8 @@ export class ContentsService {
 
   async addEpisode(
     contentId: number,
-    dto: AddContentEpisodeDto,
-    file: Express.Multer.File,
+    dto: AddContentEpisodeDto & { videoLink?: string },
+    file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
     const content = await this.prisma.content.findUnique({
@@ -321,15 +330,24 @@ export class ContentsService {
       _max: { playlistPosition: true },
     });
     const playlistPosition = (maxRow._max.playlistPosition ?? -1) + 1;
-    const key = buildSafeS3ObjectKey(file.originalname);
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: file.buffer,
-      }),
-    );
-    const videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+
+    let videoUrl = dto.videoLink;
+
+    if (file) {
+      const key = buildSafeS3ObjectKey(file.originalname);
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: file.buffer,
+        }),
+      );
+      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+    }
+
+    if (!videoUrl) {
+      throw new BadRequestException("You must provide either a video file or a videoLink");
+    }
 
     let thumbnailUrl: string | null = null;
     if (thumbnailFile) {
@@ -388,13 +406,10 @@ export class ContentsService {
     return `t-${userId}-${tail}`;
   }
 
-  /**
-   * Teacher profile upload: one series with one clip; auto captions + tags (no separate regen for teachers).
-   */
   async createTeacherUpload(
     userId: number,
-    dto: TeacherUploadContentDto,
-    file: Express.Multer.File,
+    dto: TeacherUploadContentDto & { videoLink?: string },
+    file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
     await this.requireTeacherAccount(userId);
@@ -415,15 +430,23 @@ export class ContentsService {
       }
     }
 
-    const key = buildSafeS3ObjectKey(file.originalname);
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: file.buffer,
-      }),
-    );
-    const videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+    let videoUrl = dto.videoLink;
+
+    if (file) {
+      const key = buildSafeS3ObjectKey(file.originalname);
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: file.buffer,
+        }),
+      );
+      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+    }
+
+    if (!videoUrl) {
+      throw new BadRequestException("You must provide either a video file or a videoLink");
+    }
 
     let thumbnailUrl: string | null = null;
     if (thumbnailFile) {
@@ -460,7 +483,7 @@ export class ContentsService {
                 videoLink: videoUrl,
                 videoName: name,
                 playlistPosition: 0,
-                thumbnailUrl: thumbnailUrl, // <--- ПИШЕМ ССЫЛКУ НА ПРЕВЬЮ В БАЗУ
+                thumbnailUrl: thumbnailUrl,
               },
             },
           },
@@ -628,7 +651,6 @@ export class ContentsService {
       };
     });
   }
-  // --- ПОЛУЧЕНИЕ СТАТИСТИКИ УЧЕНИКОВ ---
 
   private async getDistinctCompletedVideosByUser(
     userIds: number[],
@@ -657,7 +679,6 @@ export class ContentsService {
       select: { role: true },
     });
 
-    // ИСПРАВЛЕНИЕ: ПУСКАЕМ И УЧИТЕЛЯ, И АДМИНА!
     if (!me || (me.role !== "TEACHER" && me.role !== "ADMIN")) {
       throw new ForbiddenException("Only teachers can view student results.");
     }
@@ -765,10 +786,6 @@ export class ContentsService {
     return { students: out };
   }
 
-  // --- НОВЫЕ МЕТОДЫ ДЛЯ УПРАВЛЕНИЯ УЧЕНИКАМИ ---
-
-  // --- ДОБАВЛЕНИЕ УЧЕНИКА (СО СЛАБЫМ ПАРОЛЕМ) ---
-  // --- ДОБАВЛЕНИЕ УЧЕНИКА (С ГЕНЕРАЦИЕЙ ПАРОЛЯ) ---
   async addStudent(teacherId: number, data: { name: string; email: string }) {
     const existing = await this.prisma.user.findUnique({
       where: { email: data.email },
@@ -777,7 +794,6 @@ export class ContentsService {
       throw new ForbiddenException("Пользователь с таким email уже существует");
     }
 
-    // Генерируем надежный случайный пароль (8 символов: буквы и цифры)
     const chars =
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     const tempPassword = Array.from(
@@ -785,7 +801,6 @@ export class ContentsService {
       () => chars[Math.floor(Math.random() * chars.length)],
     ).join("");
 
-    // Хэшируем для базы
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const created = await this.prisma.user.create({
@@ -800,11 +815,9 @@ export class ContentsService {
       },
     });
 
-    // Возвращаем пароль на фронтенд ТОЛЬКО ОДИН РАЗ
     return { student: created, tempPassword };
   }
 
-  // --- ЧИСТЫЙ EXCEL ЭКСПОРТ (Без паролей) ---
   async exportStudentsExcel(teacherId: number): Promise<Buffer> {
     const students = await this.prisma.user.findMany({
       where: { teacherId },
@@ -822,9 +835,9 @@ export class ContentsService {
       const avgScore =
         attemptsCount > 0
           ? s.comprehensionTestAttempts.reduce(
-              (acc, curr) => acc + curr.scorePct,
-              0,
-            ) / attemptsCount
+            (acc, curr) => acc + curr.scorePct,
+            0,
+          ) / attemptsCount
           : 0;
 
       return {
@@ -898,9 +911,9 @@ export class ContentsService {
       const avgScore =
         attemptsCount > 0
           ? s.comprehensionTestAttempts.reduce(
-              (acc, curr) => acc + curr.scorePct,
-              0,
-            ) / attemptsCount
+            (acc, curr) => acc + curr.scorePct,
+            0,
+          ) / attemptsCount
           : 0;
 
       return [
