@@ -27,6 +27,10 @@ import * as XLSX from "xlsx";
 import * as bcrypt from "bcrypt";
 import { Redis } from "ioredis";
 import AdmZip = require("adm-zip");
+import { execSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -85,6 +89,7 @@ export class ContentsService {
     const folderUuid = randomUUID();
     let m3u8Url: string | null = null;
     let zipThumbUrl: string | null = null;
+    let firstTsBuffer: Buffer | null = null;
 
     const uploadPromises = zipEntries.map(async (entry) => {
       if (entry.isDirectory) return;
@@ -101,7 +106,10 @@ export class ContentsService {
 
       let contentType = "application/octet-stream";
       if (fileName.endsWith(".m3u8")) contentType = "application/vnd.apple.mpegurl";
-      else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
+      else if (fileName.endsWith(".ts")) {
+        contentType = "video/MP2T";
+        if (!firstTsBuffer) firstTsBuffer = fileBuffer;
+      }
       else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
       else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
 
@@ -132,6 +140,33 @@ export class ContentsService {
 
     if (!m3u8Url) {
       throw new BadRequestException("Invalid ZIP: No valid .m3u8 file found inside the archive.");
+    }
+
+    if (!zipThumbUrl && firstTsBuffer) {
+      const tempTsPath = path.join(os.tmpdir(), `${randomUUID()}.ts`);
+      const tempJpgPath = path.join(os.tmpdir(), `${randomUUID()}.jpg`);
+      try {
+        fs.writeFileSync(tempTsPath, firstTsBuffer);
+        execSync(`ffmpeg -y -i ${tempTsPath} -vframes 1 -q:v 2 ${tempJpgPath}`, { stdio: 'ignore' });
+
+        if (fs.existsSync(tempJpgPath)) {
+          const jpgBuffer = fs.readFileSync(tempJpgPath);
+          const s3Key = `m3u8_videos/${folderUuid}/auto_thumb.jpg`;
+
+          await this.s3Client.send(new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: s3Key,
+            Body: jpgBuffer,
+            ContentType: 'image/jpeg'
+          }));
+          zipThumbUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
+        }
+      } catch (err) {
+        console.warn("Failed to auto-generate thumbnail from .ts chunk:", err);
+      } finally {
+        if (fs.existsSync(tempTsPath)) fs.unlinkSync(tempTsPath);
+        if (fs.existsSync(tempJpgPath)) fs.unlinkSync(tempJpgPath);
+      }
     }
 
     return { videoUrl: m3u8Url, zipThumbnailUrl: zipThumbUrl };

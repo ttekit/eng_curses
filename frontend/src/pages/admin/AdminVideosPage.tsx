@@ -338,7 +338,7 @@ export default function AdminVideosPage() {
   const openEdit = useCallback((v: AdminCatalogVideoRow) => {
     setEditing(v);
     setEditName(v.videoName);
-    setEditDesc(v.videoDescription ?? "");
+    setEditDesc(v.videoDescription || v.content.category.description || "");
   }, []);
 
   const handleSaveEdit = async () => {
@@ -412,7 +412,7 @@ export default function AdminVideosPage() {
       if (u) {
         setEditing(u);
         setEditName(u.videoName);
-        setEditDesc(u.videoDescription ?? "");
+        setEditDesc(u.videoDescription || u.content.category.description || "");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -437,7 +437,7 @@ export default function AdminVideosPage() {
       if (u) {
         setEditing(u);
         setEditName(u.videoName);
-        setEditDesc(u.videoDescription ?? "");
+        setEditDesc(u.videoDescription || u.content.category.description || "");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -458,7 +458,7 @@ export default function AdminVideosPage() {
       if (u) {
         setEditing(u);
         setEditName(u.videoName);
-        setEditDesc(u.videoDescription ?? "");
+        setEditDesc(u.videoDescription || u.content.category.description || "");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Caption generation failed");
@@ -1470,6 +1470,7 @@ export default function AdminVideosPage() {
                 <div key={group.contentRootId} className="space-y-4">
                   <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
+                      {/* Кнопка редактирования добавлена сюда */}
                       <div className="flex items-center gap-2">
                         <h3 className="font-display text-lg font-semibold text-foreground">
                           {group.seriesName}
