@@ -26,6 +26,7 @@ import { AuthMethod, UserRole } from "@generated/prisma/enums";
 import * as XLSX from "xlsx";
 import * as bcrypt from "bcrypt";
 import { Redis } from "ioredis";
+import { generateSecurePassword } from "src/common/utils/password.util";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -98,7 +99,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = null;
@@ -346,7 +349,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = null;
@@ -445,7 +450,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = null;
@@ -794,13 +801,7 @@ export class ContentsService {
       throw new ForbiddenException("Пользователь с таким email уже существует");
     }
 
-    const chars =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const tempPassword = Array.from(
-      { length: 8 },
-      () => chars[Math.floor(Math.random() * chars.length)],
-    ).join("");
-
+    const tempPassword = generateSecurePassword(16);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const created = await this.prisma.user.create({
@@ -835,9 +836,9 @@ export class ContentsService {
       const avgScore =
         attemptsCount > 0
           ? s.comprehensionTestAttempts.reduce(
-            (acc, curr) => acc + curr.scorePct,
-            0,
-          ) / attemptsCount
+              (acc, curr) => acc + curr.scorePct,
+              0,
+            ) / attemptsCount
           : 0;
 
       return {
@@ -911,9 +912,9 @@ export class ContentsService {
       const avgScore =
         attemptsCount > 0
           ? s.comprehensionTestAttempts.reduce(
-            (acc, curr) => acc + curr.scorePct,
-            0,
-          ) / attemptsCount
+              (acc, curr) => acc + curr.scorePct,
+              0,
+            ) / attemptsCount
           : 0;
 
       return [

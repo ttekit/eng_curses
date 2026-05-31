@@ -10,7 +10,11 @@ import {
   User,
   X,
 } from "lucide-react";
-import { apiFetch, getResponseErrorMessage } from "../../lib/api";
+import {
+  apiFetch,
+  getResponseErrorMessage,
+  setStoredAccessToken,
+} from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { useNavigate } from "react-router";
 import InputText from "../InputText";
@@ -1287,10 +1291,16 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             <button
               type="button"
               className="text-sm flex font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await apiFetch("/auth/logout", { method: "POST" });
+                } catch (e) {
+                  console.error("Серверный логаут не ответил:", e);
+                }
                 logout();
+                setStoredAccessToken(null);
                 toast.success(s?.signOutToast || "Signed out successfully");
-                void navigate("/loginForm", { replace: true });
+                window.location.href = "/loginForm";
               }}
             >
               <LogOut className="size-4 pt-1 pr-1" />

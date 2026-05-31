@@ -14,7 +14,12 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { UsersService } from "src/users/users.service";
-import { AuthMethod, TokenType, User } from "@generated/prisma/client";
+import {
+  AuthMethod,
+  TokenType,
+  User,
+  UserRole,
+} from "@generated/prisma/client";
 import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { ProviderService } from "./provider/provider.service";
@@ -34,6 +39,7 @@ import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
 import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { v4 as uuidv4 } from "uuid";
 import { randomInt } from "crypto";
+import { generateSecurePassword } from "src/common/utils/password.util";
 
 export interface GeneratedStudent {
   name: string;
@@ -93,6 +99,51 @@ export class AuthService {
     );
   }
 
+  private async generateStudentAccount(
+    pupil: any,
+    teacherId: number,
+    emailConfirmationDisabled: boolean,
+  ): Promise<GeneratedStudent> {
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    let firstName = "student";
+    let lastName = randomId.toString();
+
+    if (typeof pupil === "object" && pupil !== null) {
+      firstName = pupil.name || "student";
+      lastName = pupil.surname || randomId.toString();
+    } else if (typeof pupil === "string") {
+      const parts = pupil.split(" ");
+      firstName = parts[0] || "student";
+      lastName = parts[1] || randomId.toString();
+    }
+
+    const studentEmail =
+      `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${randomId}@explys.com`.replace(
+        /\s+/g,
+        "",
+      );
+
+    const tempPassword = generateSecurePassword(16);
+    const hashedStudentPassword = await bcrypt.hash(tempPassword, 10);
+
+    await this.prisma.user.create({
+      data: {
+        email: studentEmail.toLowerCase(),
+        password: hashedStudentPassword,
+        name: `${firstName} ${lastName}`.trim(),
+        role: "STUDENT",
+        method: "CREDENTIALS",
+        teacherId,
+        isVerified: emailConfirmationDisabled,
+      },
+    });
+
+    return {
+      name: `${firstName} ${lastName}`.trim(),
+      email: studentEmail,
+      password: tempPassword,
+    };
+  }
   async register(req: Request, dto: RegisterDto) {
     const isDomainValid = await this.mailService.validateEmailDomain(dto.email);
     if (!isDomainValid) {
@@ -209,45 +260,12 @@ export class AuthService {
 
     if (dto.role === "teacher" && Array.isArray(dto.studentNames)) {
       for (const pupil of dto.studentNames) {
-        const randomId = Math.floor(1000 + Math.random() * 9000);
-
-        let firstName = "student";
-        let lastName = randomId.toString();
-
-        if (typeof pupil === "object" && pupil !== null) {
-          firstName = (pupil as any).name || "student";
-          lastName = (pupil as any).surname || randomId.toString();
-        } else if (typeof pupil === "string") {
-          const parts = pupil.split(" ");
-          firstName = parts[0] || "student";
-          lastName = parts[1] || randomId.toString();
-        }
-
-        const studentEmail =
-          `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${randomId}@alcorythm.com`.replace(
-            /\s+/g,
-            "",
-          );
-        const tempPassword = Math.random().toString(36).slice(-8);
-        const hashedStudentPassword = await bcrypt.hash(tempPassword, 10);
-
-        await prisma.user.create({
-          data: {
-            email: studentEmail.toLowerCase(),
-            password: hashedStudentPassword,
-            name: `${firstName} ${lastName}`.trim(),
-            role: "STUDENT",
-            method: "CREDENTIALS",
-            teacherId: mainUser.id,
-            isVerified: emailConfirmationDisabled,
-          },
-        });
-
-        generatedStudents.push({
-          name: `${firstName} ${lastName}`.trim(),
-          email: studentEmail,
-          password: tempPassword,
-        });
+        const student = await this.generateStudentAccount(
+          pupil,
+          mainUser.id,
+          emailConfirmationDisabled,
+        );
+        generatedStudents.push(student);
       }
     }
 
@@ -435,68 +453,23 @@ export class AuthService {
     const prisma = this.prisma as any;
     const generatedStudents: GeneratedStudent[] = [];
 
-    // 1. ПОЛУЧАЕМ ТЕКУЩИЕ ДАННЫЕ УЧИТЕЛЯ ИЗ БАЗЫ
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       include: { additionalUserData: true },
     });
 
-    // 2. ПРОВЕРЯЕМ, БЫЛИ ЛИ УЖЕ ДОБАВЛЕНЫ УЧЕНИКИ ПРИ РЕГИСТРАЦИИ
     const hasExistingStudents =
       Array.isArray(currentUser?.additionalUserData?.studentNames) &&
       currentUser.additionalUserData.studentNames.length > 0;
 
-    // 3. ГЕНЕРИРУЕМ УЧЕНИКОВ ТОЛЬКО ЕСЛИ ИХ ЕЩЕ НЕТ В БАЗЕ
     if (
       data.role === "TEACHER" &&
       Array.isArray(data.studentNames) &&
       !hasExistingStudents
     ) {
       for (const pupil of data.studentNames) {
-        const randomId = Math.floor(1000 + Math.random() * 9000);
-        let firstName = "student";
-        let lastName = randomId.toString();
-
-        if (typeof pupil === "object" && pupil !== null) {
-          firstName = pupil.name || "student";
-          lastName = pupil.surname || randomId.toString();
-        } else if (typeof pupil === "string") {
-          const parts = pupil.split(" ");
-          firstName = parts[0] || "student";
-          lastName = parts[1] || randomId.toString();
-        }
-
-        const studentEmail =
-          `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${randomId}@explys.com`.replace(
-            /\s+/g,
-            "",
-          );
-        const chars =
-          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        const tempPassword = Array.from(
-          { length: 12 },
-          () => chars[Math.floor(Math.random() * chars.length)],
-        ).join("");
-
-        const hashedStudentPassword = await bcrypt.hash(tempPassword, 10);
-
-        await prisma.user.create({
-          data: {
-            email: studentEmail.toLowerCase(),
-            password: hashedStudentPassword,
-            name: `${firstName} ${lastName}`.trim(),
-            role: "STUDENT",
-            method: "CREDENTIALS",
-            teacherId: userId,
-            isVerified: true,
-          },
-        });
-
-        generatedStudents.push({
-          name: `${firstName} ${lastName}`.trim(),
-          email: studentEmail,
-          password: tempPassword,
-        });
+        const student = await this.generateStudentAccount(pupil, userId, true);
+        generatedStudents.push(student);
       }
     }
 

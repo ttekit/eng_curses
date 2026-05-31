@@ -40,6 +40,7 @@ import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
 import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan-regeneration.service";
+import { Public } from "./decorators/public.decorator";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -98,6 +99,7 @@ export class AuthController {
     return await this.authService.verifyEmailCode(body.email, body.code);
   }
 
+  @Public()
   @Post("resend-confirmation")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Resend email confirmation" })
@@ -106,6 +108,7 @@ export class AuthController {
     return await this.authService.resendConfirmationEmail(email);
   }
 
+  @Public()
   @Get("confirm-email")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Confirm user email via token" })
