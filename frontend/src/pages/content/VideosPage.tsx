@@ -118,12 +118,13 @@ export default function VideoPage() {
     [],
   );
 
-  // ===== НОВЫЙ СТЕЙТ ДЛЯ ВИДЕО УЧИТЕЛЯ/УЧЕНИКА =====
+
   const [classroomVideos, setClassroomVideos] = useState<CatalogCardVideo[]>(
     [],
   );
 
   const { user, isLoading: userLoading, refreshProfile } = useUser();
+  const isTeacherLinkedStudent = user?.role === "student" && user?.teacherId != null;
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
@@ -494,24 +495,23 @@ export default function VideoPage() {
     return Array.from(tags).sort();
   }, [videos]);
 
-  // ДОБАВЛЕНО: Добавляем "Recommended" в список жанров после "All"
+
   const sortedGenres = useMemo(() => {
     return ["All", "Recommended", ...genreNames.filter(Boolean)];
   }, [genreNames]);
 
-  // ДОБАВЛЕНО: Создаем Set из ID рекомендованных видео для быстрого поиска
+
   const recommendedVideoIds = useMemo(() => {
     return new Set(recommendedCards.map(c => c.id));
   }, [recommendedCards]);
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-      // 1. ВЫРЕЗАЕМ ВИДЕО УЧИТЕЛЯ (Они будут только в верхней карусели)
+
       if (v.content?.category?.friendlyLink?.startsWith("t-")) {
         return false;
       }
 
-      // 2. БЛОКИРУЕМ КОНТЕНТ 18+ ДЛЯ УЧЕНИКОВ
       if (isTeacherLinkedStudent) {
         const sysTags = v.content?.stats?.systemTags || [];
         const usrTags = v.content?.stats?.userTags || [];
@@ -534,7 +534,7 @@ export default function VideoPage() {
         }
       }
 
-      // 3. СТАНДАРТНЫЕ ФИЛЬТРЫ КАТАЛОГА (Уровни, Жанры)
+
       const matchCategory =
         selectedCategory === "All" ||
         v.content.category.name === selectedCategory;
@@ -553,21 +553,21 @@ export default function VideoPage() {
 
       return matchCategory && matchLevel && matchGenre;
     });
-  }, [videos, selectedCategory, selectedLevel, selectedGenre, recommendedVideoIds]);
+  }, [videos, selectedCategory, selectedLevel, selectedGenre, recommendedVideoIds, isTeacherLinkedStudent]);
 
   const featured = filteredVideos[0] ?? null;
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
@@ -840,9 +840,9 @@ export default function VideoPage() {
                   <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
                       ? (messages.catalogPage as any)?.emptyNoVideos ||
-                        "There are no videos in the catalog yet."
+                      "There are no videos in the catalog yet."
                       : (messages.catalogPage as any)?.emptyFiltered ||
-                        "No videos match your filters."}
+                      "No videos match your filters."}
                   </p>
                 </div>
               ) : hasFilters ? (
@@ -922,7 +922,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>
