@@ -85,6 +85,7 @@ export class ContentsController {
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
     @Body() dto: TeacherUploadContentDto,
+    @Body('videoLink') videoLink: string, // Обходим валидацию DTO и достаем ссылку напрямую
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -95,13 +96,16 @@ export class ContentsController {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
 
-    if (!videoFile && !(dto as any).videoLink) {
+    if (!videoFile && !videoLink) {
       throw new BadRequestException("Video file or M3U8 link is required");
     }
 
+    // Собираем обратно DTO и ссылку
+    const fullDto = { ...dto, videoLink };
+
     return this.contentsService.createTeacherUpload(
       userId,
-      dto,
+      fullDto as any,
       videoFile,
       thumbnailFile,
     );
@@ -155,6 +159,7 @@ export class ContentsController {
   @ApiOperation({ summary: "Admin: Create new content series" })
   async createContent(
     @Body() createContentDto: CreateContentDto,
+    @Body('videoLink') videoLink: string, // Обходим валидацию DTO
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -164,12 +169,14 @@ export class ContentsController {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
 
-    if (!videoFile && !(createContentDto as any).videoLink) {
+    if (!videoFile && !videoLink) {
       throw new BadRequestException("Video file or M3U8 link is required");
     }
 
+    const fullDto = { ...createContentDto, videoLink };
+
     return await this.contentsService.createContent(
-      createContentDto,
+      fullDto as any,
       videoFile,
       thumbnailFile,
     );
@@ -206,6 +213,7 @@ export class ContentsController {
   async addEpisode(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddContentEpisodeDto,
+    @Body('videoLink') videoLink: string, // Обходим валидацию DTO
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -215,13 +223,15 @@ export class ContentsController {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
 
-    if (!videoFile && !(dto as any).videoLink) {
+    if (!videoFile && !videoLink) {
       throw new BadRequestException("Video file or M3U8 link is required");
     }
 
+    const fullDto = { ...dto, videoLink };
+
     return await this.contentsService.addEpisode(
       id,
-      dto,
+      fullDto as any,
       videoFile,
       thumbnailFile,
     );
@@ -259,10 +269,6 @@ export class ContentsController {
     const studentId = jwtSubToUserId(req.user);
     return this.contentsService.getVideosForStudent(studentId);
   }
-
-  // ==========================================
-  // УПРАВЛЕНИЕ УЧЕНИКАМИ (CRM)
-  // ==========================================
 
   @Post("teacher/my-students")
   @UseGuards(AuthGuard)
