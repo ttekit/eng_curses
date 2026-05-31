@@ -490,21 +490,23 @@ export default function AdminVideosPage() {
         const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
       } catch (thumbErr) {
-        console.warn(thumbErr);
+        console.warn("Could not generate thumbnail", thumbErr);
       }
     } else {
-      if (!uploadLink.trim()) {
-        toast.error("Provide a valid video link.");
+      const link = uploadLink.trim();
+      if (!link.startsWith("https://")) {
+        toast.error("Please use a valid HTTPS link to your .m3u8 file.");
         return;
       }
-      fd.append("videoLink", uploadLink.trim());
+      fd.append("videoLink", link);
     }
 
     setUploadSaving(true);
     try {
       await createAdminCatalogVideo(fd);
-      toast.success("Video uploaded and published");
+      toast.success("Video published successfully");
       setUploadOpen(false);
+
       setUploadTitle("");
       setUploadDesc("");
       setUploadFile(null);
@@ -516,7 +518,6 @@ export default function AdminVideosPage() {
       setUploadSaving(false);
     }
   };
-
   const handleConfirmDelete = async () => {
     if (!deleteCandidate) return;
     setDeleteSaving(true);
