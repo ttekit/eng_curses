@@ -48,6 +48,10 @@ export function userExemptFromSubscription(user: UserData | null): boolean {
 export function userMayUseLearnerApp(user: UserData | null): boolean {
   if (subscriptionEnforcementDisabled()) return true;
   if (!user) return false;
+  const role = user.role?.toLowerCase();
+  if (role === "student" || role === "teacher" || role === "admin") {
+    return true;
+  }
   if (userExemptFromSubscription(user)) return true;
   return userHasPaidSubscription(user);
 }

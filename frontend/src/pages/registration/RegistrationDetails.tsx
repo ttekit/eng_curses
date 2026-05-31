@@ -264,8 +264,8 @@ export default function RegistrationDetails() {
         }
 
         if (userRole === "teacher") {
-          navigate("/subscribe", {
-            state: { isTeacherRegistration: true, generatedStudents: students },
+          navigate("/registrationSuccess", {
+            state: { generatedStudents: students },
           });
         } else {
           navigate("/registrationPreferences");
@@ -344,7 +344,9 @@ export default function RegistrationDetails() {
               </div>
 
               <div className="space-y-2">
-                <LabelRegister isRequired={false}>Learning topics</LabelRegister>
+                <LabelRegister isRequired={false}>
+                  Learning topics
+                </LabelRegister>
                 <MultiSelect<
                   LearningTopicOption,
                   true,
@@ -362,7 +364,9 @@ export default function RegistrationDetails() {
                       : "Choose topics or tags"
                   }
                   noOptionsMessage={() =>
-                    topicsLoadError ? topicsLoadError : "No topics or tags found"
+                    topicsLoadError
+                      ? topicsLoadError
+                      : "No topics or tags found"
                   }
                 />
                 {topicsLoadError && (

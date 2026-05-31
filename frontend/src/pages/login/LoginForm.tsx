@@ -44,6 +44,7 @@ function postLoginNavigateTarget(
     return "/registrationDetails";
   }
 
+  // 1. Сначала проверяем жанры
   if (
     (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
     (!profile.hatedGenres || profile.hatedGenres.length === 0)
@@ -51,10 +52,13 @@ function postLoginNavigateTarget(
     return "/registrationPreferences";
   }
 
-  if (!profile.subscriptionPlan && !profile.subscriptionStatus) {
+  // 2. ПРОПУСКАЕМ ОПЛАТУ ДЛЯ УЧЕНИКОВ И УЧИТЕЛЕЙ
+  const isFreeRole = profile.role === "student" || profile.role === "teacher";
+  if (!isFreeRole && !profile.subscriptionPlan && !profile.subscriptionStatus) {
     return "/subscribe";
   }
 
+  // 3. Потом проверяем уровень
   if (
     !profile.englishLevel ||
     profile.englishLevel === "choose" ||
@@ -63,6 +67,7 @@ function postLoginNavigateTarget(
     return "/registrationDetails";
   }
 
+  // 4. Потом отправляем на тест
   if (!profile.hasCompletedPlacement) {
     return "/level-test";
   }

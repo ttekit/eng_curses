@@ -486,11 +486,13 @@ export function ProfileTeacherVideos() {
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-3 font-medium">Series</th>
-                  <th className="p-3 font-medium">Captions</th>
-                  <th className="p-3 font-medium">Catalog</th>
-                  <th className="p-3 font-medium">Open</th>
-                  <th className="p-3 font-medium text-right">Actions</th>
+                  <th className="p-4 font-semibold text-sm">Series</th>
+                  <th className="p-4 font-semibold text-sm">Captions</th>
+                  <th className="p-4 font-semibold text-sm">Catalog</th>
+                  <th className="p-4 font-semibold text-sm">Open</th>
+                  <th className="p-4 font-semibold text-sm text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -502,14 +504,11 @@ export function ProfileTeacherVideos() {
                   return (
                     <tr
                       key={s.contentId}
-                      className="border-border/60 hover:bg-muted/20 border-b transition-colors"
+                      className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
                     >
-                      <td className="p-3 align-top">
-                        <div className="text-foreground font-medium">
+                      <td className="p-4 align-middle">
+                        <div className="text-foreground text-base font-bold">
                           {s.name}
-                        </div>
-                        <div className="text-muted-foreground mt-1 text-xs">
-                          /{s.friendlyLink}
                         </div>
                         {s.processingComplexity ? (
                           <div className="text-muted-foreground mt-1 text-xs">
@@ -517,71 +516,73 @@ export function ProfileTeacherVideos() {
                           </div>
                         ) : null}
                         {tags.length > 0 ? (
-                          <div className="text-muted-foreground mt-2 max-w-md text-xs">
+                          <div className="text-muted-foreground mt-1.5 max-w-md text-xs">
                             {tags.join(" · ")}
                           </div>
                         ) : null}
                       </td>
-                      <td className="p-3 align-top">
+                      <td className="p-4 align-middle">
                         <span
                           className={cn(
-                            "inline-flex rounded px-2 py-0.5 text-xs font-medium",
+                            "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
                             s.captionsReady
-                              ? "bg-accent/15 text-accent"
+                              ? "bg-green-500/15 text-green-500"
                               : "bg-muted text-muted-foreground",
                           )}
                         >
                           {s.captionsReady ? "Ready" : "Pending"}
                         </span>
                       </td>
-                      <td className="p-3 align-top">
-                        <select
-                          className="border-border bg-background text-foreground focus:ring-primary max-w-[180px] rounded-lg border px-2 py-1.5 text-sm focus:ring-2 focus:outline-none disabled:opacity-60"
-                          value={isPublic ? "public" : "unlisted"}
-                          disabled={busy}
-                          aria-label={`Catalog visibility for ${s.name}`}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (v !== "public" && v !== "unlisted") return;
-                            if (v === s.visibility) return;
-                            void updateVisibility(s.contentId, v);
-                          }}
-                        >
-                          <option value="public">Public</option>
-                          <option value="unlisted">Private</option>
-                        </select>
-                        {busy ? (
-                          <span className="text-muted-foreground ml-2 inline-flex items-center gap-1 text-xs">
-                            <Loader2 className="size-3.5 animate-spin" />
-                            Saving
-                          </span>
-                        ) : null}
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <select
+                            className="border-border bg-background text-foreground focus:ring-primary w-[130px] rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
+                            value={isPublic ? "public" : "unlisted"}
+                            disabled={busy}
+                            aria-label={`Catalog visibility for ${s.name}`}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v !== "public" && v !== "unlisted") return;
+                              if (v === s.visibility) return;
+                              void updateVisibility(s.contentId, v);
+                            }}
+                          >
+                            <option value="public">Public</option>
+                            <option value="unlisted">Private</option>
+                          </select>
+                          {busy ? (
+                            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                              <Loader2 className="size-3.5 animate-spin" />
+                              Saving...
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
-                      <td className="text-primary p-3 align-top text-sm">
-                        <div className="flex flex-col gap-1.5">
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col gap-2">
                           {s.contentVideoId != null ? (
                             <Link
                               to={`/content/${s.contentVideoId}`}
-                              className="hover:underline"
+                              className="text-primary font-semibold text-sm hover:underline"
                             >
                               Watch lesson
                             </Link>
                           ) : null}
                           <Link
                             to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
-                            className="hover:underline"
+                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline"
                           >
                             Series page
                           </Link>
                         </div>
                       </td>
-                      <td className="p-3 align-top text-right">
+                      <td className="p-4 align-middle text-right">
                         <button
                           onClick={() => openDeleteModal(s.contentId)}
-                          className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors inline-flex"
+                          className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
                           title="Delete video"
                         >
-                          <Trash2 className="size-4" />
+                          <Trash2 className="size-4.5" />
                         </button>
                       </td>
                     </tr>

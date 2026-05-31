@@ -59,6 +59,7 @@ export interface UserData {
   stripeSubscriptionId?: string;
   /** Set when this account is a roster student under a teacher (exempt from consumer subscription). */
   teacherId?: number | null;
+  teacherName?: string | null;
   currentStreak: number;
   xp: number;
   level: number;
@@ -201,6 +202,7 @@ function normalizeProfile(raw: unknown): UserData | null {
       const n = typeof t === "number" ? t : Number(t);
       return Number.isFinite(n) ? n : null;
     })(),
+    teacherName: typeof r.teacherName === "string" ? r.teacherName : null,
     currentStreak: Number(r.currentStreak) || 0,
     xp: Number(r.xp) || 0,
     level: Number(r.level) || 1,

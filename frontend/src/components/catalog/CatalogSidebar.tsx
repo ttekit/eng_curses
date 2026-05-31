@@ -9,12 +9,14 @@ import {
   Settings,
   Trophy,
   User,
+  GraduationCap,
 } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 
 const sidebarLinks = [
   { icon: LayoutGrid, label: "Catalog", to: "/catalog" },
   { icon: Search, label: "Search", to: "/catalog" },
+  { icon: GraduationCap, label: "Classroom", to: "/classroom" },
   { icon: BookOpen, label: "My Lessons", to: "/watched-lessons" },
   { icon: Trophy, label: "Progress", to: "/profile?tab=progress" },
   { icon: User, label: "Profile", to: "/profile" },

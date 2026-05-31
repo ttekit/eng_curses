@@ -285,7 +285,6 @@ export default function ProfileMain() {
     );
   }
 
-  // eslint-disable-next-line no-inner-declarations
   function selectTab(id: TabId) {
     setActiveTab(id);
     if (id === "overview") setSearchParams({}, { replace: true });
@@ -324,6 +323,27 @@ export default function ProfileMain() {
         >
           <div className="mx-auto max-w-6xl px-4 lg:px-8">
             <ProfileHeader user={headerModel} />
+
+            {/* ===== ПЛАШКА С ИМЕНЕМ УЧИТЕЛЯ ===== */}
+            {user?.role?.toLowerCase() === "student" &&
+              (user as any).teacherName && (
+                <div className="mt-4 flex items-center gap-3 rounded-xl bg-primary/10 px-5 py-3 border border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2">
+                  <div className="p-2 bg-primary/20 rounded-lg">
+                    <GraduationCap className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                      Your Teacher
+                    </p>
+                    <p className="text-sm font-medium text-foreground">
+                      <strong className="font-bold text-primary">
+                        {(user as any).teacherName}
+                      </strong>
+                    </p>
+                  </div>
+                </div>
+              )}
+            {/* ==================================== */}
 
             <div
               className="mt-8 flex flex-wrap gap-1 rounded-xl bg-secondary/50 p-1"

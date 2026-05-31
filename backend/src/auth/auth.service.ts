@@ -54,7 +54,7 @@ export class AuthService {
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) { }
+  ) {}
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -435,7 +435,23 @@ export class AuthService {
     const prisma = this.prisma as any;
     const generatedStudents: GeneratedStudent[] = [];
 
-    if (data.role === "TEACHER" && Array.isArray(data.studentNames)) {
+    // 1. ПОЛУЧАЕМ ТЕКУЩИЕ ДАННЫЕ УЧИТЕЛЯ ИЗ БАЗЫ
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { additionalUserData: true },
+    });
+
+    // 2. ПРОВЕРЯЕМ, БЫЛИ ЛИ УЖЕ ДОБАВЛЕНЫ УЧЕНИКИ ПРИ РЕГИСТРАЦИИ
+    const hasExistingStudents =
+      Array.isArray(currentUser?.additionalUserData?.studentNames) &&
+      currentUser.additionalUserData.studentNames.length > 0;
+
+    // 3. ГЕНЕРИРУЕМ УЧЕНИКОВ ТОЛЬКО ЕСЛИ ИХ ЕЩЕ НЕТ В БАЗЕ
+    if (
+      data.role === "TEACHER" &&
+      Array.isArray(data.studentNames) &&
+      !hasExistingStudents
+    ) {
       for (const pupil of data.studentNames) {
         const randomId = Math.floor(1000 + Math.random() * 9000);
         let firstName = "student";
@@ -533,11 +549,11 @@ export class AuthService {
         ...(data.role ? { role: data.role } : {}),
         additionalUserData: hasAdditionalData
           ? {
-            upsert: {
-              create: createData,
-              update: updateData,
-            },
-          }
+              upsert: {
+                create: createData,
+                update: updateData,
+              },
+            }
           : undefined,
       },
     });
@@ -1019,6 +1035,9 @@ export class AuthService {
           },
         },
         settings: true,
+        teacher: {
+          select: { name: true },
+        },
       },
     });
 
@@ -1030,29 +1049,42 @@ export class AuthService {
     }
     const extra = (user as any).additionalUserData;
 
-    const [distinctPassedVideos, vocabularyTermsTotal, studyingPlanPhaseTopics] =
-      await Promise.all([
-        this.prisma.comprehensionTestAttempt
-          .findMany({
-            where: { userId, passed: true },
-            distinct: ["contentVideoId"],
-            select: { contentVideoId: true },
-          })
-          .then((rows) => rows.length),
-        this.prisma.userVocabulary.count({ where: { userId } }),
-        this.studyingPlanRegeneration.resolvePhaseTopicsForUser(userId),
-      ]);
+    const [
+      distinctPassedVideos,
+      vocabularyTermsTotal,
+      studyingPlanPhaseTopics,
+    ] = await Promise.all([
+      this.prisma.comprehensionTestAttempt
+        .findMany({
+          where: { userId, passed: true },
+          distinct: ["contentVideoId"],
+          select: { contentVideoId: true },
+        })
+        .then((rows) => rows.length),
+      this.prisma.userVocabulary.count({ where: { userId } }),
+      this.studyingPlanRegeneration.resolvePhaseTopicsForUser(userId),
+    ]);
 
     let actualStreak = (user as any).currentStreak ?? 0;
     const lastActivityDate = (user as any).lastActivityDate;
 
     if (lastActivityDate && actualStreak > 0) {
       const now = new Date();
-      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const today = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
       const lastActivity = new Date(lastActivityDate);
-      const lastActivityDay = new Date(Date.UTC(lastActivity.getUTCFullYear(), lastActivity.getUTCMonth(), lastActivity.getUTCDate()));
+      const lastActivityDay = new Date(
+        Date.UTC(
+          lastActivity.getUTCFullYear(),
+          lastActivity.getUTCMonth(),
+          lastActivity.getUTCDate(),
+        ),
+      );
 
-      const diffDays = Math.round((today.getTime() - lastActivityDay.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round(
+        (today.getTime() - lastActivityDay.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
       if (diffDays > 1) {
         actualStreak = 0;
@@ -1082,12 +1114,12 @@ export class AuthService {
       studyingPlanPhaseTopics,
       activeStudyingPhaseIndex: extra?.activeStudyingPhaseIndex ?? 0,
       activePhaseEnteredAt:
-        extra?.activePhaseEnteredAt instanceof Date ?
-          extra.activePhaseEnteredAt.toISOString()
-          : extra?.activePhaseEnteredAt ?? null,
-      phaseFinalTestPassedPhases:
-        parsePhaseFinalTestProgress(extra?.phaseFinalTestProgress)
-          .passedPhaseIndices,
+        extra?.activePhaseEnteredAt instanceof Date
+          ? extra.activePhaseEnteredAt.toISOString()
+          : (extra?.activePhaseEnteredAt ?? null),
+      phaseFinalTestPassedPhases: parsePhaseFinalTestProgress(
+        extra?.phaseFinalTestProgress,
+      ).passedPhaseIndices,
       studyingPlanProgress: {
         distinctPassedVideos,
         vocabularyTermsTotal,
@@ -1100,6 +1132,7 @@ export class AuthService {
       subscriptionStatus: (user as any).subscriptionStatus ?? "",
       stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
       teacherId: (user as any).teacherId ?? null,
+      teacherName: (user as any).teacher?.name ?? null,
     };
   }
 
