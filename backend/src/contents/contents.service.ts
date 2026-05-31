@@ -83,10 +83,16 @@ export class ContentsService {
     });
   }
 
-  private async processAndUploadZip(file: Express.Multer.File): Promise<{ videoUrl: string, zipThumbnailUrl: string | null }> {
+  private async processAndUploadZip(file: Express.Multer.File, videoName: string): Promise<{ videoUrl: string, zipThumbnailUrl: string | null }> {
     const zip = new AdmZip(file.buffer);
     const zipEntries = zip.getEntries();
-    const folderUuid = randomUUID();
+
+    const safePrefix = videoName
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 30);
+    const folderUuid = `${safePrefix}_${randomUUID()}`;
+
     let m3u8Url: string | null = null;
     let zipThumbUrl: string | null = null;
     let firstTsBuffer: Buffer | null = null;
@@ -182,7 +188,7 @@ export class ContentsService {
 
     if (file) {
       if (file.originalname.toLowerCase().endsWith(".zip")) {
-        const zipResult = await this.processAndUploadZip(file);
+        const zipResult = await this.processAndUploadZip(file, dto.name);
         videoUrl = zipResult.videoUrl;
         zipThumb = zipResult.zipThumbnailUrl;
       } else {
@@ -313,7 +319,7 @@ export class ContentsService {
         let zipThumb: string | null = null;
 
         if (file.originalname.toLowerCase().endsWith(".zip")) {
-          const zipResult = await this.processAndUploadZip(file);
+          const zipResult = await this.processAndUploadZip(file, updateContent.name);
           newUrl = zipResult.videoUrl;
           zipThumb = zipResult.zipThumbnailUrl;
         } else {
@@ -465,7 +471,7 @@ export class ContentsService {
 
     if (file) {
       if (file.originalname.toLowerCase().endsWith(".zip")) {
-        const zipResult = await this.processAndUploadZip(file);
+        const zipResult = await this.processAndUploadZip(file, dto.videoName);
         videoUrl = zipResult.videoUrl;
         zipThumb = zipResult.zipThumbnailUrl;
       } else {
@@ -575,7 +581,7 @@ export class ContentsService {
 
     if (file) {
       if (file.originalname.toLowerCase().endsWith(".zip")) {
-        const zipResult = await this.processAndUploadZip(file);
+        const zipResult = await this.processAndUploadZip(file, dto.name);
         videoUrl = zipResult.videoUrl;
         zipThumb = zipResult.zipThumbnailUrl;
       } else {
