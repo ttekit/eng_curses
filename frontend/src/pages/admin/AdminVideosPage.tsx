@@ -21,7 +21,8 @@ import {
   Edit,
   X,
   Link as LinkIcon,
-  FileArchive
+  FileArchive,
+  Image as ImageIcon
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import {
@@ -56,7 +57,6 @@ import {
   regenerateAdminVideoThemeTags,
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
-import { unzipSync } from "fflate";
 
 function generateVideoThumbnailBlob(fileOrUrl: File | Blob | string): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -181,6 +181,7 @@ export default function AdminVideosPage() {
   const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editThumb, setEditThumb] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [regenBusy, setRegenBusy] = useState<
     false | "tags" | "cefr" | "captions"
@@ -340,6 +341,7 @@ export default function AdminVideosPage() {
     setEditing(v);
     setEditName(v.videoName);
     setEditDesc(v.videoDescription || v.content.category.description || "");
+    setEditThumb(null);
   }, []);
 
   const handleSaveEdit = async () => {
@@ -351,10 +353,24 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      await patchAdminContentVideo(editing.id, {
-        videoName: name,
-        videoDescription: editDesc.trim() || null,
-      });
+      if (editThumb) {
+        const fd = new FormData();
+        fd.append("videoName", name);
+        fd.append("videoDescription", editDesc.trim() || "");
+        fd.append("thumbnailFile", editThumb);
+
+        const res = await apiFetch(`/contents/${editing.id}`, {
+          method: "PATCH",
+          body: fd,
+        });
+        if (!res.ok) throw new Error("Update with thumbnail failed");
+      } else {
+        await patchAdminContentVideo(editing.id, {
+          videoName: name,
+          videoDescription: editDesc.trim() || null,
+        });
+      }
+
       toast.success("Video updated");
       setEditing(null);
       await loadVideos();
@@ -468,67 +484,63 @@ export default function AdminVideosPage() {
     }
   };
 
-  const extractAndGenerateThumbnailFromZip = async (zipFile: File): Promise<Blob | null> => {
-    try {
-      const arrayBuffer = await zipFile.arrayBuffer();
-      const unzipped = unzipSync(new Uint8Array(arrayBuffer));
-
-      const tsFileName = Object.keys(unzipped).find(
-        (name) => name.endsWith(".ts") && !name.includes("__MACOSX") && !name.startsWith("._")
-      );
-
-      if (!tsFileName) return null;
-
-      const tsData = unzipped[tsFileName];
-      if (!tsData) return null;
-
-      const tsBlob = new Blob([tsData], { type: "video/MP2T" });
-      return await generateVideoThumbnailBlob(tsBlob);
-    } catch (e) {
-      console.warn("Failed to extract frame from zip dynamically:", e);
-      return null;
-    }
-  };
-
   const handleUpload = async () => {
     const name = uploadTitle.trim();
-    if (name.length < 2) {
-      toast.error("Title too short.");
+    const description = uploadDesc.trim().slice(0, 250);
+    if (name.length < 2 || description.length > 250) {
+      toast.error("Title ≥ 2 characters; description ≤ 250.");
       return;
     }
 
     const fd = new FormData();
     fd.append("name", name);
     fd.append("friendlyLink", slugFriendly(name));
-    fd.append("description", uploadDesc.trim() || `${name} — course video.`);
+    fd.append(
+      "description",
+      (description || `${name} — learner catalog.`).slice(0, 250),
+    );
 
-    // Загрузка файла/зипа
     if (uploadMode === "file") {
-      if (!uploadFile) return toast.error("Choose MP4");
+      if (!uploadFile || !uploadFile.type.startsWith("video/mp4")) {
+        toast.error("Choose an MP4 video file.");
+        return;
+      }
       fd.append("file", uploadFile);
     } else if (uploadMode === "zip") {
-      if (!uploadFile) return toast.error("Choose ZIP");
+      if (!uploadFile || !uploadFile.name.endsWith(".zip")) {
+        toast.error("Choose a .zip archive containing your HLS files.");
+        return;
+      }
       fd.append("file", uploadFile);
     } else {
-      fd.append("videoLink", uploadLink.trim());
+      const link = uploadLink.trim();
+      if (!link.startsWith("https://")) {
+        toast.error("Please use a valid HTTPS link to your .m3u8 file.");
+        return;
+      }
+      fd.append("videoLink", link);
     }
 
-    // РУЧНАЯ ЗАГРУЗКА ОБЛОЖКИ (самый надежный способ)
     if (uploadThumb) {
       fd.append("thumbnailFile", uploadThumb);
     } else {
       toast.error("Пожалуйста, загрузи обложку вручную для стабильности.");
-      return; // Блокируем загрузку без обложки, чтобы не было дырок в дизайне
+      return;
     }
 
     setUploadSaving(true);
     try {
       await createAdminCatalogVideo(fd);
-      toast.success("Готово!");
+      toast.success("Video published successfully");
       setUploadOpen(false);
-      // ... (сброс полей)
+      setUploadTitle("");
+      setUploadDesc("");
+      setUploadFile(null);
+      setUploadLink("");
+      setUploadThumb(null);
+      await loadVideos();
     } catch (e) {
-      toast.error("Ошибка при загрузке");
+      toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setUploadSaving(false);
     }
@@ -649,28 +661,15 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
+    if (addEpisodeThumb) {
+      fd.append("thumbnailFile", addEpisodeThumb);
+    } else {
+      toast.error("Пожалуйста, загрузи обложку вручную для стабильности.");
+      return;
+    }
+
     setAddEpisodeSaving(true);
-
     try {
-      if (addEpisodeThumb) {
-        fd.append("thumbnailFile", addEpisodeThumb);
-      } else if (addEpisodeMode === "file" && addEpisodeFile) {
-        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } else if (addEpisodeMode === "zip" && addEpisodeFile) {
-        const thumbBlob = await extractAndGenerateThumbnailFromZip(addEpisodeFile);
-        if (thumbBlob) {
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        }
-      } else if (addEpisodeMode === "link") {
-        try {
-          const thumbBlob = await generateVideoThumbnailBlob(addEpisodeLink);
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        } catch (e) {
-          console.warn("Could not auto-generate thumbnail from link", e);
-        }
-      }
-
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
@@ -820,9 +819,6 @@ export default function AdminVideosPage() {
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
-            <p className="text-[11px] text-muted-foreground">
-              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
-            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -850,9 +846,6 @@ export default function AdminVideosPage() {
               maxLength={250}
               onChange={(e) => setUploadDesc(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Friendly URL slug is generated automatically.
-            </p>
           </div>
         </div>
       </AdminModal>
@@ -970,9 +963,6 @@ export default function AdminVideosPage() {
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
-            <p className="text-[11px] text-muted-foreground">
-              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
-            </p>
           </div>
 
           <div className="space-y-2 border-t border-border pt-4">
@@ -1002,6 +992,7 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
+      {/* Модалка редактирования (image_973384.png с полем смены обложки) */}
       <AdminModal
         open={editing != null}
         onClose={() => !editSaving && !regenBusy && setEditing(null)}
@@ -1052,6 +1043,30 @@ export default function AdminVideosPage() {
               onChange={(e) => setEditDesc(e.target.value)}
             />
           </div>
+
+          {/* НОВОЕ ПОЛЕ: Смена картинки обложки */}
+          <div className="space-y-2 border-border border-t pt-4">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Change Thumbnail / Cover Image
+            </label>
+            <label className="block cursor-pointer rounded-lg border border-border p-3 text-center bg-muted/40 transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setEditThumb(f);
+                }}
+              />
+              {editThumb ? (
+                <p className="text-sm font-medium text-primary truncate">{editThumb.name}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Click to upload a new cover image (.jpg, .png)</p>
+              )}
+            </label>
+          </div>
+
           <div className="space-y-2 border-border border-t pt-4">
             <p className="text-sm font-medium">Transcript metadata</p>
             <p className="text-xs text-muted-foreground">
@@ -1258,7 +1273,7 @@ export default function AdminVideosPage() {
                   </p>
                   <ChipList
                     tags={inspectMeta.video.content.stats?.systemTags ?? []}
-                    emptyLabel="No CEFR bands yet. Edit → “Regenerate CEFR”."
+                    emptyLabel="No CEFR bands yet. Edit → " Regenerate CEFR"."
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
