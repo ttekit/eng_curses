@@ -36,6 +36,7 @@ function postLoginNavigateTarget(
   if (profile.role === "admin") return "/admin";
   if (profile.role === "teacher") return "/catalog";
 
+  // 1. Если роль не выбрана
   if (
     !profile.role ||
     profile.role === "choose" ||
@@ -44,6 +45,7 @@ function postLoginNavigateTarget(
     return "/registrationDetails";
   }
 
+  // 2. Жанры
   if (
     (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
     (!profile.hatedGenres || profile.hatedGenres.length === 0)
@@ -51,10 +53,22 @@ function postLoginNavigateTarget(
     return "/registrationPreferences";
   }
 
-  if (!profile.subscriptionPlan && !profile.subscriptionStatus) {
-    return "/subscribe";
+  // 3. БИОГРАФИЯ (жесткая проверка для студентов)
+  // Если это студент, проверяем наличие данных, которые собираются в PlacementPreTestStep
+  if (
+    profile.role === "student" &&
+    (!profile.education ||
+      profile.education.trim() === "" ||
+      !profile.workField ||
+      profile.workField.trim() === "" ||
+      !profile.nativeLanguage ||
+      profile.nativeLanguage.trim() === "")
+  ) {
+    // ВАЖНО: возвращаем путь, где эта биография собирается (у тебя это, видимо, регистрация)
+    return "/registrationDetails";
   }
 
+  // 4. Уровень английского
   if (
     !profile.englishLevel ||
     profile.englishLevel === "choose" ||
@@ -63,12 +77,12 @@ function postLoginNavigateTarget(
     return "/registrationDetails";
   }
 
+  // 5. Тест (должен идти последним!)
   if (!profile.hasCompletedPlacement) {
     return "/level-test";
   }
 
   if (explicit) return explicit;
-
   if (userMayUseLearnerApp(profile)) return "/catalog";
 
   return "/subscribe";

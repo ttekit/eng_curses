@@ -18,9 +18,7 @@ export default function PlacementPreferencesStep({
   const { messages } = useLandingLocale();
   const s = messages.placementFlow.student;
   const a = messages.placementFlow.adult;
-
-  const collectIndependentProfile =
-    user.role === "student" && user.teacherId == null;
+  const collectIndependentProfile = user.role === "student";
 
   const [workField, setWorkField] = useState(
     () => user.workField?.trim() ?? "",
@@ -37,6 +35,8 @@ export default function PlacementPreferencesStep({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFieldError(null);
+
+    const isStudent = user.role === "student";
 
     if (collectIndependentProfile) {
       const j = workField.trim();
@@ -75,9 +75,6 @@ export default function PlacementPreferencesStep({
           }
         : {};
 
-      // ТОТ САМЫЙ ФИКС:
-      // Бэкенд падает, если hobbies пустой массив.
-      // Поэтому, если юзер еще не выбрал хобби, отправляем дефолтное ["English"].
       const hobbiesPayload =
         user.hobbies && user.hobbies.length > 0 ? user.hobbies : ["English"];
 
@@ -88,7 +85,9 @@ export default function PlacementPreferencesStep({
           hobbies: hobbiesPayload,
           favoriteGenres: user.favoriteGenres ?? [],
           hatedGenres: user.hatedGenres ?? [],
-          hasCompletedPlacement: true,
+          // ФИКС: Для студентов ставим false, чтобы тест не проскакивал.
+          // Для взрослых оставляем true, так как они могут пропускать тест.
+          hasCompletedPlacement: !isStudent,
         }),
       });
 

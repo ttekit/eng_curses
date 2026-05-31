@@ -32,7 +32,6 @@ import AdminTeachersPage from "./pages/admin/AdminTeachersPage";
 import AdminTopicsPage from "./pages/admin/AdminTopicsPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
-
 import AnalyticsLayout from "./components/AnalyticsLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireAdmin from "./components/RequireAdmin";
@@ -41,6 +40,7 @@ import SubscribePage from "./pages/subscription/SubscribePage";
 import { EmailVerification } from "./pages/registration/EmailVerification";
 import RestoreAccount from "./pages/login/RestoreAccount";
 import AdminAvatarsPage from "./pages/admin/AdminAvatarsPage";
+import ClassroomPage from "./pages/content/ClassroomPage";
 
 const router = createBrowserRouter([
   {
@@ -106,6 +106,7 @@ const router = createBrowserRouter([
                 element: <CatalogSeriesPage />,
               },
               { path: "/catalog", element: <VideoPage /> },
+              { path: "/classroom", element: <ClassroomPage /> },
               { path: "/learning-plan", element: <LearningPlanPage /> },
               {
                 path: "/video-page",

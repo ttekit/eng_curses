@@ -118,13 +118,9 @@ export default function VideoPage() {
     [],
   );
 
-
-  const [classroomVideos, setClassroomVideos] = useState<CatalogCardVideo[]>(
-    [],
-  );
-
   const { user, isLoading: userLoading, refreshProfile } = useUser();
-  const isTeacherLinkedStudent = user?.role === "student" && user?.teacherId != null;
+  const isTeacherLinkedStudent =
+    user?.role === "student" && user?.teacherId != null;
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
@@ -173,10 +169,7 @@ export default function VideoPage() {
           if (!import.meta.env.DEV) {
             toast.success(
               cb.stripeThanksToast || "Thank you for your purchase!",
-              {
-                id: STRIPE_CHECKOUT_CATALOG_TOAST_ID,
-                duration: 6000,
-              },
+              { id: STRIPE_CHECKOUT_CATALOG_TOAST_ID, duration: 6000 },
             );
           }
           return;
@@ -222,18 +215,7 @@ export default function VideoPage() {
     const hasPrefs =
       (user.hobbies?.length ?? 0) > 0 && (user.favoriteGenres?.length ?? 0) > 0;
     return hasPrefs ? "test" : "preferences";
-  }, [
-    needsPlacement,
-    user,
-    user?.hobbies,
-    user?.favoriteGenres,
-    user?.role,
-    user?.teacherId,
-    user?.nativeLanguage,
-    user?.workField,
-    user?.education,
-    user?.englishLevel,
-  ]);
+  }, [needsPlacement, user]);
 
   const showPlacementPrepOverlay =
     placementPhaseResolved === "preferences" && !!user;
@@ -320,61 +302,6 @@ export default function VideoPage() {
     fetchVideos();
   }, []);
 
-  // ===== ЗАГРУЗКА СПЕЦИАЛЬНЫХ ВИДЕО (ДЛЯ УЧИТЕЛЕЙ / УЧЕНИКОВ) =====
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    async function loadClassroom() {
-      try {
-        const role = user?.role?.toLowerCase();
-        if (role === "student") {
-          const res = await apiFetch("/contents/student/teacher-videos");
-          if (res.ok) {
-            const data = await res.json();
-            if (!cancelled && Array.isArray(data)) {
-              setClassroomVideos(
-                data
-                  .map((d: any) => ({
-                    id: d.contentVideoId || d.contentId,
-                    title: d.name,
-                    categoryLabel: "Teacher's Lesson",
-                    thumbnailUrl: d.thumbnailUrl,
-                    videoLink: d.videoLink,
-                  }))
-                  .filter((v: any) => v.id != null),
-              );
-            }
-          }
-        } else if (role === "teacher") {
-          const res = await apiFetch("/contents/teacher/my-series");
-          if (res.ok) {
-            const data = await res.json();
-            if (!cancelled && Array.isArray(data)) {
-              setClassroomVideos(
-                data
-                  .map((d: any) => ({
-                    id: d.contentVideoId || d.contentId,
-                    title: d.name,
-                    categoryLabel: "My Lesson",
-                    thumbnailUrl: d.thumbnailUrl,
-                  }))
-                  .filter((v: any) => v.id != null),
-              );
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Failed to load classroom videos", e);
-      }
-    }
-
-    void loadClassroom();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
   const thumbnailByVideoId = useMemo(() => {
     const map = new Map<number, string | undefined>();
     for (const v of videos) {
@@ -384,16 +311,13 @@ export default function VideoPage() {
   }, [videos]);
 
   useEffect(() => {
-    if (loading) {
-      return;
-    }
+    if (loading) return;
     if (videos.length === 0) {
       setRecommendedCards([]);
       return;
     }
 
     let cancelled = false;
-
     void (async () => {
       const userId = user?.id ? Number.parseInt(user.id, 10) : Number.NaN;
       let cards: CatalogCardVideo[] = [];
@@ -421,15 +345,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [
-    loading,
-    videos,
-    user,
-    user?.id,
-    user?.englishLevel,
-    user?.hobbies,
-    thumbnailByVideoId,
-  ]);
+  }, [loading, videos, user, thumbnailByVideoId]);
 
   useEffect(() => {
     const raw = location.state as
@@ -439,10 +355,7 @@ export default function VideoPage() {
     if (raw?.openSpotlight) {
       setSpotlightOpen(true);
       void navigate(
-        {
-          pathname: location.pathname,
-          search: location.search,
-        },
+        { pathname: location.pathname, search: location.search },
         { replace: true, state: {} },
       );
     }
@@ -495,23 +408,22 @@ export default function VideoPage() {
     return Array.from(tags).sort();
   }, [videos]);
 
-
   const sortedGenres = useMemo(() => {
     return ["All", "Recommended", ...genreNames.filter(Boolean)];
   }, [genreNames]);
 
-
   const recommendedVideoIds = useMemo(() => {
-    return new Set(recommendedCards.map(c => c.id));
+    return new Set(recommendedCards.map((c) => c.id));
   }, [recommendedCards]);
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-
+      // 1. ВЫРЕЗАЕМ ВИДЕО УЧИТЕЛЯ (чтобы не было в общем списке)
       if (v.content?.category?.friendlyLink?.startsWith("t-")) {
         return false;
       }
 
+      // 2. БЛОКИРУЕМ КОНТЕНТ 18+ ДЛЯ УЧЕНИКОВ
       if (isTeacherLinkedStudent) {
         const sysTags = v.content?.stats?.systemTags || [];
         const usrTags = v.content?.stats?.userTags || [];
@@ -529,11 +441,8 @@ export default function VideoPage() {
           catName.includes("18+") ||
           catName.includes("adult");
 
-        if (has18Plus) {
-          return false;
-        }
+        if (has18Plus) return false;
       }
-
 
       const matchCategory =
         selectedCategory === "All" ||
@@ -543,31 +452,40 @@ export default function VideoPage() {
         (v.content.stats?.systemTags &&
           v.content.stats.systemTags.includes(selectedLevel));
 
-      // ДОБАВЛЕНО: Специальная обработка жанра "Recommended"
       let matchGenre = true;
       if (selectedGenre === "Recommended") {
         matchGenre = recommendedVideoIds.has(v.id);
       } else if (selectedGenre !== "All") {
-        matchGenre = !!(v.content.stats?.userTags && v.content.stats.userTags.includes(selectedGenre));
+        matchGenre = !!(
+          v.content.stats?.userTags &&
+          v.content.stats.userTags.includes(selectedGenre)
+        );
       }
 
       return matchCategory && matchLevel && matchGenre;
     });
-  }, [videos, selectedCategory, selectedLevel, selectedGenre, recommendedVideoIds, isTeacherLinkedStudent]);
+  }, [
+    videos,
+    selectedCategory,
+    selectedLevel,
+    selectedGenre,
+    recommendedVideoIds,
+    isTeacherLinkedStudent,
+  ]);
 
   const featured = filteredVideos[0] ?? null;
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
@@ -601,8 +519,11 @@ export default function VideoPage() {
       let dynamicTitle =
         selectedCategory !== "All" ? selectedCategory : "Filtered Results";
       if (selectedLevel !== "All") dynamicTitle += ` - ${selectedLevel}`;
-      // Обновлено, чтобы название отображалось красиво
-      if (selectedGenre !== "All") dynamicTitle = selectedGenre === "Recommended" ? "Recommended For You" : `${dynamicTitle} - ${selectedGenre}`;
+      if (selectedGenre !== "All")
+        dynamicTitle =
+          selectedGenre === "Recommended"
+            ? "Recommended For You"
+            : `${dynamicTitle} - ${selectedGenre}`;
 
       return [
         {
@@ -655,6 +576,13 @@ export default function VideoPage() {
     selectedGenre,
     hasFilters,
   ]);
+
+  // Вырезаем отфильтрованные видео из рекомендаций
+  const visibleRecommended = useMemo(() => {
+    if (recommendedCards.length === 0) return [];
+    const allowedIds = new Set(filteredVideos.map((v) => v.id));
+    return recommendedCards.filter((card) => allowedIds.has(card.id));
+  }, [recommendedCards, filteredVideos]);
 
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex-col">
@@ -829,8 +757,7 @@ export default function VideoPage() {
                       "Loading catalog..."}
                   </p>
                 </div>
-              ) : filteredVideos.length === 0 &&
-                classroomVideos.length === 0 ? (
+              ) : filteredVideos.length === 0 ? (
                 <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
                   <img src="/SadIcon.svg" className="w-25 h-30 mb-3" alt="" />
                   <h2 className="font-display text-2xl font-bold">
@@ -840,15 +767,17 @@ export default function VideoPage() {
                   <p className="mt-2 text-muted-foreground text-sm">
                     {videos.length === 0
                       ? (messages.catalogPage as any)?.emptyNoVideos ||
-                      "There are no videos in the catalog yet."
+                        "There are no videos in the catalog yet."
                       : (messages.catalogPage as any)?.emptyFiltered ||
-                      "No videos match your filters."}
+                        "No videos match your filters."}
                   </p>
                 </div>
               ) : hasFilters ? (
                 <div className="space-y-6">
                   <h2 className="font-display text-xl font-bold text-foreground">
-                    {selectedGenre === "Recommended" ? "Recommended For You" : (
+                    {selectedGenre === "Recommended" ? (
+                      "Recommended For You"
+                    ) : (
                       <>
                         Filtered Results
                         {selectedLevel !== "All" ? ` - ${selectedLevel}` : ""}
@@ -867,6 +796,14 @@ export default function VideoPage() {
                 </div>
               ) : (
                 <>
+                  {visibleRecommended.length > 0 ? (
+                    <CatalogVideoRow
+                      title={cb.recommendedTitle}
+                      description={cb.recommendedDescription}
+                      videos={visibleRecommended}
+                    />
+                  ) : null}
+
                   {catalogRows.map((row) => (
                     <CatalogVideoRow
                       key={row.title}
@@ -900,14 +837,7 @@ export default function VideoPage() {
             </div>
           </header>
           <div className="mx-auto w-full max-w-4xl shrink-0 px-4 py-6">
-            <div
-              className="h-2 w-full overflow-hidden rounded-full bg-muted"
-              role="progressbar"
-              aria-valuenow={50}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={cb.placementProgressAria || "Placement progress"}
-            >
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
               <div className="h-full w-1/2 rounded-full bg-primary transition-all" />
             </div>
           </div>
@@ -922,7 +852,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
+                        "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>
@@ -946,7 +876,6 @@ export default function VideoPage() {
                 ) : null}
               </div>
             </div>
-
             <footer className="shrink-0 border-border border-t bg-card">
               <div className="mx-auto flex max-w-4xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -975,10 +904,7 @@ export default function VideoPage() {
       {showPlacementTest ? (
         <div className="fixed inset-0 z-200 flex flex-col bg-background">
           {placementDocError ? (
-            <div
-              className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
-              role="alert"
-            >
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
               <p className="text-destructive text-sm font-medium">
                 {cb.couldNotLoadPlacement || "Could not load placement test."}
               </p>
@@ -992,15 +918,6 @@ export default function VideoPage() {
               title={cb.placementTestTitle || "Placement Test"}
               className="min-h-0 w-full flex-1 border-0 bg-background"
               srcDoc={placementDocHtml}
-              onLoad={() => {
-                try {
-                  if (typeof console !== "undefined" && console.log) {
-                    console.log("[placement:parent]", "iframe onLoad (srcDoc)");
-                  }
-                } catch {
-                  /* */
-                }
-              }}
             />
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3">
