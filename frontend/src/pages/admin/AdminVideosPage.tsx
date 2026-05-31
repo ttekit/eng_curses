@@ -20,7 +20,8 @@ import {
   Video,
   Edit,
   X,
-  Link as LinkIcon
+  Link as LinkIcon,
+  FileArchive
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import {
@@ -167,7 +168,7 @@ export default function AdminVideosPage() {
   const [levelFilter, setLevelFilter] = useState("all");
 
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadMode, setUploadMode] = useState<"file" | "link">("file");
+  const [uploadMode, setUploadMode] = useState<"file" | "link" | "zip">("file");
   const [uploadLink, setUploadLink] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
@@ -194,7 +195,7 @@ export default function AdminVideosPage() {
 
   const [reorderBusy, setReorderBusy] = useState(false);
   const [addEpisodeOpen, setAddEpisodeOpen] = useState(false);
-  const [addEpisodeMode, setAddEpisodeMode] = useState<"file" | "link">("file");
+  const [addEpisodeMode, setAddEpisodeMode] = useState<"file" | "link" | "zip">("file");
   const [addEpisodeLink, setAddEpisodeLink] = useState("");
   const [addEpisodeSeries, setAddEpisodeSeries] =
     useState<AdminVideoSeriesGroup | null>(null);
@@ -374,7 +375,6 @@ export default function AdminVideosPage() {
     }
     setEditSeriesSaving(true);
     try {
-
       const res = await apiFetch(`/contents/${editSeriesGroup.contentRootId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -482,7 +482,7 @@ export default function AdminVideosPage() {
 
     if (uploadMode === "file") {
       if (!uploadFile || !uploadFile.type.startsWith("video/")) {
-        toast.error("Choose a video file.");
+        toast.error("Choose an MP4 video file.");
         return;
       }
       fd.append("file", uploadFile);
@@ -492,6 +492,12 @@ export default function AdminVideosPage() {
       } catch (thumbErr) {
         console.warn("Could not generate thumbnail", thumbErr);
       }
+    } else if (uploadMode === "zip") {
+      if (!uploadFile || !uploadFile.name.endsWith(".zip")) {
+        toast.error("Choose a .zip archive containing your HLS files.");
+        return;
+      }
+      fd.append("file", uploadFile);
     } else {
       const link = uploadLink.trim();
       if (!link.startsWith("https://")) {
@@ -506,7 +512,6 @@ export default function AdminVideosPage() {
       await createAdminCatalogVideo(fd);
       toast.success("Video published successfully");
       setUploadOpen(false);
-
       setUploadTitle("");
       setUploadDesc("");
       setUploadFile(null);
@@ -518,6 +523,7 @@ export default function AdminVideosPage() {
       setUploadSaving(false);
     }
   };
+
   const handleConfirmDelete = async () => {
     if (!deleteCandidate) return;
     setDeleteSaving(true);
@@ -613,7 +619,7 @@ export default function AdminVideosPage() {
 
     if (addEpisodeMode === "file") {
       if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/")) {
-        toast.error("Choose a video file");
+        toast.error("Choose an MP4 video file.");
         return;
       }
       fd.append("file", addEpisodeFile);
@@ -621,14 +627,21 @@ export default function AdminVideosPage() {
         const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
       } catch (thumbErr) {
-        console.warn(thumbErr);
+        console.warn("Could not generate thumbnail", thumbErr);
       }
-    } else {
-      if (!addEpisodeLink.trim()) {
-        toast.error("Provide a valid video link");
+    } else if (addEpisodeMode === "zip") {
+      if (!addEpisodeFile || !addEpisodeFile.name.endsWith(".zip")) {
+        toast.error("Choose a .zip archive containing your HLS files.");
         return;
       }
-      fd.append("videoLink", addEpisodeLink.trim());
+      fd.append("file", addEpisodeFile);
+    } else {
+      const link = addEpisodeLink.trim();
+      if (!link.startsWith("https://")) {
+        toast.error("Please use a valid HTTPS link to your .m3u8 file.");
+        return;
+      }
+      fd.append("videoLink", link);
     }
 
     setAddEpisodeSaving(true);
@@ -697,16 +710,22 @@ export default function AdminVideosPage() {
         <div className="space-y-4">
           <div className="flex gap-2 p-1 bg-muted rounded-lg">
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${uploadMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setUploadMode('file')}
             >
-              Upload MP4 File
+              MP4 File
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${uploadMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setUploadMode('zip')}
+            >
+              ZIP (HLS)
+            </button>
+            <button
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setUploadMode('link')}
             >
-              Paste M3U8 Link
+              M3U8 Link
             </button>
           </div>
 
@@ -714,7 +733,7 @@ export default function AdminVideosPage() {
             <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
-                accept="video/*"
+                accept="video/mp4"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0] ?? null;
@@ -722,11 +741,26 @@ export default function AdminVideosPage() {
                 }}
               />
               <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-              <p className="font-medium">Browse for video</p>
+              <p className="font-medium">Browse for MP4 video</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {uploadFile
-                  ? uploadFile.name
-                  : "Video only (server-enforced max size)"}
+                {uploadFile ? uploadFile.name : "Single MP4 file"}
+              </p>
+            </label>
+          ) : uploadMode === "zip" ? (
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setUploadFile(f);
+                }}
+              />
+              <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+              <p className="font-medium">Browse for ZIP archive</p>
+              <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
+                {uploadFile ? uploadFile.name : "Select a .zip containing your .m3u8 and .ts chunk files."}
               </p>
             </label>
           ) : (
@@ -804,16 +838,22 @@ export default function AdminVideosPage() {
         <div className="space-y-4">
           <div className="flex gap-2 p-1 bg-muted rounded-lg">
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${addEpisodeMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setAddEpisodeMode('file')}
             >
-              Upload MP4 File
+              MP4 File
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${addEpisodeMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              onClick={() => setAddEpisodeMode('zip')}
+            >
+              ZIP (HLS)
+            </button>
+            <button
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setAddEpisodeMode('link')}
             >
-              Paste M3U8 Link
+              M3U8 Link
             </button>
           </div>
 
@@ -821,7 +861,7 @@ export default function AdminVideosPage() {
             <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
-                accept="video/*"
+                accept="video/mp4"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0] ?? null;
@@ -832,6 +872,23 @@ export default function AdminVideosPage() {
               <p className="font-medium">Video file</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {addEpisodeFile ? addEpisodeFile.name : "Required"}
+              </p>
+            </label>
+          ) : addEpisodeMode === "zip" ? (
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+              <input
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setAddEpisodeFile(f);
+                }}
+              />
+              <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+              <p className="font-medium">ZIP Archive</p>
+              <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
+                {addEpisodeFile ? addEpisodeFile.name : "Select a .zip containing your HLS files."}
               </p>
             </label>
           ) : (

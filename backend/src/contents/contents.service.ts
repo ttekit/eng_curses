@@ -26,6 +26,7 @@ import { AuthMethod, UserRole } from "@generated/prisma/enums";
 import * as XLSX from "xlsx";
 import * as bcrypt from "bcrypt";
 import { Redis } from "ioredis";
+import * as AdmZip from "adm-zip";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -78,6 +79,48 @@ export class ContentsService {
     });
   }
 
+  private async processAndUploadZip(file: Express.Multer.File): Promise<string> {
+    const zip = new AdmZip(file.buffer);
+    const zipEntries = zip.getEntries();
+    const folderUuid = randomUUID();
+    let m3u8Url: string | null = null;
+
+    const uploadPromises = zipEntries.map(async (entry) => {
+      if (entry.isDirectory) return;
+
+      const fileName = entry.name;
+      if (!fileName) return;
+
+      const fileBuffer = entry.getData();
+      const s3Key = `hls_videos/${folderUuid}/${fileName}`;
+
+      let contentType = "application/octet-stream";
+      if (fileName.endsWith(".m3u8")) contentType = "application/x-mpegURL";
+      else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: s3Key,
+          Body: fileBuffer,
+          ContentType: contentType,
+        })
+      );
+
+      if (fileName.endsWith(".m3u8")) {
+        m3u8Url = publicS3ObjectUrl(this.bucket, this.region, s3Key);
+      }
+    });
+
+    await Promise.all(uploadPromises);
+
+    if (!m3u8Url) {
+      throw new BadRequestException("Invalid ZIP: No .m3u8 file found inside the archive.");
+    }
+
+    return m3u8Url;
+  }
+
   async createContent(
     dto: CreateContentDto & { videoLink?: string },
     file?: Express.Multer.File,
@@ -86,19 +129,23 @@ export class ContentsService {
     let videoUrl = dto.videoLink;
 
     if (file) {
-      const key = buildSafeS3ObjectKey(file.originalname);
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-        }),
-      );
-      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      if (file.originalname.toLowerCase().endsWith(".zip")) {
+        videoUrl = await this.processAndUploadZip(file);
+      } else {
+        const key = buildSafeS3ObjectKey(file.originalname);
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: file.buffer,
+          }),
+        );
+        videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      }
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file or a videoLink");
+      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
     }
 
     let thumbnailUrl: string | null = null;
@@ -204,16 +251,21 @@ export class ContentsService {
           }
         }
 
-        const key = buildSafeS3ObjectKey(file.originalname);
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-            Body: file.buffer,
-          }),
-        );
+        let newUrl = "";
+        if (file.originalname.toLowerCase().endsWith(".zip")) {
+          newUrl = await this.processAndUploadZip(file);
+        } else {
+          const key = buildSafeS3ObjectKey(file.originalname);
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: key,
+              Body: file.buffer,
+            }),
+          );
+          newUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+        }
 
-        const newUrl = publicS3ObjectUrl(this.bucket, this.region, key);
         await this.prisma.contentVideo.updateMany({
           where: { contentId: contentMedia.id },
           data: { videoLink: newUrl },
@@ -224,10 +276,15 @@ export class ContentsService {
     return updateContent;
   }
 
-  deleteContent(id: number) {
-    return this.prisma.content.delete({
+  async deleteContent(id: number) {
+    const content = await this.prisma.content.findUnique({ where: { id } });
+    if (!content) throw new NotFoundException("Content not found");
+
+    await this.prisma.content.delete({
       where: { id },
     });
+
+    return { success: true };
   }
 
   async getAllContent() {
@@ -334,19 +391,23 @@ export class ContentsService {
     let videoUrl = dto.videoLink;
 
     if (file) {
-      const key = buildSafeS3ObjectKey(file.originalname);
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-        }),
-      );
-      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      if (file.originalname.toLowerCase().endsWith(".zip")) {
+        videoUrl = await this.processAndUploadZip(file);
+      } else {
+        const key = buildSafeS3ObjectKey(file.originalname);
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: file.buffer,
+          }),
+        );
+        videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      }
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file or a videoLink");
+      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
     }
 
     let thumbnailUrl: string | null = null;
@@ -433,15 +494,19 @@ export class ContentsService {
     let videoUrl = dto.videoLink;
 
     if (file) {
-      const key = buildSafeS3ObjectKey(file.originalname);
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-        }),
-      );
-      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      if (file.originalname.toLowerCase().endsWith(".zip")) {
+        videoUrl = await this.processAndUploadZip(file);
+      } else {
+        const key = buildSafeS3ObjectKey(file.originalname);
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: file.buffer,
+          }),
+        );
+        videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      }
     }
 
     if (!videoUrl) {
