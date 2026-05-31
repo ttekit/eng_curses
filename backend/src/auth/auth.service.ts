@@ -533,11 +533,11 @@ export class AuthService {
         ...(data.role ? { role: data.role } : {}),
         additionalUserData: hasAdditionalData
           ? {
-              upsert: {
-                create: createData,
-                update: updateData,
-              },
-            }
+            upsert: {
+              create: createData,
+              update: updateData,
+            },
+          }
           : undefined,
       },
     });
@@ -1032,16 +1032,32 @@ export class AuthService {
 
     const [distinctPassedVideos, vocabularyTermsTotal, studyingPlanPhaseTopics] =
       await Promise.all([
-      this.prisma.comprehensionTestAttempt
-        .findMany({
-          where: { userId, passed: true },
-          distinct: ["contentVideoId"],
-          select: { contentVideoId: true },
-        })
-        .then((rows) => rows.length),
-      this.prisma.userVocabulary.count({ where: { userId } }),
-      this.studyingPlanRegeneration.resolvePhaseTopicsForUser(userId),
-    ]);
+        this.prisma.comprehensionTestAttempt
+          .findMany({
+            where: { userId, passed: true },
+            distinct: ["contentVideoId"],
+            select: { contentVideoId: true },
+          })
+          .then((rows) => rows.length),
+        this.prisma.userVocabulary.count({ where: { userId } }),
+        this.studyingPlanRegeneration.resolvePhaseTopicsForUser(userId),
+      ]);
+
+    let actualStreak = (user as any).currentStreak ?? 0;
+    const lastActivityDate = (user as any).lastActivityDate;
+
+    if (lastActivityDate && actualStreak > 0) {
+      const now = new Date();
+      const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const lastActivity = new Date(lastActivityDate);
+      const lastActivityDay = new Date(Date.UTC(lastActivity.getUTCFullYear(), lastActivity.getUTCMonth(), lastActivity.getUTCDate()));
+
+      const diffDays = Math.round((today.getTime() - lastActivityDay.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 1) {
+        actualStreak = 0;
+      }
+    }
 
     return {
       id: (user as any).id,
@@ -1054,7 +1070,7 @@ export class AuthService {
       role: (user as any).role,
       xp: (user as any).xp,
       hasCompletedPlacement: (user as any).hasCompletedPlacement,
-      currentStreak: (user as any).currentStreak ?? 0,
+      currentStreak: actualStreak,
       englishLevel: extra?.englishLevel ?? "",
       education: extra?.education ?? "",
       workField: extra?.workField ?? "",
@@ -1068,7 +1084,7 @@ export class AuthService {
       activePhaseEnteredAt:
         extra?.activePhaseEnteredAt instanceof Date ?
           extra.activePhaseEnteredAt.toISOString()
-        : extra?.activePhaseEnteredAt ?? null,
+          : extra?.activePhaseEnteredAt ?? null,
       phaseFinalTestPassedPhases:
         parsePhaseFinalTestProgress(extra?.phaseFinalTestProgress)
           .passedPhaseIndices,
