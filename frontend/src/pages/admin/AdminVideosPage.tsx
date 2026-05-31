@@ -992,7 +992,6 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
-      {/* Модалка редактирования (image_973384.png с полем смены обложки) */}
       <AdminModal
         open={editing != null}
         onClose={() => !editSaving && !regenBusy && setEditing(null)}
@@ -1044,7 +1043,6 @@ export default function AdminVideosPage() {
             />
           </div>
 
-          {/* НОВОЕ ПОЛЕ: Смена картинки обложки */}
           <div className="space-y-2 border-border border-t pt-4">
             <label className="text-sm font-medium flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-muted-foreground" /> Change Thumbnail / Cover Image
@@ -1273,7 +1271,7 @@ export default function AdminVideosPage() {
                   </p>
                   <ChipList
                     tags={inspectMeta.video.content.stats?.systemTags ?? []}
-                    emptyLabel="No CEFR bands yet. Edit → " Regenerate CEFR"."
+                    emptyLabel="No CEFR bands yet. Edit → Regenerate CEFR."
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
