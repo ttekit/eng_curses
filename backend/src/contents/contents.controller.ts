@@ -256,62 +256,6 @@ export class ContentsController {
     return this.contentsService.getVideosForStudent(studentId);
   }
 
-  // ==========================================
-  // УПРАВЛЕНИЕ УЧЕНИКАМИ (CRM)
-  // ==========================================
-
-  @Post("teacher/my-students")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Add a new student" })
-  async addStudent(
-    @Req() req: Request & { user?: unknown },
-    @Body() body: { name: string; email: string },
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    return this.contentsService.addStudent(teacherId, body);
-  }
-
-  @Patch("teacher/my-students/:id")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Edit student details" })
-  async updateStudent(
-    @Req() req: Request & { user?: unknown },
-    @Param("id", ParseIntPipe) id: number,
-    @Body() body: { name: string; email: string },
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    return this.contentsService.updateStudent(teacherId, id, body);
-  }
-
-  @Delete("teacher/my-students/:id")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Remove a student" })
-  async removeStudent(
-    @Req() req: Request & { user?: unknown },
-    @Param("id", ParseIntPipe) id: number,
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    return this.contentsService.removeStudent(teacherId, id);
-  }
-
-  @Get("teacher/my-students/export")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Export students to Excel (.xlsx)" })
-  @Header(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  )
-  @Header("Content-Disposition", 'attachment; filename="students.xlsx"')
-  async exportStudents(
-    @Req() req: Request & { user?: unknown },
-    @Res() res: Response,
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    // Вызываем новый метод для Excel
-    const buffer = await this.contentsService.exportStudentsExcel(teacherId);
-    res.send(buffer);
-  }
-
   @Get("teacher/my-students/results")
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: "Get students results for teacher" })

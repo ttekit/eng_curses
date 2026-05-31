@@ -17,6 +17,7 @@ export function setStoredAccessToken(token: string | null): void {
       localStorage.setItem(ACCESS_TOKEN_KEY, token);
     } else {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem("temp_email");
     }
   } catch {
     /* ignore */

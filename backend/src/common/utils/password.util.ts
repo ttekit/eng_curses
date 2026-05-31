@@ -1,6 +1,8 @@
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 
 export function generateSecurePassword(length = 16): string {
+  const finalLength = Math.max(length, 10);
+
   const lower = "abcdefghijklmnopqrstuvwxyz";
   const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
@@ -14,13 +16,15 @@ export function generateSecurePassword(length = 16): string {
     symbols[randomInt(symbols.length)],
   ];
 
-  for (let i = pwdArray.length; i < length; i++) {
+  for (let i = pwdArray.length; i < finalLength; i++) {
     pwdArray.push(all[randomInt(all.length)]);
   }
-  
+
   for (let i = pwdArray.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);
-    [pwdArray[i], pwdArray[j]] = [pwdArray[j], pwdArray[i]];
+    const temp = pwdArray[i];
+    pwdArray[i] = pwdArray[j];
+    pwdArray[j] = temp;
   }
 
   return pwdArray.join("");
