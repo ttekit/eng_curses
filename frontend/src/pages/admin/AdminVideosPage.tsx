@@ -56,8 +56,9 @@ import {
   regenerateAdminVideoThemeTags,
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
+import { unzipSync } from "fflate";
 
-function generateVideoThumbnailBlob(fileOrUrl: File | string): Promise<Blob> {
+function generateVideoThumbnailBlob(fileOrUrl: File | Blob | string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "auto";
@@ -67,7 +68,7 @@ function generateVideoThumbnailBlob(fileOrUrl: File | string): Promise<Blob> {
     video.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
 
     video.onloadeddata = () => {
-      video.currentTime = 1.0;
+      video.currentTime = 0.5;
     };
 
     video.onseeked = () => {
@@ -83,7 +84,7 @@ function generateVideoThumbnailBlob(fileOrUrl: File | string): Promise<Blob> {
           else reject(new Error("Canvas blob generation failed"));
         },
         "image/jpeg",
-        0.8,
+        0.85,
       );
     };
 
@@ -467,6 +468,28 @@ export default function AdminVideosPage() {
     }
   };
 
+  const extractAndGenerateThumbnailFromZip = async (zipFile: File): Promise<Blob | null> => {
+    try {
+      const arrayBuffer = await zipFile.arrayBuffer();
+      const unzipped = unzipSync(new Uint8Array(arrayBuffer));
+
+      const tsFileName = Object.keys(unzipped).find(
+        (name) => name.endsWith(".ts") && !name.includes("__MACOSX") && !name.startsWith("._")
+      );
+
+      if (!tsFileName) return null;
+
+      const tsData = unzipped[tsFileName];
+      if (!tsData) return null;
+
+      const tsBlob = new Blob([tsData], { type: "video/MP2T" });
+      return await generateVideoThumbnailBlob(tsBlob);
+    } catch (e) {
+      console.warn("Failed to extract frame from zip dynamically:", e);
+      return null;
+    }
+  };
+
   const handleUpload = async () => {
     const name = uploadTitle.trim();
     const description = uploadDesc.trim().slice(0, 250);
@@ -504,26 +527,28 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
-    if (uploadThumb) {
-      fd.append("thumbnailFile", uploadThumb);
-    } else if (uploadMode === "file" && uploadFile) {
-      try {
+    setUploadSaving(true);
+
+    try {
+      if (uploadThumb) {
+        fd.append("thumbnailFile", uploadThumb);
+      } else if (uploadMode === "file" && uploadFile) {
         const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (thumbErr) {
-        console.warn("Could not generate thumbnail", thumbErr);
+      } else if (uploadMode === "zip" && uploadFile) {
+        const thumbBlob = await extractAndGenerateThumbnailFromZip(uploadFile);
+        if (thumbBlob) {
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        }
+      } else if (uploadMode === "link") {
+        try {
+          const thumbBlob = await generateVideoThumbnailBlob(uploadLink);
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        } catch (e) {
+          console.warn("Could not auto-generate thumbnail from link", e);
+        }
       }
-    } else if (uploadMode === "link") {
-      try {
-        const thumbBlob = await generateVideoThumbnailBlob(uploadLink);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (e) {
-        console.warn("Could not auto-generate thumbnail from link", e);
-      }
-    }
 
-    setUploadSaving(true);
-    try {
       await createAdminCatalogVideo(fd);
       toast.success("Video published successfully");
       setUploadOpen(false);
@@ -535,7 +560,7 @@ export default function AdminVideosPage() {
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
-    } finally {
+    } {
       setUploadSaving(false);
     }
   };
@@ -655,26 +680,28 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
-    if (addEpisodeThumb) {
-      fd.append("thumbnailFile", addEpisodeThumb);
-    } else if (addEpisodeMode === "file" && addEpisodeFile) {
-      try {
+    setAddEpisodeSaving(true);
+
+    try {
+      if (addEpisodeThumb) {
+        fd.append("thumbnailFile", addEpisodeThumb);
+      } else if (addEpisodeMode === "file" && addEpisodeFile) {
         const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (thumbErr) {
-        console.warn("Could not generate thumbnail", thumbErr);
+      } else if (addEpisodeMode === "zip" && addEpisodeFile) {
+        const thumbBlob = await extractAndGenerateThumbnailFromZip(addEpisodeFile);
+        if (thumbBlob) {
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        }
+      } else if (addEpisodeMode === "link") {
+        try {
+          const thumbBlob = await generateVideoThumbnailBlob(addEpisodeLink);
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        } catch (e) {
+          console.warn("Could not auto-generate thumbnail from link", e);
+        }
       }
-    } else if (addEpisodeMode === "link") {
-      try {
-        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeLink);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (e) {
-        console.warn("Could not auto-generate thumbnail from link", e);
-      }
-    }
 
-    setAddEpisodeSaving(true);
-    try {
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
@@ -825,7 +852,7 @@ export default function AdminVideosPage() {
               )}
             </label>
             <p className="text-[11px] text-muted-foreground">
-              Required for ZIP / M3U8 Link. If uploading MP4, it auto-generates.
+              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
             </p>
           </div>
 
@@ -975,7 +1002,7 @@ export default function AdminVideosPage() {
               )}
             </label>
             <p className="text-[11px] text-muted-foreground">
-              Required for ZIP / M3U8 Link. If uploading MP4, it auto-generates.
+              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
             </p>
           </div>
 
@@ -1470,7 +1497,6 @@ export default function AdminVideosPage() {
                 <div key={group.contentRootId} className="space-y-4">
                   <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      {/* Кнопка редактирования добавлена сюда */}
                       <div className="flex items-center gap-2">
                         <h3 className="font-display text-lg font-semibold text-foreground">
                           {group.seriesName}
