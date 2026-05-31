@@ -26,7 +26,7 @@ import { AuthMethod, UserRole } from "@generated/prisma/enums";
 import * as XLSX from "xlsx";
 import * as bcrypt from "bcrypt";
 import { Redis } from "ioredis";
-import * as AdmZip from "adm-zip";
+import AdmZip from "adm-zip";
 
 export type TeacherStudentQuizRow = {
   id: number;
