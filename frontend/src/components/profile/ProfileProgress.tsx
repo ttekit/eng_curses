@@ -1,11 +1,20 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle, ChevronRight, Lock, PlayCircle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Lock,
+  PlayCircle,
+  RefreshCw,
+} from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { cn } from "../../lib/utils";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { pct01, SkillBar } from "./KnowledgeMeters";
+import { subscriptionDevModeEnabled } from "../../lib/subscriptionAccess";
 
 type KnowledgeTagRow = {
   name: string;
@@ -15,6 +24,36 @@ type KnowledgeTagRow = {
   grammar: number;
   topicCount: number;
 };
+
+function parseKnowledgeTagsPayload(raw: unknown): KnowledgeTagRow[] {
+  if (!raw || typeof raw !== "object") {
+    return [];
+  }
+  const tags = (raw as { tags?: unknown }).tags;
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  const parsed: KnowledgeTagRow[] = [];
+  for (const row of tags) {
+    if (!row || typeof row !== "object") {
+      continue;
+    }
+    const o = row as Record<string, unknown>;
+    const name = typeof o.name === "string" ? o.name.trim() : "";
+    if (!name) {
+      continue;
+    }
+    parsed.push({
+      name,
+      score: Number(o.score) || 0,
+      listening: Number(o.listening) || 0,
+      vocabulary: Number(o.vocabulary) || 0,
+      grammar: Number(o.grammar) || 0,
+      topicCount: Number(o.topicCount) || 0,
+    });
+  }
+  return parsed;
+}
 
 type ProgressDetails = {
   vocabularyProgress: {
@@ -48,7 +87,26 @@ export function ProfileProgress() {
   const [tagRows, setTagRows] = useState<KnowledgeTagRow[] | null>(null);
   const [tagsError, setTagsError] = useState<string | null>(null);
   const [isTagsExpanded, setIsTagsExpanded] = useState(false);
+  const [isRefreshingTags, setIsRefreshingTags] = useState(false);
   const [details, setDetails] = useState<ProgressDetails | null>(null);
+  const showDevRefresh = subscriptionDevModeEnabled();
+
+  const loadKnowledgeTags = useCallback(async (): Promise<void> => {
+    if (!user?.id) {
+      return;
+    }
+    setTagsError(null);
+    const r = await apiFetch("/auth/profile/knowledge-tags", {
+      method: "GET",
+    });
+    if (!r.ok) {
+      setTagRows([]);
+      setTagsError("Could not load tag knowledge.");
+      return;
+    }
+    const raw: unknown = await r.json();
+    setTagRows(parseKnowledgeTagsPayload(raw));
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -56,51 +114,40 @@ export function ProfileProgress() {
     }
     let cancelled = false;
     void (async () => {
-      setTagsError(null);
-      const r = await apiFetch("/auth/profile/knowledge-tags", {
-        method: "GET",
-      });
-      if (!r.ok) {
-        if (!cancelled) {
-          setTagRows([]);
-          setTagsError("Could not load tag knowledge.");
-        }
+      await loadKnowledgeTags();
+      if (cancelled) {
         return;
       }
-      const raw: unknown = await r.json();
-      if (cancelled || !raw || typeof raw !== "object") {
-        return;
-      }
-      const tags = (raw as { tags?: unknown }).tags;
-      if (!Array.isArray(tags)) {
-        setTagRows([]);
-        return;
-      }
-      const parsed: KnowledgeTagRow[] = [];
-      for (const row of tags) {
-        if (!row || typeof row !== "object") {
-          continue;
-        }
-        const o = row as Record<string, unknown>;
-        const name = typeof o.name === "string" ? o.name.trim() : "";
-        if (!name) {
-          continue;
-        }
-        parsed.push({
-          name,
-          score: Number(o.score) || 0,
-          listening: Number(o.listening) || 0,
-          vocabulary: Number(o.vocabulary) || 0,
-          grammar: Number(o.grammar) || 0,
-          topicCount: Number(o.topicCount) || 0,
-        });
-      }
-      setTagRows(parsed);
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, loadKnowledgeTags]);
+
+  async function refreshKnowledgeTags(): Promise<void> {
+    if (!user?.id || isRefreshingTags) {
+      return;
+    }
+    setIsRefreshingTags(true);
+    setTagsError(null);
+    try {
+      const r = await apiFetch("/auth/profile/refresh-knowledge-tags", {
+        method: "POST",
+      });
+      if (!r.ok) {
+        setTagsError(await getResponseErrorMessage(r));
+        return;
+      }
+      const raw: unknown = await r.json();
+      setTagRows(parseKnowledgeTagsPayload(raw));
+    } catch (err) {
+      setTagsError(
+        err instanceof Error ? err.message : "Could not refresh tag knowledge.",
+      );
+    } finally {
+      setIsRefreshingTags(false);
+    }
+  }
 
   useEffect(() => {
     if (!user?.id) return;
@@ -122,12 +169,25 @@ export function ProfileProgress() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Learning paths below are a preview. Tag knowledge reflects your model
-        scores from topics linked to your profile and activity.
-      </p>
 
-      <ProfileCard title="Knowledge by tag">
+      <ProfileCard
+        title="Knowledge by tag"
+        action={
+          showDevRefresh ?
+            <button
+              type="button"
+              onClick={() => void refreshKnowledgeTags()}
+              disabled={isRefreshingTags || tagRows === null}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/30 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary/60 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {isRefreshingTags ?
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              : <RefreshCw className="size-3.5" aria-hidden />}
+              Refresh
+            </button>
+          : undefined
+        }
+      >
         {tagRows === null ? (
           <p className="text-sm text-muted-foreground">Loading tags…</p>
         ) : tagsError ? (
@@ -214,55 +274,6 @@ export function ProfileProgress() {
         )}
       </ProfileCard>
 
-      <ProfileCard title="Learning paths">
-        <div className="space-y-4">
-          {(details?.learningPaths || []).map((path) => (
-            <div
-              key={path.id}
-              className="rounded-xl bg-secondary/30 p-4 transition-colors hover:bg-secondary/50"
-            >
-              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-foreground">
-                      {path.title}
-                    </h3>
-                    <span className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                      {path.level}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {path.description}
-                  </p>
-                </div>
-                <Link
-                  to={`/catalog?path=${path.id}`}
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                  aria-label={`Open ${path.title} in catalog`}
-                >
-                  <ChevronRight className="size-5" />
-                </Link>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {path.completedVideos} / {path.totalVideos} videos
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {path.progress}%
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className={cn("h-full rounded-full", path.accentClass)}
-                    style={{ width: `${path.progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ProfileCard>
 
       <ProfileCard
         title="Recent videos"

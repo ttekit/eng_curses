@@ -5,11 +5,8 @@ import { X } from "lucide-react";
 
 interface VideoTranscriptProps {
   transcript: TranscriptLine[];
-  /** Loads `.vtt` from the lesson API before rows appear. */
   loading?: boolean;
-  /** Playback head in seconds — highlights the matching cue when cues have timings. */
   playbackSec?: number;
-  /** Click a cue to jump the lesson player to this subtitle time. */
   onSeek?: (seconds: number) => void;
   vocabulary?: VocabularyItem[];
 }
@@ -107,6 +104,7 @@ export function VideoTranscript({
 
   useEffect(() => {
     if (activeIndex < 0 || loading) return;
+    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
     const root = listRef.current;
     if (!root) return;
     const el = root.querySelector(`[data-cue-index="${activeIndex}"]`);

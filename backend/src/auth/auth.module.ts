@@ -18,6 +18,7 @@ import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service"
 import { PasswordRecoveryController } from "./password-recovery/password-recovery.controller";
 import { PasswordRecoveryService } from "./password-recovery/password-recovery.service";
 import { TurnstileGuard } from "./guards/turnstile.guard";
+import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { TurnstileGuard } from "./guards/turnstile.guard";
       inject: [ConfigService],
     }),
     forwardRef(() => EmailConfirmationModule),
+    StudyingPlanModule,
   ],
   controllers: [AuthController, PasswordRecoveryController],
   providers: [

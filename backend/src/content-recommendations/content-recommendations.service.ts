@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { phaseCountFromStoredPhases } from 'src/content-video/studying-plan-phase-progress.util';
 import {
+  blendCefrUnits,
   blendedVideoTopicKnowledge,
   buildUserThemeTokens,
   cefrBandFit,
+  genrePreferenceFit,
+  phaseTopicsFit,
   processingComplexityFit,
   videoSystemTagsToCefrUnit,
   userEnglishLevelToCefrUnit,
@@ -13,15 +17,21 @@ import {
   totalWeightedScore,
   vocabularyStrengthFromTopicScores,
 } from './content-recommendation.scoring';
+import { parseStudyingPlanV2OrNull } from 'src/studying-plan/studying-plan-json.util';
+import { expectedCefrLevelForPhase } from 'src/studying-plan/studying-plan-cefr.util';
 
 export type UserRecommendationProfileDto = {
   cefrUnit: number;
+  targetCefrUnit: number;
   cefrSource: string | null;
   vocabularyStrength: number;
   listeningStrength: number;
   targetProcessingComplexity: number;
   themeTokenSample: string[];
   topicRows: number;
+  activePhaseIndex: number;
+  phaseTopicNames: string[];
+  favoriteGenreSample: string[];
 };
 
 export type VideoRecommendationItemDto = {
@@ -32,6 +42,8 @@ export type VideoRecommendationItemDto = {
     complexity: number;
     themes: number;
     topicKnowledge: number;
+    phaseTopics: number;
+    genres: number;
   };
   contentVideo: {
     id: number;
@@ -71,6 +83,8 @@ export class ContentRecommendationsService {
             selectedTopics: {
               include: { tags: { select: { name: true } } },
             },
+            favoriteGenres: { select: { name: true } },
+            hatedGenres: { select: { name: true } },
           },
         },
         languageData: {
@@ -89,6 +103,42 @@ export class ContentRecommendationsService {
     const englishLabel = profile?.englishLevel?.trim() ?? null;
     const userCefrUnit = userEnglishLevelToCefrUnit(englishLabel);
 
+    const plan = parseStudyingPlanV2OrNull(profile?.studyingPlanPhases);
+    const phaseCount = phaseCountFromStoredPhases(profile?.studyingPlanPhases, 4);
+    const activePhaseIndex = Math.min(
+      Math.max(0, profile?.activeStudyingPhaseIndex ?? 0),
+      Math.max(0, phaseCount - 1),
+    );
+    const activePhase = plan?.phases[activePhaseIndex];
+    const phaseTopicRefs = activePhase?.topics ?? [];
+    const phaseTopicIds = phaseTopicRefs.map((t) => t.id);
+    const phaseTopicNames = phaseTopicRefs.map((t) => t.name);
+
+    const phaseLevelLabel =
+      activePhase?.expectedLevel?.trim() ||
+      (englishLabel ?
+        expectedCefrLevelForPhase(englishLabel, activePhaseIndex, phaseCount)
+      : expectedCefrLevelForPhase('A2', activePhaseIndex, phaseCount));
+    const phaseCefrUnit = userEnglishLevelToCefrUnit(phaseLevelLabel);
+    const targetCefrUnit = blendCefrUnits(userCefrUnit, phaseCefrUnit);
+
+    const phaseTopicTagNames: string[] = [];
+    if (phaseTopicIds.length > 0) {
+      const phaseTopicsFromDb = await this.prisma.topic.findMany({
+        where: { id: { in: phaseTopicIds } },
+        include: { tags: { select: { name: true } } },
+      });
+      for (const topic of phaseTopicsFromDb) {
+        for (const tag of topic.tags) {
+          phaseTopicTagNames.push(tag.name);
+        }
+      }
+    }
+
+    const favoriteGenreNames =
+      profile?.favoriteGenres?.map((g) => g.name) ?? [];
+    const hatedGenreNames = profile?.hatedGenres?.map((g) => g.name) ?? [];
+
     const vocabScores = user.languageData.map((ld) => ld.vocabularyScore);
     const listenScores = user.languageData.map((ld) => ld.listeningScore);
     const vocabStrength = vocabularyStrengthFromTopicScores(
@@ -104,7 +154,7 @@ export class ContentRecommendationsService {
         ? 0.45 * vocabStrength + 0.55 * listenStrength
         : vocabStrength;
 
-    const targetPc = targetProcessingComplexity(userCefrUnit, loadStrength);
+    const targetPc = targetProcessingComplexity(targetCefrUnit, loadStrength);
 
     const strongTopicTagNames: string[] = [];
     for (const ld of user.languageData) {
@@ -129,8 +179,10 @@ export class ContentRecommendationsService {
       interests: profile?.interests ?? [],
       workField: profile?.workField ?? null,
       education: profile?.education ?? null,
+      job: profile?.job ?? null,
       selectedTopicNames,
       strongTopicTagNames,
+      favoriteGenreNames,
     });
 
     const topicIdToUserScore = new Map(
@@ -172,13 +224,32 @@ export class ContentRecommendationsService {
       const vComplexity = stats?.processingComplexity ?? null;
       const videoUserTags = stats?.userTags ?? [];
 
-      const cefr = cefrBandFit(userCefrUnit, videoCefr);
+      const cefr = cefrBandFit(targetCefrUnit, videoCefr);
       const complexity = processingComplexityFit(vComplexity, targetPc);
       const themes = userThemeMatchScore(videoUserTags, userTokens);
       const topicIds = stats?.topics.map((t) => t.id) ?? [];
       const topicKnow = topicKnowledgeFit(topicIds, topicIdToUserScore);
+      const phaseTopics = phaseTopicsFit(
+        topicIds,
+        phaseTopicIds,
+        phaseTopicNames,
+        phaseTopicTagNames,
+        videoUserTags,
+      );
+      const genres = genrePreferenceFit(
+        videoUserTags,
+        favoriteGenreNames,
+        hatedGenreNames,
+      );
 
-      const parts = { cefr, complexity, themes, topicKnowledge: topicKnow };
+      const parts = {
+        cefr,
+        complexity,
+        themes,
+        topicKnowledge: topicKnow,
+        phaseTopics,
+        genres,
+      };
       const score = totalWeightedScore(parts);
 
       scored.push({
@@ -208,7 +279,7 @@ export class ContentRecommendationsService {
       });
     }
 
-    scored.sort((a, b) => b.score - a.score);
+    scored.sort((a, b) => b.score - a.score || a.contentVideo.id - b.contentVideo.id);
     for (let i = 0; i < scored.length; i++) {
       scored[i].rank = i + 1;
     }
@@ -218,12 +289,16 @@ export class ContentRecommendationsService {
     return {
       user: {
         cefrUnit: userCefrUnit,
+        targetCefrUnit,
         cefrSource: englishLabel,
         vocabularyStrength: vocabStrength,
         listeningStrength: listenStrength,
         targetProcessingComplexity: targetPc,
         themeTokenSample: themeSample,
         topicRows: user.languageData.length,
+        activePhaseIndex,
+        phaseTopicNames,
+        favoriteGenreSample: favoriteGenreNames.slice(0, 8),
       },
       recommendations: scored.slice(0, 40),
     };

@@ -8,6 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { extractAccessTokenFromRequest } from "./extract-request-access-token.util";
+import { isEmailConfirmationDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { PrismaService } from "src/prisma.service";
 
 @Injectable()
@@ -56,7 +57,10 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException("Account has been suspended");
     }
 
-    if (user.isVerified === false) {
+    if (
+      user.isVerified === false &&
+      !isEmailConfirmationDisabled(this.configService)
+    ) {
       throw new ForbiddenException("Account email is not verified");
     }
 

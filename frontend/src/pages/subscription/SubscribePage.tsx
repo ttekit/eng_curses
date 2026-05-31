@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router";
 import toast from "react-hot-toast";
 import PricingCards from "../../components/pricing/PricingCards";
 import { usePricingCheckout } from "../../hooks/usePricingCheckout";
@@ -18,13 +18,18 @@ import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationSt
 export default function SubscribePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isLoading, logout } = useUser();
   const { startCheckout, checkoutLoading } = usePricingCheckout();
   const { locale, messages } = useLandingLocale();
-  const sub: any = messages.subscription || {};
+  const sub: any = (messages as any).subscription || {};
   const toastAccountCreated =
     (messages.auth as any)?.login?.toastAccountCreated ||
     "Account created successfully";
+
+  const state = location.state as { isTeacherRegistration?: boolean; generatedStudents?: any[] } | null;
+  const isTeacherRegistration = state?.isTeacherRegistration;
+  const generatedStudents = state?.generatedStudents;
 
   const devSkip = subscriptionEnforcementDisabled();
   const devSkipBannerDetail = (() => {
@@ -42,6 +47,8 @@ export default function SubscribePage() {
 
     if (isLoading) return;
 
+    if (isTeacherRegistration) return;
+
     const checkoutDone = searchParams.get("checkout") === "success";
 
     if (user && userMayUseLearnerApp(user)) {
@@ -55,7 +62,7 @@ export default function SubscribePage() {
     if (checkoutDone) {
       navigate("/catalog", { replace: true });
     }
-  }, [devSkip, isLoading, navigate, searchParams, user]);
+  }, [devSkip, isLoading, navigate, searchParams, user, isTeacherRegistration]);
 
   useEffect(() => {
     if (!consumePendingRegistrationLoginWelcome()) {
@@ -105,11 +112,17 @@ export default function SubscribePage() {
         {!devSkip ? (
           <>
             <PricingCards
+              onlyPlanId={isTeacherRegistration ? "teacher" : undefined}
+              onSelectTeacherPlan={
+                isTeacherRegistration
+                  ? () => navigate("/registrationSuccess", { state: { generatedStudents } })
+                  : undefined
+              }
               onSelectConsumerPlan={(id) =>
                 void startCheckout(id, { isLoggedIn: !!user })
               }
               checkoutDisabled={checkoutLoading}
-              className="mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"
+              className={isTeacherRegistration ? "" : "mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"}
             />
             <p className="mx-auto mt-10 max-w-md text-center text-muted-foreground text-xs">
               {sub?.paymentsNote || "Secure payment processing. "}
@@ -132,7 +145,7 @@ export default function SubscribePage() {
         )}
 
         <div className="mt-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-12 text-muted-foreground text-sm">
-          {user && !userMayUseLearnerApp(user) ? (
+          {user && !userMayUseLearnerApp(user) && !isTeacherRegistration ? (
             <button
               type="button"
               className="hover:text-foreground underline-offset-4 hover:underline"
@@ -144,12 +157,14 @@ export default function SubscribePage() {
               {sub?.signOut || "Sign Out"}
             </button>
           ) : null}
-          <Link
-            to="/pricing"
-            className="underline-offset-4 hover:text-foreground hover:underline"
-          >
-            {sub?.comparePlans || "Compare Plans"}
-          </Link>
+          {!isTeacherRegistration && (
+            <Link
+              to="/pricing"
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {sub?.comparePlans || "Compare Plans"}
+            </Link>
+          )}
         </div>
       </main>
     </div>

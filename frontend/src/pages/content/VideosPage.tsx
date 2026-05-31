@@ -494,13 +494,15 @@ export default function VideoPage() {
     return Array.from(tags).sort();
   }, [videos]);
 
+  // ДОБАВЛЕНО: Добавляем "Recommended" в список жанров после "All"
   const sortedGenres = useMemo(() => {
-    return ["All", ...genreNames.filter(Boolean)];
+    return ["All", "Recommended", ...genreNames.filter(Boolean)];
   }, [genreNames]);
 
-  // ===== ГЛОБАЛЬНАЯ ФИЛЬТРАЦИЯ И БЛОКИРОВКА 18+ =====
-  const isTeacherLinkedStudent =
-    user?.role?.toLowerCase() === "student" && !!user?.teacherId;
+  // ДОБАВЛЕНО: Создаем Set из ID рекомендованных видео для быстрого поиска
+  const recommendedVideoIds = useMemo(() => {
+    return new Set(recommendedCards.map(c => c.id));
+  }, [recommendedCards]);
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
@@ -540,20 +542,18 @@ export default function VideoPage() {
         selectedLevel === "All" ||
         (v.content.stats?.systemTags &&
           v.content.stats.systemTags.includes(selectedLevel));
-      const matchGenre =
-        selectedGenre === "All" ||
-        (v.content.stats?.userTags &&
-          v.content.stats.userTags.includes(selectedGenre));
+
+      // ДОБАВЛЕНО: Специальная обработка жанра "Recommended"
+      let matchGenre = true;
+      if (selectedGenre === "Recommended") {
+        matchGenre = recommendedVideoIds.has(v.id);
+      } else if (selectedGenre !== "All") {
+        matchGenre = !!(v.content.stats?.userTags && v.content.stats.userTags.includes(selectedGenre));
+      }
 
       return matchCategory && matchLevel && matchGenre;
     });
-  }, [
-    videos,
-    selectedCategory,
-    selectedLevel,
-    selectedGenre,
-    isTeacherLinkedStudent,
-  ]);
+  }, [videos, selectedCategory, selectedLevel, selectedGenre, recommendedVideoIds]);
 
   const featured = filteredVideos[0] ?? null;
   const featuredHero = useMemo(() => {
@@ -601,7 +601,8 @@ export default function VideoPage() {
       let dynamicTitle =
         selectedCategory !== "All" ? selectedCategory : "Filtered Results";
       if (selectedLevel !== "All") dynamicTitle += ` - ${selectedLevel}`;
-      if (selectedGenre !== "All") dynamicTitle += ` - ${selectedGenre}`;
+      // Обновлено, чтобы название отображалось красиво
+      if (selectedGenre !== "All") dynamicTitle = selectedGenre === "Recommended" ? "Recommended For You" : `${dynamicTitle} - ${selectedGenre}`;
 
       return [
         {
@@ -654,15 +655,6 @@ export default function VideoPage() {
     selectedGenre,
     hasFilters,
   ]);
-
-  // Вырезаем отфильтрованные видео (например 18+ или учительские) из рекомендаций
-  const visibleRecommended = useMemo(() => {
-    if (recommendedCards.length === 0) {
-      return [];
-    }
-    const allowedIds = new Set(filteredVideos.map((v) => v.id));
-    return recommendedCards.filter((card) => allowedIds.has(card.id));
-  }, [recommendedCards, filteredVideos]);
 
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex-col">
@@ -856,9 +848,13 @@ export default function VideoPage() {
               ) : hasFilters ? (
                 <div className="space-y-6">
                   <h2 className="font-display text-xl font-bold text-foreground">
-                    Filtered Results
-                    {selectedLevel !== "All" ? ` - ${selectedLevel}` : ""}
-                    {selectedGenre !== "All" ? ` - ${selectedGenre}` : ""}
+                    {selectedGenre === "Recommended" ? "Recommended For You" : (
+                      <>
+                        Filtered Results
+                        {selectedLevel !== "All" ? ` - ${selectedLevel}` : ""}
+                        {selectedGenre !== "All" ? ` - ${selectedGenre}` : ""}
+                      </>
+                    )}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {filteredVideos.map((video) => (
@@ -871,35 +867,6 @@ export default function VideoPage() {
                 </div>
               ) : (
                 <>
-                  {/* ===== БЛОК ДЛЯ УЧИТЕЛЕЙ И УЧЕНИКОВ (КАРУСЕЛЬ) ===== */}
-                  {!hasFilters && classroomVideos.length > 0 && (
-                    <CatalogVideoRow
-                      title={
-                        user?.role?.toLowerCase() === "teacher"
-                          ? "👨‍🏫 My Uploaded Lessons"
-                          : "🎓 Lessons from your Teacher"
-                      }
-                      description={
-                        user?.role?.toLowerCase() === "teacher"
-                          ? "Videos you have published for your students."
-                          : "Exclusive content assigned to your class."
-                      }
-                      videos={classroomVideos.map((v) => ({
-                        ...v,
-                        thumbnailUrl:
-                          v.thumbnailUrl || thumbnailByVideoId.get(v.id),
-                      }))}
-                    />
-                  )}
-
-                  {/* ===== ОБЫЧНЫЕ БЛОКИ КАТАЛОГА ===== */}
-                  {visibleRecommended.length > 0 ? (
-                    <CatalogVideoRow
-                      title={cb.recommendedTitle}
-                      description={cb.recommendedDescription}
-                      videos={visibleRecommended}
-                    />
-                  ) : null}
                   {catalogRows.map((row) => (
                     <CatalogVideoRow
                       key={row.title}

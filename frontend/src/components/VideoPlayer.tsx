@@ -5,6 +5,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import Hls from "hls.js";
 import { cn } from "../lib/utils";
 import {
   Volume2,
@@ -16,6 +17,7 @@ import {
   ChevronRight,
   RotateCcw,
   RotateCw,
+  Loader2,
 } from "lucide-react";
 
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
@@ -39,14 +41,51 @@ export default function VideoPlayer({
   className,
   ...rest
 }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
-  function setVideoNode(node: HTMLVideoElement | null) {
-    videoRef.current = node;
-    onVideoMount?.(node);
-  }
+  const setVideoNode = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node) {
+        onVideoMount?.(node);
+      }
+    },
+    [onVideoMount]
+  );
+
+  useEffect(() => {
+    const node = videoRef.current;
+    if (!node || !src) return;
+
+    if (src.includes(".m3u8")) {
+      if (Hls.isSupported()) {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+        }
+        const hls = new Hls({
+          maxMaxBufferLength: 10,
+          enableWorker: true,
+        });
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(node);
+      } else if (node.canPlayType("application/vnd.apple.mpegurl")) {
+        node.src = src;
+      }
+    } else {
+      node.src = src;
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src]);
 
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -61,16 +100,23 @@ export default function VideoPlayer({
   const [showRightAnimation, setShowRightAnimation] = useState(false);
 
   const [showControls, setShowControls] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   const showControlsRef = useRef(true);
   const playingRef = useRef(false);
   const hideControlsTimerRef = useRef<number | null>(null);
   const isDraggingRef = useRef<boolean>(false);
+  const isBufferingRef = useRef(true);
 
   const lastTapRef = useRef<{ time: number; clientX: number } | null>(null);
   const singleTapTimerRef = useRef<number | null>(null);
 
   const [bufferedProgress, setBufferedProgress] = useState(0);
+
+  const setBufferingState = useCallback((val: boolean) => {
+    setIsBuffering(val);
+    isBufferingRef.current = val;
+  }, []);
 
   const setControlsVisible = (val: boolean) => {
     showControlsRef.current = val;
@@ -155,7 +201,7 @@ export default function VideoPlayer({
 
   const handleSkip = useCallback(
     (seconds: number) => {
-      if (!videoRef.current) return;
+      if (isBufferingRef.current || !videoRef.current) return;
       let newTime = videoRef.current.currentTime + seconds;
       if (newTime < 0) newTime = 0;
       if (newTime > videoRef.current.duration)
@@ -190,6 +236,7 @@ export default function VideoPlayer({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isBufferingRef.current) return;
     isDraggingRef.current = true;
     if (timelineRef.current) {
       try {
@@ -366,11 +413,15 @@ export default function VideoPlayer({
     >
       <video
         ref={setVideoNode}
-        src={src}
         preload="auto"
         className="absolute inset-0 w-full h-full object-cover"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onLoadStart={() => setBufferingState(true)}
+        onWaiting={() => setBufferingState(true)}
+        onPlaying={() => setBufferingState(false)}
+        onCanPlay={() => setBufferingState(false)}
+        onLoadedData={() => setBufferingState(false)}
         onPlay={() => {
           playingRef.current = true;
           setPlaying(true);
@@ -386,6 +437,12 @@ export default function VideoPlayer({
           onEnded?.();
         }}
       />
+
+      {isBuffering ? (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 pointer-events-none">
+          <Loader2 className="w-12 h-12 text-white animate-spin opacity-90" />
+        </div>
+      ) : null}
 
       <div
         className="absolute inset-0 z-10 cursor-pointer"
@@ -431,11 +488,13 @@ export default function VideoPlayer({
       >
         <button
           type="button"
+          disabled={isBuffering}
           className={cn(
             "relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-md",
             showControls
               ? "pointer-events-auto cursor-pointer"
               : "pointer-events-none",
+            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none"
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -472,11 +531,13 @@ export default function VideoPlayer({
 
         <button
           type="button"
+          disabled={isBuffering}
           className={cn(
             "relative w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:bg-black/60 active:scale-95 transition-all shadow-md",
             showControls
               ? "pointer-events-auto cursor-pointer"
               : "pointer-events-none",
+            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none"
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -502,7 +563,10 @@ export default function VideoPlayer({
       >
         <div
           ref={timelineRef}
-          className="w-full h-2.5 bg-white/20 rounded-full cursor-pointer relative group/timeline transition-all duration-200 touch-none"
+          className={cn(
+            "w-full h-2.5 bg-white/20 rounded-full relative group/timeline transition-all duration-200 touch-none",
+            isBuffering ? "cursor-not-allowed" : "cursor-pointer"
+          )}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

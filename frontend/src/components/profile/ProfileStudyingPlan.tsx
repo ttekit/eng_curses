@@ -37,7 +37,7 @@ function renderIntroMarkdownish(text: string) {
 }
 
 export function ProfileStudyingPlan({ user }: { user: UserData }) {
-  const { refreshProfile } = useUser();
+  const { refreshProfile, login } = useUser();
   const { locale, messages } = useLandingLocale();
   const regStep3 = messages.auth.registration.step3;
   const lp = messages.learningPlan;
@@ -104,6 +104,13 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
         await refreshProfile();
         return;
       }
+      const planPayload: unknown = await regRes.json();
+      login({
+        ...user,
+        learningGoal: trimmedGoal,
+        timeToAchieve: trimmedTime,
+        studyingPlanPhases: planPayload,
+      });
       toast.success(lp.profileGoalSavedAndPlanRegeneratedToast || "Saved");
       await refreshProfile();
     } catch (err) {

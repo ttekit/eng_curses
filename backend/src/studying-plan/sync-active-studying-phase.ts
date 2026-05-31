@@ -1,8 +1,13 @@
 import { PrismaService } from "src/prisma.service";
-import { activeStudyingPhaseFromPassedLessons, phaseCountFromStoredPhases } from "../content-video/studying-plan-phase-progress.util";
+import {
+  activeStudyingPhaseIndexFromProgress,
+  phaseCountFromStoredPhases,
+} from "../content-video/studying-plan-phase-progress.util";
+import { parsePhaseFinalTestProgress } from "../phase-final-test/phase-final-test-progress.util";
 
 /**
- * Recompute `activeStudyingPhaseIndex` from distinct passed comprehension videos.
+ * Recompute `activeStudyingPhaseIndex` from distinct passed comprehension videos
+ * and passed phase final tests.
  */
 export async function syncActiveStudyingPhaseForUser(
   prisma: PrismaService,
@@ -15,13 +20,18 @@ export async function syncActiveStudyingPhaseForUser(
   });
   const extra = await prisma.additionalUserData.findUnique({
     where: { userId },
-    select: { studyingPlanPhases: true },
+    select: {
+      studyingPlanPhases: true,
+      phaseFinalTestProgress: true,
+    },
   });
   const phaseCount = phaseCountFromStoredPhases(extra?.studyingPlanPhases, 4);
-  const idx = activeStudyingPhaseFromPassedLessons(
-    passedRows.length,
+  const progress = parsePhaseFinalTestProgress(extra?.phaseFinalTestProgress);
+  const idx = activeStudyingPhaseIndexFromProgress({
+    distinctPassedLessonCount: passedRows.length,
+    passedFinalTestPhaseIndices: progress.passedPhaseIndices,
     phaseCount,
-  );
+  });
   await prisma.additionalUserData.updateMany({
     where: { userId },
     data: { activeStudyingPhaseIndex: idx },

@@ -454,48 +454,56 @@ export class ContentVideoComprehensionTestsService {
     );
     let openEndedFeedback: string | null = null;
     let writtenSummaryScore: number | null = null;
+    let isOpenSkipped = false;
+
     if (openEntry) {
       const text =
         typeof rawAnswers[openEntry.id] === "string"
-          ? (rawAnswers[openEntry.id] as string)
+          ? (rawAnswers[openEntry.id] as string).trim()
           : "";
-      const videoMeta = await this.prisma.contentVideo.findUnique({
-        where: { id: contentVideoId },
-        select: {
-          videoName: true,
-          videoDescription: true,
-          videoCaption: { select: { subtitlesFileLink: true } },
-        },
-      });
-      const transcriptPlain = await this.fetchTranscriptPlain(
-        videoMeta?.videoCaption?.subtitlesFileLink,
-      );
-      const { cefr: cefrForOpen } = await this.loadLearnerContext(p.userId);
-      const learnerProfile = await this.loadAdditionalProfileForOpenGrading(
-        p.userId,
-      );
-      const graded = await this.openAnswerGrader.gradeOpenSummary({
-        videoName: videoMeta?.videoName ?? "",
-        videoDescription: videoMeta?.videoDescription ?? null,
-        transcriptPlain,
-        learnerAnswer: text,
-        learnerCefr: cefrForOpen,
-        learnerProfile,
-      });
-      const openPass =
-        graded !== null ? graded.pass : heuristicOpenSummaryPass(text);
-      if (graded !== null) {
-        writtenSummaryScore = graded.score;
+
+      if (text.length === 0) {
+        isOpenSkipped = true;
+        buckets = applyOpenResult(buckets, openEntry.id, false);
+        openEndedFeedback = "You skipped the summary question.";
+      } else {
+        const videoMeta = await this.prisma.contentVideo.findUnique({
+          where: { id: contentVideoId },
+          select: {
+            videoName: true,
+            videoDescription: true,
+            videoCaption: { select: { subtitlesFileLink: true } },
+          },
+        });
+        const transcriptPlain = await this.fetchTranscriptPlain(
+          videoMeta?.videoCaption?.subtitlesFileLink,
+        );
+        const { cefr: cefrForOpen } = await this.loadLearnerContext(p.userId);
+        const learnerProfile =
+          await this.loadAdditionalProfileForOpenGrading(p.userId);
+        const graded = await this.openAnswerGrader.gradeOpenSummary({
+          videoName: videoMeta?.videoName ?? "",
+          videoDescription: videoMeta?.videoDescription ?? null,
+          transcriptPlain,
+          learnerAnswer: text,
+          learnerCefr: cefrForOpen,
+          learnerProfile,
+        });
+        const openPass =
+          graded !== null ? graded.pass : heuristicOpenSummaryPass(text);
+        if (graded !== null) {
+          writtenSummaryScore = graded.score;
+        }
+        buckets = applyOpenResult(buckets, openEntry.id, openPass);
+        const baseFeedback =
+          graded !== null && graded.feedback.trim().length > 0
+            ? graded.feedback.trim()
+            : offlineOpenSummaryFeedback(openPass);
+        openEndedFeedback =
+          writtenSummaryScore != null ?
+            `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
+            : baseFeedback;
       }
-      buckets = applyOpenResult(buckets, openEntry.id, openPass);
-      const baseFeedback =
-        graded !== null && graded.feedback.trim().length > 0
-          ? graded.feedback.trim()
-          : offlineOpenSummaryFeedback(openPass);
-      openEndedFeedback =
-        writtenSummaryScore != null
-          ? `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
-          : baseFeedback;
     }
 
     const { correct, total } = totalCorrectAndQuestions(buckets);
@@ -507,9 +515,8 @@ export class ContentVideoComprehensionTestsService {
       await this.loadLearnerContext(p.userId);
 
     if (p.userId != null) {
-      await this.postWatchSurveyService
-        .awardXpAndCheckAchievements(p.userId, 150)
-        .catch(() => undefined);
+      const xpToAward = isOpenSkipped ? 100 : 150;
+      await this.postWatchSurveyService.awardXpAndCheckAchievements(p.userId, xpToAward).catch(() => undefined);
 
       await this.recordWeakSpotsFromSubmit(
         p.userId,
@@ -622,7 +629,7 @@ export class ContentVideoComprehensionTestsService {
       const row = await this.prisma.userLanguageData.findUnique({
         where: { userId_topicId: { userId: p.userId, topicId } },
       });
-      const base = row?.score ?? 0.35;
+      const base = row?.score ?? 0;
       const prevListening = row?.listeningScore ?? base;
       const prevVocabulary = row?.vocabularyScore ?? base;
       const prevGrammar = row?.grammarScore ?? base;

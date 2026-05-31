@@ -12,7 +12,7 @@ export function phaseCountFromStoredPhases(
   return fallback;
 }
 
-/** 0-based index into the learner's phase list. */
+/** 0-based index into the learner's phase list from distinct passed videos only. */
 export function activeStudyingPhaseFromPassedLessons(
   distinctPassedLessonCount: number,
   phaseCount: number,
@@ -26,4 +26,40 @@ export function activeStudyingPhaseFromPassedLessons(
     ),
     maxIdx,
   );
+}
+
+/**
+ * How many initial phases have a passed final test (0 = none, 1 = phase 0 test passed, …).
+ */
+export function phaseIndexUnlockedByFinalTests(
+  passedPhaseIndices: readonly number[],
+): number {
+  const passed = new Set(
+    passedPhaseIndices
+      .map((n) => Math.floor(Number(n)))
+      .filter((n) => Number.isFinite(n) && n >= 0),
+  );
+  let unlocked = 0;
+  while (passed.has(unlocked)) {
+    unlocked += 1;
+  }
+  return unlocked;
+}
+
+/** Combines video progress and passed phase final tests. */
+export function activeStudyingPhaseIndexFromProgress(options: {
+  distinctPassedLessonCount: number;
+  passedFinalTestPhaseIndices: readonly number[];
+  phaseCount: number;
+}): number {
+  const { distinctPassedLessonCount, passedFinalTestPhaseIndices, phaseCount } =
+    options;
+  if (phaseCount <= 1) return 0;
+  const maxIdx = phaseCount - 1;
+  const fromVideos = activeStudyingPhaseFromPassedLessons(
+    distinctPassedLessonCount,
+    phaseCount,
+  );
+  const fromTests = phaseIndexUnlockedByFinalTests(passedFinalTestPhaseIndices);
+  return Math.min(fromVideos, fromTests, maxIdx);
 }

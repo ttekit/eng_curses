@@ -9,5 +9,6 @@ import { PlacementTestService } from "./placement-test.service";
   imports: [PrismaModule, AlcorythmModule],
   controllers: [PlacementTestController],
   providers: [PlacementTestService, PlacementJwtGuard],
+  exports: [PlacementTestService, PlacementJwtGuard],
 })
 export class PlacementTestModule {}

@@ -47,7 +47,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   private readonly userSelect = {
     id: true,
@@ -158,14 +158,14 @@ export class UsersService {
       favoriteGenres:
         favoriteGenres && favoriteGenres.length > 0
           ? {
-              connect: favoriteGenres.map((id) => ({ id })),
-            }
+            connect: favoriteGenres.map((id) => ({ id })),
+          }
           : undefined,
       hatedGenres:
         hatedGenres && hatedGenres.length > 0
           ? {
-              connect: hatedGenres.map((id) => ({ id })),
-            }
+            connect: hatedGenres.map((id) => ({ id })),
+          }
           : undefined,
     };
 
@@ -318,7 +318,7 @@ export class UsersService {
         delete dataToUpdate.role;
       }
     }
-    
+
     if (dataToUpdate.dateOfBirth !== undefined) {
       dataToUpdate.dateOfBirth = dataToUpdate.dateOfBirth
         ? new Date(dataToUpdate.dateOfBirth)
@@ -356,31 +356,31 @@ export class UsersService {
 
     const settingsUpsert = hasSettingsRowUpdate
       ? {
-          settings: {
-            upsert: {
-              create: {
-                playbackSpeed:
-                  playbackSpeed === undefined ? null : Number(playbackSpeed),
-                currentResolution:
-                  currentResolution === undefined
-                    ? null
-                    : String(currentResolution),
-              },
-              update: {
-                ...(playbackSpeed !== undefined
-                  ? {
-                      playbackSpeed: Number(playbackSpeed),
-                    }
-                  : {}),
-                ...(currentResolution !== undefined
-                  ? {
-                      currentResolution: String(currentResolution),
-                    }
-                  : {}),
-              },
+        settings: {
+          upsert: {
+            create: {
+              playbackSpeed:
+                playbackSpeed === undefined ? null : Number(playbackSpeed),
+              currentResolution:
+                currentResolution === undefined
+                  ? null
+                  : String(currentResolution),
+            },
+            update: {
+              ...(playbackSpeed !== undefined
+                ? {
+                  playbackSpeed: Number(playbackSpeed),
+                }
+                : {}),
+              ...(currentResolution !== undefined
+                ? {
+                  currentResolution: String(currentResolution),
+                }
+                : {}),
             },
           },
-        }
+        },
+      }
       : {};
 
     let updatedUser: any;
@@ -392,61 +392,61 @@ export class UsersService {
           ...settingsUpsert,
           ...(hasProfileUpdate
             ? {
-                additionalUserData: {
-                  upsert: {
-                    create: {
-                      englishLevel,
-                      nativeLanguage,
-                      knownLanguages: knownLanguages || [],
-                      knownLanguageLevels,
-                      hobbies: hobbies || [],
-                      education,
-                      workField,
-                      learningGoal,
-                      timeToAchieve,
-                      favoriteGenres: favoriteGenres
-                        ? {
-                            connect: favoriteGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                      hatedGenres: hatedGenres
-                        ? {
-                            connect: hatedGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                    },
-                    update: {
-                      englishLevel,
-                      nativeLanguage,
-                      knownLanguages,
-                      knownLanguageLevels,
-                      hobbies,
-                      education,
-                      workField,
-                      learningGoal,
-                      timeToAchieve,
-                      favoriteGenres: favoriteGenres
-                        ? {
-                            set: favoriteGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                      hatedGenres: hatedGenres
-                        ? {
-                            set: hatedGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                    },
+              additionalUserData: {
+                upsert: {
+                  create: {
+                    englishLevel,
+                    nativeLanguage,
+                    knownLanguages: knownLanguages || [],
+                    knownLanguageLevels,
+                    hobbies: hobbies || [],
+                    education,
+                    workField,
+                    learningGoal,
+                    timeToAchieve,
+                    favoriteGenres: favoriteGenres
+                      ? {
+                        connect: favoriteGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                    hatedGenres: hatedGenres
+                      ? {
+                        connect: hatedGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                  },
+                  update: {
+                    englishLevel,
+                    nativeLanguage,
+                    knownLanguages,
+                    knownLanguageLevels,
+                    hobbies,
+                    education,
+                    workField,
+                    learningGoal,
+                    timeToAchieve,
+                    favoriteGenres: favoriteGenres
+                      ? {
+                        set: favoriteGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                    hatedGenres: hatedGenres
+                      ? {
+                        set: hatedGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
                   },
                 },
-              }
+              },
+            }
             : {}),
         },
         select: this.userSelect,
@@ -503,36 +503,34 @@ export class UsersService {
     if (!user) return null;
 
     const now = new Date();
-    const today = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
+    const todayStr = now.toISOString().split("T")[0];
 
-    let newStreak = user.currentStreak;
+    let newStreak = user.currentStreak ?? 0;
 
     if (!user.lastActivityDate) {
-      newStreak = 1;
+      newStreak = newStreak > 0 ? newStreak + 1 : 1;
     } else {
-      const lastActivity = new Date(user.lastActivityDate);
-      const lastActivityDay = new Date(
-        Date.UTC(
-          lastActivity.getUTCFullYear(),
-          lastActivity.getUTCMonth(),
-          lastActivity.getUTCDate(),
-        ),
-      );
+      const lastActivityStr = new Date(user.lastActivityDate).toISOString().split("T")[0];
 
-      const diffTime = today.getTime() - lastActivityDay.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        return this.prisma.user.update({
-          where: { id: userId },
-          data: { lastActivityDate: now },
-        });
-      } else if (diffDays === 1) {
-        newStreak += 1;
+      if (todayStr === lastActivityStr) {
+        if (newStreak === 0) {
+          newStreak = 1;
+        } else {
+          return this.prisma.user.update({
+            where: { id: userId },
+            data: { lastActivityDate: now },
+          });
+        }
       } else {
-        newStreak = 1;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+        if (lastActivityStr === yesterdayStr) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
       }
     }
 

@@ -468,8 +468,8 @@ export default function AdminVideosPage() {
       toast.error("Title ≥ 2 characters; description ≤ 250.");
       return;
     }
-    if (!uploadFile || uploadFile.type !== "video/mp4") {
-      toast.error("Choose an MP4 file.");
+    if (!uploadFile || !uploadFile.type.startsWith("video/")) {
+      toast.error("Choose a video file.");
       return;
     }
     setUploadSaving(true);
@@ -588,8 +588,8 @@ export default function AdminVideosPage() {
       toast.error("Episode title required");
       return;
     }
-    if (!addEpisodeFile || addEpisodeFile.type !== "video/mp4") {
-      toast.error("Choose an MP4 file");
+    if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/")) {
+      toast.error("Choose a video file");
       return;
     }
     setAddEpisodeSaving(true);
@@ -670,7 +670,7 @@ export default function AdminVideosPage() {
           <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
             <input
               type="file"
-              accept="video/mp4"
+              accept="video/*"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0] ?? null;
@@ -678,11 +678,11 @@ export default function AdminVideosPage() {
               }}
             />
             <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">Browse for MP4</p>
+            <p className="font-medium">Browse for video</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {uploadFile
                 ? uploadFile.name
-                : "MP4 only (server-enforced max size)"}
+                : "Video only (server-enforced max size)"}
             </p>
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -747,7 +747,7 @@ export default function AdminVideosPage() {
           <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
             <input
               type="file"
-              accept="video/mp4"
+              accept="video/*"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0] ?? null;
@@ -755,7 +755,7 @@ export default function AdminVideosPage() {
               }}
             />
             <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">MP4 file</p>
+            <p className="font-medium">Video file</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {addEpisodeFile ? addEpisodeFile.name : "Required"}
             </p>
@@ -845,7 +845,7 @@ export default function AdminVideosPage() {
               <code className="text-[11px]">nova-3</code>;{" "}
               <code className="text-[11px]">DEEPGRAM_TRANSCRIBE_MODEL</code>)
               needs <code className="text-[11px]">DEEPGRAM_API_KEY</code> plus
-              an audible soundtrack in the MP4. <strong>Catalog genres</strong>{" "}
+              an audible soundtrack in the video. <strong>Catalog genres</strong>{" "}
               and <strong>CEFR bands</strong> use WebVTT + Gemini afterward
               (genres must exist in the genres table).
             </p>

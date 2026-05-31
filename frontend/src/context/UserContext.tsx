@@ -40,10 +40,19 @@ export interface UserData {
   timeToAchieve?: string;
   /** Saved studying-plan JSON v2 (`additional_user_data.studying_plan_phases`). */
   studyingPlanPhases?: unknown;
+  /** Catalogue topics per phase (from stored plan or profile-based selection). */
+  studyingPlanPhaseTopics?: Array<Array<{ id: number; name: string }>>;
   /** ISO timestamp when the user entered the current phase (phase-scoped tasks). */
   activePhaseEnteredAt?: string | null;
   /** 0-based active phase (clamped client-side to phase count). */
   activeStudyingPhaseIndex?: number;
+  /** Phase indices with a passed final test. */
+  phaseFinalTestPassedPhases?: number[];
+  /** Distinct passed videos and saved vocabulary (for phase transition checklist). */
+  studyingPlanProgress?: {
+    distinctPassedVideos: number;
+    vocabularyTermsTotal: number;
+  };
   /** Stripe: light | smart | family */
   subscriptionPlan?: string;
   subscriptionStatus?: string;
@@ -118,6 +127,34 @@ function normalizeProfile(raw: unknown): UserData | null {
       r.studyingPlanPhases !== undefined && r.studyingPlanPhases !== null
         ? r.studyingPlanPhases
         : undefined,
+    studyingPlanPhaseTopics: (() => {
+      const raw = r.studyingPlanPhaseTopics;
+      if (!Array.isArray(raw)) {
+        return undefined;
+      }
+      const phases: Array<Array<{ id: number; name: string }>> = [];
+      for (const phaseTopics of raw) {
+        if (!Array.isArray(phaseTopics)) {
+          phases.push([]);
+          continue;
+        }
+        const topics: Array<{ id: number; name: string }> = [];
+        for (const topic of phaseTopics) {
+          if (!topic || typeof topic !== "object") {
+            continue;
+          }
+          const row = topic as Record<string, unknown>;
+          const id = Number(row.id);
+          const name = typeof row.name === "string" ? row.name.trim() : "";
+          if (!Number.isFinite(id) || id < 1 || name.length < 2) {
+            continue;
+          }
+          topics.push({ id: Math.floor(id), name });
+        }
+        phases.push(topics);
+      }
+      return phases.length > 0 ? phases : undefined;
+    })(),
     activePhaseEnteredAt:
       typeof r.activePhaseEnteredAt === "string"
         ? r.activePhaseEnteredAt
@@ -129,6 +166,28 @@ function normalizeProfile(raw: unknown): UserData | null {
       if (v === null || v === undefined) return undefined;
       const n = typeof v === "number" ? v : Number(v);
       return Number.isFinite(n) ? n : undefined;
+    })(),
+    phaseFinalTestPassedPhases: Array.isArray(r.phaseFinalTestPassedPhases)
+      ? (r.phaseFinalTestPassedPhases as unknown[])
+          .map((value) => Math.floor(Number(value)))
+          .filter((value) => Number.isFinite(value) && value >= 0)
+      : [],
+    studyingPlanProgress: (() => {
+      const raw = r.studyingPlanProgress;
+      if (!raw || typeof raw !== "object") return undefined;
+      const p = raw as Record<string, unknown>;
+      const distinctPassedVideos = Number(p.distinctPassedVideos);
+      const vocabularyTermsTotal = Number(p.vocabularyTermsTotal);
+      if (
+        !Number.isFinite(distinctPassedVideos) ||
+        !Number.isFinite(vocabularyTermsTotal)
+      ) {
+        return undefined;
+      }
+      return {
+        distinctPassedVideos: Math.max(0, Math.floor(distinctPassedVideos)),
+        vocabularyTermsTotal: Math.max(0, Math.floor(vocabularyTermsTotal)),
+      };
     })(),
     subscriptionPlan:
       typeof r.subscriptionPlan === "string" ? r.subscriptionPlan : "",
