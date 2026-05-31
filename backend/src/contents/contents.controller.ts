@@ -333,6 +333,18 @@ export class ContentsController {
     return this.contentsService.deleteContent(id);
   }
 
+  @Patch("episode/:id/thumbnail")
+  @UseInterceptors(FileInterceptor("thumbnailFile"))
+  async updateEpisodeThumbnail(
+    @Param("id", ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException("No file provided");
+    }
+    return this.contentsService.updateEpisodeThumbnail(id, file);
+  }
+
   @Delete("teacher/my-series/:id")
   @UseGuards(AuthGuard)
   async deleteTeacherSeries(

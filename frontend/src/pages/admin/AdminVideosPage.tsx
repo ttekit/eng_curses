@@ -57,6 +57,7 @@ import {
   regenerateAdminVideoThemeTags,
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
+import { unzipSync } from "fflate";
 
 function generateVideoThumbnailBlob(fileOrUrl: File | Blob | string): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -353,23 +354,25 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("description", editDesc.trim());
-
-      if (editThumb) {
-        fd.append("thumbnailFile", editThumb);
-      }
-
-      const res = await apiFetch(`/contents/${editing.id}`, {
-        method: "PATCH",
-        body: fd,
+      await patchAdminContentVideo(editing.id, {
+        videoName: name,
+        videoDescription: editDesc.trim() || null,
       });
 
-      if (!res.ok) throw new Error("Failed to update series metadata");
+      if (editThumb) {
+        const fd = new FormData();
+        fd.append("thumbnailFile", editThumb);
+
+        const res = await apiFetch(`/contents/episode/${editing.id}/thumbnail`, {
+          method: "PATCH",
+          body: fd,
+        });
+        if (!res.ok) throw new Error("Thumbnail update failed");
+      }
 
       toast.success("Video updated");
       setEditing(null);
+      setEditThumb(null);
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
@@ -481,6 +484,28 @@ export default function AdminVideosPage() {
     }
   };
 
+  const extractAndGenerateThumbnailFromZip = async (zipFile: File): Promise<Blob | null> => {
+    try {
+      const arrayBuffer = await zipFile.arrayBuffer();
+      const unzipped = unzipSync(new Uint8Array(arrayBuffer));
+
+      let tsFileName = Object.keys(unzipped).find(
+        (name) => name.endsWith(".ts") && !name.includes("__MACOSX") && !name.startsWith("._")
+      );
+
+      if (!tsFileName) return null;
+
+      const tsData = unzipped[tsFileName];
+      if (!tsData) return null;
+
+      const tsBlob = new Blob([tsData], { type: "video/MP2T" });
+      return await generateVideoThumbnailBlob(tsBlob);
+    } catch (e) {
+      console.warn("Failed to extract frame from zip dynamically:", e);
+      return null;
+    }
+  };
+
   const handleUpload = async () => {
     const name = uploadTitle.trim();
     const description = uploadDesc.trim().slice(0, 250);
@@ -518,15 +543,28 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
-    if (uploadThumb) {
-      fd.append("thumbnailFile", uploadThumb);
-    } else {
-      toast.error("Пожалуйста, загрузи обложку вручную для стабильности.");
-      return;
-    }
-
     setUploadSaving(true);
+
     try {
+      if (uploadThumb) {
+        fd.append("thumbnailFile", uploadThumb);
+      } else if (uploadMode === "file" && uploadFile) {
+        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } else if (uploadMode === "zip" && uploadFile) {
+        const thumbBlob = await extractAndGenerateThumbnailFromZip(uploadFile);
+        if (thumbBlob) {
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        }
+      } else if (uploadMode === "link") {
+        try {
+          const thumbBlob = await generateVideoThumbnailBlob(uploadLink);
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        } catch (e) {
+          console.warn("Could not auto-generate thumbnail from link", e);
+        }
+      }
+
       await createAdminCatalogVideo(fd);
       toast.success("Video published successfully");
       setUploadOpen(false);
@@ -538,7 +576,7 @@ export default function AdminVideosPage() {
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
-    } finally {
+    } {
       setUploadSaving(false);
     }
   };
@@ -658,15 +696,28 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
-    if (addEpisodeThumb) {
-      fd.append("thumbnailFile", addEpisodeThumb);
-    } else {
-      toast.error("Пожалуйста, загрузи обложку вручную для стабильности.");
-      return;
-    }
-
     setAddEpisodeSaving(true);
+
     try {
+      if (addEpisodeThumb) {
+        fd.append("thumbnailFile", addEpisodeThumb);
+      } else if (addEpisodeMode === "file" && addEpisodeFile) {
+        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } else if (addEpisodeMode === "zip" && addEpisodeFile) {
+        const thumbBlob = await extractAndGenerateThumbnailFromZip(addEpisodeFile);
+        if (thumbBlob) {
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        }
+      } else if (addEpisodeMode === "link") {
+        try {
+          const thumbBlob = await generateVideoThumbnailBlob(addEpisodeLink);
+          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+        } catch (e) {
+          console.warn("Could not auto-generate thumbnail from link", e);
+        }
+      }
+
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
@@ -816,6 +867,9 @@ export default function AdminVideosPage() {
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
+            <p className="text-[11px] text-muted-foreground">
+              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -843,6 +897,9 @@ export default function AdminVideosPage() {
               maxLength={250}
               onChange={(e) => setUploadDesc(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Friendly URL slug is generated automatically.
+            </p>
           </div>
         </div>
       </AdminModal>
@@ -960,6 +1017,9 @@ export default function AdminVideosPage() {
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
+            <p className="text-[11px] text-muted-foreground">
+              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
+            </p>
           </div>
 
           <div className="space-y-2 border-t border-border pt-4">
@@ -1268,7 +1328,7 @@ export default function AdminVideosPage() {
                   </p>
                   <ChipList
                     tags={inspectMeta.video.content.stats?.systemTags ?? []}
-                    emptyLabel="No CEFR bands yet. Edit → Regenerate CEFR."
+                    emptyLabel="No CEFR bands yet. Edit → “Regenerate CEFR”."
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">

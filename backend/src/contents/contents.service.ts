@@ -234,18 +234,16 @@ export class ContentsService {
   async updateContent(
     id: number,
     dto: UpdateContentDto,
-    thumbnailFile?: Express.Multer.File,
+    file?: Express.Multer.File,
   ) {
     const updateContent = await this.prisma.content.update({
       where: { id },
       data: {
-        name: dto.name,
-        description: dto.description,
-        friendlyLink: dto.friendlyLink,
+        ...dto,
       },
     });
 
-    if (thumbnailFile) {
+    if (file) {
       const contentMedia = await this.prisma.contentMedia.findFirst({
         where: { categoryId: id },
         orderBy: { playlistPosition: "asc" },
@@ -257,11 +255,11 @@ export class ContentsService {
           orderBy: { playlistPosition: "asc" },
         });
 
-        if (existingVideo?.thumbnailUrl) {
+        if (existingVideo?.videoLink) {
           try {
-            const url = new URL(existingVideo.thumbnailUrl);
+            const url = new URL(existingVideo.videoLink);
             const oldKey = url.pathname.replace(/^\//, "");
-            if (oldKey && !oldKey.includes("auto_thumb.jpg")) {
+            if (oldKey) {
               await this.s3Client.send(
                 new DeleteObjectCommand({
                   Bucket: this.bucket,
@@ -269,28 +267,45 @@ export class ContentsService {
                 }),
               );
             }
-          } catch (e) {
-            console.warn("Failed to delete old thumbnail from S3", e);
+          } catch {
+            const fallbackKey = existingVideo.videoLink.split("/").pop();
+            if (fallbackKey) {
+              await this.s3Client.send(
+                new DeleteObjectCommand({
+                  Bucket: this.bucket,
+                  Key: decodeURIComponent(fallbackKey),
+                }),
+              );
+            }
           }
         }
 
-        const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
-        const thumbKey = `uploads/${safeThumbKey}`;
+        let newUrl = "";
+        let zipThumb: string | null = null;
 
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.bucket,
-            Key: thumbKey,
-            Body: thumbnailFile.buffer,
-            ContentType: thumbnailFile.mimetype,
-          }),
-        );
-
-        const newThumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+        if (file.originalname.toLowerCase().endsWith(".zip")) {
+          const zipResult = await this.processAndUploadZip(file, updateContent.name);
+          newUrl = zipResult.videoUrl;
+          zipThumb = zipResult.zipThumbnailUrl;
+        } else {
+          const safeKey = buildSafeS3ObjectKey(file.originalname);
+          const key = `uploads/${safeKey}`;
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: key,
+              Body: file.buffer,
+            }),
+          );
+          newUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+        }
 
         await this.prisma.contentVideo.updateMany({
           where: { contentId: contentMedia.id },
-          data: { thumbnailUrl: newThumbnailUrl },
+          data: {
+            videoLink: newUrl,
+            ...(zipThumb ? { thumbnailUrl: zipThumb } : {})
+          },
         });
       }
     }
@@ -298,6 +313,40 @@ export class ContentsService {
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
     return updateContent;
+  }
+
+  async updateEpisodeThumbnail(id: number, file: Express.Multer.File) {
+    const video = await this.prisma.contentVideo.findUnique({
+      where: { id },
+    });
+
+    if (!video) {
+      throw new NotFoundException(`Episode with ID ${id} not found`);
+    }
+
+    const safeThumbKey = buildSafeS3ObjectKey(file.originalname);
+    const thumbKey = `uploads/thumbs/${randomUUID()}_${safeThumbKey}`;
+
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: thumbKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
+
+    const newThumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+
+    const updated = await this.prisma.contentVideo.update({
+      where: { id },
+      data: { thumbnailUrl: newThumbnailUrl },
+    });
+
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+
+    return updated;
   }
 
   async deleteContent(id: number) {
