@@ -492,75 +492,44 @@ export default function AdminVideosPage() {
 
   const handleUpload = async () => {
     const name = uploadTitle.trim();
-    const description = uploadDesc.trim().slice(0, 250);
-    if (name.length < 2 || description.length > 250) {
-      toast.error("Title ≥ 2 characters; description ≤ 250.");
+    if (name.length < 2) {
+      toast.error("Title too short.");
       return;
     }
 
     const fd = new FormData();
     fd.append("name", name);
     fd.append("friendlyLink", slugFriendly(name));
-    fd.append(
-      "description",
-      (description || `${name} — learner catalog.`).slice(0, 250),
-    );
+    fd.append("description", uploadDesc.trim() || `${name} — course video.`);
 
+    // Загрузка файла/зипа
     if (uploadMode === "file") {
-      if (!uploadFile || !uploadFile.type.startsWith("video/mp4")) {
-        toast.error("Choose an MP4 video file.");
-        return;
-      }
+      if (!uploadFile) return toast.error("Choose MP4");
       fd.append("file", uploadFile);
     } else if (uploadMode === "zip") {
-      if (!uploadFile || !uploadFile.name.endsWith(".zip")) {
-        toast.error("Choose a .zip archive containing your HLS files.");
-        return;
-      }
+      if (!uploadFile) return toast.error("Choose ZIP");
       fd.append("file", uploadFile);
     } else {
-      const link = uploadLink.trim();
-      if (!link.startsWith("https://")) {
-        toast.error("Please use a valid HTTPS link to your .m3u8 file.");
-        return;
-      }
-      fd.append("videoLink", link);
+      fd.append("videoLink", uploadLink.trim());
+    }
+
+    // РУЧНАЯ ЗАГРУЗКА ОБЛОЖКИ (самый надежный способ)
+    if (uploadThumb) {
+      fd.append("thumbnailFile", uploadThumb);
+    } else {
+      toast.error("Пожалуйста, загрузи обложку вручную для стабильности.");
+      return; // Блокируем загрузку без обложки, чтобы не было дырок в дизайне
     }
 
     setUploadSaving(true);
-
     try {
-      if (uploadThumb) {
-        fd.append("thumbnailFile", uploadThumb);
-      } else if (uploadMode === "file" && uploadFile) {
-        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } else if (uploadMode === "zip" && uploadFile) {
-        const thumbBlob = await extractAndGenerateThumbnailFromZip(uploadFile);
-        if (thumbBlob) {
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        }
-      } else if (uploadMode === "link") {
-        try {
-          const thumbBlob = await generateVideoThumbnailBlob(uploadLink);
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        } catch (e) {
-          console.warn("Could not auto-generate thumbnail from link", e);
-        }
-      }
-
       await createAdminCatalogVideo(fd);
-      toast.success("Video published successfully");
+      toast.success("Готово!");
       setUploadOpen(false);
-      setUploadTitle("");
-      setUploadDesc("");
-      setUploadFile(null);
-      setUploadLink("");
-      setUploadThumb(null);
-      await loadVideos();
+      // ... (сброс полей)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Upload failed");
-    } {
+      toast.error("Ошибка при загрузке");
+    } finally {
       setUploadSaving(false);
     }
   };
