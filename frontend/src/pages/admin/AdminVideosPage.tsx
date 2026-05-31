@@ -57,37 +57,42 @@ import {
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
 
-function generateVideoThumbnailBlob(file: File): Promise<Blob> {
+
+function generateVideoThumbnailBlob(fileOrUrl: File | string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
-    video.preload = "metadata";
+    video.preload = "auto"; // Меняем на auto
     video.playsInline = true;
     video.muted = true;
-    video.src = URL.createObjectURL(file);
+
+    // Если это файл (MP4) или прямая ссылка на m3u8
+    video.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+
+    // Ждем, пока видео станет готово к отображению кадра
     video.onloadeddata = () => {
-      video.currentTime = 0.1;
+      // Прыгаем на 1 секунду (кадр не всегда можно снять на 0-й секунде в HLS)
+      video.currentTime = 1.0;
     };
+
     video.onseeked = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 360;
       const ctx = canvas.getContext("2d");
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
         (blob) => {
-          URL.revokeObjectURL(video.src);
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Canvas blob generation failed"));
-          }
+          if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(video.src);
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas blob generation failed"));
         },
         "image/jpeg",
-        0.85,
+        0.8,
       );
     };
+
     video.onerror = (e) => {
-      URL.revokeObjectURL(video.src);
+      if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(video.src);
       reject(e);
     };
   });
@@ -166,6 +171,7 @@ export default function AdminVideosPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [seriesFilter, setSeriesFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
+  const [uploadThumb, setUploadThumb] = useState<File | null>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadMode, setUploadMode] = useState<"file" | "link" | "zip">("file");
@@ -201,6 +207,7 @@ export default function AdminVideosPage() {
     useState<AdminVideoSeriesGroup | null>(null);
   const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
   const [addEpisodeDesc, setAddEpisodeDesc] = useState("");
+  const [addEpisodeThumb, setAddEpisodeThumb] = useState<File | null>(null);
   const [addEpisodeFile, setAddEpisodeFile] = useState<File | null>(null);
   const [addEpisodeSaving, setAddEpisodeSaving] = useState(false);
 
@@ -480,18 +487,13 @@ export default function AdminVideosPage() {
       (description || `${name} — learner catalog.`).slice(0, 250),
     );
 
+    // 1. Обработка файлов или ссылок
     if (uploadMode === "file") {
-      if (!uploadFile || !uploadFile.type.startsWith("video/")) {
+      if (!uploadFile || !uploadFile.type.startsWith("video/mp4")) {
         toast.error("Choose an MP4 video file.");
         return;
       }
       fd.append("file", uploadFile);
-      try {
-        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (thumbErr) {
-        console.warn("Could not generate thumbnail", thumbErr);
-      }
     } else if (uploadMode === "zip") {
       if (!uploadFile || !uploadFile.name.endsWith(".zip")) {
         toast.error("Choose a .zip archive containing your HLS files.");
@@ -507,6 +509,21 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
+    // 2. Логика превью: либо ручной выбор, либо авто-генерация
+    if (uploadThumb) {
+      fd.append("thumbnailFile", uploadThumb);
+    } else if (uploadMode === "file" && uploadFile) {
+      // Для MP4 снимаем кадр браузером
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (thumbErr) {
+        console.warn("Could not generate thumbnail", thumbErr);
+      }
+    }
+    // Для ZIP и Link мы полагаемся на то, что бэкенд вытащит картинку из архива 
+    // или она будет добавлена пользователем вручную.
+
     setUploadSaving(true);
     try {
       await createAdminCatalogVideo(fd);
@@ -516,6 +533,7 @@ export default function AdminVideosPage() {
       setUploadDesc("");
       setUploadFile(null);
       setUploadLink("");
+      setUploadThumb(null);
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -523,7 +541,6 @@ export default function AdminVideosPage() {
       setUploadSaving(false);
     }
   };
-
   const handleConfirmDelete = async () => {
     if (!deleteCandidate) return;
     setDeleteSaving(true);
@@ -617,18 +634,13 @@ export default function AdminVideosPage() {
     const d = addEpisodeDesc.trim();
     if (d) fd.append("videoDescription", d);
 
+    // Логика загрузки (файл / зип / ссылка)
     if (addEpisodeMode === "file") {
-      if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/")) {
+      if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/mp4")) {
         toast.error("Choose an MP4 video file.");
         return;
       }
       fd.append("file", addEpisodeFile);
-      try {
-        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (thumbErr) {
-        console.warn("Could not generate thumbnail", thumbErr);
-      }
     } else if (addEpisodeMode === "zip") {
       if (!addEpisodeFile || !addEpisodeFile.name.endsWith(".zip")) {
         toast.error("Choose a .zip archive containing your HLS files.");
@@ -644,12 +656,25 @@ export default function AdminVideosPage() {
       fd.append("videoLink", link);
     }
 
+    // ИСПОЛЬЗУЕМ addEpisodeThumb ЗДЕСЬ (именно здесь был пропуск!)
+    if (addEpisodeThumb) {
+      fd.append("thumbnailFile", addEpisodeThumb);
+    } else if (addEpisodeMode === "file" && addEpisodeFile) {
+      try {
+        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
+        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
+      } catch (thumbErr) {
+        console.warn("Could not generate thumbnail", thumbErr);
+      }
+    }
+
     setAddEpisodeSaving(true);
     try {
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
       toast.success("Episode added to series");
       setAddEpisodeOpen(false);
       setAddEpisodeSeries(null);
+      setAddEpisodeThumb(null); // Сброс после успеха
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Add episode failed");
@@ -657,6 +682,7 @@ export default function AdminVideosPage() {
       setAddEpisodeSaving(false);
     }
   };
+
 
   const levelFor = videoLevelBadge;
   const ratingProgress = (r: number) =>
