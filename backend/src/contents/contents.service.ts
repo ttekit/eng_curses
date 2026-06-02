@@ -639,11 +639,15 @@ export class ContentsService {
         ownerUserId: student.teacherId,
         OR: [
           { visibility: "public" },
+
           {
-            AND: [{ visibility: "unlisted" }, { availableFrom: { gt: now } }],
-          },
-          {
-            AND: [{ visibility: "unlisted" }, { deadline: { lt: now } }],
+            visibility: "unlisted",
+            AND: [
+              {
+                OR: [{ availableFrom: null }, { availableFrom: { lte: now } }],
+              },
+              { OR: [{ deadline: null }, { deadline: { gt: now } }] },
+            ],
           },
         ],
       },

@@ -39,6 +39,28 @@ import { VocabularyHintsService } from "src/content-video/vocabulary-hints.servi
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
 import { PrismaService } from "src/prisma.service";
 
+// Вспомогательная функция для безопасного извлечения и парсинга JWT токена
+function extractUserIdSafely(req: Request): number | undefined {
+  const token =
+    req.headers.authorization?.split(" ")[1] || (req.query.token as string);
+  if (!token) return undefined;
+
+  try {
+    const payloadBase64 = token.split(".")[1];
+    if (!payloadBase64) return undefined;
+
+    const b64 = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+
+    if (payload && payload.sub) {
+      return Number(payload.sub);
+    }
+  } catch (e) {
+    console.error("JWT Parse error:", e);
+  }
+  return undefined;
+}
+
 @ApiTags("content-video")
 @Controller("content-video")
 export class ContentVideoController {
@@ -68,25 +90,7 @@ export class ContentVideoController {
       "Get all videos (supports unlisted teacher videos if authenticated)",
   })
   findAll(@Req() req: Request) {
-    let userId: number | undefined = undefined;
-
-    // Аккуратно достаем ID пользователя из токена (не ломая публичные страницы без авторизации)
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const payloadBase64 = token.split(".")[1];
-        const payload = JSON.parse(
-          Buffer.from(payloadBase64, "base64").toString("utf8"),
-        );
-        if (payload && payload.sub) {
-          userId = Number(payload.sub);
-        }
-      } catch (e) {
-        // Игнорируем ошибки парсинга, просто отдадим базовый публичный каталог
-      }
-    }
-
+    const userId = extractUserIdSafely(req);
     return this.contentVideoService.findAll(userId);
   }
 
@@ -155,39 +159,13 @@ export class ContentVideoController {
 
   @Get(":id/iframe")
   getIframe(@Param("id", ParseIntPipe) id: number, @Req() req: Request) {
-    let userId: number | undefined = undefined;
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const payloadBase64 = token.split(".")[1];
-        const payload = JSON.parse(
-          Buffer.from(payloadBase64, "base64").toString("utf8"),
-        );
-        if (payload && payload.sub) {
-          userId = Number(payload.sub);
-        }
-      } catch (e) {}
-    }
+    const userId = extractUserIdSafely(req);
     return this.contentVideoService.getIframePayload(id, userId);
   }
 
   @Get(":id")
   findOne(@Param("id", ParseIntPipe) id: number, @Req() req: Request) {
-    let userId: number | undefined = undefined;
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const payloadBase64 = token.split(".")[1];
-        const payload = JSON.parse(
-          Buffer.from(payloadBase64, "base64").toString("utf8"),
-        );
-        if (payload && payload.sub) {
-          userId = Number(payload.sub);
-        }
-      } catch (e) {}
-    }
+    const userId = extractUserIdSafely(req);
     return this.contentVideoService.findOne(id, userId);
   }
 
@@ -250,9 +228,11 @@ export class ContentVideoController {
   @Header("Cache-Control", "public, max-age=120")
   async learnerCaptionsVtt(
     @Param("id", ParseIntPipe) id: number,
+    @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    await this.contentVideoService.findOne(id);
+    const userId = extractUserIdSafely(req);
+    await this.contentVideoService.findOne(id, userId);
     const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(id);
     res.status(200).type("text/vtt; charset=utf-8").send(body);
   }
@@ -283,7 +263,6 @@ export class ContentVideoController {
     @Body() body: { secondsWatched?: number; completed?: boolean },
   ) {
     const userId = jwtSubToUserId(req.user);
-    // Передаем secondsWatched в сервис
     return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,

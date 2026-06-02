@@ -33,6 +33,7 @@ export function compareContentVideosPlaylistOrder(
 
 export const CATALOG_CONTENT_VISIBILITY_PUBLIC = "public" as const;
 
+
 @Injectable()
 export class ContentVideoService {
   constructor(
@@ -180,8 +181,9 @@ export class ContentVideoService {
     const series = contentVideo.content.category;
 
     const isOwner = reqUserId && series.ownerUserId === reqUserId;
+    const isPublic = series.visibility === "public";
 
-    if (!isOwner) {
+    if (!isOwner && !isPublic) {
       if (series.availableFrom && series.availableFrom > now) {
         throw new ForbiddenException(
           "This lesson is locked and not yet available.",
@@ -238,4 +240,5 @@ export class ContentVideoService {
     await this.redis.del("catalog:videos");
     return deletedVideo;
   }
+
 }
