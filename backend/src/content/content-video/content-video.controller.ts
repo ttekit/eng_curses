@@ -154,8 +154,41 @@ export class ContentVideoController {
   }
 
   @Get(":id/iframe")
-  getIframe(@Param("id", ParseIntPipe) id: number) {
-    return this.contentVideoService.getIframePayload(id);
+  getIframe(@Param("id", ParseIntPipe) id: number, @Req() req: Request) {
+    let userId: number | undefined = undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const payloadBase64 = token.split(".")[1];
+        const payload = JSON.parse(
+          Buffer.from(payloadBase64, "base64").toString("utf8"),
+        );
+        if (payload && payload.sub) {
+          userId = Number(payload.sub);
+        }
+      } catch (e) {}
+    }
+    return this.contentVideoService.getIframePayload(id, userId);
+  }
+
+  @Get(":id")
+  findOne(@Param("id", ParseIntPipe) id: number, @Req() req: Request) {
+    let userId: number | undefined = undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const payloadBase64 = token.split(".")[1];
+        const payload = JSON.parse(
+          Buffer.from(payloadBase64, "base64").toString("utf8"),
+        );
+        if (payload && payload.sub) {
+          userId = Number(payload.sub);
+        }
+      } catch (e) {}
+    }
+    return this.contentVideoService.findOne(id, userId);
   }
 
   @Post(":id/regenerate-tags")
@@ -388,11 +421,6 @@ export class ContentVideoController {
     @Body() body: ComprehensionSummaryRecommendationsBodyDto,
   ) {
     return this.comprehensionTestsService.getSummaryRecommendations(id, body);
-  }
-
-  @Get(":id")
-  findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.contentVideoService.findOne(id);
   }
 
   @Patch(":id")

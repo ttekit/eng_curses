@@ -1,5 +1,12 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsIn, IsString, MaxLength, MinLength } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsIn,
+  IsString,
+  MaxLength,
+  MinLength,
+  IsOptional,
+  IsISO8601,
+} from "class-validator";
 
 export class TeacherUploadContentDto {
   @ApiProperty()
@@ -12,4 +19,19 @@ export class TeacherUploadContentDto {
   @IsString()
   @IsIn(["public", "unlisted"])
   visibility: "public" | "unlisted";
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  availableFrom?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  deadline?: string;
 }

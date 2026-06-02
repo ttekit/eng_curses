@@ -479,6 +479,8 @@ export class ContentsService {
         friendlyLink,
         ownerUserId: userId,
         visibility,
+        availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
+        deadline: dto.deadline ? new Date(dto.deadline) : null,
         category: {
           create: {
             playlistPosition: 0,
@@ -501,20 +503,25 @@ export class ContentsService {
         },
       },
     });
+
     const contentVideoId = created.category[0]?.ContentVideo?.[0]?.id;
     if (contentVideoId == null) {
       throw new InternalServerErrorException(
         "Created content is missing a ContentVideo id",
       );
     }
-    const captionsRow =
-      await this.videoCaptionsService.generateCaptions(contentVideoId);
+
+    this.videoCaptionsService.generateCaptions(contentVideoId).catch((err) => {
+      console.error("Background captions generation failed:", err);
+    });
+
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
+
     return {
       ...created,
       contentVideoId,
-      captionsReady: captionsRow != null,
+      captionsReady: false,
     };
   }
 
@@ -556,6 +563,8 @@ export class ContentsService {
         systemTags: stats?.systemTags ?? [],
         userTags: stats?.userTags ?? [],
         processingComplexity: stats?.processingComplexity ?? null,
+        availableFrom: c.availableFrom?.toISOString() ?? null,
+        deadline: c.deadline?.toISOString() ?? null,
       };
     });
   }
@@ -596,7 +605,7 @@ export class ContentsService {
       );
     }
 
-    const updatedContent = this.prisma.content.update({
+    const updatedContent = await this.prisma.content.update({
       where: { id: contentId },
       data: { visibility },
       select: {
@@ -606,6 +615,7 @@ export class ContentsService {
         visibility: true,
       },
     });
+
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
 
@@ -622,10 +632,20 @@ export class ContentsService {
       return [];
     }
 
+    const now = new Date();
+
     const rows = await this.prisma.content.findMany({
       where: {
         ownerUserId: student.teacherId,
-        visibility: { in: ["public", "unlisted"] },
+        OR: [
+          { visibility: "public" },
+          {
+            AND: [{ visibility: "unlisted" }, { availableFrom: { gt: now } }],
+          },
+          {
+            AND: [{ visibility: "unlisted" }, { deadline: { lt: now } }],
+          },
+        ],
       },
       orderBy: { createAt: "desc" },
       include: {
@@ -652,6 +672,8 @@ export class ContentsService {
         contentVideoId: vid?.id ?? null,
         videoLink: vid?.videoLink ?? null,
         thumbnailUrl: vid?.thumbnailUrl ?? null,
+        availableFrom: c.availableFrom?.toISOString() ?? null,
+        deadline: c.deadline?.toISOString() ?? null,
       };
     });
   }

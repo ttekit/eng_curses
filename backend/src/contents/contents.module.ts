@@ -6,6 +6,7 @@ import { AuthModule } from "src/auth/auth.module";
 import { ContentVideoModule } from "src/content/content-video/content-video.module";
 import { ContentsController } from "./contents.controller";
 import { ContentsService } from "./contents.service";
+import { ContentsDeadlineCron } from "./contents-deadline.cron";
 
 // Sitemap is served by SeoModule (`GET /sitemap.xml`).
 
@@ -26,6 +27,7 @@ import { ContentsService } from "./contents.service";
   controllers: [ContentsController],
   providers: [
     ContentsService,
+    ContentsDeadlineCron,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

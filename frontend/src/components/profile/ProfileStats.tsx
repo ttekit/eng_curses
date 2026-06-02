@@ -158,7 +158,10 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
         <ProfileCard title="Weekly activity">
           <div className="h-[200px] w-full mt-4 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%" debounce={50}>
-              <AreaChart data={weeklyActivity}>
+              <AreaChart
+                data={weeklyActivity}
+                margin={{ left: 15, right: 15, top: 10, bottom: 2 }}
+              >
                 <defs>
                   <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
                     <stop
@@ -178,6 +181,10 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                  interval={0}
+                  tickFormatter={(val) =>
+                    typeof val === "string" ? val.slice(0, 3) : val
+                  }
                 />
                 <YAxis hide />
                 <Tooltip

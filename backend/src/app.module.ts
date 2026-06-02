@@ -28,9 +28,11 @@ import { ProfileModule } from "./profile/profile.module";
 import { RedisModule } from "./redis/redis.module";
 import { SeoModule } from "./seo/seo.module";
 import { AvatarsModule } from "./avatars/avatars.module";
+import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),

@@ -185,7 +185,28 @@ export class TeacherStudentsService {
       throw new ForbiddenException("Пользователь с таким email уже существует");
     }
 
-    const tempPassword = generateSecurePassword(16);
+    // --- УМНАЯ ГЕНЕРАЦИЯ ПАРОЛЯ (16 символов) ---
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const all = lower + upper + numbers + symbols;
+
+    let pwdArray = [
+      lower[Math.floor(Math.random() * lower.length)],
+      upper[Math.floor(Math.random() * upper.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      symbols[Math.floor(Math.random() * symbols.length)],
+    ];
+
+    // 12 случайных + 4 обязательных = 16 символов
+    for (let i = 0; i < 12; i++) {
+      pwdArray.push(all[Math.floor(Math.random() * all.length)]);
+    }
+
+    const tempPassword = pwdArray.sort(() => 0.5 - Math.random()).join("");
+    // -------------------------------------------------
+
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const created = await this.prisma.user.create({
@@ -193,9 +214,9 @@ export class TeacherStudentsService {
         name: data.name,
         email: data.email.toLowerCase(),
         password: hashedPassword,
-        role: "STUDENT",
+        role: "STUDENT" as any,
+        method: "CREDENTIALS" as any, 
         teacherId: teacherId,
-        method: "CREDENTIALS",
         isVerified: true,
       },
     });
