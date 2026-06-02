@@ -1,5 +1,6 @@
 import { Briefcase, GraduationCap, User } from "lucide-react";
 import { cn } from "../lib/utils";
+import { useLandingLocale } from "../context/LandingLocaleContext";
 
 export type RegistrationRoleChoice = "teacher" | "student" | "adult";
 
@@ -9,39 +10,25 @@ interface RegistrationRoleCardsProps {
   onChange: (role: RegistrationRoleChoice) => void;
 }
 
-const roles = [
-  {
-    id: "teacher" as const,
-    Icon: GraduationCap,
-    title: "Teacher",
-    description:
-      "Create and manage learning content for your students",
-  },
-  {
-    id: "student" as const,
-    Icon: User,
-    title: "Student",
-    description:
-      "Learn English through personalized video lessons",
-  },
-  {
-    id: "adult" as const,
-    Icon: Briefcase,
-    title: "Adult learner",
-    description:
-      "Improve your English for career or personal growth",
-  },
+const roleDefs = [
+  { id: "teacher" as const, Icon: GraduationCap },
+  { id: "student" as const, Icon: User },
+  { id: "adult" as const, Icon: Briefcase },
 ];
 
 export function RegistrationRoleCards({
   value,
   onChange,
 }: RegistrationRoleCardsProps) {
+  const { messages } = useLandingLocale();
+  const roles = messages.auth.registration.roles;
+
   return (
     <div className="space-y-4">
-      {roles.map((role) => {
+      {roleDefs.map((role) => {
         const Icon = role.Icon;
         const selected = value === role.id;
+        const copy = roles[role.id];
         return (
           <button
             key={role.id}
@@ -58,8 +45,8 @@ export function RegistrationRoleCards({
               <Icon className="size-6 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-foreground">{role.title}</h3>
-              <p className="text-sm text-muted-foreground">{role.description}</p>
+              <h3 className="font-semibold text-foreground">{copy.title}</h3>
+              <p className="text-sm text-muted-foreground">{copy.description}</p>
             </div>
           </button>
         );

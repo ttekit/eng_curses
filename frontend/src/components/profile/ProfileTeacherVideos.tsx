@@ -15,6 +15,8 @@ import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 import {
   AdminButton,
   AdminModal,
@@ -74,6 +76,7 @@ function generateVideoThumbnailBlob(file: File): Promise<Blob> {
 }
 
 export function ProfileTeacherVideos() {
+  const t = useAppMessages().profileTeacherVideos;
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
@@ -121,12 +124,12 @@ export function ProfileTeacherVideos() {
       }
       setSeries(data as TeacherSeriesItem[]);
     } catch {
-      setLoadError("Could not load your uploaded series.");
+      setLoadError(t.loadError);
       setSeries([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t.loadError]);
 
   useEffect(() => {
     void loadSeries();
@@ -177,7 +180,7 @@ export function ProfileTeacherVideos() {
         ),
       );
     } catch {
-      setVisibilityError("Could not update catalog visibility.");
+      setVisibilityError(t.visibilityError);
     } finally {
       setVisibilityBusyId(null);
     }
@@ -190,7 +193,7 @@ export function ProfileTeacherVideos() {
     const description = uploadDesc.trim().slice(0, 250);
 
     if (name.length < 2 || !uploadFile) {
-      toast.error("Title and video file are required.");
+      toast.error(t.titleRequired);
       return;
     }
 
@@ -260,7 +263,7 @@ export function ProfileTeacherVideos() {
         signal: controller.signal,
       });
 
-      toast.success("Video uploaded!");
+      toast.success(t.uploadSuccessToast);
       setUploadOpen(false);
 
       setUploadTitle("");
@@ -273,9 +276,9 @@ export function ProfileTeacherVideos() {
       await loadSeries();
     } catch (e: any) {
       if (e.name === "AbortError") {
-        toast.error("Upload cancelled.");
+        toast.error(t.uploadCancelledToast);
       } else {
-        toast.error(e.message || "Upload failed");
+        toast.error(t.uploadFailed);
       }
     } finally {
       setUploadSaving(false);
@@ -299,8 +302,8 @@ export function ProfileTeacherVideos() {
   };
 
   const confirmDeleteVideo = async () => {
-    if (deletePhrase.trim().toLowerCase() !== "delete video") {
-      toast.error("Incorrect phrase. Please type 'delete video'.");
+    if (deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase) {
+      toast.error(t.deleteWrongPhrase);
       return;
     }
     if (!deletingId) return;
@@ -311,11 +314,11 @@ export function ProfileTeacherVideos() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      toast.success("Video deleted successfully");
+      toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);
       await loadSeries();
     } catch (e: any) {
-      toast.error(e.message || "Delete failed");
+      toast.error(e.message || t.deleteFailed);
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
@@ -326,14 +329,14 @@ export function ProfileTeacherVideos() {
     return (
       <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-8 animate-spin text-primary" />
-        <p>Loading your series…</p>
+        <p>{t.loadingSeries}</p>
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <ProfileCard title="Your videos">
+      <ProfileCard title={t.cardTitle}>
         <p className="text-destructive">{loadError}</p>
       </ProfileCard>
     );
@@ -342,16 +345,13 @@ export function ProfileTeacherVideos() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <p className="text-sm text-muted-foreground flex-1">
-          Series you uploaded: open a lesson, jump to the series page, or change
-          whether it appears in the public catalog.
-        </p>
+        <p className="text-sm text-muted-foreground flex-1">{t.intro}</p>
         <AdminButton
           className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           onClick={() => setUploadOpen(true)}
         >
           <Plus className="h-4 w-4" />
-          Upload lesson
+          {t.uploadCta}
         </AdminButton>
       </div>
 
@@ -364,7 +364,7 @@ export function ProfileTeacherVideos() {
       <AdminModal
         open={uploadOpen}
         onClose={() => !uploadSaving && setUploadOpen(false)}
-        title="Upload new lesson"
+        title={t.uploadModalTitle}
         footer={
           <>
             <AdminButton
@@ -373,14 +373,14 @@ export function ProfileTeacherVideos() {
                 uploadSaving ? setCancelConfirmOpen(true) : setUploadOpen(false)
               }
             >
-              {uploadSaving ? "Cancel upload" : "Cancel"}
+              {uploadSaving ? t.cancelUpload : t.cancel}
             </AdminButton>
             <AdminButton
               type="submit"
               form="upload-lesson-form"
               disabled={uploadSaving}
             >
-              {uploadSaving ? "Publishing…" : "Publish"}
+              {uploadSaving ? t.publishing : t.publish}
             </AdminButton>
           </>
         }
@@ -401,18 +401,16 @@ export function ProfileTeacherVideos() {
               onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
             />
             <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">Browse for MP4</p>
+            <p className="font-medium">{t.browseMp4}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {uploadFile
-                ? uploadFile.name
-                : "This video will be available to your students"}
+              {uploadFile ? uploadFile.name : t.uploadHint}
             </p>
           </label>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Lesson Title</label>
+            <label className="text-sm font-medium">{t.lessonTitleLabel}</label>
             <AdminInput
-              placeholder="e.g., Present Simple Explained"
+              placeholder={t.titleExample}
               value={uploadTitle}
               onChange={(e) => setUploadTitle(e.target.value)}
               required
@@ -420,11 +418,9 @@ export function ProfileTeacherVideos() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Description (optional)
-            </label>
+            <label className="text-sm font-medium">{t.descriptionOptional}</label>
             <AdminTextarea
-              placeholder="Short lesson summary..."
+              placeholder={t.descriptionPlaceholder}
               value={uploadDesc}
               onChange={(e) => setUploadDesc(e.target.value)}
               maxLength={250}
@@ -515,28 +511,28 @@ export function ProfileTeacherVideos() {
       <AdminModal
         open={cancelConfirmOpen}
         onClose={() => setCancelConfirmOpen(false)}
-        title="Cancel Upload?"
+        title={t.cancelUploadTitle}
         footer={
           <>
             <AdminButton
               variant="outline"
               onClick={() => setCancelConfirmOpen(false)}
             >
-              No, continue
+              {t.cancelUploadNo}
             </AdminButton>
             <AdminButton variant="danger" onClick={cancelUpload}>
-              Yes, cancel
+              {t.cancelUploadYes}
             </AdminButton>
           </>
         }
       >
-        <p>Are you sure you want to cancel the video upload?</p>
+        <p>{t.cancelUploadBody}</p>
       </AdminModal>
 
       <AdminModal
         open={deleteModalOpen}
         onClose={() => !isDeleting && setDeleteModalOpen(false)}
-        title="Delete Video"
+        title={t.deleteVideoTitle}
         footer={
           <>
             <AdminButton
@@ -544,44 +540,41 @@ export function ProfileTeacherVideos() {
               onClick={() => setDeleteModalOpen(false)}
               disabled={isDeleting}
             >
-              Cancel
+              {t.cancel}
             </AdminButton>
             <AdminButton
               disabled={
                 isDeleting ||
-                deletePhrase.trim().toLowerCase() !== "delete video"
+                deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase
               }
               onClick={confirmDeleteVideo}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {isDeleting ? "Deleting…" : "Delete Video"}
+              {isDeleting ? t.deleting : t.deleteVideoCta}
             </AdminButton>
           </>
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete this video? This action cannot be
-            undone.
-          </p>
+          <p className="text-sm text-muted-foreground">{t.deleteVideoBody}</p>
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              To confirm, type{" "}
+              {t.deleteConfirmPrompt}{" "}
               <span className="font-black text-destructive text-base">
-                delete video
+                {t.deleteConfirmPhrase}
               </span>{" "}
               below:
             </label>
             <AdminInput
               type="text"
-              placeholder="delete video"
+              placeholder={t.deleteConfirmPhrase}
               value={deletePhrase}
               onChange={(e) => setDeletePhrase(e.target.value)}
               autoComplete="off"
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
-                  deletePhrase.trim().toLowerCase() === "delete video" &&
+                  deletePhrase.trim().toLowerCase() === t.deleteConfirmPhrase &&
                   !isDeleting
                 ) {
                   e.preventDefault();
@@ -594,13 +587,10 @@ export function ProfileTeacherVideos() {
       </AdminModal>
 
       {series.length === 0 ? (
-        <ProfileCard title="Your videos">
+        <ProfileCard title={t.cardTitle}>
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <Video className="size-12 text-muted-foreground opacity-50" />
-            <p className="max-w-md text-muted-foreground">
-              You have not uploaded any lessons yet. Click "Upload lesson" above
-              to publish your first video.
-            </p>
+            <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
           </div>
         </ProfileCard>
       ) : (
@@ -609,12 +599,12 @@ export function ProfileTeacherVideos() {
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-4 font-semibold text-sm">Series</th>
-                  <th className="p-4 font-semibold text-sm">Captions</th>
-                  <th className="p-4 font-semibold text-sm">Catalog</th>
-                  <th className="p-4 font-semibold text-sm">Open</th>
+                  <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
                   <th className="p-4 font-semibold text-sm text-right">
-                    Actions
+                    {t.colActions}
                   </th>
                 </tr>
               </thead>
@@ -673,7 +663,7 @@ export function ProfileTeacherVideos() {
 
                         {s.processingComplexity ? (
                           <div className="text-muted-foreground mt-1 text-xs">
-                            Processing: {s.processingComplexity}
+                            {t.processingPrefix} {s.processingComplexity}
                           </div>
                         ) : null}
                         {tags.length > 0 ? (
@@ -691,7 +681,7 @@ export function ProfileTeacherVideos() {
                               : "bg-muted text-muted-foreground",
                           )}
                         >
-                          {s.captionsReady ? "Ready" : "Pending"}
+                          {s.captionsReady ? t.captionsReady : t.captionsPending}
                         </span>
                       </td>
                       <td className="p-4 align-middle">
@@ -700,7 +690,9 @@ export function ProfileTeacherVideos() {
                             className="border-border bg-background text-foreground focus:ring-primary w-[130px] rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
                             value={isPublic ? "public" : "unlisted"}
                             disabled={busy}
-                            aria-label={`Catalog visibility for ${s.name}`}
+                            aria-label={formatMessage(t.visibilityAria, {
+                              name: s.name,
+                            })}
                             onChange={(e) => {
                               const v = e.target.value;
                               if (v !== "public" && v !== "unlisted") return;
@@ -708,13 +700,13 @@ export function ProfileTeacherVideos() {
                               void updateVisibility(s.contentId, v);
                             }}
                           >
-                            <option value="public">Public</option>
-                            <option value="unlisted">Private</option>
+                            <option value="public">{t.visibilityPublic}</option>
+                            <option value="unlisted">{t.visibilityPrivate}</option>
                           </select>
                           {busy ? (
                             <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
                               <Loader2 className="size-3.5 animate-spin" />
-                              Saving...
+                              {t.visibilitySaving}
                             </span>
                           ) : null}
                         </div>
@@ -726,14 +718,14 @@ export function ProfileTeacherVideos() {
                               to={`/content/${s.contentVideoId}`}
                               className="text-primary font-semibold text-sm hover:underline"
                             >
-                              Watch lesson
+                              {t.watchLesson}
                             </Link>
                           ) : null}
                           <Link
                             to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
                             className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline"
                           >
-                            Series page
+                            {t.seriesPage}
                           </Link>
                         </div>
                       </td>
@@ -741,7 +733,7 @@ export function ProfileTeacherVideos() {
                         <button
                           onClick={() => openDeleteModal(s.contentId)}
                           className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
-                          title="Delete video"
+                          title={t.deleteVideoAria}
                         >
                           <Trash2 className="size-4.5" />
                         </button>

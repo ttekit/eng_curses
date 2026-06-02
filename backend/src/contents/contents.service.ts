@@ -24,6 +24,7 @@ import { UpdateContentDto } from "src/contents/dto/update-content.dto";
 import { buildSafeS3ObjectKey, publicS3ObjectUrl } from "../common/s3-key.util";
 import { UserRole } from "@generated/prisma/enums";
 import { Redis } from "ioredis";
+import AdmZip = require("adm-zip");
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -76,34 +77,105 @@ export class ContentsService {
     });
   }
 
+  private async processAndUploadZip(file: Express.Multer.File, videoName: string): Promise<{ videoUrl: string, zipThumbnailUrl: string | null }> {
+    const zip = new AdmZip(file.buffer);
+    const zipEntries = zip.getEntries();
+
+    const safePrefix = videoName
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 30);
+    const folderUuid = `${safePrefix}_${randomUUID()}`;
+
+    let m3u8Url: string | null = null;
+    let zipThumbUrl: string | null = null;
+
+    const uploadPromises = zipEntries.map(async (entry) => {
+      if (entry.isDirectory) return;
+
+      const entryName = entry.entryName;
+      const fileName = entry.name;
+
+      if (!fileName || fileName.startsWith("._") || entryName.includes("__MACOSX") || fileName === ".DS_Store") {
+        return;
+      }
+
+      const fileBuffer = entry.getData();
+      const s3Key = `m3u8_videos/${folderUuid}/${entryName}`;
+
+      let contentType = "application/octet-stream";
+      if (fileName.endsWith(".m3u8")) contentType = "application/vnd.apple.mpegurl";
+      else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
+      else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
+      else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: s3Key,
+          Body: fileBuffer,
+          ContentType: contentType,
+        })
+      );
+
+      const currentUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
+
+      if (fileName.endsWith(".m3u8")) {
+        const lower = fileName.toLowerCase();
+        const isMaster = lower.includes("master") || lower.includes("playlist") || lower.includes("index");
+
+        if (!m3u8Url || isMaster) {
+          m3u8Url = currentUrl;
+        }
+      } else if (contentType.startsWith("image/")) {
+        if (!zipThumbUrl) zipThumbUrl = currentUrl;
+      }
+    });
+
+    await Promise.all(uploadPromises);
+
+    if (!m3u8Url) {
+      throw new BadRequestException("Invalid ZIP: No valid .m3u8 file found inside the archive.");
+    }
+
+    return { videoUrl: m3u8Url, zipThumbnailUrl: zipThumbUrl };
+  }
+
   async createContent(
     dto: CreateContentDto & { videoLink?: string },
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
     let videoUrl = dto.videoLink;
+    let zipThumb: string | null = null;
 
     if (file) {
-      const key = buildSafeS3ObjectKey(file.originalname);
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-        }),
-      );
-      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      if (file.originalname.toLowerCase().endsWith(".zip")) {
+        const zipResult = await this.processAndUploadZip(file, dto.name);
+        videoUrl = zipResult.videoUrl;
+        zipThumb = zipResult.zipThumbnailUrl;
+      } else {
+        const safeKey = buildSafeS3ObjectKey(file.originalname);
+        const key = `uploads/${safeKey}`;
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: file.buffer,
+          }),
+        );
+        videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      }
     }
 
     if (!videoUrl) {
-      throw new BadRequestException(
-        "You must provide either a video file or a videoLink",
-      );
+      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
     }
 
-    let thumbnailUrl: string | null = null;
+    let thumbnailUrl: string | null = zipThumb;
     if (thumbnailFile) {
-      const thumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      const thumbKey = `uploads/${safeThumbKey}`;
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
@@ -149,6 +221,8 @@ export class ContentsService {
       );
     }
 
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
     return {
       ...created,
       contentVideoId,
@@ -204,30 +278,86 @@ export class ContentsService {
           }
         }
 
-        const key = buildSafeS3ObjectKey(file.originalname);
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-            Body: file.buffer,
-          }),
-        );
+        let newUrl = "";
+        let zipThumb: string | null = null;
 
-        const newUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+        if (file.originalname.toLowerCase().endsWith(".zip")) {
+          const zipResult = await this.processAndUploadZip(file, updateContent.name);
+          newUrl = zipResult.videoUrl;
+          zipThumb = zipResult.zipThumbnailUrl;
+        } else {
+          const safeKey = buildSafeS3ObjectKey(file.originalname);
+          const key = `uploads/${safeKey}`;
+          await this.s3Client.send(
+            new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: key,
+              Body: file.buffer,
+            }),
+          );
+          newUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+        }
+
         await this.prisma.contentVideo.updateMany({
           where: { contentId: contentMedia.id },
-          data: { videoLink: newUrl },
+          data: {
+            videoLink: newUrl,
+            ...(zipThumb ? { thumbnailUrl: zipThumb } : {})
+          },
         });
       }
     }
 
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
     return updateContent;
   }
 
-  deleteContent(id: number) {
-    return this.prisma.content.delete({
+  async updateEpisodeThumbnail(id: number, file: Express.Multer.File) {
+    const video = await this.prisma.contentVideo.findUnique({
       where: { id },
     });
+
+    if (!video) {
+      throw new NotFoundException(`Episode with ID ${id} not found`);
+    }
+
+    const safeThumbKey = buildSafeS3ObjectKey(file.originalname);
+    const thumbKey = `uploads/thumbs/${randomUUID()}_${safeThumbKey}`;
+
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: thumbKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
+
+    const newThumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+
+    const updated = await this.prisma.contentVideo.update({
+      where: { id },
+      data: { thumbnailUrl: newThumbnailUrl },
+    });
+
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+
+    return updated;
+  }
+
+  async deleteContent(id: number) {
+    const content = await this.prisma.content.findUnique({ where: { id } });
+    if (!content) throw new NotFoundException("Content not found");
+
+    await this.prisma.content.delete({
+      where: { id },
+    });
+
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+    return { success: true };
   }
 
   async getAllContent() {
@@ -310,6 +440,8 @@ export class ContentsService {
         });
       }
     });
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
   }
 
   async addEpisode(
@@ -332,28 +464,35 @@ export class ContentsService {
     const playlistPosition = (maxRow._max.playlistPosition ?? -1) + 1;
 
     let videoUrl = dto.videoLink;
+    let zipThumb: string | null = null;
 
     if (file) {
-      const key = buildSafeS3ObjectKey(file.originalname);
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-        }),
-      );
-      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      if (file.originalname.toLowerCase().endsWith(".zip")) {
+        const zipResult = await this.processAndUploadZip(file, dto.videoName);
+        videoUrl = zipResult.videoUrl;
+        zipThumb = zipResult.zipThumbnailUrl;
+      } else {
+        const safeKey = buildSafeS3ObjectKey(file.originalname);
+        const key = `uploads/${safeKey}`;
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: file.buffer,
+          }),
+        );
+        videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      }
     }
 
     if (!videoUrl) {
-      throw new BadRequestException(
-        "You must provide either a video file or a videoLink",
-      );
+      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
     }
 
-    let thumbnailUrl: string | null = null;
+    let thumbnailUrl: string | null = zipThumb;
     if (thumbnailFile) {
-      const thumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      const thumbKey = `uploads/${safeThumbKey}`;
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
@@ -388,6 +527,8 @@ export class ContentsService {
         "Created episode is missing a ContentVideo id",
       );
     }
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
     return { contentVideoId, contentMediaId: createdMedia.id };
   }
 
@@ -433,17 +574,25 @@ export class ContentsService {
     }
 
     let videoUrl = dto.videoLink;
+    let zipThumb: string | null = null;
 
     if (file) {
-      const key = buildSafeS3ObjectKey(file.originalname);
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-        }),
-      );
-      videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      if (file.originalname.toLowerCase().endsWith(".zip")) {
+        const zipResult = await this.processAndUploadZip(file, dto.name);
+        videoUrl = zipResult.videoUrl;
+        zipThumb = zipResult.zipThumbnailUrl;
+      } else {
+        const safeKey = buildSafeS3ObjectKey(file.originalname);
+        const key = `uploads/${safeKey}`;
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: file.buffer,
+          }),
+        );
+        videoUrl = publicS3ObjectUrl(this.bucket, this.region, key);
+      }
     }
 
     if (!videoUrl) {
@@ -452,9 +601,10 @@ export class ContentsService {
       );
     }
 
-    let thumbnailUrl: string | null = null;
+    let thumbnailUrl: string | null = zipThumb;
     if (thumbnailFile) {
-      const thumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      const safeThumbKey = buildSafeS3ObjectKey(thumbnailFile.originalname);
+      const thumbKey = `uploads/${safeThumbKey}`;
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: this.bucket,
@@ -517,7 +667,7 @@ export class ContentsService {
 
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
-
+    await this.redis.del("catalog:videos:admin");
     return {
       ...created,
       contentVideoId,
@@ -578,9 +728,13 @@ export class ContentsService {
       throw new NotFoundException("Episode not found");
     }
 
-    return this.prisma.contentMedia.delete({
+    const result = await this.prisma.contentMedia.delete({
       where: { id: contentMediaId },
     });
+
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+    return result;
   }
 
   async patchTeacherContentVisibility(
@@ -618,6 +772,7 @@ export class ContentsService {
 
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
 
     return updatedContent;
   }
@@ -831,6 +986,7 @@ export class ContentsService {
 
     await this.redis.del(`catalog:videos:teacher:${teacherId}`);
     await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
 
     return { success: true };
   }

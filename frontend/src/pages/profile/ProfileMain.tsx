@@ -38,18 +38,20 @@ import { ProfileSubscriptions } from "../../components/profile/ProfileSubscripti
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
-const LEARNER_TABS = [
-  { id: "overview" as const, label: "Overview", icon: BarChart3 },
-  { id: "studying-plan" as const, label: "Studying plan", icon: ClipboardList },
-  { id: "subscriptions" as const, label: "Subscriptions", icon: CreditCard },
-  { id: "progress" as const, label: "Progress", icon: BookOpen },
-  { id: "achievements" as const, label: "Achievements", icon: Trophy },
-  { id: "activity" as const, label: "Activity", icon: Clock },
-  { id: "settings" as const, label: "Settings", icon: Settings },
+const LEARNER_TAB_DEFS = [
+  { id: "overview" as const, icon: BarChart3 },
+  { id: "studying-plan" as const, icon: ClipboardList },
+  { id: "subscriptions" as const, icon: CreditCard },
+  { id: "progress" as const, icon: BookOpen },
+  { id: "achievements" as const, icon: Trophy },
+  { id: "activity" as const, icon: Clock },
+  { id: "settings" as const, icon: Settings },
 ] as const;
 
-type TabId = (typeof LEARNER_TABS)[number]["id"] | "students" | "videos";
+type TabId = (typeof LEARNER_TAB_DEFS)[number]["id"] | "students" | "videos";
 
 function normalizeRole(role: string): ProfileHeaderRole {
   const k = role.trim().toLowerCase();
@@ -67,6 +69,8 @@ type LearningStatsPayload = {
 
 export default function ProfileMain() {
   const { user, isLoading, isLoggedIn, refreshProfile } = useUser();
+  const { locale } = useLandingLocale();
+  const profile = useAppMessages().profile;
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -95,7 +99,7 @@ export default function ProfileMain() {
       if (Number.isNaN(d.getTime()) || cancelled) return;
       setJoinMeta({
         userId: uid,
-        label: d.toLocaleDateString("en-US", {
+        label: d.toLocaleDateString(locale === "uk" ? "uk-UA" : "en-US", {
           month: "long",
           year: "numeric",
         }),
@@ -188,27 +192,42 @@ export default function ProfileMain() {
   }, [user, learningStats]);
 
   const tabs = useMemo(() => {
+    const tabLabels: Record<TabId, string> = {
+      overview: profile.tabOverview,
+      "studying-plan": profile.tabStudyingPlan,
+      subscriptions: profile.tabSubscriptions,
+      progress: profile.tabProgress,
+      achievements: profile.tabAchievements,
+      activity: profile.tabActivity,
+      settings: profile.tabSettings,
+      students: profile.tabStudents,
+      videos: profile.tabVideos,
+    };
+    const withLabels = LEARNER_TAB_DEFS.map((tab) => ({
+      ...tab,
+      label: tabLabels[tab.id],
+    }));
     if (user?.role === "teacher") {
-      const withoutStudying = LEARNER_TABS.filter(
+      const withoutStudying = withLabels.filter(
         (t) => t.id !== "studying-plan",
       );
       return [
         withoutStudying[0],
         {
           id: "students" as const,
-          label: "Students",
+          label: profile.tabStudents,
           icon: GraduationCap,
         },
         {
           id: "videos" as const,
-          label: "Videos",
+          label: profile.tabVideos,
           icon: Video,
         },
         ...withoutStudying.slice(1),
       ];
     }
-    return [...LEARNER_TABS];
-  }, [user?.role]);
+    return [...withLabels];
+  }, [user?.role, profile]);
 
   useEffect(() => {
     if (!user) return;
@@ -251,13 +270,13 @@ export default function ProfileMain() {
     return (
       <>
         <SEO
-          title="Profile"
-          description="Your Explys learner or teacher profile."
+          title={profile.seoTitle}
+          description={profile.seoDescription}
           canonicalUrl={resolveCanonicalUrl("/profileMain")}
           noindex
         />
         <div className="flex min-h-dvh items-center justify-center text-muted-foreground">
-          Loading profile…
+          {profile.loading}
         </div>
       </>
     );
@@ -267,18 +286,18 @@ export default function ProfileMain() {
     return (
       <>
         <SEO
-          title="Profile"
-          description="Your Explys learner or teacher profile."
+          title={profile.seoTitle}
+          description={profile.seoDescription}
           canonicalUrl={resolveCanonicalUrl("/profileMain")}
           noindex
         />
         <div className="m-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-destructive">
-          <p className="font-medium">Please sign in to view your profile.</p>
+          <p className="font-medium">{profile.signInPrompt}</p>
           <Link
             to="/loginForm"
             className="mt-3 inline-block text-primary underline-offset-4 hover:underline"
           >
-            Go to login
+            {profile.goToLogin}
           </Link>
         </div>
       </>
@@ -294,16 +313,13 @@ export default function ProfileMain() {
   return (
     <div className="min-h-dvh bg-background font-display antialiased">
       <SEO
-        title="Profile"
-        description="Your Explys learner or teacher profile."
+        title={profile.seoTitle}
+        description={profile.seoDescription}
         canonicalUrl={resolveCanonicalUrl("/profileMain")}
         noindex
       />
       <div className="flex">
         <CatalogSidebar
-          categories={[]}
-          selectedCategory="All"
-          onSelectCategory={() => {}}
           onSelectLevel={() => {}}
           reserveTopNavSpace={false}
           welcomeName={
@@ -333,7 +349,7 @@ export default function ProfileMain() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                      Your Teacher
+                      {profile.yourTeacher}
                     </p>
                     <p className="text-sm font-medium text-foreground">
                       <strong className="font-bold text-primary">
@@ -348,7 +364,7 @@ export default function ProfileMain() {
             <div
               className="mt-8 flex flex-wrap gap-1 rounded-xl bg-secondary/50 p-1"
               role="tablist"
-              aria-label="Profile sections"
+              aria-label={profile.tabListAria}
             >
               {tabs.map((tab) => {
                 const Icon = tab.icon;

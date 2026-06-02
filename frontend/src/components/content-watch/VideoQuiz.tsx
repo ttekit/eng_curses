@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ArrowRight, CheckCircle, Clock, Lock } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 import type { QuizQuestion } from "./defaultLessonSides";
 
 const OPEN_MIN_CHARS = 40;
@@ -50,6 +52,8 @@ export function VideoQuiz({
   isVideoComplete,
   onComplete,
 }: VideoQuizProps) {
+  const L = useAppMessages().lesson;
+  const summary = useAppMessages().lessonSummaryPage;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [openDraft, setOpenDraft] = useState("");
@@ -82,11 +86,9 @@ export function VideoQuiz({
           <Lock className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="mb-2 text-lg font-semibold text-foreground">
-          Quiz locked
+          {L.quizLocked}
         </h3>
-        <p className="text-sm text-muted-foreground">
-          Finish watching the lesson to unlock the quiz and earn XP.
-        </p>
+        <p className="text-sm text-muted-foreground">{L.quizLockedLead}</p>
       </div>
     );
   }
@@ -145,7 +147,7 @@ export function VideoQuiz({
 
     if (!isAnswered) {
       if (selectedAnswer === null) {
-        setErrorMsg("Please select an option to continue.");
+        setErrorMsg(L.selectOptionError);
         return;
       }
       setIsAnswered(true);
@@ -188,20 +190,23 @@ export function VideoQuiz({
 
   const categoryLabel =
     question?.category === "grammar"
-      ? "Grammar"
+      ? L.categoryGrammar
       : question?.category === "vocabulary"
-        ? "Vocabulary"
+        ? L.categoryVocabulary
         : question?.category === "comprehension"
-          ? "Comprehension"
+          ? L.categoryComprehension
           : question?.category === "open"
-            ? "Summary"
+            ? L.categorySummary
             : null;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          Question {currentQuestion + 1} of {questions.length}
+          {formatMessage(L.questionOf, {
+            current: String(currentQuestion + 1),
+            total: String(questions.length),
+          })}
         </span>
         <span className="flex items-center gap-1 text-muted-foreground">
           <Clock className="h-3 w-3" />≈ {question?.timestamp}
@@ -237,12 +242,12 @@ export function VideoQuiz({
             }}
             disabled={isAnswered}
             rows={5}
-            placeholder="Write 2–3 clear sentences in English or leave blank to skip."
+            placeholder={L.openPlaceholder}
             className="focus:ring-primary/40 w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:outline-none disabled:opacity-80"
           />
           {!isAnswered ? (
             <p className="text-xs text-muted-foreground">
-              Aim for at least {OPEN_MIN_CHARS} characters or clear the text to skip (-50 XP).
+              {formatMessage(L.openHint, { min: String(OPEN_MIN_CHARS) })}
             </p>
           ) : null}
         </>
@@ -319,9 +324,9 @@ export function VideoQuiz({
         >
           {isOpen
             ? openDraft.trim() === ""
-              ? "Question skipped."
-              : "Response saved — your summary will be graded when you complete the lesson."
-            : "Answer saved. You’ll see how you did and the correct options after you finish all questions."}
+              ? L.questionSkipped
+              : L.responseSaved
+            : L.answerSaved}
         </div>
       ) : null}
 
@@ -333,32 +338,34 @@ export function VideoQuiz({
         )}
       >
         {!isAnswered ? (
-          isSkip ? "Skip question" : "Check answer"
+          isSkip ? L.skipQuestion : L.checkAnswer
         ) : currentQuestion < questions.length - 1 ? (
           <>
-            Next question <ArrowRight className="h-4 w-4" />
+            {L.nextQuestion} <ArrowRight className="h-4 w-4" />
           </>
         ) : (
-          "Complete lesson"
-      )}
+          L.completeLesson
+        )}
       </button>
     </div>
   );
 }
 
 export function LessonCompleteBanner({ xpEarned }: { xpEarned: number }) {
+  const L = useAppMessages().lesson;
+  const summary = useAppMessages().lessonSummaryPage;
   return (
     <div className="rounded-xl border border-accent/20 bg-accent/10 p-4 text-center">
-      <img src="/ResultHappy.svg" className="w-20 h-20" />
-      <p className="font-semibold text-foreground">Lesson complete</p>
+      <img src="/ResultHappy.svg" className="w-20 h-20" alt="" />
+      <p className="font-semibold text-foreground">{L.completeBannerTitle}</p>
       <p className="mb-3 text-sm text-muted-foreground">
-        You earned {xpEarned} XP
+        {formatMessage(L.completeBannerXp, { xp: String(xpEarned) })}
       </p>
       <Link
         to="/catalog"
         className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
       >
-        Next in catalog
+        {summary.nextInCatalog}
       </Link>
     </div>
   );

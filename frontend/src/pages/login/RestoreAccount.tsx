@@ -15,14 +15,14 @@ export default function RestoreAccount() {
   );
   const [message, setMessage] = useState("");
   const { messages } = useLandingLocale();
-  const loginSeo = messages.auth.login;
+  const restore = messages.auth.restoreAccount;
 
   const hasFetched = useRef(false);
 
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("Токен відсутній. Перевірте посилання з листа.");
+      setMessage(restore.errorMissingToken);
       return;
     }
 
@@ -40,67 +40,67 @@ export default function RestoreAccount() {
 
         if (response.ok) {
           setStatus("success");
-          setMessage(data.message || "Ваш акаунт успішно відновлено!");
+          setMessage(data.message || restore.successDefault);
         } else {
           setStatus("error");
-          setMessage(data.message || "Недійсне або прострочене посилання.");
+          setMessage(data.message || restore.errorInvalidLink);
         }
-      } catch (err) {
+      } catch {
         setStatus("error");
-        setMessage("Помилка з'єднання з сервером. Спробуйте пізніше.");
+        setMessage(restore.errorConnection);
       }
     };
 
-    restoreUser();
-  }, [token]);
+    void restoreUser();
+  }, [token, restore]);
 
   return (
     <>
       <AuthPageSeo
-        title={loginSeo.seoTitle}
-        description={loginSeo.seoDescription}
+        title={restore.seoTitle}
+        description={restore.seoDescription}
         path="/restore-account"
       />
       <AuthSplitLayout
-      rightTitle="Welcome back!"
-      rightSubtitle="Ми раді, що ви змінили своє рішення та залишилися з нами."
-    >
-      <div className="mb-8 flex items-center gap-3">
-        <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
-        <h1 className="font-display text-2xl font-bold">Відновлення акаунту</h1>
-      </div>
-
-      <div className="space-y-6">
-        {status === "loading" && (
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-medium animate-pulse">
-            Відновлюємо ваш акаунт... Будь ласка, зачекайте.
-          </div>
-        )}
-
-        {status === "success" && (
-          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
-            {message}
-          </div>
-        )}
-
-        {status === "error" && (
-          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
-            {message}
-          </div>
-        )}
-
-        <div className="pt-4">
-          <Link to="/loginForm" className="block w-full">
-            <Button
-              type="button"
-              className="w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-            >
-              Перейти до входу
-            </Button>
-          </Link>
+        rightTitle={restore.rightTitle}
+        rightSubtitle={restore.rightSubtitle}
+      >
+        <div className="mb-8 flex items-center gap-3">
+          <img src="/Icon.svg" className="w-12 h-15" alt="Logo" />
+          <h1 className="font-display text-2xl font-bold">{restore.title}</h1>
         </div>
-      </div>
-    </AuthSplitLayout>
+
+        <div className="space-y-6">
+          {status === "loading" && (
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-500 text-sm font-medium animate-pulse">
+              {restore.loading}
+            </div>
+          )}
+
+          {status === "success" && (
+            <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
+              {message}
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
+              {message}
+            </div>
+          )}
+
+          <div className="pt-4">
+            <Link to="/loginForm" className="block w-full">
+              <Button
+                type="button"
+                className="w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+              >
+                {restore.goToLogin}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </AuthSplitLayout>
     </>
   );
 }

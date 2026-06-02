@@ -25,6 +25,15 @@ export function LandingFooter() {
       ],
     },
     {
+      title: footer.categories.legal,
+      links: [
+        { label: footer.links.aboutUs, to: "/about" },
+        { label: footer.links.privacy, to: "/privacy" },
+        { label: footer.links.terms, to: "/terms" },
+        { label: footer.links.feedback, to: "/feedback" },
+      ],
+    },
+    {
       title: footer.categories.account,
       links: [
         { label: footer.links.logIn, to: "/loginForm" },
@@ -36,7 +45,7 @@ export function LandingFooter() {
   return (
     <footer className="border-border border-t font-display bg-card">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2">
             <Link to="/" className="mb-4 flex items-center gap-2">
               <img src="/Icon.svg" className="w-12 h-14 pr-1" alt="" />

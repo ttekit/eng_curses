@@ -25,6 +25,7 @@ import { ArrowLeft } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { formatMessage } from "../../lib/formatMessage";
 import {
   RegistrationRoleCards,
   type RegistrationRoleChoice,
@@ -52,6 +53,9 @@ export default function RegistrationDetails() {
   const navigate = useNavigate();
   const { messages } = useLandingLocale();
   const regSeo = messages.auth.registration.step1;
+  const step2 = messages.auth.registration.step2;
+  const grades = messages.auth.registration.grades;
+  const errors = messages.auth.registration.errors;
 
   const [learningTopicGroups, setLearningTopicGroups] = useState<
     GroupBase<LearningTopicOption>[]
@@ -77,7 +81,7 @@ export default function RegistrationDetails() {
         if (!cancelled) {
           console.error("Ошибка загрузки:", err);
           setTopicsLoadError(
-            err instanceof Error ? err.message : "Could not load topics",
+            err instanceof Error ? err.message : errors.topicsLoad,
           );
         }
       })
@@ -109,21 +113,21 @@ export default function RegistrationDetails() {
   }, [formData.teacherTopics, learningOptionByValue]);
 
   const gradeOptions: SelectOption[] = [
-    { value: "choose", text: "Choose grade" },
-    { value: "1", text: "1st Grade" },
-    { value: "2", text: "2nd Grade" },
-    { value: "3", text: "3rd Grade" },
-    { value: "4", text: "4th Grade" },
-    { value: "5", text: "5th Grade" },
-    { value: "6", text: "6th Grade" },
-    { value: "7", text: "7th Grade" },
-    { value: "8", text: "8th Grade" },
-    { value: "9", text: "9th Grade" },
-    { value: "10", text: "10th Grade" },
-    { value: "11", text: "11th Grade" },
-    { value: "12", text: "12th Grade" },
-    { value: "university", text: "University" },
-    { value: "tutor", text: "Tutor" },
+    { value: "choose", text: grades.choose },
+    { value: "1", text: grades.g1 },
+    { value: "2", text: grades.g2 },
+    { value: "3", text: grades.g3 },
+    { value: "4", text: grades.g4 },
+    { value: "5", text: grades.g5 },
+    { value: "6", text: grades.g6 },
+    { value: "7", text: grades.g7 },
+    { value: "8", text: grades.g8 },
+    { value: "9", text: grades.g9 },
+    { value: "10", text: grades.g10 },
+    { value: "11", text: grades.g11 },
+    { value: "12", text: grades.g12 },
+    { value: "university", text: grades.university },
+    { value: "tutor", text: grades.tutor },
   ];
 
   const handleChange = (
@@ -180,7 +184,7 @@ export default function RegistrationDetails() {
 
     if (formData.role === "teacher") {
       if (formData.teacherGrades === "choose" || !formData.teacherGrades) {
-        setFormError("Please select the student grades you teach.");
+        setFormError(errors.teacherGrades);
         return;
       }
 
@@ -193,7 +197,7 @@ export default function RegistrationDetails() {
 
         if (!p.name?.trim() || !p.surname?.trim()) {
           setFormError(
-            `Please enter both Name and Surname for pupil #${i + 1}, or remove the empty row.`,
+            formatMessage(errors.pupilNameRequired, { n: String(i + 1) }),
           );
           setIsSubmitting(false);
           return;
@@ -201,7 +205,7 @@ export default function RegistrationDetails() {
 
         if (!nameRegex.test(p.name) || !nameRegex.test(p.surname)) {
           setFormError(
-            `Only English letters are allowed for pupil #${i + 1}. No numbers, spaces, or symbols.`,
+            formatMessage(errors.pupilNameLatinOnly, { n: String(i + 1) }),
           );
           setIsSubmitting(false);
           return;
@@ -272,12 +276,12 @@ export default function RegistrationDetails() {
         }
       } else {
         setFormError(
-          result.message || "Registration failed. Please try again.",
+          result.message || errors.registrationFailedRetry,
         );
       }
     } catch (err) {
       console.error("Error during registration:", err);
-      setFormError("Network error. Please check your connection.");
+      setFormError(errors.networkCheckConnection);
     } finally {
       setIsSubmitting(false);
     }
@@ -294,25 +298,23 @@ export default function RegistrationDetails() {
         progressStep={2}
         progressTotal={3}
         mainClassName="max-w-2xl"
-        rightTitle="Who are you?"
-        rightSubtitle="Tell us your role so we can customize your experience."
+        rightTitle={step2.rightTitle}
+        rightSubtitle={step2.rightSubtitle}
       >
         <Link
           to="/registrationMain"
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Back
+          {step2.back}
         </Link>
 
         <form className="flex flex-col gap-8" onSubmit={handleNext}>
           <section>
             <h1 className="font-display text-2xl font-bold mb-2">
-              How will you use Explys?
+              {step2.title}
             </h1>
-            <p className="mb-6 text-muted-foreground">
-              Pick the option that fits you best—we&apos;ll tailor the setup.
-            </p>
+            <p className="mb-6 text-muted-foreground">{step2.lead}</p>
             <RegistrationRoleCards
               value={formData.role}
               onChange={handleRoleSelect}
@@ -325,16 +327,16 @@ export default function RegistrationDetails() {
                 <img src="TeacherIcon.svg" className="w-12 h-15" />
                 <div>
                   <h2 className="font-display text-xl font-semibold">
-                    Teacher profile
+                    {step2.teacherTitle}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Grades you teach, optional topics, and your class list.
+                    {step2.teacherLead}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <LabelRegister isRequired={true}>Student grades</LabelRegister>
+                <LabelRegister isRequired={true}>{step2.studentGrades}</LabelRegister>
                 <SelectRegister
                   name="teacherGrades"
                   value={formData.teacherGrades}
@@ -345,7 +347,7 @@ export default function RegistrationDetails() {
 
               <div className="space-y-2">
                 <LabelRegister isRequired={false}>
-                  Learning topics
+                  {step2.learningTopics}
                 </LabelRegister>
                 <MultiSelect<
                   LearningTopicOption,
@@ -360,13 +362,13 @@ export default function RegistrationDetails() {
                   onChange={handleTeacherTopicsChange}
                   placeholder={
                     topicsLoadError
-                      ? "Topics unavailable — you can continue without them"
-                      : "Choose topics or tags"
+                      ? step2.topicsPlaceholderUnavailable
+                      : step2.topicsPlaceholder
                   }
                   noOptionsMessage={() =>
                     topicsLoadError
                       ? topicsLoadError
-                      : "No topics or tags found"
+                      : step2.noOptionsFound
                   }
                 />
                 {topicsLoadError && (
@@ -378,13 +380,13 @@ export default function RegistrationDetails() {
 
               <div className="border-border border-t pt-6">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <LabelRegister isRequired={false}>Pupils list</LabelRegister>
+                  <LabelRegister isRequired={false}>{step2.pupilsList}</LabelRegister>
                   <button
                     type="button"
                     onClick={addPupil}
                     className="rounded-[15px] bg-primary px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                   >
-                    + Add pupil
+                    {step2.addPupil}
                   </button>
                 </div>
 
@@ -392,8 +394,8 @@ export default function RegistrationDetails() {
                   <table className="w-full table-fixed text-left text-sm">
                     <thead>
                       <tr className="text-muted-foreground border-border border-b">
-                        <th className="pb-2 font-medium">Name</th>
-                        <th className="pb-2 font-medium">Surname</th>
+                        <th className="pb-2 font-medium">{step2.pupilName}</th>
+                        <th className="pb-2 font-medium">{step2.pupilSurname}</th>
                         <th className="w-12 pb-2" aria-hidden />
                       </tr>
                     </thead>
@@ -410,7 +412,7 @@ export default function RegistrationDetails() {
                               onChange={(e) =>
                                 updatePupil(index, "name", e.target.value)
                               }
-                              placeholder="Name"
+                              placeholder={step2.placeholderName}
                               className="bg-background border-border w-full rounded-lg border px-2 py-1.5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             />
                           </td>
@@ -421,14 +423,14 @@ export default function RegistrationDetails() {
                               onChange={(e) =>
                                 updatePupil(index, "surname", e.target.value)
                               }
-                              placeholder="Surname"
+                              placeholder={step2.placeholderSurname}
                               className="bg-background border-border w-full rounded-lg border px-2 py-1.5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             />
                           </td>
                           <td className="py-2">
                             <button
                               type="button"
-                              aria-label={`Remove pupil ${index + 1}`}
+                              aria-label={step2.removePupilAria}
                               onClick={() => removePupil(index)}
                               className="text-destructive/70 hover:cursor-pointer hover:text-destructive px-2 pt-2 font-bold transition-colors"
                             >
@@ -441,7 +443,7 @@ export default function RegistrationDetails() {
                   </table>
                   {pupils.length === 0 && (
                     <p className="text-muted-foreground py-8 text-center text-sm">
-                      No pupils added yet.
+                      {step2.noPupils}
                     </p>
                   )}
                 </div>
@@ -450,9 +452,7 @@ export default function RegistrationDetails() {
           )}
 
           {emptyError && (
-            <ValidateError>
-              Please select how you&apos;ll use Explys.
-            </ValidateError>
+            <ValidateError>{errors.selectRole}</ValidateError>
           )}
           {formError && <ValidateError>{formError}</ValidateError>}
 
@@ -462,14 +462,14 @@ export default function RegistrationDetails() {
               disabled={isSubmitting}
               className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             >
-              {formData.role === "teacher" ? "Register" : "Next"}
+              {formData.role === "teacher" ? step2.register : step2.next}
             </Button>
             <Button
               type="button"
               onClick={() => navigate("/registrationMain")}
               className="text-sm font-medium bg-transparent text-foreground/70 hover:text-white py-2.5 px-6 transition-all rounded-[15px] hover:bg-muted-foreground/10 hover:cursor-pointer"
             >
-              Previous step
+              {step2.previous}
             </Button>
           </div>
         </form>

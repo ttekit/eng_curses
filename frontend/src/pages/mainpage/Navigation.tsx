@@ -1,11 +1,13 @@
 import { Link } from "react-router";
-import Button from '../../components/Button';
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import Button from "../../components/Button";
+import { useCallback, useEffect, useId, useState } from "react";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 const selectClass =
   "bg-zinc-950 text-white border border-zinc-800 font-bold rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 w-full md:w-auto md:py-1";
 
-const Navigation: React.FC = () => {
+const Navigation = () => {
+  const n = useAppMessages().navigation;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
 
@@ -29,21 +31,21 @@ const Navigation: React.FC = () => {
             : "flex items-center gap-4"
         }
       >
-        <select className={selectClass} aria-label="Filter by genre">
-          <option>Genres</option>
-          <option>All Genres</option>
-          <option>Comedy</option>
-          <option>Drama</option>
-          <option>Sci-Fi</option>
-          <option>Thriller</option>
+        <select className={selectClass} aria-label={n.filterGenreAria}>
+          <option>{n.genres}</option>
+          <option>{n.allGenres}</option>
+          <option>{n.comedy}</option>
+          <option>{n.drama}</option>
+          <option>{n.sciFi}</option>
+          <option>{n.thriller}</option>
         </select>
 
-        <select className={selectClass} aria-label="Content language">
-          <option>Language</option>
-          <option>English</option>
-          <option>Ukrainian</option>
-          <option>German</option>
-          <option>French</option>
+        <select className={selectClass} aria-label={n.languageAria}>
+          <option>{n.language}</option>
+          <option>{n.english}</option>
+          <option>{n.ukrainian}</option>
+          <option>{n.german}</option>
+          <option>{n.french}</option>
         </select>
       </div>
 
@@ -54,15 +56,23 @@ const Navigation: React.FC = () => {
             : "flex items-center gap-2.5"
         }
       >
-        <Link to="/loginForm" className={mobile ? "w-full sm:flex-1" : ""} onClick={closeMenu}>
+        <Link
+          to="/loginForm"
+          className={mobile ? "w-full sm:flex-1" : ""}
+          onClick={closeMenu}
+        >
           <Button className="mt-0 w-full bg-transparent border border-white text-white hover:bg-white hover:text-black">
-            Login
+            {n.login}
           </Button>
         </Link>
 
-        <Link to="/registrationMain" className={mobile ? "w-full sm:flex-1" : ""} onClick={closeMenu}>
+        <Link
+          to="/registrationMain"
+          className={mobile ? "w-full sm:flex-1" : ""}
+          onClick={closeMenu}
+        >
           <Button className="mt-0 w-full bg-blue-500 text-white hover:bg-blue-600">
-            Register
+            {n.register}
           </Button>
         </Link>
       </div>
@@ -90,7 +100,7 @@ const Navigation: React.FC = () => {
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-700 text-white md:hidden"
             aria-expanded={menuOpen}
             aria-controls={menuId}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={menuOpen ? n.closeMenu : n.openMenu}
             onClick={() => setMenuOpen((o) => !o)}
           >
             {menuOpen ? (
@@ -103,7 +113,11 @@ const Navigation: React.FC = () => {
                 strokeWidth={2}
                 aria-hidden
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             ) : (
               <svg
@@ -115,7 +129,11 @@ const Navigation: React.FC = () => {
                 strokeWidth={2}
                 aria-hidden
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             )}
           </button>

@@ -36,7 +36,6 @@ import { TeacherPatchContentVisibilityDto } from "src/contents/dto/teacher-patch
 import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content.dto";
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
 
-/** MP4 uploads; override with CONTENT_VIDEO_MAX_FILE_BYTES (bytes). Default 512 MiB (match nginx). */
 function contentVideoMaxFileBytes(): number {
   const n = Number(process.env.CONTENT_VIDEO_MAX_FILE_BYTES);
   if (Number.isFinite(n) && n > 0) {
@@ -50,7 +49,7 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) {}
+  constructor(private readonly contentsService: ContentsService) { }
 
   @Get("all")
   getContent() {
@@ -71,7 +70,7 @@ export class ContentsController {
     FileFieldsInterceptor(
       [
         { name: "file", maxCount: 1 },
-        { name: "thumbnailFile", maxCount: 1 }, // <--- НАУЧИЛИ ПРИНИМАТЬ ПРЕВЬЮ
+        { name: "thumbnailFile", maxCount: 1 },
       ],
       {
         limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
@@ -80,11 +79,12 @@ export class ContentsController {
   )
   @ApiOperation({
     summary:
-      "Teacher: upload a lesson (MP4). Generates captions, tags, and accepts thumbnail.",
+      "Teacher: upload a lesson (MP4/ZIP) or M3U8 link. Generates captions, tags, and accepts thumbnail.",
   })
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
     @Body() dto: TeacherUploadContentDto,
+    @Body('videoLink') videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -95,13 +95,15 @@ export class ContentsController {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
 
-    if (!videoFile) {
-      throw new BadRequestException("Video file is required");
+    if (!videoFile && !videoLink) {
+      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
     }
+
+    const fullDto = { ...dto, videoLink };
 
     return this.contentsService.createTeacherUpload(
       userId,
-      dto,
+      fullDto as any,
       videoFile,
       thumbnailFile,
     );
@@ -155,6 +157,7 @@ export class ContentsController {
   @ApiOperation({ summary: "Admin: Create new content series" })
   async createContent(
     @Body() createContentDto: CreateContentDto,
+    @Body('videoLink') videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -163,11 +166,15 @@ export class ContentsController {
   ) {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
-    if (!videoFile) {
-      throw new BadRequestException("Video file is required");
+
+    if (!videoFile && !videoLink) {
+      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
     }
+
+    const fullDto = { ...createContentDto, videoLink };
+
     return await this.contentsService.createContent(
-      createContentDto,
+      fullDto as any,
       videoFile,
       thumbnailFile,
     );
@@ -204,6 +211,7 @@ export class ContentsController {
   async addEpisode(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddContentEpisodeDto,
+    @Body('videoLink') videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -212,38 +220,34 @@ export class ContentsController {
   ) {
     const videoFile = files?.file?.[0];
     const thumbnailFile = files?.thumbnailFile?.[0];
-    if (!videoFile) {
-      throw new BadRequestException("Video file is required");
+
+    if (!videoFile && !videoLink) {
+      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
     }
+
+    const fullDto = { ...dto, videoLink };
+
     return await this.contentsService.addEpisode(
       id,
-      dto,
+      fullDto as any,
       videoFile,
       thumbnailFile,
     );
   }
 
   @Patch(":id")
+  @UseGuards(JwtAdminGuard)
   @UseInterceptors(
-    FileInterceptor("file", {
-      limits: { fileSize: CONTENT_VIDEO_MAX_FILE_BYTES },
+    FileInterceptor("thumbnailFile", {
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   updateContent(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateContentDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        fileIsRequired: false,
-        validators: [
-          new MaxFileSizeValidator({ maxSize: CONTENT_VIDEO_MAX_FILE_BYTES }),
-          new FileTypeValidator({ fileType: "video/mp4" }),
-        ],
-      }),
-    )
-    file?: Express.Multer.File,
+    @UploadedFile() thumbnailFile?: Express.Multer.File,
   ) {
-    return this.contentsService.updateContent(id, dto, file);
+    return this.contentsService.updateContent(id, dto, thumbnailFile);
   }
 
   @Get("student/teacher-videos")
@@ -272,8 +276,22 @@ export class ContentsController {
   }
 
   @Delete("delete/:id")
+  @UseGuards(JwtAdminGuard)
+  @ApiOperation({ summary: "Admin: Delete a series" })
   deleteContent(@Param("id", ParseIntPipe) id: number) {
     return this.contentsService.deleteContent(id);
+  }
+
+  @Patch("episode/:id/thumbnail")
+  @UseInterceptors(FileInterceptor("thumbnailFile"))
+  async updateEpisodeThumbnail(
+    @Param("id", ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException("No file provided");
+    }
+    return this.contentsService.updateEpisodeThumbnail(id, file);
   }
 
   @Delete("teacher/my-series/:id")

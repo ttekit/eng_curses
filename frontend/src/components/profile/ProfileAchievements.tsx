@@ -1,6 +1,8 @@
 import { Award, BookOpen, Crown, Flame, Lock, Star } from "lucide-react";
 import { ProfileCard } from "./ProfileCard";
 import { useUser } from "../../context/UserContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 
 function PlayCircleIcon({ className }: { className?: string }) {
   return (
@@ -17,63 +19,6 @@ function PlayCircleIcon({ className }: { className?: string }) {
   );
 }
 
-const BASE_ACHIEVEMENTS = [
-  {
-    id: "first-video",
-    title: "First Steps",
-    description: "Complete your first video",
-    icon: PlayCircleIcon,
-    rarity: "common",
-    requirement: 1,
-    type: "video",
-  },
-  {
-    id: "streak-7",
-    title: "Week Warrior",
-    description: "Maintain a 7-day streak",
-    icon: Flame,
-    rarity: "common",
-    requirement: 7,
-    type: "streak",
-  },
-  {
-    id: "streak-30",
-    title: "Monthly Master",
-    description: "Maintain a 30-day streak",
-    icon: Crown,
-    rarity: "rare",
-    requirement: 30,
-    type: "streak",
-  },
-  {
-    id: "vocabulary-100",
-    title: "Word Collector",
-    description: "Learn 100 new words",
-    icon: BookOpen,
-    rarity: "common",
-    requirement: 100,
-    type: "vocab",
-  },
-  {
-    id: "vocabulary-500",
-    title: "Lexicon Lord",
-    description: "Learn 500 new words",
-    icon: Star,
-    rarity: "rare",
-    requirement: 500,
-    type: "vocab",
-  },
-  {
-    id: "vocabulary-1000",
-    title: "Dictionary Deity",
-    description: "Learn 1000 new words",
-    icon: Award,
-    rarity: "legendary",
-    requirement: 1000,
-    type: "vocab",
-  },
-] as const;
-
 const rarityColors = {
   common: "border-muted-foreground/30 bg-secondary/50",
   rare: "border-primary/50 bg-primary/10",
@@ -88,41 +33,109 @@ const rarityBadge = {
 
 export function ProfileAchievements() {
   const { user } = useUser();
+  const p = useAppMessages().profileAchievements;
+
+  const baseAchievements = [
+    {
+      id: "first-video",
+      title: p.firstVideoTitle,
+      description: p.firstVideoDesc,
+      icon: PlayCircleIcon,
+      rarity: "common" as const,
+      requirement: 1,
+      type: "video" as const,
+    },
+    {
+      id: "streak-7",
+      title: p.streak7Title,
+      description: p.streak7Desc,
+      icon: Flame,
+      rarity: "common" as const,
+      requirement: 7,
+      type: "streak" as const,
+    },
+    {
+      id: "streak-30",
+      title: p.streak30Title,
+      description: p.streak30Desc,
+      icon: Crown,
+      rarity: "rare" as const,
+      requirement: 30,
+      type: "streak" as const,
+    },
+    {
+      id: "vocabulary-100",
+      title: p.vocab100Title,
+      description: p.vocab100Desc,
+      icon: BookOpen,
+      rarity: "common" as const,
+      requirement: 100,
+      type: "vocab" as const,
+    },
+    {
+      id: "vocabulary-500",
+      title: p.vocab500Title,
+      description: p.vocab500Desc,
+      icon: Star,
+      rarity: "rare" as const,
+      requirement: 500,
+      type: "vocab" as const,
+    },
+    {
+      id: "vocabulary-1000",
+      title: p.vocab1000Title,
+      description: p.vocab1000Desc,
+      icon: Award,
+      rarity: "legendary" as const,
+      requirement: 1000,
+      type: "vocab" as const,
+    },
+  ];
+
+  const rarityLabels = {
+    common: p.rarityCommon,
+    rare: p.rarityRare,
+    legendary: p.rarityLegendary,
+  };
 
   const userAchievements = new Set(
     (user?.achievements || [])
-      .map((a: any) => (typeof a === "string" ? a : a?.achievementId))
+      .map((a: { achievementId?: string } | string) =>
+        typeof a === "string" ? a : a?.achievementId,
+      )
       .filter(Boolean),
   );
 
-  const currentStreak = (user as any)?.currentStreak || 0;
+  const currentStreak = (user as { currentStreak?: number })?.currentStreak || 0;
 
-  const unlockedCount = BASE_ACHIEVEMENTS.filter((a) => {
+  const unlockedCount = baseAchievements.filter((a) => {
     const fromDb = userAchievements.has(a.id);
     let progress = 0;
     if (a.type === "streak") progress = currentStreak;
     return fromDb || progress >= a.requirement;
   }).length;
 
-  const totalCount = BASE_ACHIEVEMENTS.length;
+  const totalCount = baseAchievements.length;
 
   return (
     <div className="space-y-6">
       <ProfileCard noPadding contentClassName="p-0">
         <div className="border-b rounded-2xl border-border/40 bg-gradient-to-br from-primary/20 via-card to-accent/20 p-6">
           <div className="flex flex-col items-center gap-6 sm:flex-row">
-            <img src="/ResultGood.svg" className="w-28 h-28" />
+            <img src="/ResultGood.svg" className="w-28 h-28" alt="" />
             <div className="flex-1 text-center sm:text-left">
               <h2 className="mb-2 text-2xl font-bold text-foreground">
-                Achievement Hunter
+                {p.hunterTitle}
               </h2>
               <p className="mb-4 text-muted-foreground">
-                You've unlocked {unlockedCount} out of {totalCount}{" "}
-                achievements.
+                {formatMessage(p.unlockedLead, {
+                  unlocked: String(unlockedCount),
+                  total: String(totalCount),
+                })}
               </p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Progress</span>
+                  <span className="text-muted-foreground">{p.progressLabel}</span>
                   <span className="font-medium text-foreground">
                     {Math.round((unlockedCount / totalCount) * 100)}%
                   </span>
@@ -140,9 +153,9 @@ export function ProfileAchievements() {
       </ProfileCard>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {BASE_ACHIEVEMENTS.map((achievement) => {
+        {baseAchievements.map((achievement) => {
           const Icon = achievement.icon;
-          const rarity = achievement.rarity as keyof typeof rarityColors;
+          const rarity = achievement.rarity;
 
           let currentProgressValue = 0;
           if (achievement.type === "streak")
@@ -198,7 +211,7 @@ export function ProfileAchievements() {
                       <span
                         className={`rounded px-1.5 py-0.5 text-xs capitalize ${rarityBadge[rarity]}`}
                       >
-                        {achievement.rarity}
+                        {rarityLabels[rarity]}
                       </span>
                     </div>
                     <p className="mb-2 text-sm text-muted-foreground">
@@ -206,7 +219,7 @@ export function ProfileAchievements() {
                     </p>
 
                     {isUnlocked ? (
-                      <p className="text-xs text-accent">Unlocked!</p>
+                      <p className="text-xs text-accent">{p.unlockedExclaim}</p>
                     ) : (
                       <div className="space-y-1">
                         <div className="h-1.5 overflow-hidden rounded-full bg-secondary">

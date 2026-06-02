@@ -50,6 +50,14 @@ export const landingEn = {
     title: "Pricing",
     description:
       "Simple plans from essentials to adaptive AI and family options — plus Teacher / Enterprise for schools.",
+    heroSubtitle:
+      "Choose a plan that fits how you learn. Upgrade anytime. B2B? Talk to us for Teacher / Enterprise.",
+    checkoutSuccess:
+      "Thanks — your checkout completed. It may take a moment for your subscription to show on your account.",
+    signInPromptBefore: "Sign in",
+    signInPromptAfter: "to subscribe to Light, Smart, or Family.",
+    stripeTerms:
+      "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
   },
 
   header: {
@@ -250,6 +258,79 @@ export const landingEn = {
       toastSignInError: "Could not sign in",
       toastAccountCreated:
         "Account created. Sign in with your email and password.",
+      captchaWait: "Please wait for captcha verification.",
+      verificationCodeSent: "Verification code sent to your email.",
+      emailNotVerified: "Please verify your email to continue.",
+      networkError: "Network error. Please try again later.",
+      twoFactorTitle: "Verification Code",
+      twoFactorLeadPrefix: "We sent a 6-digit code to",
+      twoFactorPlaceholder: "000000",
+      backToLogin: "← Back to login",
+      codeRequired: "Please enter the 6-digit code.",
+      verifyCode: "Verify Code",
+    },
+    emailVerification: {
+      rightTitle: "Almost there!",
+      rightSubtitle:
+        "Verify your email to start your personalized learning path.",
+      title: "Check your email",
+      leadPrefix: "We sent a 6-digit code to",
+      verificationCode: "Verification Code",
+      placeholder: "000000",
+      resendIn: "Resend code in {seconds}s",
+      resendCode: "Resend code",
+      verifying: "Verifying...",
+      verifyCode: "Verify Code",
+      backToRegistration: "← Back to registration",
+      codeRequired: "Please enter the 6-digit code.",
+      invalidCode: "Invalid verification code",
+      connectionError: "Connection error. Please try again.",
+      resendSuccess: "New code successfully sent!",
+      resendFailed: "Failed to resend code",
+      resendError: "Error while resending code",
+      verifiedWelcomeBack: "Email verified! Welcome back.",
+    },
+    restoreAccount: {
+      seoTitle: "Restore account",
+      seoDescription: "Restore your Explys account from the email link.",
+      rightTitle: "Welcome back!",
+      rightSubtitle: "We're glad you changed your mind and stayed with us.",
+      title: "Account restoration",
+      loading: "Restoring your account… Please wait.",
+      successDefault: "Your account has been restored successfully!",
+      errorMissingToken: "Token is missing. Check the link from your email.",
+      errorInvalidLink: "Invalid or expired link.",
+      errorConnection: "Connection error. Please try again later.",
+      goToLogin: "Go to sign in",
+    },
+    emailLinkConfirm: {
+      loading: "Confirming your email…",
+      successTitle: "Done!",
+      successBody: "Your email is confirmed. You can sign in now.",
+      errorTitle: "Error",
+      errorBody: "The token is invalid, or you already confirmed your email.",
+      goToLogin: "Go to sign in",
+    },
+    emailCheckInbox: {
+      rightTitle: "Ready to continue?",
+      rightSubtitle:
+        "Pick up right where you left off with your personalized learning path.",
+      welcomeBack: "Welcome back",
+      title: "Check your email",
+      leadPrefix: "We sent a confirmation email to",
+      notConfirmedError:
+        'You have not confirmed your email yet. Check your inbox or spam folder and follow the link.',
+      continue: "Continue",
+      checking: "Checking…",
+      resendPrompt: "Didn't get the email?",
+      resend: "Send again",
+      resending: "Sending…",
+      backToLogin: "← Back to sign in",
+      confirmedToast: "Email confirmed!",
+      confirmedLoginMessage: "Email confirmed! You can sign in now.",
+      resendSuccess: "Email sent again!",
+      resendFailed: "Could not send the email.",
+      resendNetworkError: "Could not send the email. Check your connection.",
     },
     registration: {
       step1: {
@@ -277,6 +358,7 @@ export const landingEn = {
         backHome: "Back home",
         haveAccount: "Already have an account?",
         logIn: "Log in",
+        dateOfBirth: "Date of Birth",
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",
@@ -299,6 +381,19 @@ export const landingEn = {
         credentialPassword:
           "Your password from step 1 is missing or shorter than 6 characters. Use Back to set it on page 1.",
         topicsLoad: "Could not load topics",
+        dateOfBirthRequired: "Date of birth is required.",
+        dateOfBirthInvalid: "Please enter a valid date of birth.",
+        ageMinimum: "You must be at least 13 years old to register.",
+        captchaWait: "Please wait for the captcha verification to complete.",
+        registrationFailed: "Registration failed.",
+        networkError: "Network error.",
+        pupilNameRequired:
+          "Please enter both Name and Surname for pupil #{n}, or remove the empty row.",
+        pupilNameLatinOnly:
+          "Only English letters are allowed for pupil #{n}. No numbers, spaces, or symbols.",
+        registrationFailedRetry: "Registration failed. Please try again.",
+        networkCheckConnection:
+          "Network error. Please check your connection.",
       },
       networkRegister:
         "Network error. Please check if your backend server is running.",
@@ -403,6 +498,9 @@ export const landingEn = {
         downloadExcel: "Download student accounts (Excel)",
         goSignIn: "Go to sign in",
         goCatalog: "Go to catalog",
+        continueToSite: "Continue to site",
+        show: "Show",
+        hide: "Hide",
       },
     },
   },
@@ -411,6 +509,7 @@ export const landingEn = {
     categories: {
       product: "Product",
       account: "Account",
+      legal: "Legal",
     },
     tagline:
       "Personalized English learning through adaptive video content. Learn at your own pace, in your own way.",
@@ -423,6 +522,98 @@ export const landingEn = {
       logIn: "Log in",
       register: "Register",
       logout: "Log out",
+      aboutUs: "About us",
+      privacy: "Privacy policy",
+      terms: "Terms of service",
+      feedback: "Feedback",
     },
+  },
+
+  aboutPage: {
+    seoTitle: "About us",
+    seoDescription:
+      "Learn about Explys — personalized English learning through adaptive video lessons.",
+    title: "About Explys",
+    lead: "We help learners improve English through video content that adapts to their level, interests, and goals.",
+    lastUpdated: "Last updated: May 2026",
+    sections: [
+      {
+        heading: "Our mission",
+        paragraphs: [
+          "Explys makes English learning feel natural by connecting lessons to real video content you actually want to watch.",
+          "We combine adaptive placement, personalized recommendations, and comprehension checks so progress is measurable — not guesswork.",
+        ],
+      },
+      {
+        heading: "Who we serve",
+        paragraphs: [
+          "Independent learners, students, and teachers use Explys to practice listening, vocabulary, and grammar in context.",
+          "Teachers can upload lessons and track student progress; learners follow structured paths or explore the catalog at their own pace.",
+        ],
+      },
+      {
+        heading: "How we build",
+        paragraphs: [
+          "We iterate with learners and educators, focusing on clarity, accessibility, and a calm learning experience.",
+          "Questions or partnerships? Reach us through the Feedback page or our Telegram channel linked in the footer.",
+        ],
+      },
+    ],
+  },
+
+  privacyPage: {
+    seoTitle: "Privacy policy",
+    seoDescription:
+      "How Explys collects, uses, and protects your personal data.",
+    title: "Privacy policy",
+    lead: "This policy describes what information we collect when you use Explys and how we use it.",
+    lastUpdated: "Last updated: May 2026",
+    sections: [
+      {
+        heading: "Information we collect",
+        paragraphs: [
+          "When you register, we collect account details such as email, username, and profile preferences you choose to provide.",
+          "We also collect usage data — for example videos watched, quiz results, and learning progress — to personalize your experience.",
+        ],
+      },
+      {
+        heading: "How we use information",
+        paragraphs: [
+          "We use your data to deliver the service, recommend content, run placement and progress tests, and process subscriptions.",
+          "We may send transactional emails (verification, password reset, billing). Marketing emails are sent only where permitted by law and your preferences.",
+        ],
+      },
+      {
+        heading: "Sharing and storage",
+        paragraphs: [
+          "We use trusted processors for payments (Stripe), hosting, and analytics. They access data only to perform services on our behalf.",
+          "We do not sell your personal information. We may disclose data if required by law or to protect the rights and safety of users.",
+        ],
+      },
+      {
+        heading: "Your choices",
+        paragraphs: [
+          "You can update profile information in your account settings and request account deletion by contacting us.",
+          "For privacy questions, use the Feedback page or email listed in your account communications.",
+        ],
+      },
+    ],
+  },
+
+  feedbackPage: {
+    seoTitle: "Feedback",
+    seoDescription: "Send feedback, report issues, or ask questions about Explys.",
+    title: "Feedback",
+    lead: "Tell us what works, what doesn't, or what you'd like to see next. We read every message.",
+    nameLabel: "Name (optional)",
+    namePlaceholder: "Your name",
+    emailLabel: "Email (optional)",
+    emailPlaceholder: "you@example.com",
+    messageLabel: "Message",
+    messagePlaceholder: "Share your feedback, bug report, or question…",
+    messageRequired: "Please enter a message before sending.",
+    submit: "Send feedback",
+    submitting: "Sending…",
+    successToast: "Thanks for your feedback! (Demo — not sent to server yet.)",
   },
 } as const;

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import ContentHeader from "../../components/catalog/ContentHeader";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 
 const questions = [
   {
@@ -34,6 +36,7 @@ const questions = [
 
 export default function LevelTestPage() {
   const navigate = useNavigate();
+  const levelTest = useAppMessages().levelTestPage;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
@@ -52,18 +55,18 @@ export default function LevelTestPage() {
   };
 
   const getEnglishLevel = () => {
-    if (score === 0 || score === 1) return "A1 (Beginner)";
-    if (score === 2) return "A2 (Elementary)";
-    if (score === 3) return "B1 (Intermediate)";
-    if (score === 4) return "B2 (Upper-Intermediate)";
-    return "C1 (Advanced)";
+    if (score === 0 || score === 1) return levelTest.levels.a1;
+    if (score === 2) return levelTest.levels.a2;
+    if (score === 3) return levelTest.levels.b1;
+    if (score === 4) return levelTest.levels.b2;
+    return levelTest.levels.c1;
   };
 
   return (
     <div className="relative min-h-screen font-display bg-background flex flex-col items-center justify-center p-5">
       <SEO
-        title="English level test"
-        description="Determine your English level on Explys."
+        title={levelTest.seoTitle}
+        description={levelTest.seoDescription}
         canonicalUrl={resolveCanonicalUrl("/level-test")}
         noindex
       />
@@ -77,10 +80,13 @@ export default function LevelTestPage() {
           <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center mb-2">
               <h1 className="text-2xl font-bold text-foreground/70">
-                English Level Test
+                {levelTest.title}
               </h1>
               <span className="text-sm font-bold text-violet-500 bg-primary/15 border border-primary/25 px-3 py-1 rounded-full">
-                Question {currentQuestion + 1} of {questions.length}
+                {formatMessage(levelTest.questionOf, {
+                  current: String(currentQuestion + 1),
+                  total: String(questions.length),
+                })}
               </span>
             </div>
 
@@ -128,11 +134,9 @@ export default function LevelTestPage() {
             </div>
 
             <h1 className="text-3xl font-bold text-foreground/70">
-              Test Completed!
+              {levelTest.testCompleted}
             </h1>
-            <p className="text-gray-500 text-lg">
-              Based on your answers, your estimated English level is:
-            </p>
+            <p className="text-gray-500 text-lg">{levelTest.resultLead}</p>
 
             <div className="text-4xl font-extrabold text-violet-500 my-2">
               {getEnglishLevel()}
@@ -142,7 +146,7 @@ export default function LevelTestPage() {
               onClick={() => navigate("/catalog")}
               className="rounded-[15px] bg-primary px-10 py-5 text-md font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             >
-              Continue to site
+              {levelTest.continueToCatalog}
             </button>
           </div>
         )}
