@@ -11,6 +11,6 @@ export type OAuthProfile = {
 
 export interface OAuthProvider {
   readonly name: string;
-  getAuthUrl(): string;
+  getAuthUrl(state?: string): string;
   findUserByCode(code: string): Promise<OAuthProfile>;
 }

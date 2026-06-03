@@ -52,7 +52,7 @@ export class AuthController {
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) { }
+  ) {}
 
   @Post("register")
   @SkipSubscriptionCheck()
@@ -137,9 +137,7 @@ export class AuthController {
     const userId = req.user?.id || req.user?.sub;
 
     if (!userId) {
-      throw new UnauthorizedException(
-        "Login failed: User ID is missing",
-      );
+      throw new UnauthorizedException("Login failed: User ID is missing");
     }
 
     return this.authService.updateUserPreferences(userId, body);
@@ -198,9 +196,7 @@ export class AuthController {
         "DEBUG PROFILE: Invalid or missing ID in req.user:",
         req.user,
       );
-      throw new UnauthorizedException(
-        "Unable to determine the user's profile",
-      );
+      throw new UnauthorizedException("Unable to determine the user's profile");
     }
 
     return this.authService.getProfile(Number(userId));
@@ -292,10 +288,16 @@ export class AuthController {
   @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: "Regenerate personalised studying plan (v2 JSON with DB topics per phase)",
+    summary:
+      "Regenerate personalised studying plan (v2 JSON with DB topics per phase)",
   })
-  @ApiResponse({ status: 200, description: "Studying plan regenerated and saved." })
-  async regenerateStudyingPlan(@Req() req: { user?: { sub?: unknown; id?: unknown } }) {
+  @ApiResponse({
+    status: 200,
+    description: "Studying plan regenerated and saved.",
+  })
+  async regenerateStudyingPlan(
+    @Req() req: { user?: { sub?: unknown; id?: unknown } },
+  ) {
     const userId = Number(req.user?.sub ?? req.user?.id);
     if (!Number.isFinite(userId)) {
       throw new UnauthorizedException("User id not found in token");
@@ -309,28 +311,42 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Query("code") code: string,
+    @Query("state") state: string, // <-- Читаем action, который вернул Гугл
     @Param("provider") provider: string,
   ) {
-    if (!code) {
-      throw new BadRequestException("");
+    if (!code) throw new BadRequestException("");
+
+    const result = await this.authService.extractProfileFromCode(
+      req,
+      provider,
+      code,
+      state,
+    );
+
+    // Если пытались войти, но акаунта нет
+    if (result.error === "USER_NOT_FOUND") {
+      const loginUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/login?error=GoogleAccountNotFound`;
+      return res.redirect(loginUrl);
     }
 
-    await this.authService.extractProfileFromCode(req, provider, code);
-
     req.session.save((err) => {
-      if (err) {
-        console.error("Error save session in Redis:", err);
-        throw new InternalServerErrorException("Failed to save session");
-      }
+      if (err) throw new InternalServerErrorException("Failed to save session");
 
-      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/dashboard/settings`;
+      // Если новая регистрация — на ввод даты рождения, иначе — в настройки
+      const redirectPath = result.isNewUser
+        ? "/onboarding/dob"
+        : "/dashboard/settings";
+      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}${redirectPath}`;
       res.redirect(redirectUrl);
     });
   }
 
   @UseGuards(AuthProviderGuard)
   @Get("/oauth/connect/:provider")
-  public async connect(@Param("provider") provider: string) {
+  public async connect(
+    @Param("provider") provider: string,
+    @Query("action") action?: string,
+  ) {
     const providerInstance = this.providerService.findByService(provider);
 
     return {

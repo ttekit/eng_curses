@@ -868,6 +868,7 @@ export class AuthService {
     req: Request,
     provider: string,
     code: string,
+    state?: string,
   ) {
     const providerInstance = this.providerService.findByService(provider);
 
@@ -881,6 +882,10 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
+
+    if (state === "login" && !existingUser) {
+      return { error: "USER_NOT_FOUND" };
+    }
 
     if (existingUser) {
       const linked = await this.prisma.account.findFirst({
@@ -899,20 +904,22 @@ export class AuthService {
         });
       }
       const full = await this.userService.findById(existingUser.id);
-      return this.saveSession(req, full);
+
+      const sessionResult = await this.saveSession(req, full);
+      return { ...(sessionResult as any), isNewUser: false };
     }
 
     const oauthMethod =
       profile.provider.toLowerCase() === "google"
-        ? AuthMethod.GOOGLE
-        : AuthMethod.CREDENTIALS;
+        ? "GOOGLE"
+        : "CREDENTIALS";
 
     const created = await this.userService.create({
       email,
       password: "",
       name: profile.name,
       picture: profile.picture,
-      method: oauthMethod,
+      method: oauthMethod as any,
     });
 
     await this.prisma.account.create({
@@ -926,7 +933,8 @@ export class AuthService {
       },
     });
 
-    return this.saveSession(req, created);
+    const sessionResult = await this.saveSession(req, created);
+    return { ...(sessionResult as any), isNewUser: true };
   }
 
   public async logout(req: Request, res: Response): Promise<void> {
