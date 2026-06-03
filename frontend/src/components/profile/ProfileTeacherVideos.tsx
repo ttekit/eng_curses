@@ -342,7 +342,7 @@ export function ProfileTeacherVideos() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground flex-1">{t.intro}</p>
         <AdminButton
@@ -600,16 +600,16 @@ export function ProfileTeacherVideos() {
           </div>
         </ProfileCard>
       ) : (
-        <div className="w-full overflow-x-auto pb-4">
-          <div className="rounded-xl border border-border/50 bg-card/50 min-w-[800px]">
-            <table className="w-full text-left text-sm">
+        <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-card/50">
+          <div className="w-full overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+            <table className="w-full text-left text-sm whitespace-nowrap" style={{ minWidth: "800px" }}>
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colSeries}</th>
-                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colCaptions}</th>
-                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colCatalog}</th>
-                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colOpen}</th>
-                  <th className="p-4 font-semibold text-sm text-right whitespace-nowrap">
+                  <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
+                  <th className="p-4 font-semibold text-sm text-right">
                     {t.colActions}
                   </th>
                 </tr>
@@ -627,7 +627,7 @@ export function ProfileTeacherVideos() {
                       className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
                     >
                       <td className="p-4 align-middle">
-                        <div className="text-foreground text-base font-bold truncate max-w-[200px]">
+                        <div className="text-foreground text-base font-bold truncate" style={{ maxWidth: "200px" }}>
                           {s.name}
                         </div>
 
@@ -668,17 +668,17 @@ export function ProfileTeacherVideos() {
                         )}
 
                         {s.processingComplexity ? (
-                          <div className="text-muted-foreground mt-1 text-xs truncate max-w-[200px]">
+                          <div className="text-muted-foreground mt-1 text-xs truncate" style={{ maxWidth: "200px" }}>
                             {t.processingPrefix} {s.processingComplexity}
                           </div>
                         ) : null}
                         {tags.length > 0 ? (
-                          <div className="text-muted-foreground mt-1.5 max-w-[200px] text-xs truncate">
+                          <div className="text-muted-foreground mt-1.5 text-xs truncate" style={{ maxWidth: "200px" }}>
                             {tags.join(" · ")}
                           </div>
                         ) : null}
                       </td>
-                      <td className="p-4 align-middle whitespace-nowrap">
+                      <td className="p-4 align-middle">
                         <span
                           className={cn(
                             "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
@@ -690,12 +690,13 @@ export function ProfileTeacherVideos() {
                           {s.captionsReady ? t.captionsReady : t.captionsPending}
                         </span>
                       </td>
-                      <td className="p-4 align-middle whitespace-nowrap">
-                        <div className="flex flex-col items-start gap-1.5 w-full sm:w-[130px]">
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col items-start gap-1.5 w-full sm:w-auto">
                           <select
-                            className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
+                            className="border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
                             value={isPublic ? "public" : "unlisted"}
                             disabled={busy}
+                            style={{ minWidth: "130px" }}
                             aria-label={formatMessage(t.visibilityAria, {
                               name: s.name,
                             })}
@@ -717,7 +718,7 @@ export function ProfileTeacherVideos() {
                           ) : null}
                         </div>
                       </td>
-                      <td className="p-4 align-middle whitespace-nowrap">
+                      <td className="p-4 align-middle">
                         <div className="flex flex-col gap-2">
                           {s.contentVideoId != null ? (
                             <Link
@@ -735,7 +736,7 @@ export function ProfileTeacherVideos() {
                           </Link>
                         </div>
                       </td>
-                      <td className="p-4 align-middle text-right whitespace-nowrap">
+                      <td className="p-4 align-middle text-right">
                         <button
                           onClick={() => openDeleteModal(s.contentId)}
                           className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"

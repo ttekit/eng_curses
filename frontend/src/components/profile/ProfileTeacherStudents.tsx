@@ -282,7 +282,7 @@ export function ProfileTeacherStudents() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <p className="text-sm text-muted-foreground max-w-xl">{t.intro}</p>
 
@@ -747,18 +747,18 @@ export function ProfileTeacherStudents() {
           </div>
         </ProfileCard>
       ) : (
-        <div className="w-full overflow-x-auto pb-4">
-          <div className="rounded-xl border border-border/50 bg-card/50 min-w-[800px]">
-            <table className="w-full text-left text-sm">
+        <div className="w-full overflow-hidden rounded-xl border border-border/50 bg-card/50">
+          <div className="w-full overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+            <table className="w-full text-left text-sm whitespace-nowrap" style={{ minWidth: "800px" }}>
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
                   <th className="p-3 font-medium w-10 shrink-0" />
                   <th className="p-3 font-medium">{t.colStudent}</th>
-                  <th className="p-3 font-medium whitespace-nowrap">{t.colLevel}</th>
-                  <th className="p-3 text-center font-medium whitespace-nowrap">{t.colVideosDone}</th>
-                  <th className="p-3 text-center font-medium whitespace-nowrap">{t.colQuizzes}</th>
-                  <th className="p-3 text-center font-medium whitespace-nowrap">{t.colAvgScore}</th>
-                  <th className="p-3 font-medium w-24 text-right whitespace-nowrap">{t.colActions}</th>
+                  <th className="p-3 font-medium">{t.colLevel}</th>
+                  <th className="p-3 text-center font-medium">{t.colVideosDone}</th>
+                  <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
+                  <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
+                  <th className="p-3 font-medium w-24 text-right">{t.colActions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -782,23 +782,23 @@ export function ProfileTeacherStudents() {
                           </button>
                         </td>
                         <td className="p-3">
-                          <div className="text-foreground font-medium truncate max-w-[200px]">
+                          <div className="text-foreground font-medium truncate" style={{ maxWidth: "200px" }}>
                             {s.name}
                           </div>
-                          <div className="text-muted-foreground text-xs truncate max-w-[200px]">
+                          <div className="text-muted-foreground text-xs truncate" style={{ maxWidth: "200px" }}>
                             {s.email}
                           </div>
                         </td>
-                        <td className="text-foreground p-3 whitespace-nowrap">
+                        <td className="text-foreground p-3">
                           {s.englishLevel?.trim() || "—"}
                         </td>
-                        <td className="p-3 text-center tabular-nums whitespace-nowrap">
+                        <td className="p-3 text-center tabular-nums">
                           {s.videosCompleted}
                         </td>
-                        <td className="p-3 text-center tabular-nums whitespace-nowrap">
+                        <td className="p-3 text-center tabular-nums">
                           {s.quizAttempts}
                         </td>
-                        <td className="p-3 text-center tabular-nums whitespace-nowrap">
+                        <td className="p-3 text-center tabular-nums">
                           {s.avgQuizScorePct != null
                             ? `${s.avgQuizScorePct}%`
                             : "—"}
@@ -900,7 +900,7 @@ export function ProfileTeacherStudents() {
                                         </div>
 
                                         {writtenText ? (
-                                          <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3">
+                                          <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3 whitespace-normal">
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
                                               {t.writtenSummary}
                                             </span>
