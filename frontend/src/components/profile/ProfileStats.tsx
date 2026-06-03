@@ -175,7 +175,7 @@ export function ProfileStats({ user }: { user: ProfileStatsModel | null }) {
           <div className="h-[200px] w-full mt-4 overflow-hidden">
             <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <AreaChart
-                data={weeklyActivity}
+                data={chartData}
                 margin={{ left: 15, right: 15, top: 10, bottom: 2 }}
               >
                 <defs>

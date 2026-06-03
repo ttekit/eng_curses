@@ -182,10 +182,10 @@ export class TeacherStudentsService {
       where: { email: data.email },
     });
     if (existing) {
-      throw new ForbiddenException("Пользователь с таким email уже существует");
+      throw new ForbiddenException("A user with this email already exists");
     }
 
-    // --- УМНАЯ ГЕНЕРАЦИЯ ПАРОЛЯ (16 символов) ---
+    // 16-char password: 12 random + one of each required class.
     const lower = "abcdefghijklmnopqrstuvwxyz";
     const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const numbers = "0123456789";
@@ -199,7 +199,6 @@ export class TeacherStudentsService {
       symbols[Math.floor(Math.random() * symbols.length)],
     ];
 
-    // 12 случайных + 4 обязательных = 16 символов
     for (let i = 0; i < 12; i++) {
       pwdArray.push(all[Math.floor(Math.random() * all.length)]);
     }
@@ -272,7 +271,7 @@ export class TeacherStudentsService {
       where: { id: studentId, teacherId },
     });
     if (!student)
-      throw new ForbiddenException("Ученик не найден или не принадлежит вам");
+      throw new ForbiddenException("Student not found or not assigned to you");
 
     return this.prisma.user.update({
       where: { id: studentId },
@@ -284,7 +283,7 @@ export class TeacherStudentsService {
     const student = await this.prisma.user.findFirst({
       where: { id: studentId, teacherId },
     });
-    if (!student) throw new ForbiddenException("Ученик не найден");
+    if (!student) throw new ForbiddenException("Student not found");
 
     return this.prisma.user.delete({
       where: { id: studentId },

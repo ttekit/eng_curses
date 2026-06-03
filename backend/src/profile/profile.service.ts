@@ -249,23 +249,20 @@ export class ProfileService {
     }
 
     async getVocabularyStats(userId: number) {
-        // Получаем все слова пользователя
         const allWords = await this.prisma.userVocabulary.findMany({
             where: { userId },
         });
 
         const total = allWords.length;
-        // Считаем 'Mastered' - те, у которых mastery >= 0.8
         const mastered = allWords.filter(w => w.mastery >= 0.8).length;
-        // 'Learned' - это те, что уже есть в словаре, но еще не 'Mastered' (или все вместе)
         const learned = allWords.length;
         const reviewing = Math.max(0, learned - mastered);
 
         return {
-            total: total > 0 ? total : 0, // Или замени на фиксированную цель, например 1000
+            total,
             learned,
             mastered,
-            reviewing
+            reviewing,
         };
     }
 }

@@ -12,10 +12,11 @@ import {
   userMayUseLearnerApp,
 } from "../../lib/subscriptionAccess";
 import PlacementPreferencesStep from "../../components/PlacementPreferencesStep";
-import PlacementPreTestStep, {
-  adultNeedsPlacementPrepFields,
-  studentNeedsPlacementPreferencesOverlay,
-} from "../../components/PlacementPreTestStep";
+import PlacementPreTestStep from "../../components/PlacementPreTestStep";
+import {
+  learnerNeedsPlacement,
+  resolvePlacementPhase,
+} from "../../lib/learnerOnboarding";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { formatMessage } from "../../lib/formatMessage";
@@ -41,6 +42,7 @@ import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
 
 interface ContentVideo {
   id: number;
@@ -208,26 +210,13 @@ export default function VideoPage() {
 
   const accessToken = getStoredAccessToken();
   const needsPlacement =
-    !userLoading &&
-    !!accessToken &&
-    !!user &&
-    user.role !== "teacher" &&
-    user.role !== "admin" &&
-    !user.hasCompletedPlacement;
+    !userLoading && !!accessToken && !!user && learnerNeedsPlacement(user);
 
-  const placementPhaseResolved = useMemo((): "preferences" | "test" | "off" => {
-    if (!needsPlacement || !user) return "off";
-    if (user.role === "adult") {
-      return adultNeedsPlacementPrepFields(user) ? "preferences" : "test";
+  const placementPhaseResolved = useMemo(() => {
+    if (!needsPlacement || !user) {
+      return "off" as const;
     }
-    if (user.role === "student") {
-      return studentNeedsPlacementPreferencesOverlay(user)
-        ? "preferences"
-        : "test";
-    }
-    const hasPrefs =
-      (user.hobbies?.length ?? 0) > 0 && (user.favoriteGenres?.length ?? 0) > 0;
-    return hasPrefs ? "test" : "preferences";
+    return resolvePlacementPhase(user);
   }, [needsPlacement, user]);
 
   const showPlacementPrepOverlay =
@@ -240,6 +229,9 @@ export default function VideoPage() {
       return;
     }
     const onMessage = (ev: MessageEvent) => {
+      if (!isTrustedIframeMessageOrigin(ev.origin)) {
+        return;
+      }
       if (ev.data?.type === "placement_exit") {
         navigate("/");
         return;
@@ -300,7 +292,7 @@ export default function VideoPage() {
     };
   }, [showPlacementTest, accessToken]);
 
-  // ===== ЗАГРУЗКА ОСНОВНОГО КАТАЛОГА =====
+  // Load catalog video library.
   useEffect(() => {
     const fetchVideos = async () => {
       try {
@@ -426,12 +418,12 @@ export default function VideoPage() {
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-      // 1. ВЫРЕЗАЕМ ВИДЕО УЧИТЕЛЯ (чтобы не было в общем списке)
+      // Hide teacher-only uploads from the public catalog list.
       if (v.content?.category?.friendlyLink?.startsWith("t-")) {
         return false;
       }
 
-      // 2. БЛОКИРУЕМ КОНТЕНТ 18+ ДЛЯ УЧЕНИКОВ
+      // Block 18+ content for teacher-linked students.
       if (isTeacherLinkedStudent) {
         const sysTags = v.content?.stats?.systemTags || [];
         const usrTags = v.content?.stats?.userTags || [];
@@ -572,7 +564,7 @@ export default function VideoPage() {
     hasFilters,
   ]);
 
-  // Вырезаем отфильтрованные видео из рекомендаций
+  // Exclude filtered videos from recommendation rows.
   const visibleRecommended = useMemo(() => {
     if (recommendedCards.length === 0) return [];
     const allowedIds = new Set(filteredVideos.map((v) => v.id));

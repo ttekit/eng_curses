@@ -13,3 +13,17 @@ export function jwtSubToUserId(user: unknown): number {
   }
   return Math.trunc(n);
 }
+
+/** Returns user id when present on `req.user`; otherwise `undefined` (no throw). */
+export function optionalJwtSubToUserId(user: unknown): number | undefined {
+  if (!user || typeof user !== "object" || !("sub" in user)) {
+    return undefined;
+  }
+  const raw = (user as { sub: unknown }).sub;
+  const n =
+    typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
+  if (!Number.isFinite(n) || n <= 0) {
+    return undefined;
+  }
+  return Math.trunc(n);
+}

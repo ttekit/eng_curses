@@ -24,6 +24,8 @@ import {
   FileFieldsInterceptor,
 } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
+import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
 import { Express, Request, Response } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
@@ -52,11 +54,13 @@ export class ContentsController {
   constructor(private readonly contentsService: ContentsService) { }
 
   @Get("all")
+  @SkipSubscriptionCheck()
   getContent() {
     return this.contentsService.getAllContent();
   }
 
   @Get("series/:friendlyLink")
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary: "Ordered playlist for a series (Content) by friendly link",
   })
@@ -65,6 +69,7 @@ export class ContentsController {
   }
 
   @Post("teacher/upload")
+  @Throttle({ upload: { limit: 10, ttl: 60_000 } })
   @UseGuards(AuthGuard)
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -136,11 +141,13 @@ export class ContentsController {
   }
 
   @Get(":id")
+  @SkipSubscriptionCheck()
   getContentById(@Param("id", ParseIntPipe) id: number) {
     return this.contentsService.getContentById(id);
   }
 
   @Post("create")
+  @Throttle({ upload: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAdminGuard)
   @ApiBearerAuth("JWT-auth")
   @UseInterceptors(
@@ -193,6 +200,7 @@ export class ContentsController {
   }
 
   @Post(":id/episodes")
+  @Throttle({ upload: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(
     FileFieldsInterceptor(

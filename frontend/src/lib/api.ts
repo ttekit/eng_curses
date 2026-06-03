@@ -209,12 +209,13 @@ export async function apiFetch(
   }
 }
 
-/** Admin analytics: do not send learner `Authorization` — use `VITE_API_TOKEN` only. */
+/** Admin routes: `x-api-token` only — never attach the learner JWT. */
 export async function adminApiFetch(
   path: string,
   init: FetchOpts = {},
 ): Promise<Response> {
-  return apiFetch(path, init);
+  const { token: _ignored, ...rest } = init;
+  return apiFetch(path, { ...rest, token: null });
 }
 export interface AvatarOption {
   id: number;

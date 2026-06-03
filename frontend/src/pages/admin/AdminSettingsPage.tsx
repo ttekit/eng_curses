@@ -205,10 +205,6 @@ export default function AdminSettingsPage() {
           </AdminCardContent>
         </AdminCard>
       ) : null}
-
-      <AdminButton variant="outline" disabled className="w-full sm:w-auto">
-        Persist changes (stub)
-      </AdminButton>
     </div>
   );
 }

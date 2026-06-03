@@ -89,7 +89,9 @@ function normalizeLearnerRole(raw: unknown): string {
   const s = String(raw ?? "adult")
     .trim()
     .toLowerCase();
-  return s.length > 0 ? s : "adult";
+  if (s.length === 0) return "adult";
+  if (s === "regular") return "adult";
+  return s;
 }
 
 function normalizeProfile(raw: unknown): UserData | null {

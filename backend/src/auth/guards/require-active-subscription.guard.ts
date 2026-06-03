@@ -17,6 +17,7 @@ import {
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { UserRole } from "@generated/prisma/enums";
 import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
+import { SKIP_SUBSCRIPTION_CHECK_KEY } from "../decorators/skip-subscription-check.decorator";
 
 @Injectable()
 export class RequireActiveSubscriptionGuard implements CanActivate {
@@ -26,28 +27,6 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
   ) { }
-
-  private static readonly ALLOWLIST: ReadonlySet<string> = new Set([
-    "POST /auth/register",
-    "POST /auth/login",
-    "GET /auth/profile",
-    "POST /auth/update-preferences",
-    "PATCH /users/profile",
-    "POST /auth/profile/regenerate-studying-plan",
-    "POST /billing/checkout",
-    "GET /billing/stripe-publishable-key",
-    "POST /billing/webhook",
-    "GET /",
-    "GET /status",
-    "GET /health",
-    "GET /genres",
-    "GET /topics",
-    "GET /tags",
-    "GET /placement-test/status",
-    "GET /placement-test/document",
-    "POST /placement-test/complete",
-    "GET /sitemap.xml",
-  ]);
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
@@ -79,19 +58,19 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
       return true;
     }
 
-    const path = req.path || req.url?.split("?")[0] || "";
-    const key = `${req.method} ${path}`;
-    if (RequireActiveSubscriptionGuard.ALLOWLIST.has(key)) {
-      return true;
-    }
-
-    if (req.method === "GET" && path.replace(/\/$/, "") === "/genres") {
+    const skipSubscription = this.reflector.getAllAndOverride<boolean>(
+      SKIP_SUBSCRIPTION_CHECK_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (skipSubscription) {
       return true;
     }
 
     const token = extractAccessTokenFromRequest(req);
     if (!token) {
-      return true;
+      throw new UnauthorizedException(
+        "Authentication required for this resource.",
+      );
     }
 
     let sub: unknown;

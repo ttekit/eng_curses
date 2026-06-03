@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { AlcorythmModule } from "./alcorythm/alcorythm.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -36,6 +37,39 @@ import { ScheduleModule } from "@nestjs/schedule";
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const defaultTtlSec = Number(
+          configService.get("DEFAULT_RATE_TTL") ?? 60,
+        );
+        const defaultLimit = Number(
+          configService.get("DEFAULT_RATE_LIMIT") ?? 1000,
+        );
+        const authTtl = Number(configService.get("AUTH_RATE_TTL") ?? 60_000);
+        const authLimit = Number(configService.get("AUTH_RATE_LIMIT") ?? 10);
+        const uploadTtlSec = Number(
+          configService.get("UPLOAD_RATE_TTL") ?? 60,
+        );
+        const uploadLimit = Number(
+          configService.get("UPLOAD_RATE_LIMIT") ?? 10,
+        );
+        return [
+          {
+            name: "default",
+            ttl: defaultTtlSec * 1000,
+            limit: defaultLimit,
+          },
+          { name: "auth", ttl: authTtl, limit: authLimit },
+          {
+            name: "upload",
+            ttl: uploadTtlSec * 1000,
+            limit: uploadLimit,
+          },
+        ];
+      },
+      inject: [ConfigService],
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -63,6 +97,7 @@ import { ScheduleModule } from "@nestjs/schedule";
   controllers: [AppController],
   providers: [
     AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: RequireActiveSubscriptionGuard },
     { provide: APP_GUARD, useClass: GlobalApiTokenGuard },
   ],

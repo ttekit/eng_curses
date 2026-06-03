@@ -5,6 +5,7 @@ import { apiFetch, getApiBase, getResponseErrorMessage } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { cn } from "../../lib/utils";
+import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
 
 function patchTestDocApiOrigin(html: string, apiOrigin: string): string {
   if (!apiOrigin) return html;
@@ -90,7 +91,12 @@ export function PhaseFinalTestPanel({
 
   const onTestMessage = useCallback(
     (event: MessageEvent) => {
-      if (event.data?.type !== "phase_final_test_complete") return;
+      if (!isTrustedIframeMessageOrigin(event.origin)) {
+        return;
+      }
+      if (event.data?.type !== "phase_final_test_complete") {
+        return;
+      }
       const passed = event.data?.result?.passed === true;
       void (async () => {
         await refreshProfile();

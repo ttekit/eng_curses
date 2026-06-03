@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipSubscriptionCheck } from './auth/decorators/skip-subscription-check.decorator';
 import { AppService } from './app.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from './prisma.service';
@@ -12,6 +13,7 @@ export class AppController {
   ) { }
 
   @Get()
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary: 'Welcome endpoint',
     description: 'Returns a welcome message with API documentation link'
@@ -26,6 +28,7 @@ export class AppController {
   }
 
   @Get('status')
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary: 'API status',
     description: 'Returns current API status and version information'
@@ -47,6 +50,7 @@ export class AppController {
   }
 
   @Get('health')
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary: 'Health check',
     description: 'Returns API health status and uptime'
@@ -67,6 +71,7 @@ export class AppController {
   }
 
   @Get('genres')
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary: 'Get all genres',
     description: 'Returns a list of all available genres from the database'

@@ -17,6 +17,7 @@ export const landingEn = {
       errorHobbies: "Please add at least one hobby.",
       errorGenres: "Please select at least one genre.",
       saveErrorToast: "Failed to save preferences.",
+      errorMissingUserId: "Could not resolve your account. Please refresh the page.",
       saving: "Saving...",
       continueCta: "Continue",
     },

@@ -15,6 +15,7 @@ import { phaseCountFromStoredPhases } from "src/content-video/studying-plan-phas
 import { PlacementTestService } from "src/placement-test/placement-test.service";
 import type { PlacementQuestion } from "src/placement-test/placement-test.types";
 import { scoreAgainstDraft } from "src/placement-test/placement-level.util";
+import { resolveParentPostMessageOrigin } from "src/common/utils/parent-post-message-origin.util";
 import { renderPlacementHtml } from "src/placement-test/placement-html.template";
 import type { PlacementTestPayload } from "src/placement-test/placement-test.types";
 import { syncActiveStudyingPhaseForUser } from "src/studying-plan/sync-active-studying-phase";
@@ -114,7 +115,14 @@ export class PhaseFinalTestService {
       completeEventType: "phase_final_test_complete",
     };
     const xApi = this.config.get<string>("API_TOKEN");
-    return renderPlacementHtml(payload, accessToken, xApi, apiPublicOrigin);
+    const parentOrigin = resolveParentPostMessageOrigin(this.config);
+    return renderPlacementHtml(
+      payload,
+      accessToken,
+      xApi,
+      apiPublicOrigin,
+      parentOrigin,
+    );
   }
 
   async completePhaseFinalTest(

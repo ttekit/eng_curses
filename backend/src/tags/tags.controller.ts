@@ -3,6 +3,7 @@ import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { SkipSubscriptionCheck } from 'src/auth/decorators/skip-subscription-check.decorator';
 
 @ApiTags('tags')
 @Controller('tags')
@@ -32,6 +33,7 @@ export class TagsController {
   }
 
   @Get()
+  @SkipSubscriptionCheck()
   @ApiOperation({ 
     summary: 'Get all tags',
     description: 'Retrieves all available tags with their associated topics.',

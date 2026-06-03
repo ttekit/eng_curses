@@ -20,6 +20,7 @@ export const landingUk = {
       errorHobbies: "Будь ласка, додайте хоча б одне хобі.",
       errorGenres: "Будь ласка, оберіть хоча б один жанр.",
       saveErrorToast: "Не вдалося зберегти вподобання.",
+      errorMissingUserId: "Не вдалося знайти акаунт. Оновіть сторінку.",
       saving: "Збереження...",
       continueCta: "Продовжити"
     },
