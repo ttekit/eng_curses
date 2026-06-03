@@ -621,7 +621,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               onChange={(e) => setDateOfBirth(e.target.value)}
               min="1900-01-01"
               max={new Date().toISOString().split("T")[0]}
-              className="w-full text-foreground [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
+              className="w-full text-foreground scheme-dark [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
             />
           </div>
 
@@ -826,7 +826,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               <button
                 type="button"
                 onClick={handleStartEmailChange}
-                className="shrink-0 rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                className="shrink-0 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent transition-all duration-500 hover:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:cursor-pointer"
               >
                 Change email
               </button>
@@ -845,7 +845,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       </div>
                       <button
                         onClick={() => setIsChangingEmail(false)}
-                        className="p-2 rounded-xl text-muted-foreground hover:bg-accent transition-colors"
+                        className="p-1 rounded-sm text-muted-foreground hover:cursor-pointer hover:bg-muted-foreground/10 transition-colors"
                       >
                         <svg
                           className="w-6 h-6"
@@ -928,7 +928,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <div className="p-6 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
                       <button
                         onClick={() => setIsChangingEmail(false)}
-                        className="px-5 py-3 text-base font-medium hover:underline"
+                        className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -939,7 +939,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           (emailChangeStep === 1 &&
                             emailChangeCode.length !== 6)
                         }
-                        className="rounded-xl bg-primary px-8 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                       >
                         {isLoading
                           ? "Processing..."
@@ -971,7 +971,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <button
                       type="button"
                       onClick={() => setIsChangingPassword(true)}
-                      className="shrink-0 rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+                      className="shrink-0 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent  transition-all duration-500 hover:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:cursor-pointer"
                     >
                       Change password
                     </button>
@@ -994,7 +994,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               setIsChangingPassword(false);
                               setError("");
                             }}
-                            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mt-1"
+                            className="p-1 rounded-sm text-muted-foreground hover:cursor-pointer hover:bg-muted-foreground/10 transition-colors"
                           >
                             <svg
                               className="w-6 h-6"
@@ -1020,7 +1020,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           )}
 
                           <div className="space-y-3">
-                            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                            <label className="text-sm font-semibold text-muted-foreground tracking-wider">
                               Current Password{" "}
                               <span className="text-red-500">*</span>
                             </label>
@@ -1031,11 +1031,11 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               onChange={(e) =>
                                 setCurrentPassword(e.target.value)
                               }
-                              className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                           <div className="space-y-3">
-                            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                            <label className="text-sm font-semibold text-muted-foreground tracking-wider">
                               New Password{" "}
                               <span className="text-red-500">*</span>
                             </label>
@@ -1044,11 +1044,11 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               autoComplete="new-password"
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
-                              className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                           <div className="space-y-3">
-                            <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                            <label className="text-sm font-semibold text-muted-foreground tracking-wider">
                               Confirm New Password{" "}
                               <span className="text-red-500">*</span>
                             </label>
@@ -1059,12 +1059,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               onChange={(e) =>
                                 setConfirmPassword(e.target.value)
                               }
-                              className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                         </div>
 
-                        <div className="p-6 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
+                        <div className="p-3 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
                           <button
                             type="button"
                             onClick={() => {
@@ -1072,7 +1072,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               setError("");
                             }}
                             disabled={isLoading}
-                            className="px-5 py-3 text-base font-medium text-foreground hover:underline disabled:opacity-50"
+                            className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -1080,7 +1080,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             type="button"
                             onClick={handlePasswordUpdate}
                             disabled={isLoading}
-                            className="rounded-xl bg-primary px-8 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                            className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                           >
                             {isLoading ? (
                               <>
