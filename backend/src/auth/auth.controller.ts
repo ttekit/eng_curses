@@ -15,6 +15,7 @@ import {
   UnauthorizedException,
   Delete,
   SetMetadata,
+  Redirect,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -309,12 +310,14 @@ export class AuthController {
   @UseGuards(AuthProviderGuard)
   public async callback(
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
     @Query("code") code: string,
-    @Query("state") state: string, // <-- Читаем action, который вернул Гугл
+    @Query("state") state: string,
     @Param("provider") provider: string,
   ) {
-    if (!code) throw new BadRequestException("");
+    if (!code) {
+      throw new BadRequestException("No code provided from Google");
+    }
 
     const result = await this.authService.extractProfileFromCode(
       req,
@@ -323,19 +326,15 @@ export class AuthController {
       state,
     );
 
-    // Если пытались войти, но акаунта нет
     if (result.error === "USER_NOT_FOUND") {
-      const loginUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/login?error=GoogleAccountNotFound`;
+      const loginUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=GoogleAccountNotFound`;
       return res.redirect(loginUrl);
     }
 
     req.session.save((err) => {
       if (err) throw new InternalServerErrorException("Failed to save session");
 
-      // Если новая регистрация — на ввод даты рождения, иначе — в настройки
-      const redirectPath = result.isNewUser
-        ? "/onboarding/dob"
-        : "/dashboard/settings";
+      const redirectPath = result.isNewUser ? "/onboarding/dob" : "/catalog";
       const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}${redirectPath}`;
       res.redirect(redirectUrl);
     });
@@ -343,6 +342,7 @@ export class AuthController {
 
   @UseGuards(AuthProviderGuard)
   @Get("/oauth/connect/:provider")
+  @Redirect()
   public async connect(
     @Param("provider") provider: string,
     @Query("action") action?: string,
@@ -350,7 +350,7 @@ export class AuthController {
     const providerInstance = this.providerService.findByService(provider);
 
     return {
-      url: providerInstance!.getAuthUrl(),
+      url: providerInstance!.getAuthUrl(action),
     };
   }
 
