@@ -288,8 +288,8 @@ export default function PlacementPreTestStep({
       }
       await refreshProfile();
       onSuccess(skipTest ? { skippedPlacementTest: true } : undefined);
-    } catch(error){
-      console.error("ОШИБКА ПРИ ОТПРАВКЕ:", error); 
+    } catch (error) {
+      console.error("Failed to save placement prep profile:", error);
       toast.error(a.saveErrorToast);
     } finally {
       setSaving(false);

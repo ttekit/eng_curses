@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -151,6 +152,8 @@ function normalizeSubmitKeyVocabularyDetails(raw: unknown): Array<{
 
 @Injectable()
 export class ContentVideoComprehensionTestsService {
+  private readonly logger = new Logger(ContentVideoComprehensionTestsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -283,6 +286,11 @@ export class ContentVideoComprehensionTestsService {
     contentVideoId: number,
     body: ComprehensionSummaryRecommendationsBodyDto,
   ) {
+    const secret = this.config.getOrThrow<string>("JWT_SECRET");
+    const parsed = parseGradingToken((body?.token ?? "").trim(), secret);
+    if (!parsed || parsed.contentVideoId !== contentVideoId) {
+      throw new BadRequestException("Invalid or expired test token");
+    }
     const v = await this.prisma.contentVideo.findUnique({
       where: { id: contentVideoId },
       select: { id: true, videoName: true },
@@ -516,7 +524,14 @@ export class ContentVideoComprehensionTestsService {
 
     if (p.userId != null) {
       const xpToAward = isOpenSkipped ? 100 : 150;
-      await this.postWatchSurveyService.awardXpAndCheckAchievements(p.userId, xpToAward).catch(() => undefined);
+      await this.postWatchSurveyService
+        .awardXpAndCheckAchievements(p.userId, xpToAward)
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.warn(
+            `awardXp failed userId=${p.userId} contentVideoId=${contentVideoId}: ${msg}`,
+          );
+        });
 
       await this.recordWeakSpotsFromSubmit(
         p.userId,
@@ -540,7 +555,12 @@ export class ContentVideoComprehensionTestsService {
             terms: keyTerms,
             details: keyDetails.length > 0 ? keyDetails : undefined,
           })
-          .catch(() => undefined);
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.warn(
+              `recordKeyTerms failed userId=${p.userId} contentVideoId=${contentVideoId}: ${msg}`,
+            );
+          });
       }
     }
 
@@ -600,7 +620,7 @@ export class ContentVideoComprehensionTestsService {
         total,
         pct,
         buckets,
-        rawAnswers, // <--- ИСПРАВЛЕНИЕ 1: ПЕРЕДАЕМ ОТВЕТЫ В БАЗУ!
+        rawAnswers,
       );
       return {
         correct,
@@ -681,7 +701,7 @@ export class ContentVideoComprehensionTestsService {
       total,
       pct,
       buckets,
-      rawAnswers, // <--- ИСПРАВЛЕНИЕ 2: ПЕРЕДАЕМ ОТВЕТЫ В БАЗУ!
+      rawAnswers,
     );
 
     return {

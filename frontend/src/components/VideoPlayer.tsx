@@ -259,7 +259,10 @@ export default function VideoPlayer({
       } catch { }
     }
     if (videoRef.current) {
-      videoRef.current.currentTime = currentTime;
+      const t = videoRef.current.currentTime;
+      if (Number.isFinite(t)) {
+        setCurrentTime(t);
+      }
     }
   };
 

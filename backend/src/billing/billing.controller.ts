@@ -22,6 +22,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import { AuthGuard } from "../auth/auth.guard";
 import { Public } from "../auth/decorators/public.decorator";
+import { SkipSubscriptionCheck } from "../auth/decorators/skip-subscription-check.decorator";
 import { BillingService } from "./billing.service";
 import { CreateCheckoutDto } from "./dto/create-checkout.dto";
 
@@ -49,6 +50,7 @@ export class BillingController {
   }
 
   @Post("checkout")
+  @SkipSubscriptionCheck()
   @HttpCode(200)
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")

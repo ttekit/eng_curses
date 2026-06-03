@@ -18,6 +18,8 @@ import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service"
 import { PasswordRecoveryController } from "./password-recovery/password-recovery.controller";
 import { PasswordRecoveryService } from "./password-recovery/password-recovery.service";
 import { TurnstileGuard } from "./guards/turnstile.guard";
+import { LearnerJwtGuard } from "./guards/learner-jwt.guard";
+import { OptionalLearnerJwtGuard } from "./guards/optional-learner-jwt.guard";
 import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
 
 @Module({
@@ -50,6 +52,8 @@ import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
     JwtAdminGuard,
     UserSelfOrApiGuard,
     TurnstileGuard,
+    LearnerJwtGuard,
+    OptionalLearnerJwtGuard,
     UsersService,
     TwoFactorAuthService,
     PasswordRecoveryService,
@@ -63,6 +67,8 @@ import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
     JwtAdminGuard,
     UserSelfOrApiGuard,
     TurnstileGuard,
+    LearnerJwtGuard,
+    OptionalLearnerJwtGuard,
   ],
 })
 export class AuthModule {}

@@ -79,7 +79,6 @@ export function ProfileTeacherStudents() {
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // СОСТОЯНИЕ ДЛЯ КРАСИВОГО ОКНА С ПАРОЛЕМ
   const [newStudentCreds, setNewStudentCreds] = useState<{
     email: string;
     password: string;
@@ -133,7 +132,7 @@ export function ProfileTeacherStudents() {
 
   const handleExport = async () => {
     try {
-      const res = await apiFetch("/contents/teacher/my-students/export", {
+      const res = await apiFetch("/teacher/my-students/export", {
         method: "GET",
       });
       if (!res.ok) throw new Error(t.exportFailed);
@@ -198,8 +197,8 @@ export function ProfileTeacherStudents() {
     setIsSaving(true);
     try {
       const url = editingId
-        ? `/contents/teacher/my-students/${editingId}`
-        : "/contents/teacher/my-students";
+        ? `/teacher/my-students/${editingId}`
+        : "/teacher/my-students";
       const method = editingId ? "PATCH" : "POST";
 
       const payload = {
@@ -250,10 +249,9 @@ export function ProfileTeacherStudents() {
 
     setIsDeleting(true);
     try {
-      const res = await apiFetch(
-        `/contents/teacher/my-students/${deletingId}`,
-        { method: "DELETE" },
-      );
+      const res = await apiFetch(`/teacher/my-students/${deletingId}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
       toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);

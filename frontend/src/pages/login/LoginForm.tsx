@@ -8,9 +8,8 @@ import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import Turnstile from "react-turnstile";
 import { apiFetch, setStoredAccessToken } from "../../lib/api";
-import type { UserData } from "../../context/UserContext";
 import { useUser } from "../../context/UserContext";
-import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
+import { resolvePostLoginPath } from "../../lib/learnerOnboarding";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
@@ -25,67 +24,6 @@ function safeReturnPath(state: unknown): string | undefined {
   if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
   if (raw === "/loginForm" || raw.startsWith("/loginForm?")) return undefined;
   return raw;
-}
-
-function postLoginNavigateTarget(
-  explicit: string | undefined,
-  profile: UserData | null,
-): string {
-  if (!profile) return "/subscribe";
-
-  if (profile.role === "admin") return "/admin";
-  if (profile.role === "teacher") return "/catalog";
-
-  // 1. Если роль не выбрана
-  if (
-    !profile.role ||
-    profile.role === "choose" ||
-    profile.role === "regular"
-  ) {
-    return "/registrationDetails";
-  }
-
-  // 2. Жанры
-  if (
-    (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
-    (!profile.hatedGenres || profile.hatedGenres.length === 0)
-  ) {
-    return "/registrationPreferences";
-  }
-
-  // 3. БИОГРАФИЯ (жесткая проверка для студентов)
-  // Если это студент, проверяем наличие данных, которые собираются в PlacementPreTestStep
-  if (
-    profile.role === "student" &&
-    (!profile.education ||
-      profile.education.trim() === "" ||
-      !profile.workField ||
-      profile.workField.trim() === "" ||
-      !profile.nativeLanguage ||
-      profile.nativeLanguage.trim() === "")
-  ) {
-    // ВАЖНО: возвращаем путь, где эта биография собирается (у тебя это, видимо, регистрация)
-    return "/registrationDetails";
-  }
-
-  // 4. Уровень английского
-  if (
-    !profile.englishLevel ||
-    profile.englishLevel === "choose" ||
-    profile.englishLevel === ""
-  ) {
-    return "/registrationDetails";
-  }
-
-  // 5. Тест (должен идти последним!)
-  if (!profile.hasCompletedPlacement) {
-    return "/level-test";
-  }
-
-  if (explicit) return explicit;
-  if (userMayUseLearnerApp(profile)) return "/catalog";
-
-  return "/subscribe";
 }
 
 export default function LoginForm() {
@@ -137,7 +75,7 @@ export default function LoginForm() {
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!show2FA && !captchaToken) {
+    if (!captchaToken) {
       toast.error(loginSeo.captchaWait);
       return;
     }
@@ -149,7 +87,8 @@ export default function LoginForm() {
 
         const bodyPayload = {
           ...loginData,
-          ...(show2FA ? { code: twoFactorCode } : { captchaToken }),
+          captchaToken,
+          ...(show2FA ? { code: twoFactorCode } : {}),
         };
 
         const response = await apiFetch(endpoint, {
@@ -173,23 +112,21 @@ export default function LoginForm() {
           const fromState = safeReturnPath(location.state);
 
           if (!token) {
-            const next = postLoginNavigateTarget(fromState, null);
+            const next = resolvePostLoginPath(null, fromState);
             toast.success(loginSeo.toastSignedIn);
             navigate(next);
           } else {
             setStoredAccessToken(token);
             const profile = await refreshProfile();
-            const next = postLoginNavigateTarget(fromState, profile);
+            const next = resolvePostLoginPath(profile, fromState);
             toast.success(loginSeo.toastSignedIn);
             navigate(next);
           }
         } else {
           const errorData = await response.json();
 
-          if (!show2FA) {
-            setCaptchaToken(null);
-            setCaptchaKey((prev) => prev + 1);
-          }
+          setCaptchaToken(null);
+          setCaptchaKey((prev) => prev + 1);
 
           if (errorData?.error === "EMAIL_NOT_VERIFIED") {
             toast.error(loginSeo.emailNotVerified);
@@ -201,11 +138,8 @@ export default function LoginForm() {
           }
         }
       } catch (error) {
-        if (!show2FA) {
-          setCaptchaToken(null);
-          setCaptchaKey((prev) => prev + 1);
-        }
-
+        setCaptchaToken(null);
+        setCaptchaKey((prev) => prev + 1);
         toast.error(loginSeo.networkError);
       }
     } else {
@@ -335,25 +269,23 @@ export default function LoginForm() {
             </div>
           )}
 
-          {!show2FA && (
-            <div className="flex justify-center py-2">
-              <Turnstile
-                key={captchaKey}
-                sitekey="0x4AAAAAADSk3etSiWLwGH5-"
-                onVerify={(token) => setCaptchaToken(token)}
-                onLoad={() => console.log("Turnstile loaded")}
-                onExpire={() => {
-                  setCaptchaToken(null);
-                  setCaptchaKey((prev) => prev + 1);
-                }}
-                onError={() => {
-                  setCaptchaToken(null);
-                  setCaptchaKey((prev) => prev + 1);
-                }}
-                theme="light"
-              />
-            </div>
-          )}
+          <div className="flex justify-center py-2">
+            <Turnstile
+              key={captchaKey}
+              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
+              onVerify={(token) => setCaptchaToken(token)}
+              onLoad={() => console.log("Turnstile loaded")}
+              onExpire={() => {
+                setCaptchaToken(null);
+                setCaptchaKey((prev) => prev + 1);
+              }}
+              onError={() => {
+                setCaptchaToken(null);
+                setCaptchaKey((prev) => prev + 1);
+              }}
+              theme="light"
+            />
+          </div>
 
           {emptyError && (
             <ValidateError>
@@ -366,8 +298,8 @@ export default function LoginForm() {
           <Button
             type="submit"
             disabled={
-              (show2FA && twoFactorCode.length !== 6) ||
-              (!show2FA && !captchaToken)
+              !captchaToken ||
+              (show2FA ? twoFactorCode.length !== 6 : false)
             }
             className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >

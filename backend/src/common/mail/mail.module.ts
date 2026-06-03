@@ -1,37 +1,36 @@
 import { Module } from "@nestjs/common";
 import { MailerModule } from "@nestjs-modules/mailer";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { MailService } from "./mail.service";
+import {
+  buildNodemailerTransportOptions,
+  resolveSmtpSettings,
+} from "./smtp-settings.util";
 
 @Module({
   imports: [
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => {
-        const host = config.get<string>("SMTP_HOST");
-        const port = Number(config.get<string>("SMTP_PORT") ?? 587);
-
+        const defaultFrom =
+          '"Explys Support" <noreply@explys.com>';
+        if (isOutboundMailDisabled(config)) {
+          return {
+            transport: { jsonTransport: true },
+            defaults: { from: defaultFrom },
+          };
+        }
+        const smtp = resolveSmtpSettings(config);
+        if (!smtp) {
+          return {
+            transport: { jsonTransport: true },
+            defaults: { from: defaultFrom },
+          };
+        }
         return {
-          transport: host?.trim()
-            ? {
-                host: host,
-                port: port,
-                secure: false,
-                auth: {
-                  user: config.get<string>("SMTP_USER"),
-                  pass: config.get<string>("SMTP_PASSWORD"),
-                },
-                tls: {
-                  rejectUnauthorized: false,
-                  ciphers: "SSLv3",
-                },
-              }
-            : { jsonTransport: true },
-          defaults: {
-            from:
-              config.get<string>("SMTP_FROM") ??
-              '"Explys Support" <noreply@explys.com>',
-          },
+          transport: buildNodemailerTransportOptions(smtp),
+          defaults: { from: smtp.from },
         };
       },
       inject: [ConfigService],

@@ -3,7 +3,14 @@
  */
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Video, Plus, Upload, Trash2 } from "lucide-react";
+import {
+  Loader2,
+  Video,
+  Plus,
+  Upload,
+  Trash2,
+  CalendarClock,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
@@ -27,9 +34,11 @@ export type TeacherSeriesItem = {
   systemTags: string[];
   userTags: string[];
   processingComplexity: string | null;
+  availableFrom?: string | null;
+  deadline?: string | null;
 };
 
-// МАГИЯ 1: Автоматически делает скриншот первого кадра видео
+// Автоматически делает скриншот первого кадра видео
 function generateVideoThumbnailBlob(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -66,22 +75,6 @@ function generateVideoThumbnailBlob(file: File): Promise<Blob> {
   });
 }
 
-// МАГИЯ 2: Генерирует красивую URL-ссылку для базы данных
-function slugFriendly(label: string): string {
-  const base = label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-  const suffix = Date.now().toString(36);
-  const slug = `${base}-${suffix}`;
-  const trimmed =
-    slug.length > 100 ? slug.slice(0, 100).replace(/-[^-]*$/, "") : slug;
-  return trimmed?.length >= 4 ? trimmed : `video-${suffix}`;
-}
-
 export function ProfileTeacherVideos() {
   const t = useAppMessages().profileTeacherVideos;
   const [loading, setLoading] = useState(true);
@@ -100,6 +93,13 @@ export function ProfileTeacherVideos() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Режимы расписания
+  const [deadlineMode, setDeadlineMode] = useState<
+    "none" | "close" | "open_close"
+  >("none");
+  const [openDateStr, setOpenDateStr] = useState("");
+  const [closeDateStr, setCloseDateStr] = useState("");
 
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
@@ -197,6 +197,43 @@ export function ProfileTeacherVideos() {
       return;
     }
 
+    let finalOpen: string | null = null;
+    let finalClose: string | null = null;
+    let initialVisibility = "unlisted";
+
+    if (deadlineMode === "close") {
+      if (!closeDateStr) {
+        toast.error("Please select a closing date and time.");
+        return;
+      }
+      const cDate = new Date(closeDateStr);
+      if (cDate <= new Date()) {
+        toast.error("The closing deadline cannot be in the past.");
+        return;
+      }
+      finalClose = cDate.toISOString();
+      initialVisibility = "public";
+    } else if (deadlineMode === "open_close") {
+      if (!openDateStr || !closeDateStr) {
+        toast.error("Please select both open and close dates.");
+        return;
+      }
+      const oDate = new Date(openDateStr);
+      const cDate = new Date(closeDateStr);
+
+      if (oDate <= new Date()) {
+        toast.error("The opening date must be in the future.");
+        return;
+      }
+      if (cDate <= oDate) {
+        toast.error("The closing deadline must be AFTER the opening date.");
+        return;
+      }
+      finalOpen = oDate.toISOString();
+      finalClose = cDate.toISOString();
+      initialVisibility = "unlisted";
+    }
+
     setUploadSaving(true);
     const controller = new AbortController();
     setAbortController(controller);
@@ -205,8 +242,11 @@ export function ProfileTeacherVideos() {
       const fd = new FormData();
 
       fd.append("name", name);
-      fd.append("visibility", "unlisted");
+      fd.append("visibility", initialVisibility);
       fd.append("description", description);
+
+      if (finalOpen) fd.append("availableFrom", finalOpen);
+      if (finalClose) fd.append("deadline", finalClose);
 
       try {
         const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
@@ -229,6 +269,10 @@ export function ProfileTeacherVideos() {
       setUploadTitle("");
       setUploadDesc("");
       setUploadFile(null);
+      setDeadlineMode("none");
+      setOpenDateStr("");
+      setCloseDateStr("");
+
       await loadSeries();
     } catch (e: any) {
       if (e.name === "AbortError") {
@@ -382,6 +426,85 @@ export function ProfileTeacherVideos() {
               maxLength={250}
             />
           </div>
+
+          <div className="space-y-4 pt-4 mt-2 border-t border-border/50">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Lesson Availability & Deadline
+              </label>
+              <select
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                value={deadlineMode}
+                onChange={(e) => setDeadlineMode(e.target.value as any)}
+              >
+                <option value="none">No deadline (Manual visibility)</option>
+                <option value="close">
+                  Has closing deadline (Starts Public)
+                </option>
+                <option value="open_close">
+                  Schedule open & close dates (Starts Private)
+                </option>
+              </select>
+            </div>
+
+            {deadlineMode === "open_close" && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Opening Date (Becomes Public)
+                </label>
+                <AdminInput
+                  type="datetime-local"
+                  value={openDateStr}
+                  max="9999-12-31T23:59"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      const year = val.split("-")[0];
+                      // Блокируем ввод, если год больше 4 цифр
+                      if (year && year.length > 4) {
+                        e.target.value = openDateStr; // Принудительный сброс DOM-элемента
+                        return;
+                      }
+                    }
+                    setOpenDateStr(val);
+                  }}
+                  min={new Date().toISOString().slice(0, 16)}
+                  required
+                />
+              </div>
+            )}
+
+            {(deadlineMode === "close" || deadlineMode === "open_close") && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Closing Deadline (Becomes Private)
+                </label>
+                <AdminInput
+                  type="datetime-local"
+                  value={closeDateStr}
+                  max="9999-12-31T23:59"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      const year = val.split("-")[0];
+                      // Блокируем ввод, если год больше 4 цифр
+                      if (year && year.length > 4) {
+                        e.target.value = closeDateStr; // Принудительный сброс DOM-элемента
+                        return;
+                      }
+                    }
+                    setCloseDateStr(val);
+                  }}
+                  min={
+                    deadlineMode === "open_close" && openDateStr
+                      ? openDateStr
+                      : new Date().toISOString().slice(0, 16)
+                  }
+                  required
+                />
+              </div>
+            )}
+          </div>
         </form>
       </AdminModal>
 
@@ -491,6 +614,7 @@ export function ProfileTeacherVideos() {
                   const vis = s.visibility.trim().toLowerCase();
                   const isPublic = vis === "public";
                   const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
+
                   return (
                     <tr
                       key={s.contentId}
@@ -500,6 +624,43 @@ export function ProfileTeacherVideos() {
                         <div className="text-foreground text-base font-bold">
                           {s.name}
                         </div>
+
+                        {/* БЛОК РАСПИСАНИЯ ДЛЯ УЧИТЕЛЯ */}
+                        {(s.availableFrom || s.deadline) && (
+                          <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
+                            {s.availableFrom && (
+                              <span
+                                className={
+                                  new Date(s.availableFrom) > new Date()
+                                    ? "text-blue-500"
+                                    : "text-muted-foreground"
+                                }
+                              >
+                                Opens:{" "}
+                                {new Date(s.availableFrom).toLocaleString([], {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            )}
+                            {s.deadline && (
+                              <span
+                                className={
+                                  new Date(s.deadline) < new Date()
+                                    ? "text-destructive"
+                                    : "text-amber-500"
+                                }
+                              >
+                                Closes:{" "}
+                                {new Date(s.deadline).toLocaleString([], {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         {s.processingComplexity ? (
                           <div className="text-muted-foreground mt-1 text-xs">
                             {t.processingPrefix} {s.processingComplexity}

@@ -24,8 +24,12 @@ import {
 } from "@nestjs/swagger";
 import { Request, Response } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
+import { LearnerJwtGuard } from "src/auth/guards/learner-jwt.guard";
+import { OptionalLearnerJwtGuard } from "src/auth/guards/optional-learner-jwt.guard";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
-import { jwtSubToUserId } from "src/auth/jwt-subject.util";
+import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
+import { resolveFrameAncestorsCsp } from "src/common/utils/frame-ancestors-csp.util";
+import { jwtSubToUserId, optionalJwtSubToUserId } from "src/auth/jwt-subject.util";
 import { renderComprehensionTestsIframeHtml } from "src/content-video/content-video-comprehension-tests-html";
 import { ContentVideoComprehensionTestsService } from "src/content-video/content-video-comprehension-tests.service";
 import { PostWatchSurveyService } from "src/content-video/post-watch-survey.service";
@@ -63,30 +67,14 @@ export class ContentVideoController {
   }
 
   @Get()
+  @SkipSubscriptionCheck()
+  @UseGuards(OptionalLearnerJwtGuard)
   @ApiOperation({
     summary:
       "Get all videos (supports unlisted teacher videos if authenticated)",
   })
-  findAll(@Req() req: Request) {
-    let userId: number | undefined = undefined;
-
-    // Аккуратно достаем ID пользователя из токена (не ломая публичные страницы без авторизации)
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const payloadBase64 = token.split(".")[1];
-        const payload = JSON.parse(
-          Buffer.from(payloadBase64, "base64").toString("utf8"),
-        );
-        if (payload && payload.sub) {
-          userId = Number(payload.sub);
-        }
-      } catch (e) {
-        // Игнорируем ошибки парсинга, просто отдадим базовый публичный каталог
-      }
-    }
-
+  findAll(@Req() req: Request & { user?: unknown }) {
+    const userId = optionalJwtSubToUserId(req.user);
     return this.contentVideoService.findAll(userId);
   }
 
@@ -154,8 +142,25 @@ export class ContentVideoController {
   }
 
   @Get(":id/iframe")
-  getIframe(@Param("id", ParseIntPipe) id: number) {
-    return this.contentVideoService.getIframePayload(id);
+  @SkipSubscriptionCheck()
+  @UseGuards(OptionalLearnerJwtGuard)
+  getIframe(
+    @Param("id", ParseIntPipe) id: number,
+    @Req() req: Request & { user?: unknown },
+  ) {
+    const userId = optionalJwtSubToUserId(req.user);
+    return this.contentVideoService.getIframePayload(id, userId);
+  }
+
+  @Get(":id")
+  @SkipSubscriptionCheck()
+  @UseGuards(OptionalLearnerJwtGuard)
+  findOne(
+    @Param("id", ParseIntPipe) id: number,
+    @Req() req: Request & { user?: unknown },
+  ) {
+    const userId = optionalJwtSubToUserId(req.user);
+    return this.contentVideoService.findOne(id, userId);
   }
 
   @Post(":id/regenerate-tags")
@@ -208,6 +213,8 @@ export class ContentVideoController {
   }
 
   @Get(":id/captions")
+  @SkipSubscriptionCheck()
+  @UseGuards(OptionalLearnerJwtGuard)
   @ApiOperation({
     summary: "WebVTT captions (catalog learner UI)",
     description:
@@ -217,9 +224,11 @@ export class ContentVideoController {
   @Header("Cache-Control", "public, max-age=120")
   async learnerCaptionsVtt(
     @Param("id", ParseIntPipe) id: number,
+    @Req() req: Request & { user?: unknown },
     @Res() res: Response,
   ): Promise<void> {
-    await this.contentVideoService.findOne(id);
+    const userId = optionalJwtSubToUserId(req.user);
+    await this.contentVideoService.findOne(id, userId);
     const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(id);
     res.status(200).type("text/vtt; charset=utf-8").send(body);
   }
@@ -250,7 +259,6 @@ export class ContentVideoController {
     @Body() body: { secondsWatched?: number; completed?: boolean },
   ) {
     const userId = jwtSubToUserId(req.user);
-    // Передаем secondsWatched в сервис
     return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,
@@ -270,6 +278,8 @@ export class ContentVideoController {
   }
 
   @Get(":id/tests")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
   @ApiOperation({
     summary:
       "Get comprehension/grammar tests (fresh generation each request; optional userId for personalization)",
@@ -283,16 +293,29 @@ export class ContentVideoController {
   getComprehensionTests(
     @Param("id", ParseIntPipe) id: number,
     @Query("userId") userIdRaw: string | undefined,
+    @Req() req: Request & { user?: { sub?: number } },
   ) {
+    const fromJwt = jwtSubToUserId(req.user);
     const parsed =
       userIdRaw != null && userIdRaw !== ""
         ? Number.parseInt(userIdRaw, 10)
         : Number.NaN;
-    const userId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    const fromQuery =
+      Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    const userId = fromJwt > 0 ? fromJwt : fromQuery;
     return this.comprehensionTestsService.getOrLoadTests(id, userId);
   }
 
   @Get(":id/tests/iframe")
+  @SkipSubscriptionCheck()
+  @UseGuards(LearnerJwtGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiQuery({
+    name: "access_token",
+    required: false,
+    description:
+      "JWT when the iframe cannot send Authorization (same as placement test).",
+  })
   @ApiOperation({
     summary:
       "Comprehension + grammar test as a standalone HTML page (iframe src)",
@@ -321,23 +344,25 @@ export class ContentVideoController {
     @Param("id", ParseIntPipe) id: number,
     @Query("userId") userIdRaw: string | undefined,
     @Query("summaryBase") summaryBase: string | undefined,
-    @Req() req: Request,
+    @Req() req: Request & { user?: { sub?: number } },
     @Res() res: Response,
   ): Promise<void> {
-    const frame = this.config.get<string>("COMPREHENSION_TEST_FRAME_ANCESTORS");
-    if (frame?.trim()) {
-      res.setHeader(
-        "Content-Security-Policy",
-        `frame-ancestors ${frame.trim()}`,
-      );
-    } else {
-      res.setHeader("Content-Security-Policy", "frame-ancestors *");
-    }
+    const frameAncestors = resolveFrameAncestorsCsp(
+      this.config,
+      "COMPREHENSION_TEST_FRAME_ANCESTORS",
+    );
+    res.setHeader(
+      "Content-Security-Policy",
+      `frame-ancestors ${frameAncestors}`,
+    );
+    const fromJwt = jwtSubToUserId(req.user);
     const parsed =
       userIdRaw != null && userIdRaw !== ""
         ? Number.parseInt(userIdRaw, 10)
         : Number.NaN;
-    const userId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    const fromQuery =
+      Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    const userId = fromJwt > 0 ? fromJwt : fromQuery;
     const result = await this.comprehensionTestsService.getOrLoadTests(
       id,
       userId,
@@ -351,8 +376,7 @@ export class ContentVideoController {
   }
 
   @Post(":id/tests/submit")
-  // @UseGuards(AuthGuard)
-  // @ApiBearerAuth("JWT-auth")
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary:
       "Submit comprehension/grammar test; updates UserLanguageData for linked topics",
@@ -377,8 +401,7 @@ export class ContentVideoController {
   }
 
   @Post(":id/summary-recommendations")
-  // @UseGuards(AuthGuard)
-  // @ApiBearerAuth("JWT-auth")
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary:
       "Gemini: personalized summary, focus words, and next steps after a test (uses scores + vocabulary list)",
@@ -388,11 +411,6 @@ export class ContentVideoController {
     @Body() body: ComprehensionSummaryRecommendationsBodyDto,
   ) {
     return this.comprehensionTestsService.getSummaryRecommendations(id, body);
-  }
-
-  @Get(":id")
-  findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.contentVideoService.findOne(id);
   }
 
   @Patch(":id")

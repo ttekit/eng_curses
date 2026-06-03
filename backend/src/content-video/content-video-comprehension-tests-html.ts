@@ -273,7 +273,7 @@ export function renderComprehensionTestsIframeHtml(
     var answers = {};
     var missing = 0;
     
-    // Собираем ответы и ищем пропущенные
+    // Collect answers and detect unanswered items.
     each("fieldset.q", function (fs) {
       fs.classList.remove("bad");
       var qid = fs.getAttribute("data-qid");
@@ -289,7 +289,7 @@ export function renderComprehensionTestsIframeHtml(
       else { missing++; fs.classList.add("bad"); }
     });
 
-    // Если хоть что-то не заполнено — ругаемся жестким алертом
+    // Block submit when required questions are unanswered.
     if (missing > 0) {
       alert("Please answer all questions! You missed " + missing + " question(s) — they are highlighted in red.");
       return;
@@ -297,6 +297,7 @@ export function renderComprehensionTestsIframeHtml(
 
     var btn = document.getElementById("submitBtn");
     var ogText = btn.textContent;
+    var navigatedAway = false;
     btn.disabled = true;
     btn.textContent = "Sending...";
 
@@ -337,6 +338,7 @@ export function renderComprehensionTestsIframeHtml(
           if (d.knowledgeUpdates && d.knowledgeUpdates.length) {
             dest.searchParams.set("ku", JSON.stringify(d.knowledgeUpdates));
           }
+          navigatedAway = true;
           var top = window.top;
           if (top) { window.top.location.href = dest.toString(); }
           else { window.location.assign(dest.toString()); }
@@ -370,9 +372,10 @@ export function renderComprehensionTestsIframeHtml(
       document.getElementById("resultMessage").textContent = e && e.message ? e.message : "Submit failed";
       panel.scrollIntoView({ behavior: 'smooth' });
     })
-    .finally(function () { 
+    .finally(function () {
+      if (navigatedAway) return;
       if(btn.textContent === "Sending...") btn.textContent = ogText;
-      btn.disabled = false; 
+      btn.disabled = false;
     });
   });
 })();

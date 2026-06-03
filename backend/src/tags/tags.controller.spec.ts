@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaService } from 'src/prisma.service';
+import { prismaMock } from 'src/test/prisma.mock';
 import { TagsController } from './tags.controller';
 import { TagsService } from './tags.service';
 
@@ -8,7 +10,10 @@ describe('TagsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TagsController],
-      providers: [TagsService],
+      providers: [
+        TagsService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
     }).compile();
 
     controller = module.get<TagsController>(TagsController);

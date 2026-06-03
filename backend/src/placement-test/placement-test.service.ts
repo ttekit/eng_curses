@@ -884,9 +884,16 @@ export class PlacementTestService {
     payload: PlacementTestPayload,
     accessToken: string,
     apiPublicOrigin: string,
+    parentOrigin: string,
   ): string {
     const xApi = this.config.get<string>("API_TOKEN");
-    return renderPlacementHtml(payload, accessToken, xApi, apiPublicOrigin);
+    return renderPlacementHtml(
+      payload,
+      accessToken,
+      xApi,
+      apiPublicOrigin,
+      parentOrigin,
+    );
   }
 
   /** Shared MCQ bank builder (placement + phase final tests). */

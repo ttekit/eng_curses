@@ -10,6 +10,7 @@ import { JwtService } from "@nestjs/jwt";
 import { extractAccessTokenFromRequest } from "./extract-request-access-token.util";
 import { isEmailConfirmationDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { PrismaService } from "src/prisma.service";
+import type { AuthedUser } from "./auth.types";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -27,15 +28,19 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException("Token not found");
     }
 
-    let payload: any;
+    let payload: { sub?: unknown; id?: unknown; email?: string };
     try {
       const secret = this.configService.getOrThrow<string>("JWT_SECRET");
-      payload = await this.jwtService.verifyAsync(token, { secret });
+      payload = await this.jwtService.verifyAsync<{
+        sub?: unknown;
+        id?: unknown;
+        email?: string;
+      }>(token, { secret });
     } catch {
       throw new UnauthorizedException("Invalid or expired token");
     }
 
-    const userId = payload.sub || payload.id;
+    const userId = payload.sub ?? payload.id;
 
     if (!userId) {
       throw new UnauthorizedException("Invalid token payload structure");
@@ -46,6 +51,7 @@ export class AuthGuard implements CanActivate {
       select: {
         isSuspended: true,
         isVerified: true,
+        role: true,
       },
     });
 
@@ -64,7 +70,12 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException("Account email is not verified");
     }
 
-    request["user"] = payload;
+    const authed: AuthedUser = {
+      sub: Number(userId),
+      email: typeof payload.email === "string" ? payload.email : "",
+      role: user.role,
+    };
+    request["user"] = authed;
     return true;
   }
 }

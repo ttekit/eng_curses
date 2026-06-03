@@ -32,7 +32,7 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @ValidateIf((object, value) => value !== "" && value !== null) // <--- ДОБАВЬ ЭТО
+  @ValidateIf((object, value) => value !== "" && value !== null)
   @IsDateString({}, { message: "Invalid date format. Please use the YYYY-MM-DD format" })
   dateOfBirth?: string;
 

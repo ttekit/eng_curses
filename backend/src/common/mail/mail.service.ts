@@ -4,9 +4,11 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnModuleInit,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
+import { resolveSmtpSettings } from "./smtp-settings.util";
 import { render } from "@react-email/components";
 import { ConfirmationTemplate } from "./templates/confirmation.template";
 import { ResetPasswordTemplate } from "./templates/reset-password.template";
@@ -21,7 +23,7 @@ import { Resolver } from "dns/promises";
 import { TwoFactorAuthTemplate } from "./templates/two-factor-auth.template";
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
 
   public constructor(
@@ -29,6 +31,25 @@ export class MailService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
+
+  onModuleInit(): void {
+    if (isOutboundMailDisabled(this.configService)) {
+      this.logger.warn(
+        "Outbound mail disabled (DISABLE_EMAIL=true). Set DISABLE_EMAIL=false to send mail.",
+      );
+      return;
+    }
+    const smtp = resolveSmtpSettings(this.configService);
+    if (!smtp) {
+      this.logger.warn(
+        "SMTP credentials are incomplete (set SMTP_HOST, SMTP_USER, SMTP_PASSWORD)",
+      );
+      return;
+    }
+    this.logger.log(
+      `SMTP enabled host=${smtp.host} port=${smtp.port} secure=${smtp.secure}`,
+    );
+  }
 
   public async sendConfirmationEmail(
     email: string,
@@ -82,6 +103,12 @@ export class MailService {
   }
 
   async sendEmailChangeCode(email: string, code: string) {
+    if (isOutboundMailDisabled(this.configService)) {
+      this.logger.warn(
+        `Outbound mail disabled; skipping email-change code to ${email}`,
+      );
+      return;
+    }
     try {
       const htmlContent = await render(EmailChangeTemplate({ code }));
 

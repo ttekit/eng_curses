@@ -65,8 +65,12 @@ export function renderPlacementHtml(
   accessToken: string,
   xApiToken?: string | null,
   apiPublicOrigin = "",
+  parentOrigin = "",
 ): string {
   const payloadOut: Record<string, unknown> = { ...payload, accessToken };
+  if (parentOrigin) {
+    payloadOut.parentOrigin = parentOrigin;
+  }
   if (xApiToken) {
     payloadOut.xApiToken = xApiToken;
   }

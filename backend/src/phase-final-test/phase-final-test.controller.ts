@@ -22,8 +22,9 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { Request, Response } from "express";
-import { PlacementJwtGuard } from "src/placement-test/placement-jwt.guard";
+import { LearnerJwtGuard } from "src/auth/guards/learner-jwt.guard";
 import { extractAccessTokenFromRequest } from "src/auth/extract-request-access-token.util";
+import { resolveFrameAncestorsCsp } from "src/common/utils/frame-ancestors-csp.util";
 import { PhaseFinalTestService } from "./phase-final-test.service";
 
 type AuthedRequest = Request & { user: { sub: number; email: string } };
@@ -59,7 +60,7 @@ export class PhaseFinalTestController {
   ) {}
 
   @Get("status")
-  @UseGuards(PlacementJwtGuard)
+  @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiSecurity("api-token")
   @ApiOperation({ summary: "Phase final test status for the active studying phase" })
@@ -69,7 +70,7 @@ export class PhaseFinalTestController {
   }
 
   @Get("document")
-  @UseGuards(PlacementJwtGuard)
+  @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiSecurity("api-token")
   @ApiQuery({
@@ -84,15 +85,14 @@ export class PhaseFinalTestController {
   @Header("Content-Type", "text/html; charset=utf-8")
   @Header("Cache-Control", "no-store")
   async document(@Req() req: AuthedRequest, @Res() res: Response) {
-    const frame = this.config.get<string>("PLACEMENT_TEST_FRAME_ANCESTORS");
-    if (frame?.trim()) {
-      res.setHeader(
-        "Content-Security-Policy",
-        `frame-ancestors ${frame.trim()}`,
-      );
-    } else {
-      res.setHeader("Content-Security-Policy", "frame-ancestors *");
-    }
+    const frameAncestors = resolveFrameAncestorsCsp(
+      this.config,
+      "PLACEMENT_TEST_FRAME_ANCESTORS",
+    );
+    res.setHeader(
+      "Content-Security-Policy",
+      `frame-ancestors ${frameAncestors}`,
+    );
     const html = await this.phaseFinalTest.renderDocumentHtml(
       req.user.sub,
       getBearerOrQueryToken(req),
@@ -102,7 +102,7 @@ export class PhaseFinalTestController {
   }
 
   @Post("complete")
-  @UseGuards(PlacementJwtGuard)
+  @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiSecurity("api-token")
   @ApiOperation({ summary: "Submit phase final test answers" })

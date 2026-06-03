@@ -120,12 +120,12 @@ export const EmailVerification: React.FC = () => {
           profile.englishLevel === "choose" ||
           profile.englishLevel === ""
         ) {
-          navigate("/registrationDetails");
+          navigate("/catalog");
           return;
         }
 
         if (!profile.hasCompletedPlacement) {
-          navigate("/level-test");
+          navigate("/catalog");
           return;
         }
 
