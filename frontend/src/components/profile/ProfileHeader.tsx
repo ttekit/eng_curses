@@ -26,7 +26,7 @@ function initialsFromName(name: string): string {
 
 export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
   const h = useAppMessages().profileHeader;
-  
+
   // Добавляем стейт для управления модалкой
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -58,7 +58,7 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
       <div className="relative px-4 pb-6 pt-8 sm:px-6 sm:h-fit">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-end">
           <div className="relative shrink-0">
-            <div className="relative size-28 overflow-hidden rounded-full border-4 border-background shadow-xl">
+            <div className="relative size-28 overflow-hidden rounded-full border-4 border-background/40 shadow-xl">
               {user.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
@@ -74,8 +74,8 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
             {/* Кнопка открытия модалки */}
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)} 
-              title={h.photoSoonAria || "Change photo"}
+              onClick={() => setIsModalOpen(true)}
+              title={"Change photo"}
               className="absolute hover:cursor-pointer -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground shadow-md transition-transform hover:scale-105"
             >
               <Edit2 className="size-4" />

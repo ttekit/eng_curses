@@ -57,7 +57,7 @@ export function AvatarPickerModal({
           <h2 className="text-xl font-bold text-foreground">Choose Avatar</h2>
           <button
             onClick={onClose}
-            className="rounded-full p-2 hover:bg-muted text-muted-foreground transition-colors"
+            className="rounded-full p-2 hover:bg-muted text-muted-foreground transition-colors hover:cursor-pointer"
           >
             <X className="size-5" />
           </button>
@@ -79,7 +79,7 @@ export function AvatarPickerModal({
                 <button
                   key={avatar.id}
                   onClick={() => setSelectedAvatar(avatar.url)}
-                  className={`relative aspect-square overflow-hidden rounded-full border-4 transition-all ${
+                  className={`relative aspect-square overflow-hidden rounded-full border-4 transition-all hover:cursor-pointer ${
                     isSelected
                       ? "border-primary scale-110 shadow-lg"
                       : "border-transparent hover:scale-105 hover:border-primary/50"
@@ -104,7 +104,7 @@ export function AvatarPickerModal({
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            className="rounded-[15px] px-4 py-2 text-sm hover:cursor-pointer font-medium text-muted-foreground hover:bg-muted transition-colors"
             disabled={isLoading}
           >
             Cancel
@@ -116,7 +116,7 @@ export function AvatarPickerModal({
               isLoading ||
               selectedAvatar === currentAvatarUrl
             }
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           >
             {isLoading ? "Saving..." : "Save"}
           </button>

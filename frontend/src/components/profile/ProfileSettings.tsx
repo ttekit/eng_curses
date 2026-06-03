@@ -450,11 +450,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       await onSaved();
     } catch (e) {
       console.error(e);
-      toast.error(
-        e instanceof Error
-          ? e.message
-          : s.saveProfileError,
-      );
+      toast.error(e instanceof Error ? e.message : s.saveProfileError);
     } finally {
       setSaving(false);
     }
@@ -745,9 +741,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             onClick={() => void saveProfile()}
           >
             <Save className="size-4" />
-            {saving
-              ? s.saving || "Saving..."
-              : s.saveChanges || "Save Changes"}
+            {saving ? s.saving || "Saving..." : s.saveChanges || "Save Changes"}
           </Button>
         </div>
       </ProfileCard>
@@ -1285,24 +1279,26 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 {s.logoutDesc || "Sign out of your account."}
               </p>
             </div>
-            <button
-              type="button"
-              className="text-sm flex font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
-              onClick={async () => {
-                try {
-                  await apiFetch("/auth/logout", { method: "POST" });
-                } catch (e) {
-                  console.error("Server logout request failed:", e);
-                }
-                logout();
-                setStoredAccessToken(null);
-                toast.success(s?.signOutToast || "Signed out successfully");
-                window.location.href = "/loginForm";
-              }}
-            >
-              <LogOut className="size-4 pt-1 pr-1" />
-              {s.logoutCta || "Sign Out"}
-            </button>
+            <div className="w-full flex justify-center sm:block sm:w-auto">
+              <button
+                type="button"
+                className="flex flex-row w-full sm:w-auto justify-center items-center text-sm font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
+                onClick={async () => {
+                  try {
+                    await apiFetch("/auth/logout", { method: "POST" });
+                  } catch (e) {
+                    console.error("Server logout request failed:", e);
+                  }
+                  logout();
+                  setStoredAccessToken(null);
+                  toast.success(s?.signOutToast || "Signed out successfully");
+                  window.location.href = "/loginForm";
+                }}
+              >
+                <LogOut className="size-4 pt-1 pr-1" />
+                {s.logoutCta || "Sign Out"}
+              </button>
+            </div>
           </div>
           <div className="flex flex-col gap-4 rounded-lg bg-destructive/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -1330,13 +1326,15 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 {s.deleteAccountDesc || "Permanently delete your account."}
               </p>
             </div>
-            <button
-              type="button"
-              className="rounded-[15px] w-50 bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-              onClick={() => setDangerOpen("delete")}
-            >
-              {s.deleteAccountCta || "Delete Account"}
-            </button>
+            <div className="flex justify-center sm:block">
+              <button
+                type="button"
+                className="rounded-[15px] w-full bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                onClick={() => setDangerOpen("delete")}
+              >
+                {s.deleteAccountCta || "Delete Account"}
+              </button>
+            </div>
           </div>
         </div>
       </ProfileCard>
