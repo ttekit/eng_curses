@@ -3,6 +3,7 @@ import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { SkipSubscriptionCheck } from 'src/auth/decorators/skip-subscription-check.decorator';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -33,6 +34,7 @@ export class CategoriesController {
   }
 
   @Get()
+  @SkipSubscriptionCheck()
   @ApiOperation({ 
     summary: 'Get all categories',
     description: 'Retrieves all available categories with their associated topics.',

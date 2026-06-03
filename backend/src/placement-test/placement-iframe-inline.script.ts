@@ -109,6 +109,14 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
 
   diag("parsed", { n: d.questions.length });
 
+  function pmTarget() {
+    var o = d && d.parentOrigin;
+    if (typeof o === "string" && o.length > 0) {
+      return o;
+    }
+    return window.location.origin;
+  }
+
   try {
 
   function getLevel(score, total) {
@@ -160,7 +168,7 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
   if (btnExit) {
     btnExit.addEventListener("click", function () {
       try {
-        window.parent && window.parent.postMessage({ type: "placement_exit" }, "*");
+        window.parent && window.parent.postMessage({ type: "placement_exit" }, pmTarget());
       } catch (e0) {}
     });
   }
@@ -480,7 +488,7 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
           }
         } catch (eL) {}
         try {
-          window.parent && window.parent.postMessage({ type: completeEvent, summary: lastSummary, result: body || null }, "*");
+          window.parent && window.parent.postMessage({ type: completeEvent, summary: lastSummary, result: body || null }, pmTarget());
         } catch (e) {}
       }).catch(function (e) {
         try {

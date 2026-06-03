@@ -26,9 +26,12 @@ import { Request, Response } from "express";
 import { CompletePlacementDto } from "./dto/complete-placement.dto";
 import { PlacementCompleteResponseDto } from "./dto/placement-complete-response.dto";
 import { PlacementStatusResponseDto } from "./dto/placement-status-response.dto";
-import { PlacementJwtGuard } from "./placement-jwt.guard";
+import { LearnerJwtGuard } from "../auth/guards/learner-jwt.guard";
+import { resolveFrameAncestorsCsp } from "src/common/utils/frame-ancestors-csp.util";
+import { resolveParentPostMessageOrigin } from "src/common/utils/parent-post-message-origin.util";
 import { PlacementTestService } from "./placement-test.service";
 import { extractAccessTokenFromRequest } from "../auth/extract-request-access-token.util";
+import { SkipSubscriptionCheck } from "../auth/decorators/skip-subscription-check.decorator";
 
 type AuthedRequest = Request & { user: { sub: number; email: string } };
 
@@ -56,6 +59,7 @@ function getBearerOrQueryToken(req: Request): string {
 
 @Controller("placement-test")
 @ApiTags("placement-test")
+@SkipSubscriptionCheck()
 export class PlacementTestController {
   constructor(
     private readonly placementTest: PlacementTestService,
@@ -63,7 +67,7 @@ export class PlacementTestController {
   ) {}
 
   @Get("status")
-  @UseGuards(PlacementJwtGuard)
+  @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiHeader({
     name: "x-api-token",
@@ -81,7 +85,7 @@ export class PlacementTestController {
   }
 
   @Get("document")
-  @UseGuards(PlacementJwtGuard)
+  @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiSecurity("api-token")
   @ApiHeader({
@@ -113,15 +117,14 @@ export class PlacementTestController {
   })
   @ApiResponse({ status: 401, description: "Invalid or missing JWT" })
   async document(@Req() req: AuthedRequest, @Res() res: Response) {
-    const frame = this.config.get<string>("PLACEMENT_TEST_FRAME_ANCESTORS");
-    if (frame?.trim()) {
-      res.setHeader(
-        "Content-Security-Policy",
-        `frame-ancestors ${frame.trim()}`,
-      );
-    } else {
-      res.setHeader("Content-Security-Policy", "frame-ancestors *");
-    }
+    const frameAncestors = resolveFrameAncestorsCsp(
+      this.config,
+      "PLACEMENT_TEST_FRAME_ANCESTORS",
+    );
+    res.setHeader(
+      "Content-Security-Policy",
+      `frame-ancestors ${frameAncestors}`,
+    );
     const payload = await this.placementTest.buildTestPayloadForUser(
       req.user.sub,
     );
@@ -130,12 +133,13 @@ export class PlacementTestController {
       payload,
       token,
       inferApiPublicOrigin(req),
+      resolveParentPostMessageOrigin(this.config),
     );
     res.send(html);
   }
 
   @Post("complete")
-  @UseGuards(PlacementJwtGuard)
+  @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiHeader({
     name: "x-api-token",

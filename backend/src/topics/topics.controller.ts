@@ -3,6 +3,7 @@ import { TopicsService } from './topics.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { SkipSubscriptionCheck } from 'src/auth/decorators/skip-subscription-check.decorator';
 
 @ApiTags('topics')
 @Controller('topics')
@@ -39,6 +40,7 @@ export class TopicsController {
   }
 
   @Get()
+  @SkipSubscriptionCheck()
   @ApiOperation({ 
     summary: 'Get all topics',
     description: 'Retrieves all available topics with their associated categories and tags.',

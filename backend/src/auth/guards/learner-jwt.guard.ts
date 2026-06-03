@@ -7,24 +7,22 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
-import { extractAccessTokenFromRequest } from "../auth/extract-request-access-token.util";
+import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
 
-type Authed = Request & { user?: { sub: number; email: string } };
+type AuthedRequest = Request & { user?: { sub: number; email: string } };
 
 /**
- * User JWT from `Authorization: Bearer`, header `X-Access-Token` (when Basic Auth uses `Authorization`),
- * or `?access_token=` / body `access_token` (iframe-friendly).
- * Rejects x-api-token-only access so placement is always per-user.
+ * Learner JWT from Bearer, `X-Access-Token`, or `?access_token=` / body `access_token` (iframe-friendly).
  */
 @Injectable()
-export class PlacementJwtGuard implements CanActivate {
+export class LearnerJwtGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Authed>();
+    const request = context.switchToHttp().getRequest<AuthedRequest>();
     const query = request.query as Record<string, string | undefined>;
     const body = request.body as { access_token?: string } | undefined;
     const fromBody =

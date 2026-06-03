@@ -79,7 +79,7 @@ export default function RegistrationDetails() {
       })
       .catch((err) => {
         if (!cancelled) {
-          console.error("Ошибка загрузки:", err);
+          console.error("Failed to load learning topics:", err);
           setTopicsLoadError(
             err instanceof Error ? err.message : errors.topicsLoad,
           );

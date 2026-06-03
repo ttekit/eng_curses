@@ -40,6 +40,9 @@ import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
 import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan-regeneration.service";
+import { Throttle } from "@nestjs/throttler";
+import { Public } from "./decorators/public.decorator";
+import { SkipSubscriptionCheck } from "./decorators/skip-subscription-check.decorator";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -52,6 +55,7 @@ export class AuthController {
   ) { }
 
   @Post("register")
+  @SkipSubscriptionCheck()
   @UseGuards(TurnstileGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Register a new user" })
@@ -67,6 +71,8 @@ export class AuthController {
   }
 
   @Post("login")
+  @SkipSubscriptionCheck()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @UseGuards(TurnstileGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Log in a user" })
@@ -79,6 +85,8 @@ export class AuthController {
   }
 
   @Post("verify-email")
+  @SkipSubscriptionCheck()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Verify user email using 6-digit OTP code" })
   @ApiResponse({
@@ -98,7 +106,10 @@ export class AuthController {
     return await this.authService.verifyEmailCode(body.email, body.code);
   }
 
+  @Public()
   @Post("resend-confirmation")
+  @SkipSubscriptionCheck()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Resend email confirmation" })
   @ApiBody({ schema: { properties: { email: { type: "string" } } } })
@@ -106,6 +117,7 @@ export class AuthController {
     return await this.authService.resendConfirmationEmail(email);
   }
 
+  @Public()
   @Get("confirm-email")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Confirm user email via token" })
@@ -120,6 +132,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Post("update-preferences")
+  @SkipSubscriptionCheck()
   async updatePreferences(@Req() req: any, @Body() body: any) {
     const userId = req.user?.id || req.user?.sub;
 
@@ -149,8 +162,11 @@ export class AuthController {
   }
 
   @Post("verify-2fa")
+  @SkipSubscriptionCheck()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
+  @UseGuards(TurnstileGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Verify 2FA code during login (No Captcha)" })
+  @ApiOperation({ summary: "Verify 2FA code during login" })
   @ApiBody({ type: LoginDto })
   async verifyTwoFactorLogin(@Body() loginDto: LoginDto) {
     return await this.authService.login(loginDto);
@@ -167,6 +183,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
   @Get("profile")
+  @SkipSubscriptionCheck()
   @ApiOperation({ summary: "Get user profile (requires authentication)" })
   @ApiResponse({
     status: 200,
@@ -272,6 +289,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
   @Post("profile/regenerate-studying-plan")
+  @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Regenerate personalised studying plan (v2 JSON with DB topics per phase)",

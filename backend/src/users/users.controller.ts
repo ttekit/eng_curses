@@ -26,6 +26,7 @@ import { UsersService } from "./users.service";
 import { ResetProgressDto } from "./dto/reset-progress.dto";
 import { AdminUpdateUserDto } from "./dto/update-user.dto";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
+import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
 
 @ApiTags("users")
 @Controller("users")
@@ -61,6 +62,7 @@ export class UsersController {
   }
 
   @Patch("profile")
+  @SkipSubscriptionCheck()
   @UseGuards(ApiTokenOrJwtAuthGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiOperation({ summary: "Update current user profile via JWT token" })

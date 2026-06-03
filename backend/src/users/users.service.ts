@@ -599,53 +599,28 @@ export class UsersService {
   }
 
   async updateProfile(id: number, updateUserDto: UpdateUserDto) {
-    const { role, isSuspended, hasCompletedPlacement, ...safeData } =
-      updateUserDto as any;
-    //пускай пока что будет, не надо удалять
-    // if (
-    //   role ||
-    //   isSuspended !== undefined ||
-    //   hasCompletedPlacement !== undefined
-    // ) {
-    //   this.logger.warn(
-    //     `Security Warning: User ${id} attempted privilege escalation!`,
-    //   );
-    // }
+    const {
+      role: _privilegedRole,
+      isSuspended: _privilegedSuspended,
+      hasCompletedPlacement,
+      ...safeData
+    } = updateUserDto as UpdateUserDto & {
+      role?: string;
+      isSuspended?: boolean;
+    };
 
-    return this.update(id, safeData as UpdateUserDto);
+    const profilePatch: UpdateUserDto = { ...safeData };
+    if (hasCompletedPlacement === true) {
+      profilePatch.hasCompletedPlacement = true;
+    }
+
+    return this.update(id, profilePatch);
   }
 
   async updateAsAdmin(
     id: number,
     updateUserDto: UpdateUserDto | AdminUpdateUserDto,
   ) {
-    const prisma = this.prisma as any;
-    await this.findById(id);
-
-    const {
-      favoriteGenres,
-      hatedGenres,
-      englishLevel,
-      hobbies,
-      education,
-      workField,
-      nativeLanguage,
-      knownLanguages,
-      knownLanguageLevels,
-      learningGoal,
-      timeToAchieve,
-      playbackSpeed,
-      currentResolution,
-      ...dataToUpdate
-    } = updateUserDto as any;
-
-    if (dataToUpdate.role !== undefined && dataToUpdate.role !== null) {
-      const coerced = parseRoleFromDto(String(dataToUpdate.role));
-      if (coerced !== undefined) {
-        dataToUpdate.role = coerced;
-      } else {
-        delete dataToUpdate.role;
-      }
-    }
+    return this.update(id, updateUserDto as UpdateUserDto);
   }
 }

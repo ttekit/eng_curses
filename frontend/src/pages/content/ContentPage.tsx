@@ -587,7 +587,6 @@ export default function ContentPage() {
   const videoElRef = useRef<HTMLVideoElement | null>(null);
   const { id } = useParams();
   const navigate = useNavigate();
-  // ОБ'ЄДНАНО: отримуємо і user, і refreshProfile
   const { user, refreshProfile } = useUser();
   const L = useAppMessages().lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
@@ -658,9 +657,8 @@ export default function ContentPage() {
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
-    // 1. Сразу блокируем повторные вызовы
     if (watchCompletePostedRef.current || !id) return;
-    watchCompletePostedRef.current = true; // Ставим флаг СРАЗУ
+    watchCompletePostedRef.current = true;
 
     const vid = Number.parseInt(String(id), 10);
     if (!Number.isFinite(vid) || vid <= 0) return;
@@ -670,14 +668,13 @@ export default function ContentPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          secondsWatched: 0, // ВАЖНО: строго 0!
-          completed: true, // Добавь этот флаг, если бэкенд его ждет
+          secondsWatched: 0,
+          completed: true,
         }),
       });
-    } catch (e) {
-      // Если упало, сбрасываем флаг, чтобы можно было попробовать снова
+    } catch (error) {
       watchCompletePostedRef.current = false;
-      console.error("Failed to mark as complete", e);
+      console.error("Failed to mark watch complete:", error);
     }
   }, [id]);
   const ensureLessonWatched = useCallback(() => {
@@ -884,13 +881,13 @@ export default function ContentPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            secondsWatched: 20, // Шлем строго 20
+            secondsWatched: 20,
           }),
         });
       } catch (err) {
         console.error("Heartbeat failed:", err);
       }
-    }, 20000); // 20 секунд
+    }, 20000);
 
     return () => {
       if (heartbeatIntervalRef.current)
@@ -1096,7 +1093,6 @@ export default function ContentPage() {
           });
 
           if (r.ok) {
-            // ДОДАНО: Примусово оновлюємо дані користувача після відправки тесту
             await refreshProfile().catch(() => { });
 
             const d = (await r.json()) as unknown;
@@ -1173,7 +1169,6 @@ export default function ContentPage() {
       }
       void navigate(`/content/${id}/summary`, { state: payload });
     },
-    // ДОДАНО: refreshProfile в масив залежностей, щоб уникнути проблем із застарілим контекстом
     [
       id,
       videoData,

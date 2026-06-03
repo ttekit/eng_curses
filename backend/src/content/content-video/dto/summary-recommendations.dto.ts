@@ -26,6 +26,12 @@ class SubScoreDto {
 }
 
 export class ComprehensionSummaryRecommendationsBodyDto {
+  @ApiProperty({
+    description: "HMAC grading token from test generation (same as tests/submit).",
+  })
+  @IsString()
+  token: string;
+
   @ApiProperty()
   @IsString()
   videoName: string;

@@ -1,0 +1,103 @@
+import { describe, expect, it } from "vitest";
+import type { UserData } from "../context/UserContext";
+import {
+  learnerNeedsPlacement,
+  resolvePlacementPhase,
+  resolvePostLoginPath,
+} from "./learnerOnboarding";
+
+function mockUser(partial: Partial<UserData>): UserData {
+  return {
+    id: "1",
+    name: "Test",
+    email: "t@example.com",
+    dateOfBirth: "",
+    role: "adult",
+    isTwoFactorEnable: false,
+    hasCompletedPlacement: false,
+    englishLevel: "B1",
+    hobbies: ["reading"],
+    education: "uni",
+    workField: "it",
+    nativeLanguage: "uk",
+    favoriteGenres: ["drama"],
+    hatedGenres: [],
+    currentStreak: 0,
+    xp: 0,
+    level: 1,
+    achievements: [],
+    ...partial,
+  };
+}
+
+describe("resolvePostLoginPath", () => {
+  it("sends incomplete adult to catalog for placement", () => {
+    const path = resolvePostLoginPath(
+      mockUser({ role: "adult", hasCompletedPlacement: false }),
+    );
+    expect(path).toBe("/catalog");
+  });
+
+  it("sends teacher-linked student without subscription to catalog when placement done", () => {
+    const path = resolvePostLoginPath(
+      mockUser({
+        role: "student",
+        teacherId: 9,
+        hasCompletedPlacement: true,
+        subscriptionStatus: null,
+      }),
+    );
+    expect(path).toBe("/catalog");
+  });
+
+  it("sends independent student without genres to registrationPreferences", () => {
+    const path = resolvePostLoginPath(
+      mockUser({
+        role: "student",
+        teacherId: null,
+        favoriteGenres: [],
+        hatedGenres: [],
+        hasCompletedPlacement: true,
+      }),
+    );
+    expect(path).toBe("/registrationPreferences");
+  });
+});
+
+describe("resolvePlacementPhase", () => {
+  it("returns off when placement complete", () => {
+    expect(
+      resolvePlacementPhase(
+        mockUser({ hasCompletedPlacement: true }),
+      ),
+    ).toBe("off");
+  });
+
+  it("returns preferences for adult missing prep fields", () => {
+    expect(
+      resolvePlacementPhase(
+        mockUser({ role: "adult", workField: "", hasCompletedPlacement: false }),
+      ),
+    ).toBe("preferences");
+  });
+
+  it("returns test for roster student with prefs", () => {
+    expect(
+      resolvePlacementPhase(
+        mockUser({
+          role: "student",
+          teacherId: 1,
+          hasCompletedPlacement: false,
+          hobbies: ["x"],
+          favoriteGenres: ["y"],
+        }),
+      ),
+    ).toBe("test");
+  });
+});
+
+describe("learnerNeedsPlacement", () => {
+  it("is false for admin", () => {
+    expect(learnerNeedsPlacement(mockUser({ role: "admin" }))).toBe(false);
+  });
+});

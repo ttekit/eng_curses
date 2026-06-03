@@ -10,7 +10,11 @@ import {
   User,
   X,
 } from "lucide-react";
-import { apiFetch, getResponseErrorMessage } from "../../lib/api";
+import {
+  apiFetch,
+  getResponseErrorMessage,
+  setStoredAccessToken,
+} from "../../lib/api";
 import { useUser } from "../../context/UserContext";
 import { useNavigate } from "react-router";
 import InputText from "../InputText";
@@ -610,7 +614,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               />
             </label>
           </div>
-          {/* ПОЛЕ ДАТЫ РОЖДЕНИЯ */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground">
               Date of Birth
@@ -622,7 +625,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               onChange={(e) => setDateOfBirth(e.target.value)}
               min="1900-01-01"
               max={new Date().toISOString().split("T")[0]}
-              // Используем те же стили для темной темы, что и при регистрации
               className="w-full text-foreground [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
             />
           </div>
@@ -1286,10 +1288,16 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             <button
               type="button"
               className="text-sm flex font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await apiFetch("/auth/logout", { method: "POST" });
+                } catch (e) {
+                  console.error("Server logout request failed:", e);
+                }
                 logout();
-                toast.success(s.signOutToast || "Signed out successfully");
-                void navigate("/loginForm", { replace: true });
+                setStoredAccessToken(null);
+                toast.success(s?.signOutToast || "Signed out successfully");
+                window.location.href = "/loginForm";
               }}
             >
               <LogOut className="size-4 pt-1 pr-1" />
@@ -1379,7 +1387,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     Password <span className="text-red-500">*</span>
                   </label>
 
-                  {/* Защита от автозаполнения браузерами */}
                   <input
                     type="password"
                     autoComplete="current-password"
@@ -1427,7 +1434,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 </div>
               </>
             ) : (
-              // Дальше идет ваш существующий блок dangerOpen === "delete"
               <>
                 <p className="mt-2 text-sm text-muted-foreground">
                   This action cannot be undone. Please enter your password to

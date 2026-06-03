@@ -36,8 +36,6 @@ export default function PlacementPreferencesStep({
     e.preventDefault();
     setFieldError(null);
 
-    const isStudent = user.role === "student";
-
     if (collectIndependentProfile) {
       const j = workField.trim();
       const ed = education.trim();
@@ -61,9 +59,7 @@ export default function PlacementPreferencesStep({
       const userId = contextUser?.id || user?.id;
 
       if (!userId) {
-        toast.error(
-          "Помилка: Не вдалося знайти ID користувача. Спробуйте оновити сторінку.",
-        );
+        toast.error(s.errorMissingUserId);
         return;
       }
 
@@ -85,16 +81,13 @@ export default function PlacementPreferencesStep({
           hobbies: hobbiesPayload,
           favoriteGenres: user.favoriteGenres ?? [],
           hatedGenres: user.hatedGenres ?? [],
-          // ФИКС: Для студентов ставим false, чтобы тест не проскакивал.
-          // Для взрослых оставляем true, так как они могут пропускать тест.
-          hasCompletedPlacement: !isStudent,
         }),
       });
 
       if (!res.ok) {
         const errorMsg = await readApiErrorBody(res);
-        setFieldError(errorMsg || "Помилка при збереженні (Backend error)");
-        toast.error(errorMsg || "Помилка при збереженні");
+        setFieldError(errorMsg || s.saveErrorToast);
+        toast.error(errorMsg || s.saveErrorToast);
         return;
       }
 

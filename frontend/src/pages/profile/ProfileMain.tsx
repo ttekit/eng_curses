@@ -340,7 +340,6 @@ export default function ProfileMain() {
           <div className="mx-auto max-w-6xl px-4 lg:px-8">
             <ProfileHeader user={headerModel} />
 
-            {/* ===== ПЛАШКА С ИМЕНЕМ УЧИТЕЛЯ ===== */}
             {user?.role?.toLowerCase() === "student" &&
               (user as any).teacherName && (
                 <div className="mt-4 flex items-center gap-3 rounded-xl bg-primary/10 px-5 py-3 border border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2">

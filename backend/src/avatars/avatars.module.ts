@@ -2,7 +2,7 @@
 import { Module } from "@nestjs/common";
 import { AvatarsController } from "./avatars.controller";
 import { AvatarsService } from "./avatars.service";
-import { MulterModule } from "@nestjs/platform-express"; // <--- ДОБАВЬ ЭТО
+import { MulterModule } from "@nestjs/platform-express";
 import * as multer from "multer"; 
 
 @Module({

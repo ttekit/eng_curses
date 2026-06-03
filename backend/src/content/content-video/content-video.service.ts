@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+} from "@nestjs/common";
 import { generateContentVideoIframe } from "src/common/content-video-iframe.util";
 import { PrismaService } from "src/prisma.service";
 import { CreateContentVideoDto } from "./dto/create-content-video.dto";
@@ -28,12 +33,13 @@ export function compareContentVideosPlaylistOrder(
 
 export const CATALOG_CONTENT_VISIBILITY_PUBLIC = "public" as const;
 
+
 @Injectable()
 export class ContentVideoService {
   constructor(
     private prisma: PrismaService,
-    @Inject('REDIS_CLIENT') private readonly redis: RedisCatalogCacheClient
-  ) { }
+    @Inject("REDIS_CLIENT") private readonly redis: RedisCatalogCacheClient,
+  ) {}
 
   async create(createContentVideoDto: CreateContentVideoDto) {
     const maxRow = await this.prisma.contentVideo.aggregate({
@@ -115,7 +121,7 @@ export class ContentVideoService {
       },
     });
 
-    await this.redis.set(cacheKey, JSON.stringify(videos), 'EX', 300);
+    await this.redis.set(cacheKey, JSON.stringify(videos), "EX", 300);
     return videos;
   }
 
@@ -154,7 +160,7 @@ export class ContentVideoService {
     return videos.sort(compareContentVideosPlaylistOrder);
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, reqUserId?: number) {
     const contentVideo = await this.prisma.contentVideo.findUnique({
       where: { id },
       include: {
@@ -169,14 +175,38 @@ export class ContentVideoService {
         },
       },
     });
+
     if (!contentVideo) {
       throw new NotFoundException(`ContentVideo with ID ${id} not found`);
     }
+
+    const now = new Date();
+    const series = contentVideo.content.category;
+
+    const isOwner = reqUserId && series.ownerUserId === reqUserId;
+    const isPublic = series.visibility === "public";
+
+    if (!isOwner && !isPublic) {
+      if (series.availableFrom && series.availableFrom > now) {
+        throw new ForbiddenException(
+          "This lesson is locked and not yet available.",
+        );
+      }
+      if (series.deadline && series.deadline < now) {
+        throw new ForbiddenException(
+          "The deadline for this lesson has passed.",
+        );
+      }
+    }
+
     return contentVideo;
   }
 
-  async getIframePayload(id: number): Promise<{ iframeHtml: string }> {
-    const v = await this.findOne(id);
+  async getIframePayload(
+    id: number,
+    reqUserId?: number,
+  ): Promise<{ iframeHtml: string }> {
+    const v = await this.findOne(id, reqUserId);
     const iframeHtml = generateContentVideoIframe(v.videoLink, {
       title: v.videoName,
     });

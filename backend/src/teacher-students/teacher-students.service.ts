@@ -1,6 +1,8 @@
 import { Injectable, ForbiddenException } from "@nestjs/common";
-import { UserRole } from "@generated/prisma/enums";
 import { PrismaService } from "../prisma.service";
+import * as XLSX from "xlsx";
+import * as bcrypt from "bcrypt";
+import { generateSecurePassword } from "src/common/utils/password.util";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -11,8 +13,8 @@ export type TeacherStudentQuizRow = {
   scorePct: number;
   passed: boolean;
   createdAt: string;
-  answers?: any; // <-- Добавили выдачу ответов
-  summaryText?: string | null; // <-- На случай, если текст лежит отдельно
+  answers?: any;
+  summaryText?: string | null;
 };
 
 export type TeacherStudentResultRow = {
@@ -173,5 +175,118 @@ export class TeacherStudentsService {
     });
 
     return { students: out };
+  }
+
+  async addStudent(teacherId: number, data: { name: string; email: string }) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (existing) {
+      throw new ForbiddenException("A user with this email already exists");
+    }
+
+    // 16-char password: 12 random + one of each required class.
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const all = lower + upper + numbers + symbols;
+
+    let pwdArray = [
+      lower[Math.floor(Math.random() * lower.length)],
+      upper[Math.floor(Math.random() * upper.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      symbols[Math.floor(Math.random() * symbols.length)],
+    ];
+
+    for (let i = 0; i < 12; i++) {
+      pwdArray.push(all[Math.floor(Math.random() * all.length)]);
+    }
+
+    const tempPassword = pwdArray.sort(() => 0.5 - Math.random()).join("");
+    // -------------------------------------------------
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const created = await this.prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email.toLowerCase(),
+        password: hashedPassword,
+        role: "STUDENT" as any,
+        method: "CREDENTIALS" as any, 
+        teacherId: teacherId,
+        isVerified: true,
+      },
+    });
+
+    return { student: created, tempPassword };
+  }
+
+  async exportStudentsExcel(teacherId: number): Promise<Buffer> {
+    const students = await this.prisma.user.findMany({
+      where: { teacherId },
+      select: {
+        name: true,
+        email: true,
+        additionalUserData: { select: { englishLevel: true } },
+        watchSessions: { where: { completed: true } },
+        comprehensionTestAttempts: true,
+      },
+    });
+
+    const data = students.map((s) => {
+      const attemptsCount = s.comprehensionTestAttempts.length;
+      const avgScore =
+        attemptsCount > 0
+          ? s.comprehensionTestAttempts.reduce(
+              (acc, curr) => acc + curr.scorePct,
+              0,
+            ) / attemptsCount
+          : 0;
+
+      return {
+        "Student Name": s.name,
+        "Email Address": s.email,
+        "English Level": s.additionalUserData?.englishLevel || "-",
+        "Completed Videos": s.watchSessions.length,
+        "Quiz Attempts": attemptsCount,
+        "Average Score (%)": Math.round(avgScore * 10) / 10,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "My Students");
+
+    return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  }
+
+  async updateStudent(
+    teacherId: number,
+    studentId: number,
+    data: { name: string; email: string },
+  ) {
+    const student = await this.prisma.user.findFirst({
+      where: { id: studentId, teacherId },
+    });
+    if (!student)
+      throw new ForbiddenException("Student not found or not assigned to you");
+
+    return this.prisma.user.update({
+      where: { id: studentId },
+      data: { name: data.name, email: data.email },
+    });
+  }
+
+  async removeStudent(teacherId: number, studentId: number) {
+    const student = await this.prisma.user.findFirst({
+      where: { id: studentId, teacherId },
+    });
+    if (!student) throw new ForbiddenException("Student not found");
+
+    return this.prisma.user.delete({
+      where: { id: studentId },
+    });
   }
 }

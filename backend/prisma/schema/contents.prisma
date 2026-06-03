@@ -12,6 +12,9 @@ model Content {
   /// "public" = listed in global catalog; "unlisted" = playable via link only.
   visibility String @default("public")
 
+  availableFrom DateTime? @map("available_from")
+  deadline      DateTime? @map("deadline")
+
   category ContentMedia[]
 
   createAt DateTime @default(now()) @map("create_at")
