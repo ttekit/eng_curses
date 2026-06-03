@@ -20,22 +20,33 @@ import {
   Loader2,
 } from "lucide-react";
 
+export type VideoTimelineMarker = {
+  id: string;
+  sec: number;
+  label: string;
+  status?: "pending" | "answered" | "active";
+};
+
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
   src: string;
+  timelineMarkers?: VideoTimelineMarker[];
   onEnded?: () => void;
   onPlay?: () => void;
   onPlaybackTime?: (seconds: number) => void;
   onPlaybackFraction?: (fraction: number) => void;
+  onDuration?: (seconds: number) => void;
   onVideoMount?: (el: HTMLVideoElement | null) => void;
   onClose?: () => void;
 }
 
 export default function VideoPlayer({
   src,
+  timelineMarkers = [],
   onEnded,
   onPlay,
   onPlaybackTime,
   onPlaybackFraction,
+  onDuration,
   onVideoMount,
   onClose,
   className,
@@ -191,6 +202,13 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     setDuration(video.duration);
+    if (
+      video.duration &&
+      Number.isFinite(video.duration) &&
+      video.duration > 0
+    ) {
+      onDuration?.(video.duration);
+    }
   }
 
   function formatTime(secs: number) {
@@ -584,8 +602,37 @@ export default function VideoPlayer({
             style={{ width: `${progress}%` }}
           />
 
+          {duration > 0
+            ? timelineMarkers.map((marker) => {
+                const pct = Math.min(
+                  100,
+                  Math.max(0, (marker.sec / duration) * 100),
+                );
+                const status = marker.status ?? "pending";
+                return (
+                  <div
+                    key={marker.id}
+                    className="absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ left: `${pct}%` }}
+                    title={marker.label}
+                    aria-hidden
+                  >
+                    <div
+                      className={cn(
+                        "h-3.5 w-1 rounded-full shadow-sm transition-colors",
+                        status === "answered" && "bg-emerald-400/95",
+                        status === "active" &&
+                          "h-4 w-1.5 bg-white ring-2 ring-primary/90",
+                        status === "pending" && "bg-amber-400/95",
+                      )}
+                    />
+                  </div>
+                );
+              })
+            : null}
+
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150"
+            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150 z-20"
             style={{ left: `calc(${progress}% - 8px)` }}
           />
         </div>

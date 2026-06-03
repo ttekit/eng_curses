@@ -854,6 +854,15 @@ export const appUk = {
     quizLocked: "Тест заблоковано",
     quizLockedLead:
       "Додивіться урок до кінця, щоб відкрити тест і отримати XP.",
+    quizDuringVideoLead: "Під час перегляду відео зупиняється для питань.",
+    quizDuringVideoHint:
+      "Відповідай на кожне питання, щоб продовжити. Після кліпу — письмовий підсумок.",
+    inVideoQuizHint: "Відповідай, щоб продовжити перегляд",
+    inVideoQuestionOf: "Питання під час відео {current} з {total}",
+    inVideoQuizProgress: "{answered} / {total} відповідей під час відео",
+    continueWatching: "Продовжити перегляд",
+    timelineQuestionMarker: "Питання {n} о {time}",
+    timelineQuestionAnswered: "Питання {n} відповіли ({time})",
     selectOptionError: "Оберіть варіант, щоб продовжити.",
     questionOf: "Питання {current} з {total}",
     categoryGrammar: "Граматика",

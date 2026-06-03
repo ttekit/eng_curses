@@ -234,6 +234,13 @@ export class ContentsService {
     dto: UpdateContentDto,
     file?: Express.Multer.File,
   ) {
+    const existing = await this.prisma.content.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Content with ID ${id} not found`);
+    }
     const updateContent = await this.prisma.content.update({
       where: { id },
       data: {

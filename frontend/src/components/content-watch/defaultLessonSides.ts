@@ -22,7 +22,10 @@ export interface TranscriptLine {
 export interface QuizQuestion {
   /** Matches API test id (e.g. t1) for server submit. */
   id: string;
+  /** Display cue label, e.g. `1:30`. */
   timestamp: string;
+  /** Playback second when the video should pause for this MCQ. */
+  timestampSec?: number;
   question: string;
   /** Omit or `multiple_choice` — default is MCQ for backwards compatibility. */
   questionType?: "multiple_choice" | "open";
