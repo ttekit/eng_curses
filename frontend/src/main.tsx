@@ -45,6 +45,7 @@ import AboutPage from "./pages/legal/AboutPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
 import FeedbackPage from "./pages/legal/FeedbackPage";
+import { Error404Page } from "./pages/Error404Page";
 
 const router = createBrowserRouter([
   {
@@ -126,6 +127,7 @@ const router = createBrowserRouter([
           },
         ],
       },
+      { path: "*", element: <Error404Page /> },
     ],
   },
 ]);

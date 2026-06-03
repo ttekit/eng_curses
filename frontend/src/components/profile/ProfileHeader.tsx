@@ -75,7 +75,7 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              title={"Change photo"}
+              title={h.photoAria || "Change photo"}
               className="absolute hover:cursor-pointer -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border bg-secondary text-foreground shadow-md transition-transform hover:scale-105"
             >
               <Edit2 className="size-4" />
