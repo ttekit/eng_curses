@@ -151,13 +151,13 @@ export function ProfileTeacherStudents() {
   };
 
   const handleNameChange = (field: "firstName" | "lastName", value: string) => {
-    if (!/^[A-Za-z\s-]*$/.test(value)) {
+    const sanitized = value.replace(/[^A-Za-z-]/g, "");
+    if (sanitized !== value) {
       toast.error(t.englishLettersOnly, { id: "lang-error" });
-      return;
     }
 
     setFormData((prev) => {
-      const next = { ...prev, [field]: value };
+      const next = { ...prev, [field]: sanitized };
       const first = next.firstName.toLowerCase().replace(/[^a-z]/g, "");
       const last = next.lastName.toLowerCase().replace(/[^a-z]/g, "");
       next.email =
