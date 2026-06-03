@@ -1,7 +1,7 @@
 /**
  * Teacher profile tab: lists series this account uploaded, with links and catalog visibility.
  */
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   Loader2,
@@ -9,7 +9,6 @@ import {
   Plus,
   Upload,
   Trash2,
-  CalendarClock,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
@@ -327,7 +326,7 @@ export function ProfileTeacherVideos() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">
+      <div className="flex min-h-60 flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-8 animate-spin text-primary" />
         <p>{t.loadingSeries}</p>
       </div>
@@ -337,20 +336,20 @@ export function ProfileTeacherVideos() {
   if (loadError) {
     return (
       <ProfileCard title={t.cardTitle}>
-        <p className="text-destructive">{loadError}</p>
+        <p className="text-destructive px-4 py-2">{loadError}</p>
       </ProfileCard>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <p className="text-sm text-muted-foreground flex-1">{t.intro}</p>
         <AdminButton
-          className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          className="gap-2 flex w-full sm:w-auto rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           onClick={() => setUploadOpen(true)}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 shrink-0" />
           {t.uploadCta}
         </AdminButton>
       </div>
@@ -372,6 +371,7 @@ export function ProfileTeacherVideos() {
               onClick={() =>
                 uploadSaving ? setCancelConfirmOpen(true) : setUploadOpen(false)
               }
+              className="w-full sm:w-auto"
             >
               {uploadSaving ? t.cancelUpload : t.cancel}
             </AdminButton>
@@ -379,6 +379,7 @@ export function ProfileTeacherVideos() {
               type="submit"
               form="upload-lesson-form"
               disabled={uploadSaving}
+              className="w-full sm:w-auto"
             >
               {uploadSaving ? t.publishing : t.publish}
             </AdminButton>
@@ -393,7 +394,7 @@ export function ProfileTeacherVideos() {
             void handleUpload();
           }}
         >
-          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 sm:p-8 text-center transition-colors hover:border-primary/50">
             <input
               type="file"
               accept="video/mp4,video/x-m4v,video/*"
@@ -402,7 +403,7 @@ export function ProfileTeacherVideos() {
             />
             <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
             <p className="font-medium">{t.browseMp4}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground break-words">
               {uploadFile ? uploadFile.name : t.uploadHint}
             </p>
           </label>
@@ -412,6 +413,7 @@ export function ProfileTeacherVideos() {
             <AdminInput
               placeholder={t.titleExample}
               value={uploadTitle}
+              className="w-full"
               onChange={(e) => setUploadTitle(e.target.value)}
               required
             />
@@ -422,6 +424,7 @@ export function ProfileTeacherVideos() {
             <AdminTextarea
               placeholder={t.descriptionPlaceholder}
               value={uploadDesc}
+              className="w-full"
               onChange={(e) => setUploadDesc(e.target.value)}
               maxLength={250}
             />
@@ -455,14 +458,14 @@ export function ProfileTeacherVideos() {
                 <AdminInput
                   type="datetime-local"
                   value={openDateStr}
+                  className="w-full"
                   max="9999-12-31T23:59"
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val) {
                       const year = val.split("-")[0];
-                      // Блокируем ввод, если год больше 4 цифр
                       if (year && year.length > 4) {
-                        e.target.value = openDateStr; // Принудительный сброс DOM-элемента
+                        e.target.value = openDateStr;
                         return;
                       }
                     }
@@ -482,14 +485,14 @@ export function ProfileTeacherVideos() {
                 <AdminInput
                   type="datetime-local"
                   value={closeDateStr}
+                  className="w-full"
                   max="9999-12-31T23:59"
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val) {
                       const year = val.split("-")[0];
-                      // Блокируем ввод, если год больше 4 цифр
                       if (year && year.length > 4) {
-                        e.target.value = closeDateStr; // Принудительный сброс DOM-элемента
+                        e.target.value = closeDateStr;
                         return;
                       }
                     }
@@ -517,10 +520,11 @@ export function ProfileTeacherVideos() {
             <AdminButton
               variant="outline"
               onClick={() => setCancelConfirmOpen(false)}
+              className="w-full sm:w-auto"
             >
               {t.cancelUploadNo}
             </AdminButton>
-            <AdminButton variant="danger" onClick={cancelUpload}>
+            <AdminButton variant="danger" className="w-full sm:w-auto" onClick={cancelUpload}>
               {t.cancelUploadYes}
             </AdminButton>
           </>
@@ -539,6 +543,7 @@ export function ProfileTeacherVideos() {
               variant="outline"
               onClick={() => setDeleteModalOpen(false)}
               disabled={isDeleting}
+              className="w-full sm:w-auto"
             >
               {t.cancel}
             </AdminButton>
@@ -548,7 +553,7 @@ export function ProfileTeacherVideos() {
                 deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase
               }
               onClick={confirmDeleteVideo}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
             >
               {isDeleting ? t.deleting : t.deleteVideoCta}
             </AdminButton>
@@ -571,6 +576,7 @@ export function ProfileTeacherVideos() {
               value={deletePhrase}
               onChange={(e) => setDeletePhrase(e.target.value)}
               autoComplete="off"
+              className="w-full"
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
@@ -588,22 +594,22 @@ export function ProfileTeacherVideos() {
 
       {series.length === 0 ? (
         <ProfileCard title={t.cardTitle}>
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
             <Video className="size-12 text-muted-foreground opacity-50" />
             <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
           </div>
         </ProfileCard>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+        <div className="w-full overflow-x-auto pb-4">
+          <div className="rounded-xl border border-border/50 bg-card/50 min-w-[800px]">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                  <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
-                  <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
-                  <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
-                  <th className="p-4 font-semibold text-sm text-right">
+                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colSeries}</th>
+                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colCaptions}</th>
+                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colCatalog}</th>
+                  <th className="p-4 font-semibold text-sm whitespace-nowrap">{t.colOpen}</th>
+                  <th className="p-4 font-semibold text-sm text-right whitespace-nowrap">
                     {t.colActions}
                   </th>
                 </tr>
@@ -621,7 +627,7 @@ export function ProfileTeacherVideos() {
                       className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
                     >
                       <td className="p-4 align-middle">
-                        <div className="text-foreground text-base font-bold">
+                        <div className="text-foreground text-base font-bold truncate max-w-[200px]">
                           {s.name}
                         </div>
 
@@ -662,17 +668,17 @@ export function ProfileTeacherVideos() {
                         )}
 
                         {s.processingComplexity ? (
-                          <div className="text-muted-foreground mt-1 text-xs">
+                          <div className="text-muted-foreground mt-1 text-xs truncate max-w-[200px]">
                             {t.processingPrefix} {s.processingComplexity}
                           </div>
                         ) : null}
                         {tags.length > 0 ? (
-                          <div className="text-muted-foreground mt-1.5 max-w-md text-xs">
+                          <div className="text-muted-foreground mt-1.5 max-w-[200px] text-xs truncate">
                             {tags.join(" · ")}
                           </div>
                         ) : null}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="p-4 align-middle whitespace-nowrap">
                         <span
                           className={cn(
                             "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
@@ -684,10 +690,10 @@ export function ProfileTeacherVideos() {
                           {s.captionsReady ? t.captionsReady : t.captionsPending}
                         </span>
                       </td>
-                      <td className="p-4 align-middle">
-                        <div className="flex flex-col items-start gap-1.5">
+                      <td className="p-4 align-middle whitespace-nowrap">
+                        <div className="flex flex-col items-start gap-1.5 w-full sm:w-[130px]">
                           <select
-                            className="border-border bg-background text-foreground focus:ring-primary w-[130px] rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
+                            className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
                             value={isPublic ? "public" : "unlisted"}
                             disabled={busy}
                             aria-label={formatMessage(t.visibilityAria, {
@@ -705,31 +711,31 @@ export function ProfileTeacherVideos() {
                           </select>
                           {busy ? (
                             <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                              <Loader2 className="size-3.5 animate-spin" />
+                              <Loader2 className="size-3.5 animate-spin shrink-0" />
                               {t.visibilitySaving}
                             </span>
                           ) : null}
                         </div>
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="p-4 align-middle whitespace-nowrap">
                         <div className="flex flex-col gap-2">
                           {s.contentVideoId != null ? (
                             <Link
                               to={`/content/${s.contentVideoId}`}
-                              className="text-primary font-semibold text-sm hover:underline"
+                              className="text-primary font-semibold text-sm hover:underline block"
                             >
                               {t.watchLesson}
                             </Link>
                           ) : null}
                           <Link
                             to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
-                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline"
+                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline block"
                           >
                             {t.seriesPage}
                           </Link>
                         </div>
                       </td>
-                      <td className="p-4 align-middle text-right">
+                      <td className="p-4 align-middle text-right whitespace-nowrap">
                         <button
                           onClick={() => openDeleteModal(s.contentId)}
                           className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"

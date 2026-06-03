@@ -286,17 +286,17 @@ export function ProfileTeacherStudents() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <p className="text-sm text-muted-foreground max-w-xl">{t.intro}</p>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
           <AdminButton
             variant="outline"
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto justify-center"
             onClick={handleExport}
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 shrink-0" />
             {t.downloadExcel}
           </AdminButton>
-          <AdminButton className="gap-2" onClick={openAddModal}>
-            <Plus className="h-4 w-4" />
+          <AdminButton className="gap-2 w-full sm:w-auto justify-center" onClick={openAddModal}>
+            <Plus className="h-4 w-4 shrink-0" />
             {t.addStudent}
           </AdminButton>
         </div>
@@ -312,6 +312,7 @@ export function ProfileTeacherStudents() {
               variant="outline"
               onClick={() => setIsModalOpen(false)}
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               {t.cancel}
             </AdminButton>
@@ -319,6 +320,7 @@ export function ProfileTeacherStudents() {
               type="submit"
               form="add-student-form"
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               {isSaving ? t.saving : t.saveStudent}
             </AdminButton>
@@ -334,12 +336,13 @@ export function ProfileTeacherStudents() {
             void handleSaveStudent();
           }}
         >
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">{t.firstNameLabel}</label>
               <AdminInput
                 placeholder={t.firstNamePlaceholder}
                 value={formData.firstName}
+                className="w-full"
                 onChange={(e) => handleNameChange("firstName", e.target.value)}
                 required
               />
@@ -349,6 +352,7 @@ export function ProfileTeacherStudents() {
               <AdminInput
                 placeholder={t.lastNamePlaceholder}
                 value={formData.lastName}
+                className="w-full"
                 onChange={(e) => handleNameChange("lastName", e.target.value)}
                 required
               />
@@ -361,7 +365,7 @@ export function ProfileTeacherStudents() {
               placeholder={t.generatedEmailPlaceholder}
               value={formData.email}
               readOnly
-              className="bg-muted text-muted-foreground cursor-not-allowed"
+              className="bg-muted w-full text-muted-foreground cursor-not-allowed"
             />
             {!editingId && (
               <p className="text-xs text-muted-foreground mt-1">{t.passwordHint}</p>
@@ -375,7 +379,7 @@ export function ProfileTeacherStudents() {
         onClose={() => setNewStudentCreds(null)}
         title={`🎉 ${t.registeredTitle}`}
         footer={
-          <AdminButton onClick={() => setNewStudentCreds(null)}>
+          <AdminButton className="w-full sm:w-auto" onClick={() => setNewStudentCreds(null)}>
             {t.credentialsSaved}
           </AdminButton>
         }
@@ -395,11 +399,11 @@ export function ProfileTeacherStudents() {
                 <AdminInput
                   value={newStudentCreds?.email || ""}
                   readOnly
-                  className="bg-background text-foreground"
+                  className="bg-background text-foreground flex-1"
                 />
                 <AdminButton
                   variant="outline"
-                  className="px-3"
+                  className="px-3 shrink-0"
                   onClick={() => {
                     navigator.clipboard.writeText(newStudentCreds?.email || "");
                     toast.success(t.emailCopied);
@@ -419,11 +423,11 @@ export function ProfileTeacherStudents() {
                 <AdminInput
                   value={newStudentCreds?.password || ""}
                   readOnly
-                  className="bg-background font-mono text-foreground font-bold"
+                  className="bg-background font-mono text-foreground font-bold flex-1"
                 />
                 <AdminButton
                   variant="outline"
-                  className="px-3"
+                  className="px-3 shrink-0"
                   onClick={() => {
                     navigator.clipboard.writeText(
                       newStudentCreds?.password || "",
@@ -440,7 +444,7 @@ export function ProfileTeacherStudents() {
 
           <AdminButton
             variant="outline"
-            className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/10"
+            className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/10 justify-center"
             onClick={() => {
               if (newStudentCreds) {
                 navigator.clipboard.writeText(
@@ -450,7 +454,7 @@ export function ProfileTeacherStudents() {
               }
             }}
           >
-            <Copy className="size-4" />
+            <Copy className="size-4 shrink-0" />
             {t.copyBoth}
           </AdminButton>
         </div>
@@ -466,6 +470,7 @@ export function ProfileTeacherStudents() {
               variant="outline"
               onClick={() => setDeleteModalOpen(false)}
               disabled={isDeleting}
+              className="w-full sm:w-auto"
             >
               {t.cancel}
             </AdminButton>
@@ -475,7 +480,7 @@ export function ProfileTeacherStudents() {
                 deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase
               }
               onClick={confirmDeleteStudent}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
             >
               {isDeleting ? t.removing : t.removeStudentCta}
             </AdminButton>
@@ -497,6 +502,7 @@ export function ProfileTeacherStudents() {
               placeholder={t.deleteConfirmPhrase}
               value={deletePhrase}
               autoComplete="off"
+              className="w-full"
               onChange={(e) => setDeletePhrase(e.target.value)}
               onKeyDown={(e) => {
                 if (
@@ -519,12 +525,12 @@ export function ProfileTeacherStudents() {
         title={
           selectedQuiz
             ? formatMessage(t.quizDetailsNamed, {
-                name: selectedQuiz.videoName,
-              })
+              name: selectedQuiz.videoName,
+            })
             : t.quizDetailsTitle
         }
         footer={
-          <AdminButton onClick={() => setSelectedQuiz(null)}>{t.close}</AdminButton>
+          <AdminButton className="w-full sm:w-auto" onClick={() => setSelectedQuiz(null)}>{t.close}</AdminButton>
         }
       >
         {selectedQuiz && (
@@ -550,9 +556,9 @@ export function ProfileTeacherStudents() {
                 <p className="text-xl font-bold text-foreground">
                   {selectedQuiz.correct}{" "}
                   <span className="text-muted-foreground text-sm">
-                  {formatMessage(t.correctFraction, {
-                    total: String(selectedQuiz.total),
-                  })}
+                    {formatMessage(t.correctFraction, {
+                      total: String(selectedQuiz.total),
+                    })}
                   </span>
                 </p>
               </div>
@@ -572,7 +578,7 @@ export function ProfileTeacherStudents() {
                       <p className="text-[10px] font-bold text-primary tracking-wider mb-2">
                         {t.writtenSummaryCaps}
                       </p>
-                      <p className="text-sm italic text-foreground">
+                      <p className="text-sm italic text-foreground break-words">
                         "{selectedQuiz.summaryText}"
                       </p>
                     </div>
@@ -600,7 +606,7 @@ export function ProfileTeacherStudents() {
                       if (typeof optionsArray === "string") {
                         try {
                           optionsArray = JSON.parse(optionsArray);
-                        } catch (e) {}
+                        } catch (e) { }
                       }
 
                       const isWritten = typeof value === "string";
@@ -609,14 +615,14 @@ export function ProfileTeacherStudents() {
                       return (
                         <div
                           key={key}
-                          className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3"
+                          className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3 overflow-hidden"
                         >
-                          <span className="text-sm text-foreground font-medium">
+                          <span className="text-sm text-foreground font-medium break-words">
                             {questionText
                               ? questionText
                               : formatMessage(t.questionIdFallback, {
-                                  id: key.replace("q_", "").substring(0, 4),
-                                })}
+                                id: key.replace("q_", "").substring(0, 4),
+                              })}
                           </span>
 
                           {isWritten ? (
@@ -624,7 +630,7 @@ export function ProfileTeacherStudents() {
                               <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
                                 {t.writtenSummaryCaps}
                               </p>
-                              <p className="text-sm italic text-foreground">
+                              <p className="text-sm italic text-foreground break-words">
                                 "{value}"
                               </p>
                             </div>
@@ -664,21 +670,23 @@ export function ProfileTeacherStudents() {
                                   <div
                                     key={idx}
                                     className={cn(
-                                      "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
+                                      "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
                                       variantClass,
                                     )}
                                   >
-                                    <span
-                                      className={cn(
-                                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
-                                        badgeClass,
-                                      )}
-                                    >
-                                      {String.fromCharCode(65 + idx)}
-                                    </span>
-                                    <span>{opt}</span>
+                                    <div className="flex items-center gap-2 max-w-full">
+                                      <span
+                                        className={cn(
+                                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
+                                          badgeClass,
+                                        )}
+                                      >
+                                        {String.fromCharCode(65 + idx)}
+                                      </span>
+                                      <span className="break-words">{opt}</span>
+                                    </div>
                                     {statusText && (
-                                      <span className="ml-auto text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                                      <span className="sm:ml-auto text-[11px] font-semibold uppercase tracking-wider opacity-80 shrink-0">
                                         {statusText}
                                       </span>
                                     )}
@@ -694,7 +702,7 @@ export function ProfileTeacherStudents() {
                                 })}
                               </span>
                               {answerText ? (
-                                <span className="text-sm font-semibold text-primary/90">
+                                <span className="text-sm font-semibold text-primary/90 break-words">
                                   {String(answerText)}
                                 </span>
                               ) : (
@@ -717,7 +725,7 @@ export function ProfileTeacherStudents() {
                           <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
                             {t.writtenSummaryCaps}
                           </p>
-                          <p className="text-sm italic text-foreground">
+                          <p className="text-sm italic text-foreground break-words">
                             "{selectedQuiz.summaryText}"
                           </p>
                         </div>
@@ -733,24 +741,24 @@ export function ProfileTeacherStudents() {
 
       {students.length === 0 ? (
         <ProfileCard title={t.cardTitle}>
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
             <GraduationCap className="size-12 text-muted-foreground opacity-50" />
             <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
           </div>
         </ProfileCard>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+        <div className="w-full overflow-x-auto pb-4">
+          <div className="rounded-xl border border-border/50 bg-card/50 min-w-[800px]">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-3 font-medium w-10" />
+                  <th className="p-3 font-medium w-10 shrink-0" />
                   <th className="p-3 font-medium">{t.colStudent}</th>
-                  <th className="p-3 font-medium">{t.colLevel}</th>
-                  <th className="p-3 text-center font-medium">{t.colVideosDone}</th>
-                  <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
-                  <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
-                  <th className="p-3 font-medium w-24 text-right">{t.colActions}</th>
+                  <th className="p-3 font-medium whitespace-nowrap">{t.colLevel}</th>
+                  <th className="p-3 text-center font-medium whitespace-nowrap">{t.colVideosDone}</th>
+                  <th className="p-3 text-center font-medium whitespace-nowrap">{t.colQuizzes}</th>
+                  <th className="p-3 text-center font-medium whitespace-nowrap">{t.colAvgScore}</th>
+                  <th className="p-3 font-medium w-24 text-right whitespace-nowrap">{t.colActions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -774,29 +782,29 @@ export function ProfileTeacherStudents() {
                           </button>
                         </td>
                         <td className="p-3">
-                          <div className="text-foreground font-medium">
+                          <div className="text-foreground font-medium truncate max-w-[200px]">
                             {s.name}
                           </div>
-                          <div className="text-muted-foreground text-xs">
+                          <div className="text-muted-foreground text-xs truncate max-w-[200px]">
                             {s.email}
                           </div>
                         </td>
-                        <td className="text-foreground p-3">
+                        <td className="text-foreground p-3 whitespace-nowrap">
                           {s.englishLevel?.trim() || "—"}
                         </td>
-                        <td className="p-3 text-center tabular-nums">
+                        <td className="p-3 text-center tabular-nums whitespace-nowrap">
                           {s.videosCompleted}
                         </td>
-                        <td className="p-3 text-center tabular-nums">
+                        <td className="p-3 text-center tabular-nums whitespace-nowrap">
                           {s.quizAttempts}
                         </td>
-                        <td className="p-3 text-center tabular-nums">
+                        <td className="p-3 text-center tabular-nums whitespace-nowrap">
                           {s.avgQuizScorePct != null
                             ? `${s.avgQuizScorePct}%`
                             : "—"}
                         </td>
                         <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1 sm:gap-2">
                             <button
                               onClick={() => openEditModal(s)}
                               className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -850,11 +858,11 @@ export function ProfileTeacherStudents() {
                                         key={q.id}
                                         className="border-border/40 bg-card/80 flex flex-col gap-2 rounded-lg border px-4 py-3"
                                       >
-                                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                           <div className="min-w-0 flex-1">
                                             <Link
                                               to={`/content/${q.contentVideoId}`}
-                                              className="text-primary font-medium hover:underline"
+                                              className="text-primary font-medium hover:underline block truncate"
                                             >
                                               {q.videoName}
                                             </Link>
@@ -864,7 +872,7 @@ export function ProfileTeacherStudents() {
                                               ).toLocaleString()}
                                             </div>
                                           </div>
-                                          <div className="flex shrink-0 items-center gap-3 text-sm mt-2 sm:mt-0">
+                                          <div className="flex shrink-0 items-center gap-3 text-sm mt-1 sm:mt-0 flex-wrap">
                                             <span
                                               className={cn(
                                                 "font-semibold tabular-nums",
@@ -896,7 +904,7 @@ export function ProfileTeacherStudents() {
                                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
                                               {t.writtenSummary}
                                             </span>
-                                            <p className="text-sm text-foreground italic line-clamp-2">
+                                            <p className="text-sm text-foreground italic line-clamp-2 break-words">
                                               "{writtenText}"
                                             </p>
                                           </div>

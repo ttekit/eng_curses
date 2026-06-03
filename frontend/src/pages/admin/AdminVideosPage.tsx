@@ -750,7 +750,7 @@ export default function AdminVideosPage() {
           </p>
         </div>
         <AdminButton
-          className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          className="gap-2 flex w-full sm:w-auto rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           onClick={() => setUploadOpen(true)}
         >
           <Plus className="h-4 w-4" />
@@ -768,12 +768,14 @@ export default function AdminVideosPage() {
               variant="outline"
               onClick={() => setUploadOpen(false)}
               disabled={uploadSaving}
+              className="w-full sm:w-auto"
             >
               Cancel
             </AdminButton>
             <AdminButton
               disabled={uploadSaving}
               onClick={() => void handleUpload()}
+              className="w-full sm:w-auto"
             >
               {uploadSaving ? "Publishing…" : "Publish"}
             </AdminButton>
@@ -781,21 +783,21 @@ export default function AdminVideosPage() {
         }
       >
         <div className="space-y-4">
-          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setUploadMode('file')}
             >
               MP4 File
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setUploadMode('zip')}
             >
               ZIP (HLS)
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setUploadMode('link')}
             >
               M3U8 Link
@@ -803,7 +805,7 @@ export default function AdminVideosPage() {
           </div>
 
           {uploadMode === "file" ? (
-            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 sm:p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept="video/mp4"
@@ -815,12 +817,12 @@ export default function AdminVideosPage() {
               />
               <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Browse for MP4 video</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground break-words">
                 {uploadFile ? uploadFile.name : "Single MP4 file"}
               </p>
             </label>
           ) : uploadMode === "zip" ? (
-            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 sm:p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept=".zip"
@@ -832,7 +834,7 @@ export default function AdminVideosPage() {
               />
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Browse for ZIP archive</p>
-              <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
+              <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto break-words">
                 {uploadFile ? uploadFile.name : "Select a .zip containing your .m3u8 and .ts files."}
               </p>
             </label>
@@ -844,6 +846,7 @@ export default function AdminVideosPage() {
               <AdminInput
                 placeholder="https://cdn.explys.com/video/playlist.m3u8"
                 value={uploadLink}
+                className="w-full"
                 onChange={(e) => setUploadLink(e.target.value)}
               />
             </div>
@@ -862,14 +865,11 @@ export default function AdminVideosPage() {
                 }}
               />
               {uploadThumb ? (
-                <p className="text-sm font-medium text-primary">{uploadThumb.name}</p>
+                <p className="text-sm font-medium text-primary break-words">{uploadThumb.name}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
-            <p className="text-[11px] text-muted-foreground">
-              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
-            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -881,6 +881,7 @@ export default function AdminVideosPage() {
                 id="admin-vid-title"
                 placeholder="Title"
                 value={uploadTitle}
+                className="w-full"
                 onChange={(e) => setUploadTitle(e.target.value)}
               />
             </div>
@@ -891,15 +892,12 @@ export default function AdminVideosPage() {
             </label>
             <AdminTextarea
               id="admin-vid-desc"
-              className="min-h-[96px]"
+              className="min-h-[96px] w-full"
               placeholder="Shown in catalog (max 250 characters)…"
               value={uploadDesc}
               maxLength={250}
               onChange={(e) => setUploadDesc(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              Friendly URL slug is generated automatically.
-            </p>
           </div>
         </div>
       </AdminModal>
@@ -918,12 +916,14 @@ export default function AdminVideosPage() {
               variant="outline"
               onClick={() => setAddEpisodeOpen(false)}
               disabled={addEpisodeSaving}
+              className="w-full sm:w-auto"
             >
               Cancel
             </AdminButton>
             <AdminButton
               disabled={addEpisodeSaving}
               onClick={() => void handleAddEpisodeSubmit()}
+              className="w-full sm:w-auto"
             >
               {addEpisodeSaving ? "Uploading…" : "Add episode"}
             </AdminButton>
@@ -931,21 +931,21 @@ export default function AdminVideosPage() {
         }
       >
         <div className="space-y-4">
-          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setAddEpisodeMode('file')}
             >
               MP4 File
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setAddEpisodeMode('zip')}
             >
               ZIP (HLS)
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               onClick={() => setAddEpisodeMode('link')}
             >
               M3U8 Link
@@ -953,7 +953,7 @@ export default function AdminVideosPage() {
           </div>
 
           {addEpisodeMode === "file" ? (
-            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 sm:p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept="video/mp4"
@@ -965,12 +965,12 @@ export default function AdminVideosPage() {
               />
               <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Video file</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground break-words">
                 {addEpisodeFile ? addEpisodeFile.name : "Required"}
               </p>
             </label>
           ) : addEpisodeMode === "zip" ? (
-            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+            <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 sm:p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept=".zip"
@@ -982,7 +982,7 @@ export default function AdminVideosPage() {
               />
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">ZIP Archive</p>
-              <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
+              <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto break-words">
                 {addEpisodeFile ? addEpisodeFile.name : "Select a .zip containing your HLS files."}
               </p>
             </label>
@@ -994,6 +994,7 @@ export default function AdminVideosPage() {
               <AdminInput
                 placeholder="https://cdn.explys.com/video/playlist.m3u8"
                 value={addEpisodeLink}
+                className="w-full"
                 onChange={(e) => setAddEpisodeLink(e.target.value)}
               />
             </div>
@@ -1012,14 +1013,11 @@ export default function AdminVideosPage() {
                 }}
               />
               {addEpisodeThumb ? (
-                <p className="text-sm font-medium text-primary">{addEpisodeThumb.name}</p>
+                <p className="text-sm font-medium text-primary break-words">{addEpisodeThumb.name}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
-            <p className="text-[11px] text-muted-foreground">
-              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
-            </p>
           </div>
 
           <div className="space-y-2 border-t border-border pt-4">
@@ -1030,6 +1028,7 @@ export default function AdminVideosPage() {
               id="admin-ep-title"
               placeholder="Episode title"
               value={addEpisodeTitle}
+              className="w-full"
               onChange={(e) => setAddEpisodeTitle(e.target.value)}
             />
           </div>
@@ -1039,7 +1038,7 @@ export default function AdminVideosPage() {
             </label>
             <AdminTextarea
               id="admin-ep-desc"
-              className="min-h-[72px]"
+              className="min-h-[72px] w-full"
               placeholder="Shown on catalog cards…"
               value={addEpisodeDesc}
               maxLength={2000}
@@ -1059,12 +1058,14 @@ export default function AdminVideosPage() {
               variant="outline"
               onClick={() => setEditing(null)}
               disabled={editSaving || !!regenBusy}
+              className="w-full sm:w-auto"
             >
               Cancel
             </AdminButton>
             <AdminButton
               disabled={editSaving || !!regenBusy}
               onClick={() => void handleSaveEdit()}
+              className="w-full sm:w-auto"
             >
               {editSaving ? "Saving…" : "Save"}
             </AdminButton>
@@ -1082,6 +1083,7 @@ export default function AdminVideosPage() {
             <AdminInput
               id="admin-edit-vid-name"
               value={editName}
+              className="w-full"
               onChange={(e) => setEditName(e.target.value)}
             />
           </div>
@@ -1094,7 +1096,7 @@ export default function AdminVideosPage() {
             </label>
             <AdminTextarea
               id="admin-edit-vid-desc"
-              className="min-h-[96px]"
+              className="min-h-[96px] w-full"
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
             />
@@ -1139,7 +1141,7 @@ export default function AdminVideosPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none justify-center"
                 disabled={editSaving || !!regenBusy}
                 onClick={() => void handleRegenCaptions()}
               >
@@ -1150,7 +1152,7 @@ export default function AdminVideosPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none justify-center"
                 disabled={editSaving || !!regenBusy}
                 onClick={() => void handleRegenThemeTags()}
               >
@@ -1161,7 +1163,7 @@ export default function AdminVideosPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none justify-center"
                 disabled={editSaving || !!regenBusy}
                 onClick={() => void handleRegenLevelTags()}
               >
@@ -1190,12 +1192,14 @@ export default function AdminVideosPage() {
               variant="outline"
               onClick={() => setEditSeriesGroup(null)}
               disabled={editSeriesSaving}
+              className="w-full sm:w-auto"
             >
               Cancel
             </AdminButton>
             <AdminButton
               disabled={editSeriesSaving}
               onClick={() => void handleSaveSeriesEdit()}
+              className="w-full sm:w-auto"
             >
               {editSeriesSaving ? "Saving…" : "Save"}
             </AdminButton>
@@ -1210,6 +1214,7 @@ export default function AdminVideosPage() {
             <AdminInput
               id="admin-edit-series-name"
               value={editSeriesName}
+              className="w-full"
               onChange={(e) => setEditSeriesName(e.target.value)}
             />
           </div>
@@ -1230,6 +1235,7 @@ export default function AdminVideosPage() {
               variant="outline"
               onClick={() => setDeleteCandidate(null)}
               disabled={deleteSaving}
+              className="w-full sm:w-auto"
             >
               Cancel
             </AdminButton>
@@ -1237,6 +1243,7 @@ export default function AdminVideosPage() {
               variant="danger"
               disabled={deleteSaving}
               onClick={() => void handleConfirmDelete()}
+              className="w-full sm:w-auto"
             >
               {deleteSaving ? "Removing…" : "Delete"}
             </AdminButton>
@@ -1264,7 +1271,7 @@ export default function AdminVideosPage() {
         onClose={() => setInspectMeta(null)}
         title={inspectMeta?.video.videoName ?? "Video metadata"}
         footer={
-          <AdminButton variant="outline" onClick={() => setInspectMeta(null)}>
+          <AdminButton className="w-full sm:w-auto" variant="outline" onClick={() => setInspectMeta(null)}>
             Close
           </AdminButton>
         }
@@ -1276,7 +1283,7 @@ export default function AdminVideosPage() {
                 type="button"
                 size="sm"
                 variant={inspectMeta.tab === "themes" ? "primary" : "outline"}
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none justify-center"
                 onClick={() =>
                   setInspectMeta({ ...inspectMeta, tab: "themes" })
                 }
@@ -1288,7 +1295,7 @@ export default function AdminVideosPage() {
                 type="button"
                 size="sm"
                 variant={inspectMeta.tab === "levels" ? "primary" : "outline"}
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none justify-center"
                 onClick={() =>
                   setInspectMeta({ ...inspectMeta, tab: "levels" })
                 }
@@ -1300,7 +1307,7 @@ export default function AdminVideosPage() {
                 type="button"
                 size="sm"
                 variant={inspectMeta.tab === "subs" ? "primary" : "outline"}
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none justify-center"
                 onClick={() => setInspectMeta({ ...inspectMeta, tab: "subs" })}
               >
                 <Captions className="h-4 w-4" />
@@ -1358,7 +1365,7 @@ export default function AdminVideosPage() {
                       href={inspectMeta.video.videoCaption.subtitlesFileLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block text-sm text-primary underline-offset-4 hover:underline"
+                      className="inline-block text-sm text-primary underline-offset-4 hover:underline break-all"
                     >
                       Open raw file on storage
                     </a>
@@ -1398,7 +1405,7 @@ export default function AdminVideosPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Video className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -1411,7 +1418,7 @@ export default function AdminVideosPage() {
         </AdminCard>
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-accent/10">
               <Video className="h-6 w-6 text-accent" />
             </div>
             <div>
@@ -1424,7 +1431,7 @@ export default function AdminVideosPage() {
         </AdminCard>
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
               <Eye className="h-6 w-6 text-blue-400" />
             </div>
             <div>
@@ -1439,7 +1446,7 @@ export default function AdminVideosPage() {
         </AdminCard>
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
               <BarChart3 className="h-6 w-6 text-amber-400" />
             </div>
             <div>
@@ -1455,11 +1462,11 @@ export default function AdminVideosPage() {
       </div>
 
       <AdminCard>
-        <AdminCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-border border-b pt-6">
+        <AdminCardHeader className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-3 border-border border-b pt-6">
           <AdminButton
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto justify-center"
             disabled={loading}
             onClick={() => void loadVideos()}
           >
@@ -1470,12 +1477,12 @@ export default function AdminVideosPage() {
           </AdminButton>
         </AdminCardHeader>
         <AdminCardHeader className="border-border border-b pb-6">
-          <div className="flex flex-col gap-4 md:flex-row">
+          <div className="flex flex-col gap-4 lg:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 opacity-70" />
 
               <AdminInput
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 w-full"
                 placeholder="Search videos…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1492,9 +1499,10 @@ export default function AdminVideosPage() {
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
               <AdminSelectNative
                 value={seriesFilter}
+                className="w-full sm:w-auto"
                 onChange={(e) => setSeriesFilter(e.target.value)}
               >
                 <option value="all">All series</option>
@@ -1507,6 +1515,7 @@ export default function AdminVideosPage() {
 
               <AdminSelectNative
                 value={levelFilter}
+                className="w-full sm:w-auto"
                 onChange={(e) => setLevelFilter(e.target.value)}
               >
                 <option value="all">All levels</option>
@@ -1520,7 +1529,7 @@ export default function AdminVideosPage() {
             </div>
           </div>
         </AdminCardHeader>
-        <AdminCardContent className="p-6">
+        <AdminCardContent className="p-4 sm:p-6">
           {loading ? (
             <p className="py-16 text-center text-muted-foreground">
               Loading catalog…
@@ -1534,16 +1543,16 @@ export default function AdminVideosPage() {
             <div className="space-y-10">
               {groupedSeries.map((group) => (
                 <div key={group.contentRootId} className="space-y-4">
-                  <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-display text-lg font-semibold text-foreground">
+                        <h3 className="font-display text-lg font-semibold text-foreground break-words">
                           {group.seriesName}
                         </h3>
                         <button
                           type="button"
                           onClick={() => openEditSeries(group)}
-                          className="text-muted-foreground hover:text-primary transition-colors"
+                          className="text-muted-foreground hover:text-primary transition-colors shrink-0"
                           title="Edit playlist name"
                         >
                           <Edit className="h-4 w-4" />
@@ -1557,27 +1566,27 @@ export default function AdminVideosPage() {
                           : null}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full md:w-auto">
                       {group.friendlyLink ? (
                         <Link
                           to={`/catalog/series/${encodeURIComponent(group.friendlyLink)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-primary transition-colors hover:bg-muted"
+                          className="inline-flex items-center justify-center sm:justify-start gap-1.5 rounded-lg border border-border px-3 py-2 sm:py-1.5 text-sm text-primary transition-colors hover:bg-muted"
                         >
-                          <ListVideo className="h-4 w-4" />
+                          <ListVideo className="h-4 w-4 shrink-0" />
                           Learner playlist
-                          <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                          <ExternalLink className="h-3.5 w-3.5 opacity-70 shrink-0" />
                         </Link>
                       ) : null}
                       <AdminButton
                         size="sm"
                         variant="outline"
-                        className="gap-1.5"
+                        className="gap-1.5 justify-center py-2 sm:py-1.5"
                         onClick={() => openAddEpisodeForSeries(group)}
                         type="button"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 shrink-0" />
                         Add episode
                       </AdminButton>
                     </div>
@@ -1590,9 +1599,9 @@ export default function AdminVideosPage() {
                       return (
                         <div
                           key={video.id}
-                          className="rounded-lg border border-border bg-muted/30 transition-colors hover:border-primary/40"
+                          className="rounded-lg border border-border bg-muted/30 transition-colors hover:border-primary/40 flex flex-col"
                         >
-                          <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
+                          <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted shrink-0">
                             {(video as any).thumbnailUrl ? (
                               <img
                                 src={(video as any).thumbnailUrl}
@@ -1622,80 +1631,82 @@ export default function AdminVideosPage() {
                               </a>
                             </div>
                           </div>
-                          <div className="p-4">
+                          <div className="p-4 flex flex-col flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
-                                <AdminCardTitle className="truncate text-base">
+                                <AdminCardTitle className="truncate text-base" title={video.videoName}>
                                   {video.videoName}
                                 </AdminCardTitle>
-                                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground break-words">
                                   {video.videoDescription?.trim() ||
                                     video.content.category.description}
                                 </p>
                               </div>
-                              <AdminRowMenu>
-                                <AdminRowMenuItem
-                                  onClick={() => {
-                                    window.open(
-                                      `/content/${video.id}`,
-                                      "_blank",
-                                      "noopener,noreferrer",
-                                    );
-                                  }}
-                                >
-                                  <Play className="h-4 w-4" /> Preview
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() =>
-                                    setInspectMeta({ video, tab: "themes" })
-                                  }
-                                >
-                                  <Tags className="h-4 w-4" /> Genres
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() =>
-                                    setInspectMeta({ video, tab: "levels" })
-                                  }
-                                >
-                                  <Layers className="h-4 w-4" /> CEFR level
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() =>
-                                    setInspectMeta({ video, tab: "subs" })
-                                  }
-                                >
-                                  <Captions className="h-4 w-4" /> Subtitles
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() => openEdit(video)}
-                                >
-                                  <Edit className="h-4 w-4" /> Edit
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() => navigate("/admin/analytics")}
-                                >
-                                  <BarChart3 className="h-4 w-4" /> Analytics
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  danger
-                                  onClick={() =>
-                                    setDeleteCandidate({
-                                      video,
-                                      mode: "series",
-                                    })
-                                  }
-                                >
-                                  <Trash2 className="h-4 w-4" /> Delete series
-                                </AdminRowMenuItem>
-                              </AdminRowMenu>
+                              <div className="shrink-0">
+                                <AdminRowMenu>
+                                  <AdminRowMenuItem
+                                    onClick={() => {
+                                      window.open(
+                                        `/content/${video.id}`,
+                                        "_blank",
+                                        "noopener,noreferrer",
+                                      );
+                                    }}
+                                  >
+                                    <Play className="h-4 w-4" /> Preview
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "themes" })
+                                    }
+                                  >
+                                    <Tags className="h-4 w-4" /> Genres
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "levels" })
+                                    }
+                                  >
+                                    <Layers className="h-4 w-4" /> CEFR level
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "subs" })
+                                    }
+                                  >
+                                    <Captions className="h-4 w-4" /> Subtitles
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() => openEdit(video)}
+                                  >
+                                    <Edit className="h-4 w-4" /> Edit
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() => navigate("/admin/analytics")}
+                                  >
+                                    <BarChart3 className="h-4 w-4" /> Analytics
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    danger
+                                    onClick={() =>
+                                      setDeleteCandidate({
+                                        video,
+                                        mode: "series",
+                                      })
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete series
+                                  </AdminRowMenuItem>
+                                </AdminRowMenu>
+                              </div>
                             </div>
                             {group.rows.length > 1 ? (
-                              <div className="mt-2 flex gap-2">
+                              <div className="mt-3 flex gap-2">
                                 <AdminButton
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  className="gap-1"
+                                  className="gap-1 flex-1 sm:flex-none justify-center"
                                   disabled={reorderBusy || episodeIndex === 0}
                                   onClick={() =>
                                     void moveEpisodeInSeries(
@@ -1712,7 +1723,7 @@ export default function AdminVideosPage() {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  className="gap-1"
+                                  className="gap-1 flex-1 sm:flex-none justify-center"
                                   disabled={
                                     reorderBusy ||
                                     episodeIndex >= group.rows.length - 1
@@ -1730,35 +1741,39 @@ export default function AdminVideosPage() {
                                 </AdminButton>
                               </div>
                             ) : null}
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <AdminBadge variant="secondary">{lvl}</AdminBadge>
-                              <AdminBadge variant="outline">
-                                {video.content.category.name}
-                              </AdminBadge>
-                            </div>
-                            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-border border-t pt-4">
-                              <span className="flex min-w-[4rem] items-center gap-1 text-sm text-muted-foreground">
-                                <Eye className="h-4 w-4" />
-                                {watchers.toLocaleString()}
-                              </span>
-                              <div className="flex max-w-[120px] flex-1 items-center gap-2">
-                                <AdminProgress value={ratingProgress(rating)} />
-                                <span className="text-xs whitespace-nowrap text-muted-foreground">
-                                  {rating > 0 ? rating.toFixed(1) : "—"}
-                                </span>
+                            <div className="mt-auto pt-4">
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                <AdminBadge variant="secondary">{lvl}</AdminBadge>
+                                <AdminBadge variant="outline" className="truncate max-w-[150px]">
+                                  {video.content.category.name}
+                                </AdminBadge>
                               </div>
-                              <AdminButton
-                                variant="outline"
-                                size="sm"
-                                className="shrink-0 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                onClick={() =>
-                                  setDeleteCandidate({ video, mode: "episode" })
-                                }
-                                type="button"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete episode
-                              </AdminButton>
+                              <div className="flex flex-wrap items-center justify-between gap-3 border-border border-t pt-4">
+                                <div className="flex items-center gap-3 flex-1 min-w-[120px]">
+                                  <span className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
+                                    <Eye className="h-4 w-4" />
+                                    {watchers.toLocaleString()}
+                                  </span>
+                                  <div className="flex flex-1 items-center gap-2 max-w-[100px]">
+                                    <AdminProgress value={ratingProgress(rating)} />
+                                    <span className="text-xs whitespace-nowrap text-muted-foreground">
+                                      {rating > 0 ? rating.toFixed(1) : "—"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <AdminButton
+                                  variant="outline"
+                                  size="sm"
+                                  className="shrink-0 gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 w-full sm:w-auto justify-center"
+                                  onClick={() =>
+                                    setDeleteCandidate({ video, mode: "episode" })
+                                  }
+                                  type="button"
+                                >
+                                  <Trash2 className="h-4 w-4 shrink-0" />
+                                  Delete
+                                </AdminButton>
+                              </div>
                             </div>
                           </div>
                         </div>
