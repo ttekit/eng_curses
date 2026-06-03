@@ -904,17 +904,17 @@ export default function AdminVideosPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
-            <AdminSelectNative
+            <select
               value={uploadAge}
               onChange={(e) => setUploadAge(e.target.value)}
-              className="w-full"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
             >
               <option value="0+">0+</option>
               <option value="12+">12+</option>
               <option value="16+">16+</option>
               <option value="18+">18+</option>
               <option value="21+">21+</option>
-            </AdminSelectNative>
+            </select>
           </div>
 
           <div className="space-y-2">
