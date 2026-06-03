@@ -175,6 +175,7 @@ export default function AdminVideosPage() {
   const [uploadLink, setUploadLink] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
+  const [uploadAge, setUploadAge] = useState("0+");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadThumb, setUploadThumb] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
@@ -182,6 +183,7 @@ export default function AdminVideosPage() {
   const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editAge, setEditAge] = useState("0+");
   const [editThumb, setEditThumb] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [regenBusy, setRegenBusy] = useState<
@@ -206,6 +208,7 @@ export default function AdminVideosPage() {
     useState<AdminVideoSeriesGroup | null>(null);
   const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
   const [addEpisodeDesc, setAddEpisodeDesc] = useState("");
+  const [addEpisodeAge, setAddEpisodeAge] = useState("0+");
   const [addEpisodeFile, setAddEpisodeFile] = useState<File | null>(null);
   const [addEpisodeThumb, setAddEpisodeThumb] = useState<File | null>(null);
   const [addEpisodeSaving, setAddEpisodeSaving] = useState(false);
@@ -342,6 +345,7 @@ export default function AdminVideosPage() {
     setEditing(v);
     setEditName(v.videoName);
     setEditDesc(v.videoDescription || v.content.category.description || "");
+    setEditAge((v as any).ageRestriction || "0+");
     setEditThumb(null);
   }, []);
 
@@ -357,7 +361,8 @@ export default function AdminVideosPage() {
       await patchAdminContentVideo(editing.id, {
         videoName: name,
         videoDescription: editDesc.trim() || null,
-      });
+        ageRestriction: editAge,
+      } as any);
 
       if (editThumb) {
         const fd = new FormData();
@@ -430,6 +435,7 @@ export default function AdminVideosPage() {
         setEditing(u);
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
+        setEditAge((u as any).ageRestriction || "0+");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -455,6 +461,7 @@ export default function AdminVideosPage() {
         setEditing(u);
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
+        setEditAge((u as any).ageRestriction || "0+");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -476,6 +483,7 @@ export default function AdminVideosPage() {
         setEditing(u);
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
+        setEditAge((u as any).ageRestriction || "0+");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Caption generation failed");
@@ -517,6 +525,7 @@ export default function AdminVideosPage() {
     const fd = new FormData();
     fd.append("name", name);
     fd.append("friendlyLink", slugFriendly(name));
+    fd.append("ageRestriction", uploadAge);
     fd.append(
       "description",
       (description || `${name} — learner catalog.`).slice(0, 250),
@@ -570,13 +579,14 @@ export default function AdminVideosPage() {
       setUploadOpen(false);
       setUploadTitle("");
       setUploadDesc("");
+      setUploadAge("0+");
       setUploadFile(null);
       setUploadLink("");
       setUploadThumb(null);
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
-    } {
+    } finally {
       setUploadSaving(false);
     }
   };
@@ -654,6 +664,7 @@ export default function AdminVideosPage() {
       setAddEpisodeSeries(group);
       setAddEpisodeTitle("");
       setAddEpisodeDesc("");
+      setAddEpisodeAge("0+");
       setAddEpisodeFile(null);
       setAddEpisodeLink("");
       setAddEpisodeThumb(null);
@@ -672,6 +683,7 @@ export default function AdminVideosPage() {
 
     const fd = new FormData();
     fd.append("videoName", name);
+    fd.append("ageRestriction", addEpisodeAge);
     const d = addEpisodeDesc.trim();
     if (d) fd.append("videoDescription", d);
 
@@ -870,6 +882,9 @@ export default function AdminVideosPage() {
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
+            <p className="text-[11px] text-muted-foreground">
+              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -886,6 +901,22 @@ export default function AdminVideosPage() {
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <AdminSelectNative
+              value={uploadAge}
+              onChange={(e) => setUploadAge(e.target.value)}
+              className="w-full"
+            >
+              <option value="0+">0+</option>
+              <option value="12+">12+</option>
+              <option value="16+">16+</option>
+              <option value="18+">18+</option>
+              <option value="21+">21+</option>
+            </AdminSelectNative>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-vid-desc">
               Lesson / series description
@@ -898,6 +929,9 @@ export default function AdminVideosPage() {
               maxLength={250}
               onChange={(e) => setUploadDesc(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Friendly URL slug is generated automatically.
+            </p>
           </div>
         </div>
       </AdminModal>
@@ -1018,6 +1052,9 @@ export default function AdminVideosPage() {
                 <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
               )}
             </label>
+            <p className="text-[11px] text-muted-foreground">
+              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
+            </p>
           </div>
 
           <div className="space-y-2 border-t border-border pt-4">
@@ -1032,6 +1069,22 @@ export default function AdminVideosPage() {
               onChange={(e) => setAddEpisodeTitle(e.target.value)}
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <AdminSelectNative
+              value={addEpisodeAge}
+              onChange={(e) => setAddEpisodeAge(e.target.value)}
+              className="w-full"
+            >
+              <option value="0+">0+</option>
+              <option value="12+">12+</option>
+              <option value="16+">16+</option>
+              <option value="18+">18+</option>
+              <option value="21+">21+</option>
+            </AdminSelectNative>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-ep-desc">
               Description (optional)
@@ -1087,6 +1140,22 @@ export default function AdminVideosPage() {
               onChange={(e) => setEditName(e.target.value)}
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <AdminSelectNative
+              value={editAge}
+              onChange={(e) => setEditAge(e.target.value)}
+              className="w-full"
+            >
+              <option value="0+">0+</option>
+              <option value="12+">12+</option>
+              <option value="16+">16+</option>
+              <option value="18+">18+</option>
+              <option value="21+">21+</option>
+            </AdminSelectNative>
+          </div>
+
           <div className="space-y-2">
             <label
               className="text-sm font-medium"
@@ -1616,6 +1685,12 @@ export default function AdminVideosPage() {
                               {group.rows.length > 1 ? (
                                 <AdminBadge variant="secondary">
                                   #{episodeIndex + 1}
+                                </AdminBadge>
+                              ) : null}
+                              {/* Отображение ограничения возраста */}
+                              {(video as any).ageRestriction ? (
+                                <AdminBadge variant="outline" className="bg-background/80 backdrop-blur-sm">
+                                  {(video as any).ageRestriction}
                                 </AdminBadge>
                               ) : null}
                             </div>

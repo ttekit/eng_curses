@@ -84,6 +84,8 @@ model ContentVideo {
   comprehensionTestAttempts  ComprehensionTestAttempt[]
   userComprehensionWeakSpots UserComprehensionWeakSpot[]
 
+  ageRestriction String @default("0+") @map("age_restriction")
+
   @@unique([contentId, playlistPosition], map: "content_videos_content_id_playlist_position_key")
   @@map("content_videos")
 }

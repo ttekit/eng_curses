@@ -1,6 +1,3 @@
-/**
- * Teacher profile tab: lists series this account uploaded, with links and catalog visibility.
- */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -85,6 +82,7 @@ export function ProfileTeacherVideos() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
+  const [uploadAge, setUploadAge] = useState("0+");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
 
@@ -242,6 +240,7 @@ export function ProfileTeacherVideos() {
 
       fd.append("name", name);
       fd.append("visibility", initialVisibility);
+      fd.append("ageRestriction", uploadAge);
       fd.append("description", description);
 
       if (finalOpen) fd.append("availableFrom", finalOpen);
@@ -267,6 +266,7 @@ export function ProfileTeacherVideos() {
 
       setUploadTitle("");
       setUploadDesc("");
+      setUploadAge("0+");
       setUploadFile(null);
       setDeadlineMode("none");
       setOpenDateStr("");
@@ -417,6 +417,21 @@ export function ProfileTeacherVideos() {
               onChange={(e) => setUploadTitle(e.target.value)}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <AdminSelectNative
+              value={uploadAge}
+              onChange={(e) => setUploadAge(e.target.value)}
+              className="w-full"
+            >
+              <option value="0+">0+</option>
+              <option value="12+">12+</option>
+              <option value="16+">16+</option>
+              <option value="18+">18+</option>
+              <option value="21+">21+</option>
+            </AdminSelectNative>
           </div>
 
           <div className="space-y-2">
@@ -600,154 +615,162 @@ export function ProfileTeacherVideos() {
           </div>
         </ProfileCard>
       ) : (
-        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-border/50 bg-card/50">
-          <table className="w-full min-w-[800px] text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
-                <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
-                <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
-                <th className="p-4 font-semibold text-sm text-right">
-                  {t.colActions}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {series.map((s) => {
-                const busy = visibilityBusyId === s.contentId;
-                const vis = s.visibility.trim().toLowerCase();
-                const isPublic = vis === "public";
-                const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
+        <div
+          className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm"
+          style={{ maxWidth: "100%", overflow: "hidden" }}
+        >
+          <div style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
+            <table
+              className="text-left text-sm"
+              style={{ minWidth: "900px", width: "100%", whiteSpace: "nowrap" }}
+            >
+              <thead>
+                <tr className="border-border bg-muted/30 border-b text-muted-foreground">
+                  <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
+                  <th className="p-4 font-semibold text-sm text-right">
+                    {t.colActions}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {series.map((s) => {
+                  const busy = visibilityBusyId === s.contentId;
+                  const vis = s.visibility.trim().toLowerCase();
+                  const isPublic = vis === "public";
+                  const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
 
-                return (
-                  <tr
-                    key={s.contentId}
-                    className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
-                  >
-                    <td className="p-4 align-middle">
-                      <div className="text-foreground text-base font-bold truncate max-w-[200px]">
-                        {s.name}
-                      </div>
+                  return (
+                    <tr
+                      key={s.contentId}
+                      className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
+                    >
+                      <td className="p-4 align-middle">
+                        <div className="text-foreground text-base font-bold truncate" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {s.name}
+                        </div>
 
-                      {/* БЛОК РАСПИСАНИЯ ДЛЯ УЧИТЕЛЯ */}
-                      {(s.availableFrom || s.deadline) && (
-                        <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
-                          {s.availableFrom && (
-                            <span
-                              className={
-                                new Date(s.availableFrom) > new Date()
-                                  ? "text-blue-500"
-                                  : "text-muted-foreground"
-                              }
-                            >
-                              Opens:{" "}
-                              {new Date(s.availableFrom).toLocaleString([], {
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })}
-                            </span>
-                          )}
-                          {s.deadline && (
-                            <span
-                              className={
-                                new Date(s.deadline) < new Date()
-                                  ? "text-destructive"
-                                  : "text-amber-500"
-                              }
-                            >
-                              Closes:{" "}
-                              {new Date(s.deadline).toLocaleString([], {
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {s.processingComplexity ? (
-                        <div className="text-muted-foreground mt-1 text-xs truncate max-w-[200px]">
-                          {t.processingPrefix} {s.processingComplexity}
-                        </div>
-                      ) : null}
-                      {tags.length > 0 ? (
-                        <div className="text-muted-foreground mt-1.5 text-xs truncate max-w-[200px]">
-                          {tags.join(" · ")}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="p-4 align-middle">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
-                          s.captionsReady
-                            ? "bg-green-500/15 text-green-500"
-                            : "bg-muted text-muted-foreground",
+                        {/* БЛОК РАСПИСАНИЯ ДЛЯ УЧИТЕЛЯ */}
+                        {(s.availableFrom || s.deadline) && (
+                          <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
+                            {s.availableFrom && (
+                              <span
+                                className={
+                                  new Date(s.availableFrom) > new Date()
+                                    ? "text-blue-500"
+                                    : "text-muted-foreground"
+                                }
+                              >
+                                Opens:{" "}
+                                {new Date(s.availableFrom).toLocaleString([], {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            )}
+                            {s.deadline && (
+                              <span
+                                className={
+                                  new Date(s.deadline) < new Date()
+                                    ? "text-destructive"
+                                    : "text-amber-500"
+                                }
+                              >
+                                Closes:{" "}
+                                {new Date(s.deadline).toLocaleString([], {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            )}
+                          </div>
                         )}
-                      >
-                        {s.captionsReady ? t.captionsReady : t.captionsPending}
-                      </span>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <div className="flex flex-col items-start gap-1.5 w-full sm:w-auto">
-                        <select
-                          className="w-full min-w-[130px] border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
-                          value={isPublic ? "public" : "unlisted"}
-                          disabled={busy}
-                          aria-label={formatMessage(t.visibilityAria, {
-                            name: s.name,
-                          })}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (v !== "public" && v !== "unlisted") return;
-                            if (v === s.visibility) return;
-                            void updateVisibility(s.contentId, v);
-                          }}
-                        >
-                          <option value="public">{t.visibilityPublic}</option>
-                          <option value="unlisted">{t.visibilityPrivate}</option>
-                        </select>
-                        {busy ? (
-                          <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                            <Loader2 className="size-3.5 animate-spin shrink-0" />
-                            {t.visibilitySaving}
-                          </span>
+
+                        {s.processingComplexity ? (
+                          <div className="text-muted-foreground mt-1 text-xs truncate" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {t.processingPrefix} {s.processingComplexity}
+                          </div>
                         ) : null}
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <div className="flex flex-col gap-2">
-                        {s.contentVideoId != null ? (
-                          <Link
-                            to={`/content/${s.contentVideoId}`}
-                            className="text-primary font-semibold text-sm hover:underline block"
+                        {tags.length > 0 ? (
+                          <div className="text-muted-foreground mt-1.5 text-xs truncate" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {tags.join(" · ")}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="p-4 align-middle">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
+                            s.captionsReady
+                              ? "bg-green-500/15 text-green-500"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {s.captionsReady ? t.captionsReady : t.captionsPending}
+                        </span>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col items-start gap-1.5" style={{ width: "130px" }}>
+                          <select
+                            className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
+                            value={isPublic ? "public" : "unlisted"}
+                            disabled={busy}
+                            aria-label={formatMessage(t.visibilityAria, {
+                              name: s.name,
+                            })}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v !== "public" && v !== "unlisted") return;
+                              if (v === s.visibility) return;
+                              void updateVisibility(s.contentId, v);
+                            }}
                           >
-                            {t.watchLesson}
+                            <option value="public">{t.visibilityPublic}</option>
+                            <option value="unlisted">{t.visibilityPrivate}</option>
+                          </select>
+                          {busy ? (
+                            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                              <Loader2 className="size-3.5 animate-spin shrink-0" />
+                              {t.visibilitySaving}
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <div className="flex flex-col gap-2">
+                          {s.contentVideoId != null ? (
+                            <Link
+                              to={`/content/${s.contentVideoId}`}
+                              className="text-primary font-semibold text-sm hover:underline block"
+                            >
+                              {t.watchLesson}
+                            </Link>
+                          ) : null}
+                          <Link
+                            to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
+                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline block"
+                          >
+                            {t.seriesPage}
                           </Link>
-                        ) : null}
-                        <Link
-                          to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
-                          className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline block"
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle text-right">
+                        <button
+                          onClick={() => openDeleteModal(s.contentId)}
+                          className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
+                          title={t.deleteVideoAria}
                         >
-                          {t.seriesPage}
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle text-right">
-                      <button
-                        onClick={() => openDeleteModal(s.contentId)}
-                        className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
-                        title={t.deleteVideoAria}
-                      >
-                        <Trash2 className="size-4.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          <Trash2 className="size-4.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
