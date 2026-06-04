@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import {
-  Loader2,
-  Video,
-  Plus,
-  Upload,
-  Trash2,
-} from "lucide-react";
+import { Loader2, Video, Plus, Upload, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
@@ -18,6 +12,7 @@ import {
   AdminModal,
   AdminInput,
   AdminTextarea,
+  AdminSelectNative,
 } from "../../components/admin/adminUi";
 
 export type TeacherSeriesItem = {
@@ -91,7 +86,6 @@ export function ProfileTeacherVideos() {
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Режимы расписания
   const [deadlineMode, setDeadlineMode] = useState<
     "none" | "close" | "open_close"
   >("none");
@@ -420,7 +414,9 @@ export function ProfileTeacherVideos() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <label className="text-sm font-medium">
+              Age Restriction / Возрастное ограничение
+            </label>
             <AdminSelectNative
               value={uploadAge}
               onChange={(e) => setUploadAge(e.target.value)}
@@ -435,7 +431,9 @@ export function ProfileTeacherVideos() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t.descriptionOptional}</label>
+            <label className="text-sm font-medium">
+              {t.descriptionOptional}
+            </label>
             <AdminTextarea
               placeholder={t.descriptionPlaceholder}
               value={uploadDesc}
@@ -539,7 +537,11 @@ export function ProfileTeacherVideos() {
             >
               {t.cancelUploadNo}
             </AdminButton>
-            <AdminButton variant="danger" className="w-full sm:w-auto" onClick={cancelUpload}>
+            <AdminButton
+              variant="danger"
+              className="w-full sm:w-auto"
+              onClick={cancelUpload}
+            >
               {t.cancelUploadYes}
             </AdminButton>
           </>
@@ -619,7 +621,13 @@ export function ProfileTeacherVideos() {
           className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm"
           style={{ maxWidth: "100%", overflow: "hidden" }}
         >
-          <div style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
+          <div
+            style={{
+              overflowX: "auto",
+              width: "100%",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
             <table
               className="text-left text-sm"
               style={{ minWidth: "900px", width: "100%", whiteSpace: "nowrap" }}
@@ -648,11 +656,17 @@ export function ProfileTeacherVideos() {
                       className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
                     >
                       <td className="p-4 align-middle">
-                        <div className="text-foreground text-base font-bold truncate" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <div
+                          className="text-foreground text-base font-bold truncate"
+                          style={{
+                            maxWidth: "200px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {s.name}
                         </div>
 
-                        {/* БЛОК РАСПИСАНИЯ ДЛЯ УЧИТЕЛЯ */}
                         {(s.availableFrom || s.deadline) && (
                           <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
                             {s.availableFrom && (
@@ -689,12 +703,26 @@ export function ProfileTeacherVideos() {
                         )}
 
                         {s.processingComplexity ? (
-                          <div className="text-muted-foreground mt-1 text-xs truncate" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <div
+                            className="text-muted-foreground mt-1 text-xs truncate"
+                            style={{
+                              maxWidth: "200px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
                             {t.processingPrefix} {s.processingComplexity}
                           </div>
                         ) : null}
                         {tags.length > 0 ? (
-                          <div className="text-muted-foreground mt-1.5 text-xs truncate" style={{ maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <div
+                            className="text-muted-foreground mt-1.5 text-xs truncate"
+                            style={{
+                              maxWidth: "200px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
                             {tags.join(" · ")}
                           </div>
                         ) : null}
@@ -708,11 +736,16 @@ export function ProfileTeacherVideos() {
                               : "bg-muted text-muted-foreground",
                           )}
                         >
-                          {s.captionsReady ? t.captionsReady : t.captionsPending}
+                          {s.captionsReady
+                            ? t.captionsReady
+                            : t.captionsPending}
                         </span>
                       </td>
                       <td className="p-4 align-middle">
-                        <div className="flex flex-col items-start gap-1.5" style={{ width: "130px" }}>
+                        <div
+                          className="flex flex-col items-start gap-1.5"
+                          style={{ width: "130px" }}
+                        >
                           <select
                             className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
                             value={isPublic ? "public" : "unlisted"}
@@ -728,7 +761,9 @@ export function ProfileTeacherVideos() {
                             }}
                           >
                             <option value="public">{t.visibilityPublic}</option>
-                            <option value="unlisted">{t.visibilityPrivate}</option>
+                            <option value="unlisted">
+                              {t.visibilityPrivate}
+                            </option>
                           </select>
                           {busy ? (
                             <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">

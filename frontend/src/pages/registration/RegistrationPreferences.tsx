@@ -118,12 +118,7 @@ export default function RegistrationPreferences() {
 
       if (response.ok) {
         await refreshProfile();
-
-        if (formData.role === "student") {
-          navigate("/registrationDetails", { replace: true });
-        } else {
-          navigate("/catalog", { replace: true });
-        }
+        navigate("/subscribe", { replace: true });
       } else {
         const errorData = await response.json();
         alert(

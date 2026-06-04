@@ -55,6 +55,7 @@ export class AuthController {
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
   ) {}
 
+  @Public()
   @Post("register")
   @SkipSubscriptionCheck()
   @UseGuards(TurnstileGuard)
@@ -71,6 +72,7 @@ export class AuthController {
     return await this.authService.register(req, registerDto);
   }
 
+  @Public()
   @Post("login")
   @SkipSubscriptionCheck()
   @Throttle({ auth: { limit: 10, ttl: 60_000 } })
@@ -85,6 +87,7 @@ export class AuthController {
     return await this.authService.login(loginDto);
   }
 
+  @Public()
   @Post("verify-email")
   @SkipSubscriptionCheck()
   @Throttle({ auth: { limit: 10, ttl: 60_000 } })
@@ -160,6 +163,7 @@ export class AuthController {
     return this.authService.toggleTwoFactor(req.user.sub, dto);
   }
 
+  @Public()
   @Post("verify-2fa")
   @SkipSubscriptionCheck()
   @Throttle({ auth: { limit: 10, ttl: 60_000 } })
@@ -306,6 +310,8 @@ export class AuthController {
     return this.studyingPlanRegeneration.regenerateForUser(userId);
   }
 
+  @Public()
+  @SkipSubscriptionCheck()
   @Get("/oauth/callback/:provider")
   @UseGuards(AuthProviderGuard)
   public async callback(
@@ -331,15 +337,12 @@ export class AuthController {
       return res.redirect(loginUrl);
     }
 
-    req.session.save((err) => {
-      if (err) throw new InternalServerErrorException("Failed to save session");
-
-      const redirectPath = result.isNewUser ? "/onboarding/dob" : "/catalog";
-      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}${redirectPath}`;
-      res.redirect(redirectUrl);
-    });
+    const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.token}&isNewUser=${result.isNewUser}`;
+    return res.redirect(redirectUrl);
   }
 
+  @Public()
+  @SkipSubscriptionCheck()
   @UseGuards(AuthProviderGuard)
   @Get("/oauth/connect/:provider")
   @Redirect()
@@ -362,11 +365,13 @@ export class AuthController {
     return await this.authService.deleteAccount(req.user.sub, dto);
   }
 
+  @Public()
   @Post("restore-account")
   async restoreAccount(@Body() body: { token: string }) {
     return this.authService.restoreAccount(body.token);
   }
 
+  @Public()
   @Post("resend-verification")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Resend email confirmation code" })

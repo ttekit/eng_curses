@@ -295,7 +295,10 @@ export function ProfileTeacherStudents() {
             <Download className="h-4 w-4 shrink-0" />
             {t.downloadExcel}
           </AdminButton>
-          <AdminButton className="gap-2 w-full sm:w-auto justify-center" onClick={openAddModal}>
+          <AdminButton
+            className="gap-2 w-full sm:w-auto justify-center"
+            onClick={openAddModal}
+          >
             <Plus className="h-4 w-4 shrink-0" />
             {t.addStudent}
           </AdminButton>
@@ -359,7 +362,9 @@ export function ProfileTeacherStudents() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{t.generatedEmailLabel}</label>
+            <label className="text-sm font-medium">
+              {t.generatedEmailLabel}
+            </label>
             <AdminInput
               type="email"
               placeholder={t.generatedEmailPlaceholder}
@@ -368,7 +373,9 @@ export function ProfileTeacherStudents() {
               className="bg-muted w-full text-muted-foreground cursor-not-allowed"
             />
             {!editingId && (
-              <p className="text-xs text-muted-foreground mt-1">{t.passwordHint}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t.passwordHint}
+              </p>
             )}
           </div>
         </form>
@@ -379,7 +386,10 @@ export function ProfileTeacherStudents() {
         onClose={() => setNewStudentCreds(null)}
         title={`🎉 ${t.registeredTitle}`}
         footer={
-          <AdminButton className="w-full sm:w-auto" onClick={() => setNewStudentCreds(null)}>
+          <AdminButton
+            className="w-full sm:w-auto"
+            onClick={() => setNewStudentCreds(null)}
+          >
             {t.credentialsSaved}
           </AdminButton>
         }
@@ -387,7 +397,9 @@ export function ProfileTeacherStudents() {
         <div className="space-y-5">
           <p className="text-sm text-muted-foreground">
             {t.credentialsLead}{" "}
-            <strong className="text-foreground">{t.credentialsPasswordNote}</strong>
+            <strong className="text-foreground">
+              {t.credentialsPasswordNote}
+            </strong>
           </p>
 
           <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
@@ -525,12 +537,17 @@ export function ProfileTeacherStudents() {
         title={
           selectedQuiz
             ? formatMessage(t.quizDetailsNamed, {
-              name: selectedQuiz.videoName,
-            })
+                name: selectedQuiz.videoName,
+              })
             : t.quizDetailsTitle
         }
         footer={
-          <AdminButton className="w-full sm:w-auto" onClick={() => setSelectedQuiz(null)}>{t.close}</AdminButton>
+          <AdminButton
+            className="w-full sm:w-auto"
+            onClick={() => setSelectedQuiz(null)}
+          >
+            {t.close}
+          </AdminButton>
         }
       >
         {selectedQuiz && (
@@ -606,7 +623,7 @@ export function ProfileTeacherStudents() {
                       if (typeof optionsArray === "string") {
                         try {
                           optionsArray = JSON.parse(optionsArray);
-                        } catch (e) { }
+                        } catch (e) {}
                       }
 
                       const isWritten = typeof value === "string";
@@ -621,8 +638,8 @@ export function ProfileTeacherStudents() {
                             {questionText
                               ? questionText
                               : formatMessage(t.questionIdFallback, {
-                                id: key.replace("q_", "").substring(0, 4),
-                              })}
+                                  id: key.replace("q_", "").substring(0, 4),
+                                })}
                           </span>
 
                           {isWritten ? (
@@ -754,10 +771,14 @@ export function ProfileTeacherStudents() {
                 <th className="p-3 font-medium w-10 shrink-0" />
                 <th className="p-3 font-medium">{t.colStudent}</th>
                 <th className="p-3 font-medium">{t.colLevel}</th>
-                <th className="p-3 text-center font-medium">{t.colVideosDone}</th>
+                <th className="p-3 text-center font-medium">
+                  {t.colVideosDone}
+                </th>
                 <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
                 <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
-                <th className="p-3 font-medium w-24 text-right">{t.colActions}</th>
+                <th className="p-3 font-medium w-24 text-right">
+                  {t.colActions}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -841,9 +862,7 @@ export function ProfileTeacherStudents() {
                                     q.answers &&
                                     typeof q.answers === "object"
                                   ) {
-                                    const found = Object.values(
-                                      q.answers,
-                                    ).find(
+                                    const found = Object.values(q.answers).find(
                                       (v) =>
                                         typeof v === "string" &&
                                         !String(v).includes("_text") &&

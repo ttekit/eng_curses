@@ -10,25 +10,26 @@ import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
 import { apiFetch } from "../../lib/api";
 import { AuthPageSeo } from "../../lib/authPageSeo";
+import { useUser } from "../../context/UserContext";
 
 const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
-  const { onClick, value, onChange } = props;
+  const { onClick, dobValue, onDobChange } = props;
+
   return (
     <div className="relative w-full">
       <input
-        type="text"
-        readOnly
+        type="date"
         ref={ref}
-        value={value || ""}
-        onClick={onClick}
-        onChange={onChange}
-        placeholder="YYYY-MM-DD"
-        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer"
+        value={dobValue || ""}
+        onChange={(e) => onDobChange(e.target.value)}
+        min="1900-01-01"
+        max={new Date().toISOString().split("T")[0]}
+        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
       />
       <button
         type="button"
         onClick={onClick}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors flex items-center justify-center"
       >
         <CalendarIcon className="size-5" />
       </button>
@@ -38,10 +39,11 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
 CustomDateInput.displayName = "CustomDateInput";
 
 export default function GoogleDobPrompt() {
-  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
+  const [dateOfBirth, setDateOfBirth] = useState<string>("");
   const [errorText, setErrorText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { refreshProfile } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +53,22 @@ export default function GoogleDobPrompt() {
       return;
     }
 
+    const birthDate = new Date(dateOfBirth);
+    if (isNaN(birthDate.getTime())) {
+      setErrorText("Invalid date format");
+      return;
+    }
+
+    if (birthDate.getFullYear() < 1900) {
+      setErrorText("Please enter a valid year (1900 or later).");
+      return;
+    }
+
+    const today = new Date();
     const age = Math.abs(
-      new Date(Date.now() - dateOfBirth.getTime()).getUTCFullYear() - 1970,
+      new Date(today.getTime() - birthDate.getTime()).getUTCFullYear() - 1970,
     );
+
     if (age < 13) {
       setErrorText("You must be at least 13 years old.");
       return;
@@ -67,13 +82,14 @@ export default function GoogleDobPrompt() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dateOfBirth: `${dateOfBirth.getFullYear()}-${String(dateOfBirth.getMonth() + 1).padStart(2, "0")}-${String(dateOfBirth.getDate()).padStart(2, "0")}`,
+          dateOfBirth: dateOfBirth,
         }),
       });
 
       if (response.ok) {
         toast.success("Date of birth saved!");
-        navigate("/registrationDetails");
+        await refreshProfile();
+        navigate("/registrationDetails", { replace: true });
       } else {
         const errorData = await response.json();
         setErrorText(errorData?.message || "Failed to save date of birth.");
@@ -113,15 +129,34 @@ export default function GoogleDobPrompt() {
             <LabelRegister isRequired={true}>Date of Birth</LabelRegister>
             <div className="relative">
               <DatePicker
-                selected={dateOfBirth}
-                onChange={(date: Date | null) => setDateOfBirth(date)}
+                selected={
+                  dateOfBirth && !isNaN(new Date(dateOfBirth).getTime())
+                    ? new Date(dateOfBirth)
+                    : null
+                }
+                onChange={(date: Date | null) => {
+                  if (date && !isNaN(date.getTime())) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, "0");
+                    const d = String(date.getDate()).padStart(2, "0");
+                    setDateOfBirth(`${y}-${m}-${d}`);
+                  } else {
+                    setDateOfBirth("");
+                  }
+                }}
                 dateFormat="yyyy-MM-dd"
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"
+                minDate={new Date("1900-01-01")}
                 maxDate={new Date()}
                 wrapperClassName="w-full"
-                customInput={<CustomDateInput />}
+                customInput={
+                  <CustomDateInput
+                    dobValue={dateOfBirth}
+                    onDobChange={setDateOfBirth}
+                  />
+                }
               />
             </div>
           </div>

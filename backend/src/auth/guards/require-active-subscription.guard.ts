@@ -26,10 +26,17 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
+
+    const url = req.url || "";
+    const path = (req as any).route?.path || "";
+    if (url.includes("oauth") || path.includes("oauth")) {
+      return true;
+    }
+
     if (req.method === "OPTIONS") {
       return true;
     }

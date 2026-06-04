@@ -25,8 +25,7 @@ import Turnstile from "react-turnstile";
 import { registerUser } from "../../lib/registerUser";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { apiFetch } from "../../lib/api";
-import toast from "react-hot-toast";
+import { getApiBase } from "../../lib/api";
 
 const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
   const { onClick } = props;
@@ -45,8 +44,9 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
             string
           >);
         }}
+        min="1900-01-01"
         max={new Date().toISOString().split("T")[0]}
-        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
       />
       <button
         type="button"
@@ -151,6 +151,11 @@ export default function RegistrationMain() {
 
     if (isNaN(birthDate.getTime()) || birthDate > today) {
       setErrorText(errors.dateOfBirthInvalid);
+      return false;
+    }
+
+    if (birthDate.getFullYear() < 1900) {
+      setErrorText("Please enter a valid year (1900 or later).");
       return false;
     }
 
@@ -261,10 +266,9 @@ export default function RegistrationMain() {
       resetCaptcha();
     }
   };
-  
+
   const handleGoogleRegister = () => {
-    window.location.href =
-      "http://localhost:4200/auth/oauth/connect/google?action=register";
+    window.location.href = `${getApiBase()}/auth/oauth/connect/google?action=register`;
   };
 
   const handleBack = () => {
@@ -355,6 +359,7 @@ export default function RegistrationMain() {
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"
+                minDate={new Date("1900-01-01")}
                 maxDate={new Date()}
                 wrapperClassName="w-full"
                 customInput={<CustomDateInput />}

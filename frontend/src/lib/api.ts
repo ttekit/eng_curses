@@ -5,6 +5,16 @@ const ACCESS_TOKEN_KEY = "exply_access_token";
 
 export function getStoredAccessToken(): string | null {
   try {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlToken = searchParams.get("token");
+
+      if (urlToken && window.location.pathname.includes("/oauth/success")) {
+        localStorage.setItem(ACCESS_TOKEN_KEY, urlToken);
+        return urlToken;
+      }
+    }
+
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   } catch {
     return null;
@@ -172,7 +182,6 @@ async function logFailedApiResponse(
     bodyPreview,
   );
 }
-
 export async function apiFetch(
   path: string,
   init: FetchOpts = {},
@@ -192,6 +201,11 @@ export async function apiFetch(
   const method = (rest.method ?? "GET").toUpperCase();
   try {
     const response = await fetch(url, { ...rest, headers });
+
+    if (response.status === 401) {
+      localStorage.removeItem("exply_access_token");
+    }
+
     if (!response.ok && isApiErrorLoggingEnabled()) {
       await logFailedApiResponse(url, method, response);
     }
