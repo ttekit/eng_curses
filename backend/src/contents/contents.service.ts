@@ -77,7 +77,10 @@ export class ContentsService {
     });
   }
 
-  private async processAndUploadZip(file: Express.Multer.File, videoName: string): Promise<{ videoUrl: string, zipThumbnailUrl: string | null }> {
+  private async processAndUploadZip(
+    file: Express.Multer.File,
+    videoName: string,
+  ): Promise<{ videoUrl: string; zipThumbnailUrl: string | null }> {
     const zip = new AdmZip(file.buffer);
     const zipEntries = zip.getEntries();
 
@@ -96,7 +99,12 @@ export class ContentsService {
       const entryName = entry.entryName;
       const fileName = entry.name;
 
-      if (!fileName || fileName.startsWith("._") || entryName.includes("__MACOSX") || fileName === ".DS_Store") {
+      if (
+        !fileName ||
+        fileName.startsWith("._") ||
+        entryName.includes("__MACOSX") ||
+        fileName === ".DS_Store"
+      ) {
         return;
       }
 
@@ -104,7 +112,8 @@ export class ContentsService {
       const s3Key = `m3u8_videos/${folderUuid}/${entryName}`;
 
       let contentType = "application/octet-stream";
-      if (fileName.endsWith(".m3u8")) contentType = "application/vnd.apple.mpegurl";
+      if (fileName.endsWith(".m3u8"))
+        contentType = "application/vnd.apple.mpegurl";
       else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
       else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
       else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
@@ -115,14 +124,17 @@ export class ContentsService {
           Key: s3Key,
           Body: fileBuffer,
           ContentType: contentType,
-        })
+        }),
       );
 
       const currentUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
 
       if (fileName.endsWith(".m3u8")) {
         const lower = fileName.toLowerCase();
-        const isMaster = lower.includes("master") || lower.includes("playlist") || lower.includes("index");
+        const isMaster =
+          lower.includes("master") ||
+          lower.includes("playlist") ||
+          lower.includes("index");
 
         if (!m3u8Url || isMaster) {
           m3u8Url = currentUrl;
@@ -135,7 +147,9 @@ export class ContentsService {
     await Promise.all(uploadPromises);
 
     if (!m3u8Url) {
-      throw new BadRequestException("Invalid ZIP: No valid .m3u8 file found inside the archive.");
+      throw new BadRequestException(
+        "Invalid ZIP: No valid .m3u8 file found inside the archive.",
+      );
     }
 
     return { videoUrl: m3u8Url, zipThumbnailUrl: zipThumbUrl };
@@ -169,7 +183,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file, a ZIP archive, or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -283,7 +299,10 @@ export class ContentsService {
         let zipThumb: string | null = null;
 
         if (file.originalname.toLowerCase().endsWith(".zip")) {
-          const zipResult = await this.processAndUploadZip(file, updateContent.name);
+          const zipResult = await this.processAndUploadZip(
+            file,
+            updateContent.name,
+          );
           newUrl = zipResult.videoUrl;
           zipThumb = zipResult.zipThumbnailUrl;
         } else {
@@ -303,7 +322,7 @@ export class ContentsService {
           where: { contentId: contentMedia.id },
           data: {
             videoLink: newUrl,
-            ...(zipThumb ? { thumbnailUrl: zipThumb } : {})
+            ...(zipThumb ? { thumbnailUrl: zipThumb } : {}),
           },
         });
       }
@@ -335,7 +354,11 @@ export class ContentsService {
       }),
     );
 
-    const newThumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+    const newThumbnailUrl = publicS3ObjectUrl(
+      this.bucket,
+      this.region,
+      thumbKey,
+    );
 
     const updated = await this.prisma.contentVideo.update({
       where: { id },
@@ -487,7 +510,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file, a ZIP archive, or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -624,6 +649,7 @@ export class ContentsService {
         'visibility must be "public" or "unlisted"',
       );
     }
+
     const created = await this.prisma.content.create({
       data: {
         name,
@@ -633,6 +659,21 @@ export class ContentsService {
         visibility,
         availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
         deadline: dto.deadline ? new Date(dto.deadline) : null,
+
+        classAccesses: dto.classAssignments?.length
+          ? {
+              create: dto.classAssignments.map((assignment) => ({
+                classId: assignment.classId,
+                availableFrom: assignment.availableFrom
+                  ? new Date(assignment.availableFrom)
+                  : null,
+                deadline: assignment.deadline
+                  ? new Date(assignment.deadline)
+                  : null,
+              })),
+            }
+          : undefined,
+
         category: {
           create: {
             playlistPosition: 0,
@@ -783,7 +824,7 @@ export class ContentsService {
   async getVideosForStudent(studentId: number) {
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
-      select: { teacherId: true },
+      select: { teacherId: true, classId: true },
     });
 
     if (!student || !student.teacherId) {
@@ -797,14 +838,46 @@ export class ContentsService {
         ownerUserId: student.teacherId,
         OR: [
           { visibility: "public" },
-
           {
             visibility: "unlisted",
-            AND: [
+            OR: [
               {
-                OR: [{ availableFrom: null }, { availableFrom: { lte: now } }],
+                classAccesses: { none: {} },
+                AND: [
+                  {
+                    OR: [
+                      { availableFrom: null },
+                      { availableFrom: { lte: now } },
+                    ],
+                  },
+                  { OR: [{ deadline: null }, { deadline: { gt: now } }] },
+                ],
               },
-              { OR: [{ deadline: null }, { deadline: { gt: now } }] },
+              ...(student.classId
+                ? [
+                    {
+                      classAccesses: {
+                        some: {
+                          classId: student.classId,
+                          AND: [
+                            {
+                              OR: [
+                                { availableFrom: null },
+                                { availableFrom: { lte: now } },
+                              ],
+                            },
+                            {
+                              OR: [
+                                { deadline: null },
+                                { deadline: { gt: now } },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  ]
+                : []),
             ],
           },
         ],

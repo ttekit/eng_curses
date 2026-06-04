@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform, Type } from "class-transformer";
 import {
   IsIn,
   IsString,
@@ -6,7 +7,26 @@ import {
   MinLength,
   IsOptional,
   IsISO8601,
+  IsArray,
+  ValidateNested,
+  IsInt,
 } from "class-validator";
+
+export class ClassAssignmentDto {
+  @ApiProperty()
+  @IsInt()
+  classId: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  availableFrom?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  deadline?: string;
+}
 
 export class TeacherUploadContentDto {
   @ApiProperty()
@@ -38,4 +58,21 @@ export class TeacherUploadContentDto {
   @IsString()
   @IsOptional()
   ageRestriction?: string;
+
+  @ApiPropertyOptional({ type: [ClassAssignmentDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ClassAssignmentDto)
+  @Transform(({ value }) => {
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  classAssignments?: ClassAssignmentDto[];
 }

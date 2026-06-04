@@ -24,6 +24,8 @@ import { TeacherStudentsService } from "./teacher-students.service";
 import { AuthGuard } from "src/auth/auth.guard";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
 import { Request, Response } from "express";
+import { UpdateClassDto } from "./dto/update-class.dto";
+import { CreateClassDto } from "./dto/create-class.dto";
 
 type AuthedRequest = Request & {
   user?: { sub?: number };
@@ -36,6 +38,66 @@ export class TeacherStudentsController {
   constructor(
     private readonly teacherStudentsService: TeacherStudentsService,
   ) {}
+
+  @Post("classes")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Create a new class" })
+  async createClass(
+    @Req() req: Request & { user?: unknown },
+    @Body() dto: CreateClassDto,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherStudentsService.createClass(teacherId, dto);
+  }
+
+  @Get("classes")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Get a list of all classes for the teacher" })
+  async getMyClasses(@Req() req: Request & { user?: unknown }) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherStudentsService.getMyClasses(teacherId);
+  }
+
+  @Get("classes/:id")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({
+    summary: "Get detailed information about a class and its students",
+  })
+  async getClassById(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherStudentsService.getClassById(teacherId, id);
+  }
+
+  @Patch("classes/:id")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Update a class" })
+  async updateClass(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: UpdateClassDto,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherStudentsService.updateClass(teacherId, id, dto);
+  }
+
+  @Delete("classes/:id")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Remove a class" })
+  async removeClass(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherStudentsService.removeClass(teacherId, id);
+  }
 
   @Get("my-students/results")
   @UseGuards(ApiTokenOrJwtAuthGuard)

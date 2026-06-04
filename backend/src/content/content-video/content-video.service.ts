@@ -33,7 +33,6 @@ export function compareContentVideosPlaylistOrder(
 
 export const CATALOG_CONTENT_VISIBILITY_PUBLIC = "public" as const;
 
-
 @Injectable()
 export class ContentVideoService {
   constructor(
@@ -62,39 +61,47 @@ export class ContentVideoService {
     if (userId) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { teacherId: true, role: true }
+        select: { teacherId: true, role: true },
       });
       if (user?.teacherId) {
         teacherId = user.teacherId;
       }
-      if (user?.role === 'ADMIN') {
+      if (user?.role === "ADMIN") {
         isAdmin = true;
       }
     }
 
     const cacheKey = isAdmin
-      ? 'catalog:videos:admin'
-      : (teacherId ? `catalog:videos:teacher:${teacherId}` : 'catalog:videos');
+      ? "catalog:videos:admin"
+      : teacherId
+        ? `catalog:videos:teacher:${teacherId}`
+        : "catalog:videos";
 
     const cachedVideos = await this.redis.get(cacheKey);
     if (cachedVideos) {
       return JSON.parse(cachedVideos);
     }
 
-    const whereClause = isAdmin ? {} : {
-      OR: [
-        {
-          content: {
-            category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
-          },
-        },
-        ...(teacherId ? [{
-          content: {
-            category: { ownerUserId: teacherId }
-          }
-        }] : [])
-      ]
-    };
+    const whereClause = isAdmin
+      ? {}
+      : {
+          OR: [
+            {
+              content: {
+                category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
+              },
+            },
+            ...(teacherId
+              ? [
+                  {
+                    content: {
+                      category: { ownerUserId: teacherId },
+                    },
+                  },
+                ]
+              : []),
+          ],
+        };
 
     const videos = await this.prisma.contentVideo.findMany({
       where: whereClause,
@@ -167,7 +174,9 @@ export class ContentVideoService {
         videoCaption: { select: { subtitlesFileLink: true } },
         content: {
           include: {
-            category: true,
+            category: {
+              include: { classAccesses: true },
+            },
             stats: {
               include: { topics: { select: { id: true, name: true } } },
             },
@@ -187,14 +196,39 @@ export class ContentVideoService {
     const isPublic = series.visibility === "public";
 
     if (!isOwner && !isPublic) {
-      if (series.availableFrom && series.availableFrom > now) {
-        throw new ForbiddenException(
-          "This lesson is locked and not yet available.",
-        );
+      let applicableAvailableFrom = series.availableFrom;
+      let applicableDeadline = series.deadline;
+      let isAssignedToClass = false;
+      let hasClassRestrictions = series.classAccesses.length > 0;
+
+      if (reqUserId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: reqUserId },
+          select: { classId: true },
+        });
+
+        if (user?.classId) {
+          const classAccess = series.classAccesses.find(
+            (ca) => ca.classId === user.classId,
+          );
+          if (classAccess) {
+            isAssignedToClass = true;
+            applicableAvailableFrom = classAccess.availableFrom;
+            applicableDeadline = classAccess.deadline;
+          }
+        }
       }
-      if (series.deadline && series.deadline < now) {
+
+      if (hasClassRestrictions && !isAssignedToClass) {
+        throw new ForbiddenException("You do not have access to this lesson.");
+      }
+
+      if (applicableAvailableFrom && applicableAvailableFrom > now) {
+        throw new ForbiddenException("This lesson is not yet available.");
+      }
+      if (applicableDeadline && applicableDeadline < now) {
         throw new ForbiddenException(
-          "The deadline for this lesson has passed.",
+          "The deadline for this lesson has expired.",
         );
       }
     }
