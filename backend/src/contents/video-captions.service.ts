@@ -13,7 +13,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { execFile } from "node:child_process";
 import type { ExecException } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile, appendFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -25,7 +25,7 @@ import { VideoTranscriptTagsService } from "./video-transcript-tags.service";
 const DEEPGRAM_LISTEN = "https://api.deepgram.com/v1/listen";
 const execFileAsync = promisify(execFile);
 
-const MIN_WAV_BYTES = 2000; // header + a little PCM; catches empty/failed decodes
+const MIN_WAV_BYTES = 2000;
 
 type FfmpegAttemptTrace = {
   name: string;
@@ -39,7 +39,6 @@ function deepgramCaptionMaxVideoBytes(): number {
   return 512 * 1024 * 1024;
 }
 
-/** After FFmpeg PCM extract; default `nova-3` suits pre-recorded WAV. */
 function deepgramTranscribeModel(config: ConfigService): string {
   const m = config.get<string>("DEEPGRAM_TRANSCRIBE_MODEL")?.trim();
   return m || "nova-3";
@@ -48,7 +47,6 @@ function deepgramTranscribeModel(config: ConfigService): string {
 function ffmpegBinaryPath(): string {
   const p = process.env.FFMPEG_PATH?.trim();
   if (p) return p;
-  // Bundled ffmpeg (see package.json); override with FFMPEG_PATH on restricted hosts.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return (require("@ffmpeg-installer/ffmpeg") as { path: string }).path;
 }
@@ -68,65 +66,51 @@ async function ffmpegRun(bin: string, args: string[]): Promise<void> {
   });
 }
 
-/**
- * Extracts PCM WAV from a network HLS playlist (.m3u8) using FFmpeg directly.
- */
-async function extractM3u8AudioToPcmWav(args: {
-  ffmpegBin: string;
-  m3u8Url: string;
-  tmpDir: string;
-}): Promise<{ wavBuf: Buffer; trace: FfmpegAttemptTrace[] }> {
-  const { ffmpegBin, m3u8Url, tmpDir } = args;
-  const trace: FfmpegAttemptTrace[] = [];
-  const wavPath = join(tmpDir, `pcm-${randomUUID()}.wav`);
-  const meta = { name: "direct-hls-download" } as const;
+async function downloadHlsToLocalTemp(m3u8Url: string, tmpDir: string): Promise<string> {
+  let playlistUrl = m3u8Url;
+  let res = await fetch(playlistUrl);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  let text = await res.text();
 
-  const pushFail = (a: FfmpegAttemptTrace, ex: unknown) => {
-    a.err = execErrText(ex).slice(0, 450);
-    trace.push(a);
-  };
-
-  try {
-    await ffmpegRun(ffmpegBin, [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-nostdin",
-      "-y",
-      "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
-      "-i", m3u8Url,
-      "-vn",
-      "-ac", "1",
-      "-ar", "16000",
-      "-acodec", "pcm_s16le",
-      "-f", "wav",
-      wavPath,
-    ]);
-
-    let buf: Buffer;
-    try {
-      buf = await readFile(wavPath);
-    } finally {
-      await rm(wavPath, { force: true }).catch(() => { });
+  if (text.includes("#EXT-X-STREAM-INF")) {
+    const lines = text.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
+        const nextLine = lines[i + 1]?.trim();
+        if (nextLine && !nextLine.startsWith("#")) {
+          playlistUrl = new URL(nextLine, playlistUrl).toString();
+          res = await fetch(playlistUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          text = await res.text();
+          break;
+        }
+      }
     }
-
-    if (buf.length < MIN_WAV_BYTES) {
-      trace.push({
-        ...meta,
-        ok: false,
-        err: `WAV too small (${buf.length} B)`,
-      });
-      return { wavBuf: Buffer.alloc(0), trace };
-    }
-
-    trace.push({ ...meta, ok: true });
-    return { wavBuf: buf, trace };
-
-  } catch (ex) {
-    pushFail({ ...meta, ok: false }, ex);
-    await rm(wavPath, { force: true }).catch(() => { });
-    return { wavBuf: Buffer.alloc(0), trace };
   }
+
+  const segmentUrls: string[] = [];
+  const lines = text.split("\n");
+  for (const line of lines) {
+    const t = line.trim();
+    if (t && !t.startsWith("#")) {
+      segmentUrls.push(new URL(t, playlistUrl).toString());
+    }
+  }
+
+  if (segmentUrls.length === 0) {
+    throw new Error("No segments");
+  }
+
+  const combinedTsPath = join(tmpDir, `combined-${randomUUID()}.ts`);
+
+  for (const segUrl of segmentUrls) {
+    const segRes = await fetch(segUrl);
+    if (!segRes.ok) throw new Error(`HTTP ${segRes.status}`);
+    const arrBuf = await segRes.arrayBuffer();
+    await appendFile(combinedTsPath, Buffer.from(arrBuf));
+  }
+
+  return combinedTsPath;
 }
 
 /**
@@ -347,9 +331,10 @@ export class VideoCaptionsService {
 
     try {
       if (isM3u8) {
-        const { wavBuf: extracted, trace } = await extractM3u8AudioToPcmWav({
+        const localTsPath = await downloadHlsToLocalTemp(videoUrl, tmpDir);
+        const { wavBuf: extracted, trace } = await extractMp4AudioToPcmWav({
           ffmpegBin,
-          m3u8Url: videoUrl,
+          mp4Path: localTsPath,
           tmpDir,
         });
         wavBuf = extracted;
@@ -363,17 +348,21 @@ export class VideoCaptionsService {
         const maxBytes = deepgramCaptionMaxVideoBytes();
         const videoUp = await fetch(videoUrl, { signal: AbortSignal.timeout(600_000) });
         if (!videoUp.ok) {
-          throw new Error(`Failed to download video for Deepgram: HTTP ${videoUp.status}`);
+          throw new Error(
+            `Failed to download video for Deepgram: HTTP ${videoUp.status}`,
+          );
         }
-
         const reportedCl = videoUp.headers.get("content-length");
         if (reportedCl != null && Number(reportedCl) > maxBytes) {
-          throw new Error(`Video Content-Length ${reportedCl} exceeds max ${maxBytes} bytes`);
+          throw new Error(
+            `Video Content-Length ${reportedCl} exceeds max ${maxBytes} bytes`,
+          );
         }
-
         const videoBuf = Buffer.from(await videoUp.arrayBuffer());
         if (videoBuf.length > maxBytes) {
-          throw new Error(`Video size ${videoBuf.length} exceeds max ${maxBytes} bytes`);
+          throw new Error(
+            `Video size ${videoBuf.length} exceeds max ${maxBytes} bytes`,
+          );
         }
 
         const mp4Path = join(tmpDir, `source-${randomUUID()}.mp4`);
@@ -387,9 +376,17 @@ export class VideoCaptionsService {
         wavBuf = extracted;
 
         if (wavBuf.length < MIN_WAV_BYTES) {
-          const hint = process.env.FFMPEG_PATH?.trim() ? "" : " Try setting FFMPEG_PATH to a newer ffmpeg build.";
-          const tail = trace.slice(-4).map((t) => `${t.name}${t.err ? `: ${t.err.slice(0, 120)}` : ""}`).join(" | ");
-          throw new Error(`FFmpeg MP4 audio extract failed after ${trace.length} attempts.${hint} ${tail}`);
+          const hint =
+            process.env.FFMPEG_PATH?.trim() ?
+              ""
+              : " Try setting FFMPEG_PATH to a newer ffmpeg build.";
+          const tail = trace
+            .slice(-4)
+            .map((t) => `${t.name}${t.err ? `: ${t.err.slice(0, 120)}` : ""}`)
+            .join(" | ");
+          throw new Error(
+            `FFmpeg audio extract failed after ${trace.length} attempts.${hint} ${tail}`,
+          );
         }
       }
     } finally {
