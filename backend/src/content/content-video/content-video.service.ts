@@ -195,11 +195,10 @@ export class ContentVideoService {
     const isOwner = reqUserId && series.ownerUserId === reqUserId;
     const isPublic = series.visibility === "public";
 
-    if (!isOwner && !isPublic) {
+    if (!isOwner) {
+      let isAssignedToClass = false;
       let applicableAvailableFrom = series.availableFrom;
       let applicableDeadline = series.deadline;
-      let isAssignedToClass = false;
-      let hasClassRestrictions = series.classAccesses.length > 0;
 
       if (reqUserId) {
         const user = await this.prisma.user.findUnique({
@@ -219,17 +218,33 @@ export class ContentVideoService {
         }
       }
 
-      if (hasClassRestrictions && !isAssignedToClass) {
-        throw new ForbiddenException("You do not have access to this lesson.");
-      }
+      if (isAssignedToClass) {
+        if (applicableAvailableFrom && applicableAvailableFrom > now) {
+          throw new ForbiddenException(
+            "This lesson is not yet available for your class.",
+          );
+        }
+        if (applicableDeadline && applicableDeadline < now) {
+          throw new ForbiddenException(
+            "The deadline for this homework has expired.",
+          );
+        }
+      } else if (!isPublic) {
+        const hasClassRestrictions = series.classAccesses.length > 0;
+        if (hasClassRestrictions) {
+          throw new ForbiddenException(
+            "You do not have access to this private lesson.",
+          );
+        }
 
-      if (applicableAvailableFrom && applicableAvailableFrom > now) {
-        throw new ForbiddenException("This lesson is not yet available.");
-      }
-      if (applicableDeadline && applicableDeadline < now) {
-        throw new ForbiddenException(
-          "The deadline for this lesson has expired.",
-        );
+        if (series.availableFrom && series.availableFrom > now) {
+          throw new ForbiddenException("This lesson is not yet available.");
+        }
+        if (series.deadline && series.deadline < now) {
+          throw new ForbiddenException(
+            "The deadline for this lesson has expired.",
+          );
+        }
       }
     }
 

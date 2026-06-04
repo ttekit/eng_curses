@@ -72,6 +72,7 @@ export function ProfileTeacherVideos() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
   const [series, setSeries] = useState<TeacherSeriesItem[]>([]);
+  const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [visibilityBusyId, setVisibilityBusyId] = useState<number | null>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -86,34 +87,42 @@ export function ProfileTeacherVideos() {
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Настройки продвинутых дедлайнов
+  const [assignMode, setAssignMode] = useState<"all" | "classes">("all");
   const [deadlineMode, setDeadlineMode] = useState<
     "none" | "close" | "open_close"
   >("none");
   const [openDateStr, setOpenDateStr] = useState("");
   const [closeDateStr, setCloseDateStr] = useState("");
+  const [selectedClasses, setSelectedClasses] = useState<
+    Record<number, { availableFrom: string; deadline: string }>
+  >({});
 
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
-  const loadSeries = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await apiFetch("/contents/teacher/my-series", {
-        method: "GET",
-      });
-      if (!res.ok) {
-        setLoadError(await getResponseErrorMessage(res));
+      const [resSeries, resClasses] = await Promise.all([
+        apiFetch("/contents/teacher/my-series", { method: "GET" }),
+        apiFetch("/teacher/classes", { method: "GET" }),
+      ]);
+
+      if (!resSeries.ok) {
+        setLoadError(await getResponseErrorMessage(resSeries));
         setSeries([]);
-        return;
+      } else {
+        const data = await resSeries.json();
+        setSeries(Array.isArray(data) ? data : []);
       }
-      const data: unknown = await res.json();
-      if (!Array.isArray(data)) {
-        setSeries([]);
-        return;
+
+      if (resClasses.ok) {
+        const clsData = await resClasses.json();
+        setClasses(clsData);
       }
-      setSeries(data as TeacherSeriesItem[]);
     } catch {
       setLoadError(t.loadError);
       setSeries([]);
@@ -123,8 +132,8 @@ export function ProfileTeacherVideos() {
   }, [t.loadError]);
 
   useEffect(() => {
-    void loadSeries();
-  }, [loadSeries]);
+    void loadData();
+  }, [loadData]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -192,37 +201,35 @@ export function ProfileTeacherVideos() {
     let finalClose: string | null = null;
     let initialVisibility = "unlisted";
 
-    if (deadlineMode === "close") {
-      if (!closeDateStr) {
-        toast.error("Please select a closing date and time.");
-        return;
+    if (assignMode === "all") {
+      if (deadlineMode === "close") {
+        if (!closeDateStr)
+          return toast.error("Please select a closing date and time.");
+        const cDate = new Date(closeDateStr);
+        if (cDate <= new Date())
+          return toast.error("The closing deadline cannot be in the past.");
+        finalClose = cDate.toISOString();
+        initialVisibility = "public";
+      } else if (deadlineMode === "open_close") {
+        if (!openDateStr || !closeDateStr)
+          return toast.error("Please select both open and close dates.");
+        const oDate = new Date(openDateStr);
+        const cDate = new Date(closeDateStr);
+        if (oDate <= new Date())
+          return toast.error("The opening date must be in the future.");
+        if (cDate <= oDate)
+          return toast.error(
+            "The closing deadline must be AFTER the opening date.",
+          );
+        finalOpen = oDate.toISOString();
+        finalClose = cDate.toISOString();
+        initialVisibility = "unlisted";
       }
-      const cDate = new Date(closeDateStr);
-      if (cDate <= new Date()) {
-        toast.error("The closing deadline cannot be in the past.");
-        return;
-      }
-      finalClose = cDate.toISOString();
-      initialVisibility = "public";
-    } else if (deadlineMode === "open_close") {
-      if (!openDateStr || !closeDateStr) {
-        toast.error("Please select both open and close dates.");
-        return;
-      }
-      const oDate = new Date(openDateStr);
-      const cDate = new Date(closeDateStr);
-
-      if (oDate <= new Date()) {
-        toast.error("The opening date must be in the future.");
-        return;
-      }
-      if (cDate <= oDate) {
-        toast.error("The closing deadline must be AFTER the opening date.");
-        return;
-      }
-      finalOpen = oDate.toISOString();
-      finalClose = cDate.toISOString();
+    } else {
       initialVisibility = "unlisted";
+      if (Object.keys(selectedClasses).length === 0) {
+        return toast.error("Please select at least one class.");
+      }
     }
 
     setUploadSaving(true);
@@ -231,14 +238,28 @@ export function ProfileTeacherVideos() {
 
     try {
       const fd = new FormData();
-
       fd.append("name", name);
       fd.append("visibility", initialVisibility);
       fd.append("ageRestriction", uploadAge);
       fd.append("description", description);
 
-      if (finalOpen) fd.append("availableFrom", finalOpen);
-      if (finalClose) fd.append("deadline", finalClose);
+      if (assignMode === "all") {
+        if (finalOpen) fd.append("availableFrom", finalOpen);
+        if (finalClose) fd.append("deadline", finalClose);
+      } else {
+        const assignments = Object.entries(selectedClasses).map(
+          ([cId, data]) => ({
+            classId: Number(cId),
+            availableFrom: data.availableFrom
+              ? new Date(data.availableFrom).toISOString()
+              : undefined,
+            deadline: data.deadline
+              ? new Date(data.deadline).toISOString()
+              : undefined,
+          }),
+        );
+        fd.append("classAssignments", JSON.stringify(assignments));
+      }
 
       try {
         const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
@@ -258,15 +279,18 @@ export function ProfileTeacherVideos() {
       toast.success(t.uploadSuccessToast);
       setUploadOpen(false);
 
+      // Reset form
       setUploadTitle("");
       setUploadDesc("");
       setUploadAge("0+");
       setUploadFile(null);
+      setAssignMode("all");
       setDeadlineMode("none");
       setOpenDateStr("");
       setCloseDateStr("");
+      setSelectedClasses({});
 
-      await loadSeries();
+      await loadData();
     } catch (e: any) {
       if (e.name === "AbortError") {
         toast.error(t.uploadCancelledToast);
@@ -309,7 +333,7 @@ export function ProfileTeacherVideos() {
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
       toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);
-      await loadSeries();
+      await loadData();
     } catch (e: any) {
       toast.error(e.message || t.deleteFailed);
     } finally {
@@ -413,21 +437,21 @@ export function ProfileTeacherVideos() {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Age Restriction / Возрастное ограничение
-            </label>
-            <AdminSelectNative
-              value={uploadAge}
-              onChange={(e) => setUploadAge(e.target.value)}
-              className="w-full"
-            >
-              <option value="0+">0+</option>
-              <option value="12+">12+</option>
-              <option value="16+">16+</option>
-              <option value="18+">18+</option>
-              <option value="21+">21+</option>
-            </AdminSelectNative>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Age Restriction</label>
+              <AdminSelectNative
+                value={uploadAge}
+                onChange={(e) => setUploadAge(e.target.value)}
+                className="w-full"
+              >
+                <option value="0+">0+</option>
+                <option value="12+">12+</option>
+                <option value="16+">16+</option>
+                <option value="18+">18+</option>
+                <option value="21+">21+</option>
+              </AdminSelectNative>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -445,79 +469,182 @@ export function ProfileTeacherVideos() {
 
           <div className="space-y-4 pt-4 mt-2 border-t border-border/50">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Lesson Availability & Deadline
+              <label className="text-sm font-medium text-primary">
+                Assign To
               </label>
               <select
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                value={deadlineMode}
-                onChange={(e) => setDeadlineMode(e.target.value as any)}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer font-medium"
+                value={assignMode}
+                onChange={(e) => setAssignMode(e.target.value as any)}
               >
-                <option value="none">No deadline (Manual visibility)</option>
-                <option value="close">
-                  Has closing deadline (Starts Public)
-                </option>
-                <option value="open_close">
-                  Schedule open & close dates (Starts Private)
+                <option value="all">All my students (Глобально всем)</option>
+                <option value="classes">
+                  Specific classes (Продвинутые дедлайны по группам)
                 </option>
               </select>
             </div>
 
-            {deadlineMode === "open_close" && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Opening Date (Becomes Public)
-                </label>
-                <AdminInput
-                  type="datetime-local"
-                  value={openDateStr}
-                  className="w-full"
-                  max="9999-12-31T23:59"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val) {
-                      const year = val.split("-")[0];
-                      if (year && year.length > 4) {
-                        e.target.value = openDateStr;
-                        return;
+            {assignMode === "all" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-1 bg-muted/20 p-4 rounded-lg border border-border">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Global Visibility Rules
+                  </label>
+                  <select
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                    value={deadlineMode}
+                    onChange={(e) => setDeadlineMode(e.target.value as any)}
+                  >
+                    <option value="none">
+                      Manual start/stop (Starts Private)
+                    </option>
+                    <option value="close">
+                      Has closing deadline (Starts Public)
+                    </option>
+                    <option value="open_close">
+                      Schedule open & close dates (Starts Private)
+                    </option>
+                  </select>
+                </div>
+
+                {deadlineMode === "open_close" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Opening Date (Becomes Public)
+                    </label>
+                    <AdminInput
+                      type="datetime-local"
+                      value={openDateStr}
+                      className="w-full"
+                      max="9999-12-31T23:59"
+                      onChange={(e) => setOpenDateStr(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      required
+                    />
+                  </div>
+                )}
+
+                {(deadlineMode === "close" ||
+                  deadlineMode === "open_close") && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Closing Deadline (Becomes Private)
+                    </label>
+                    <AdminInput
+                      type="datetime-local"
+                      value={closeDateStr}
+                      className="w-full"
+                      max="9999-12-31T23:59"
+                      onChange={(e) => setCloseDateStr(e.target.value)}
+                      min={
+                        deadlineMode === "open_close" && openDateStr
+                          ? openDateStr
+                          : new Date().toISOString().slice(0, 16)
                       }
-                    }
-                    setOpenDateStr(val);
-                  }}
-                  min={new Date().toISOString().slice(0, 16)}
-                  required
-                />
+                      required
+                    />
+                  </div>
+                )}
               </div>
             )}
 
-            {(deadlineMode === "close" || deadlineMode === "open_close") && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Closing Deadline (Becomes Private)
+            {assignMode === "classes" && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-1 bg-muted/20 p-4 rounded-lg border border-border">
+                <label className="text-sm font-medium text-foreground">
+                  Select classes and set personal deadlines:
                 </label>
-                <AdminInput
-                  type="datetime-local"
-                  value={closeDateStr}
-                  className="w-full"
-                  max="9999-12-31T23:59"
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val) {
-                      const year = val.split("-")[0];
-                      if (year && year.length > 4) {
-                        e.target.value = closeDateStr;
-                        return;
-                      }
-                    }
-                    setCloseDateStr(val);
-                  }}
-                  min={
-                    deadlineMode === "open_close" && openDateStr
-                      ? openDateStr
-                      : new Date().toISOString().slice(0, 16)
-                  }
-                  required
-                />
+                {classes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground bg-background p-3 rounded-lg border border-border/50">
+                    You haven't created any classes yet. Go to the "Students"
+                    tab to create one.
+                  </p>
+                ) : (
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+                    {classes.map((cls) => {
+                      const isSelected = !!selectedClasses[cls.id];
+                      const data = selectedClasses[cls.id] || {
+                        availableFrom: "",
+                        deadline: "",
+                      };
+                      return (
+                        <div
+                          key={cls.id}
+                          className={cn(
+                            "border border-border/70 rounded-lg p-3 space-y-3 transition-colors",
+                            isSelected
+                              ? "bg-primary/5 border-primary/30"
+                              : "bg-background",
+                          )}
+                        >
+                          <label className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedClasses((p) => ({
+                                    ...p,
+                                    [cls.id]: {
+                                      availableFrom: "",
+                                      deadline: "",
+                                    },
+                                  }));
+                                } else {
+                                  const next = { ...selectedClasses };
+                                  delete next[cls.id];
+                                  setSelectedClasses(next);
+                                }
+                              }}
+                              className="rounded border-border text-primary focus:ring-primary size-4.5 cursor-pointer"
+                            />
+                            {cls.name}
+                          </label>
+
+                          {isSelected && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8 pt-1">
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">
+                                  Open Date (Optional)
+                                </label>
+                                <AdminInput
+                                  type="datetime-local"
+                                  value={data.availableFrom}
+                                  onChange={(e) =>
+                                    setSelectedClasses((p) => ({
+                                      ...p,
+                                      [cls.id]: {
+                                        ...p[cls.id],
+                                        availableFrom: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">
+                                  Deadline (Optional)
+                                </label>
+                                <AdminInput
+                                  type="datetime-local"
+                                  value={data.deadline}
+                                  onChange={(e) =>
+                                    setSelectedClasses((p) => ({
+                                      ...p,
+                                      [cls.id]: {
+                                        ...p[cls.id],
+                                        deadline: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

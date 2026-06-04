@@ -37,6 +37,7 @@ import { ReorderContentPlaylistDto } from "src/contents/dto/reorder-content-play
 import { TeacherPatchContentVisibilityDto } from "src/contents/dto/teacher-patch-content-visibility.dto";
 import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content.dto";
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
+import { AssignExistingContentDto } from "./dto/assign-existing.dto";
 
 function contentVideoMaxFileBytes(): number {
   const n = Number(process.env.CONTENT_VIDEO_MAX_FILE_BYTES);
@@ -51,7 +52,7 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) { }
+  constructor(private readonly contentsService: ContentsService) {}
 
   @Get("all")
   @SkipSubscriptionCheck()
@@ -89,7 +90,7 @@ export class ContentsController {
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
     @Body() dto: TeacherUploadContentDto,
-    @Body('videoLink') videoLink: string,
+    @Body("videoLink") videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -101,7 +102,9 @@ export class ContentsController {
     const thumbnailFile = files?.thumbnailFile?.[0];
 
     if (!videoFile && !videoLink) {
-      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
+      throw new BadRequestException(
+        "Video file, ZIP, or M3U8 link is required",
+      );
     }
 
     const fullDto = { ...dto, videoLink };
@@ -164,7 +167,7 @@ export class ContentsController {
   @ApiOperation({ summary: "Admin: Create new content series" })
   async createContent(
     @Body() createContentDto: CreateContentDto,
-    @Body('videoLink') videoLink: string,
+    @Body("videoLink") videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -175,7 +178,9 @@ export class ContentsController {
     const thumbnailFile = files?.thumbnailFile?.[0];
 
     if (!videoFile && !videoLink) {
-      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
+      throw new BadRequestException(
+        "Video file, ZIP, or M3U8 link is required",
+      );
     }
 
     const fullDto = { ...createContentDto, videoLink };
@@ -219,7 +224,7 @@ export class ContentsController {
   async addEpisode(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: AddContentEpisodeDto,
-    @Body('videoLink') videoLink: string,
+    @Body("videoLink") videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -230,7 +235,9 @@ export class ContentsController {
     const thumbnailFile = files?.thumbnailFile?.[0];
 
     if (!videoFile && !videoLink) {
-      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
+      throw new BadRequestException(
+        "Video file, ZIP, or M3U8 link is required",
+      );
     }
 
     const fullDto = { ...dto, videoLink };
@@ -240,6 +247,22 @@ export class ContentsController {
       fullDto as any,
       videoFile,
       thumbnailFile,
+    );
+  }
+
+  @Post("teacher/assign/:id")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Assign an existing video as homework for classes" })
+  async assignExistingContent(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: AssignExistingContentDto,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.assignExistingToClasses(
+      teacherId,
+      id,
+      dto.classAssignments,
     );
   }
 

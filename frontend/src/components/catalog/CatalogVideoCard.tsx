@@ -1,6 +1,8 @@
 import { Link } from "react-router";
 import { Clock, Play } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useUser } from "../../context/UserContext";
+import { AssignHomeworkButton } from "../AssignHomeworkButton";
 
 export interface CatalogCardVideo {
   id: number;
@@ -39,69 +41,72 @@ export function CatalogVideoCard({
   video,
   showProgress,
 }: CatalogVideoCardProps) {
-  return (
-    <Link to={`/content/${video.id}`} className="group w-70 shrink-0 sm:w-75">
-      <div className="relative mb-3 aspect-video overflow-hidden rounded-xl bg-muted">
-        {video.thumbnailUrl ? (
-          <img
-            src={video.thumbnailUrl}
-            alt={video.title}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : video.videoLink ? (
-          <video
-            src={`${video.videoLink}#t=0.1`}
-            preload="metadata"
-            crossOrigin="anonymous"
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            muted
-            playsInline
-          />
-        ) : (
-          <div className="absolute inset-0 bg-linear-to-br from-primary/20 via-muted to-accent/20" />
-        )}
+  const { user } = useUser();
+  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
 
-        <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background/40 backdrop-blur-sm">
-            <Play className="h-6 w-6 fill-foreground text-foreground" />
+  return (
+    <div className="group relative flex w-64 shrink-0 flex-col gap-3 sm:w-80">
+      <Link to={`/content/${video.id}`} className="flex flex-col gap-3">
+        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
+          {video.thumbnailUrl ? (
+            <img
+              src={video.thumbnailUrl}
+              alt={video.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-muted-foreground text-sm">No cover</span>
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-background/10 transition-colors group-hover:bg-transparent" />
+
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background/40 backdrop-blur-sm">
+              <Play className="h-6 w-6 fill-foreground text-foreground" />
+            </div>
           </div>
+
+          <span
+            className={cn(
+              "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-medium z-10",
+              badgeClassForLabel(video.categoryLabel),
+            )}
+          >
+            {video.categoryLabel}
+          </span>
+
+          {video.durationLabel ? (
+            <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
+              <Clock className="h-3 w-3" />
+              {video.durationLabel}
+            </span>
+          ) : null}
+
+          {showProgress && video.progress !== undefined ? (
+            <div className="absolute right-0 bottom-0 left-0 h-1 bg-muted z-10">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${video.progress}%` }}
+              />
+            </div>
+          ) : null}
         </div>
 
-        <span
-          className={cn(
-            "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-medium z-10",
-            badgeClassForLabel(video.categoryLabel),
-          )}
-        >
-          {video.categoryLabel}
-        </span>
+        <h3 className="line-clamp-2 font-medium text-foreground transition-colors group-hover:text-primary">
+          {video.title}
+        </h3>
+      </Link>
 
-        {video.durationLabel ? (
-          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
-            <Clock className="h-3 w-3" />
-            {video.durationLabel}
-          </span>
-        ) : null}
-
-        {showProgress && video.progress !== undefined ? (
-          <div className="absolute right-0 bottom-0 left-0 h-1 bg-muted z-10">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${video.progress}%` }}
-            />
-          </div>
-        ) : null}
-      </div>
-
-      <h3 className="line-clamp-2 font-medium text-foreground transition-colors group-hover:text-primary">
-        {video.title}
-      </h3>
-
-      {showProgress && video.progress !== undefined ? (
-        <p className="mt-1 text-sm text-muted-foreground">
-          {video.progress}% watched
-        </p>
-      ) : null}
-    </Link>
+      {isTeacher && (
+        <div className="mt-auto">
+          <AssignHomeworkButton
+            contentId={video.id}
+            contentName={video.title}
+          />
+        </div>
+      )}
+    </div>
   );
 }

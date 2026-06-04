@@ -835,55 +835,86 @@ export class ContentsService {
 
     const rows = await this.prisma.content.findMany({
       where: {
-        ownerUserId: student.teacherId,
         OR: [
-          { visibility: "public" },
           {
-            visibility: "unlisted",
+            ownerUserId: student.teacherId,
             OR: [
+              { visibility: "public" },
               {
-                classAccesses: { none: {} },
-                AND: [
+                visibility: "unlisted",
+                OR: [
                   {
-                    OR: [
-                      { availableFrom: null },
-                      { availableFrom: { lte: now } },
+                    classAccesses: { none: {} },
+                    AND: [
+                      {
+                        OR: [
+                          { availableFrom: null },
+                          { availableFrom: { lte: now } },
+                        ],
+                      },
+                      { OR: [{ deadline: null }, { deadline: { gt: now } }] },
                     ],
                   },
-                  { OR: [{ deadline: null }, { deadline: { gt: now } }] },
+                  ...(student.classId
+                    ? [
+                        {
+                          classAccesses: {
+                            some: {
+                              classId: student.classId,
+                              AND: [
+                                {
+                                  OR: [
+                                    { availableFrom: null },
+                                    { availableFrom: { lte: now } },
+                                  ],
+                                },
+                                {
+                                  OR: [
+                                    { deadline: null },
+                                    { deadline: { gt: now } },
+                                  ],
+                                },
+                              ],
+                            },
+                          },
+                        },
+                      ]
+                    : []),
                 ],
               },
-              ...(student.classId
-                ? [
-                    {
-                      classAccesses: {
-                        some: {
-                          classId: student.classId,
-                          AND: [
-                            {
-                              OR: [
-                                { availableFrom: null },
-                                { availableFrom: { lte: now } },
-                              ],
-                            },
-                            {
-                              OR: [
-                                { deadline: null },
-                                { deadline: { gt: now } },
-                              ],
-                            },
-                          ],
-                        },
-                      },
-                    },
-                  ]
-                : []),
             ],
           },
+          ...(student.classId
+            ? [
+                {
+                  ownerUserId: null,
+                  classAccesses: {
+                    some: {
+                      classId: student.classId,
+                      AND: [
+                        {
+                          OR: [
+                            { availableFrom: null },
+                            { availableFrom: { lte: now } },
+                          ],
+                        },
+                        { OR: [{ deadline: null }, { deadline: { gt: now } }] },
+                      ],
+                    },
+                  },
+                },
+              ]
+            : []),
         ],
       },
       orderBy: { createAt: "desc" },
       include: {
+        classAccesses: student.classId
+          ? {
+              where: { classId: student.classId },
+              take: 1,
+            }
+          : false,
         category: {
           orderBy: { playlistPosition: "asc" },
           take: 1,
@@ -900,6 +931,11 @@ export class ContentsService {
     return rows.map((c) => {
       const slot = c.category[0];
       const vid = slot?.ContentVideo?.[0];
+
+      const classAccess = c.classAccesses?.[0];
+      const actualAvailableFrom = classAccess?.availableFrom ?? c.availableFrom;
+      const actualDeadline = classAccess?.deadline ?? c.deadline;
+
       return {
         contentId: c.id,
         name: c.name,
@@ -907,8 +943,8 @@ export class ContentsService {
         contentVideoId: vid?.id ?? null,
         videoLink: vid?.videoLink ?? null,
         thumbnailUrl: vid?.thumbnailUrl ?? null,
-        availableFrom: c.availableFrom?.toISOString() ?? null,
-        deadline: c.deadline?.toISOString() ?? null,
+        availableFrom: actualAvailableFrom?.toISOString() ?? null,
+        deadline: actualDeadline?.toISOString() ?? null,
       };
     });
   }
@@ -1045,6 +1081,47 @@ export class ContentsService {
     });
 
     return { students: out };
+  }
+
+  async assignExistingToClasses(
+    teacherId: number,
+    contentId: number,
+    classAssignments: any[],
+  ) {
+    const content = await this.prisma.content.findUnique({
+      where: { id: contentId },
+    });
+    if (!content) throw new NotFoundException("Content not found");
+
+    const myClasses = await this.prisma.class.findMany({
+      where: { teacherId },
+      select: { id: true },
+    });
+    const myClassIds = myClasses.map((c) => c.id);
+
+    const validAssignments = classAssignments.filter((a) =>
+      myClassIds.includes(a.classId),
+    );
+
+    await this.prisma.classContentAccess.deleteMany({
+      where: {
+        contentId,
+        classId: { in: myClassIds },
+      },
+    });
+
+    if (validAssignments.length > 0) {
+      await this.prisma.classContentAccess.createMany({
+        data: validAssignments.map((a) => ({
+          contentId,
+          classId: a.classId,
+          availableFrom: a.availableFrom ? new Date(a.availableFrom) : null,
+          deadline: a.deadline ? new Date(a.deadline) : null,
+        })),
+      });
+    }
+
+    return { success: true };
   }
 
   async deleteTeacherContent(teacherId: number, contentId: number) {

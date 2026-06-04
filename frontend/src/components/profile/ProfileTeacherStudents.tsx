@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   ChevronDown,
@@ -10,6 +10,7 @@ import {
   Edit,
   Trash2,
   Copy,
+  Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
@@ -21,13 +22,22 @@ import {
   AdminButton,
   AdminModal,
   AdminInput,
+  AdminSelectNative,
 } from "../../components/admin/adminUi";
+
+export type TeacherClass = {
+  id: number;
+  name: string;
+  _count?: { students: number };
+};
 
 export type TeacherStudentResult = {
   id: number;
   name: string;
   email: string;
   role: string;
+  classId: number | null;
+  className: string | null;
   englishLevel: string | null;
   videosCompleted: number;
   quizAttempts: number;
@@ -60,8 +70,16 @@ export function ProfileTeacherStudents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [students, setStudents] = useState<TeacherStudentResult[]>([]);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
+  const [classes, setClasses] = useState<TeacherClass[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<
+    number | "all" | "none"
+  >("all");
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [classNameInput, setClassNameInput] = useState("");
+  const [isSavingClass, setIsSavingClass] = useState(false);
+
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [selectedQuiz, setSelectedQuiz] = useState<QuizRow | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,6 +88,7 @@ export function ProfileTeacherStudents() {
     firstName: "",
     lastName: "",
     email: "",
+    classId: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [randomId, setRandomId] = useState<number>(0);
@@ -84,29 +103,157 @@ export function ProfileTeacherStudents() {
     password: string;
   } | null>(null);
 
-  const loadStudents = async () => {
+  function CustomSelect({
+    value,
+    onChange,
+    options,
+    className,
+    showSearch = false,
+    searchPlaceholder = "Search...",
+  }: {
+    value: string | number;
+    onChange: (val: any) => void;
+    options: { value: string | number; label: string }[];
+    className?: string;
+    showSearch?: boolean;
+    searchPlaceholder?: string;
+  }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const ref = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (ref.current && !ref.current.contains(event.target as Node)) {
+          setIsOpen(false);
+          setSearchQuery(""); 
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+      if (isOpen && showSearch && searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, [isOpen, showSearch]);
+
+    const selectedLabel =
+      options.find((o) => o.value === value)?.label || options[0]?.label;
+
+    const filteredOptions = options.filter((o) =>
+      String(o.label).toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    return (
+      <div ref={ref} className={cn("relative w-full", className)}>
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            "flex w-full items-center justify-between rounded-xl border bg-background px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none",
+            isOpen
+              ? "border-primary ring-1 ring-primary text-foreground"
+              : "border-border text-foreground hover:border-primary/50",
+          )}
+        >
+          <span className="truncate">{selectedLabel}</span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform text-muted-foreground",
+              isOpen && "rotate-180 text-primary",
+            )}
+          />
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 flex flex-col">
+            {showSearch && (
+              <div className="border-b border-border/50 bg-muted/10 p-2">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                />
+              </div>
+            )}
+
+            <div className="max-h-[220px] overflow-y-auto py-1">
+              {filteredOptions.length === 0 ? (
+                <div className="px-4 py-3 text-center text-sm text-muted-foreground">
+                  No classes found
+                </div>
+              ) : (
+                filteredOptions.map((opt) => {
+                  const isSelected = value === opt.value;
+                  return (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      onClick={() => {
+                        onChange(opt.value);
+                        setIsOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className={cn(
+                        "flex w-full cursor-pointer select-none items-center px-4 py-2.5 text-sm outline-none transition-colors hover:bg-muted focus:bg-muted text-left",
+                        isSelected
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "text-foreground font-medium",
+                      )}
+                    >
+                      <span className="truncate block">{opt.label}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+  const loadData = async () => {
     try {
-      const res = await apiFetch("/teacher/my-students/results", {
-        method: "GET",
-      });
-      if (!res.ok) {
-        setError(await getResponseErrorMessage(res));
+      const [resStudents, resClasses] = await Promise.all([
+        apiFetch("/teacher/my-students/results", { method: "GET" }),
+        apiFetch("/teacher/classes", { method: "GET" }),
+      ]);
+
+      if (!resStudents.ok) {
+        setError(await getResponseErrorMessage(resStudents));
         setStudents([]);
         return;
       }
-      const data: unknown = await res.json();
-      const list = (data as { students?: TeacherStudentResult[] }).students;
-      setStudents(Array.isArray(list) ? list : []);
-    } catch {
+
+      const studentsData: any = await resStudents.json();
+      setStudents(
+        Array.isArray(studentsData.students) ? studentsData.students : [],
+      );
+
+      if (!resClasses.ok) {
+        const classErr = await getResponseErrorMessage(resClasses);
+        toast.error(`Failed to load classes: ${classErr}`);
+      } else {
+        const clsData = await resClasses.json();
+        setClasses(Array.isArray(clsData) ? clsData : []);
+      }
+    } catch (err) {
       setError(t.loadError);
-      setStudents([]);
+      toast.error("Network error while loading data");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    void loadStudents();
+    void loadData();
   }, []);
 
   useEffect(() => {
@@ -114,12 +261,21 @@ export function ProfileTeacherStudents() {
       if (e.key === "Escape") {
         if (isModalOpen && !isSaving) setIsModalOpen(false);
         if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+        if (classModalOpen && !isSavingClass) setClassModalOpen(false);
         if (selectedQuiz) setSelectedQuiz(null);
       }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isModalOpen, isSaving, deleteModalOpen, isDeleting, selectedQuiz]);
+  }, [
+    isModalOpen,
+    isSaving,
+    deleteModalOpen,
+    isDeleting,
+    selectedQuiz,
+    classModalOpen,
+    isSavingClass,
+  ]);
 
   const toggleRow = (id: number) => {
     setExpanded((prev) => {
@@ -169,7 +325,7 @@ export function ProfileTeacherStudents() {
     setEditingId(null);
     const newRandom = Math.floor(1000 + Math.random() * 9000);
     setRandomId(newRandom);
-    setFormData({ firstName: "", lastName: "", email: "" });
+    setFormData({ firstName: "", lastName: "", email: "", classId: "" });
     setIsModalOpen(true);
   };
 
@@ -185,8 +341,34 @@ export function ProfileTeacherStudents() {
       : Math.floor(1000 + Math.random() * 9000);
     setRandomId(existingRandomId);
 
-    setFormData({ firstName, lastName, email: student.email });
+    setFormData({
+      firstName,
+      lastName,
+      email: student.email,
+      classId: student.classId ? String(student.classId) : "",
+    });
     setIsModalOpen(true);
+  };
+
+  const handleSaveClass = async () => {
+    if (!classNameInput.trim()) return toast.error("Class name is required");
+    setIsSavingClass(true);
+    try {
+      const res = await apiFetch("/teacher/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: classNameInput.trim() }),
+      });
+      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
+      toast.success("Class created successfully!");
+      setClassModalOpen(false);
+      setClassNameInput("");
+      await loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create class");
+    } finally {
+      setIsSavingClass(false);
+    }
   };
 
   const handleSaveStudent = async () => {
@@ -204,6 +386,7 @@ export function ProfileTeacherStudents() {
       const payload = {
         name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
         email: formData.email,
+        classId: formData.classId ? parseInt(formData.classId) : null,
       };
 
       const res = await apiFetch(url, {
@@ -217,7 +400,7 @@ export function ProfileTeacherStudents() {
       const responseData = await res.json();
 
       setIsModalOpen(false);
-      await loadStudents();
+      await loadData();
 
       if (!editingId && responseData.tempPassword) {
         setNewStudentCreds({
@@ -255,7 +438,7 @@ export function ProfileTeacherStudents() {
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
       toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);
-      await loadStudents();
+      await loadData();
     } catch (e: any) {
       toast.error(e.message || t.deleteFailed);
     } finally {
@@ -263,6 +446,12 @@ export function ProfileTeacherStudents() {
       setDeletingId(null);
     }
   };
+
+  const filteredStudents = students.filter((s) => {
+    if (selectedClassId === "all") return true;
+    if (selectedClassId === "none") return s.classId === null;
+    return s.classId === selectedClassId;
+  });
 
   if (loading) {
     return (
@@ -286,15 +475,41 @@ export function ProfileTeacherStudents() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center w-full">
         <p className="text-sm text-muted-foreground max-w-xl">{t.intro}</p>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 w-full sm:w-auto">
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 shrink-0 w-full sm:w-auto">
+          <CustomSelect
+            value={selectedClassId}
+            onChange={(val) =>
+              setSelectedClassId(
+                val === "all" || val === "none" ? val : parseInt(val),
+              )
+            }
+            className="w-full xl:w-56"
+            showSearch={true}
+            searchPlaceholder="Search classes..."
+            options={[
+              { value: "all", label: "All Classes" },
+              { value: "none", label: "No Class" },
+              ...classes.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
+
           <AdminButton
             variant="outline"
             className="gap-2 w-full sm:w-auto justify-center"
+            onClick={() => setClassModalOpen(true)}
+          >
+            <Users className="h-4 w-4 shrink-0" />+ Create Class
+          </AdminButton>
+
+          <AdminButton
+            variant="outline"
+            className="gap-2 w-full sm:w-auto justify-center border-dashed"
             onClick={handleExport}
           >
             <Download className="h-4 w-4 shrink-0" />
             {t.downloadExcel}
           </AdminButton>
+
           <AdminButton
             className="gap-2 w-full sm:w-auto justify-center"
             onClick={openAddModal}
@@ -304,6 +519,44 @@ export function ProfileTeacherStudents() {
           </AdminButton>
         </div>
       </div>
+
+      <AdminModal
+        open={classModalOpen}
+        onClose={() => !isSavingClass && setClassModalOpen(false)}
+        title="Create New Class"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setClassModalOpen(false)}
+              disabled={isSavingClass}
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton onClick={handleSaveClass} disabled={isSavingClass}>
+              {isSavingClass ? "Saving..." : "Create Class"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Class Name</label>
+            <AdminInput
+              placeholder="e.g. Group A1 - Evening"
+              value={classNameInput}
+              onChange={(e) => setClassNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void handleSaveClass();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+        </div>
+      </AdminModal>
 
       <AdminModal
         open={isModalOpen}
@@ -361,6 +614,23 @@ export function ProfileTeacherStudents() {
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Assign to Class</label>
+            <CustomSelect
+              value={formData.classId}
+              onChange={(val) =>
+                setFormData((p) => ({ ...p, classId: String(val) }))
+              }
+              showSearch={true}
+              searchPlaceholder="Searching for a class..."
+              options={[
+                { value: "", label: "No Class (General)" },
+                ...classes.map((c) => ({ value: String(c.id), label: c.name })),
+              ]}
+            />
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium">
               {t.generatedEmailLabel}
@@ -765,11 +1035,12 @@ export function ProfileTeacherStudents() {
         </ProfileCard>
       ) : (
         <div className="w-full max-w-full overflow-x-auto rounded-xl border border-border/50 bg-card/50">
-          <table className="w-full min-w-[800px] text-left text-sm whitespace-nowrap">
+          <table className="w-full min-w-[900px] text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="border-border bg-muted/30 border-b text-muted-foreground">
                 <th className="p-3 font-medium w-10 shrink-0" />
                 <th className="p-3 font-medium">{t.colStudent}</th>
+                <th className="p-3 font-medium">Class / Класс</th>
                 <th className="p-3 font-medium">{t.colLevel}</th>
                 <th className="p-3 text-center font-medium">
                   {t.colVideosDone}
@@ -782,7 +1053,7 @@ export function ProfileTeacherStudents() {
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => {
+              {filteredStudents.map((s) => {
                 const isOpen = expanded.has(s.id);
                 return (
                   <Fragment key={s.id}>
@@ -808,6 +1079,17 @@ export function ProfileTeacherStudents() {
                         <div className="text-muted-foreground text-xs truncate max-w-[200px]">
                           {s.email}
                         </div>
+                      </td>
+                      <td className="p-3">
+                        {s.className ? (
+                          <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                            {s.className}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            —
+                          </span>
+                        )}
                       </td>
                       <td className="text-foreground p-3">
                         {s.englishLevel?.trim() || "—"}
@@ -844,7 +1126,7 @@ export function ProfileTeacherStudents() {
                     </tr>
                     {isOpen ? (
                       <tr className="bg-background/50 whitespace-normal">
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <div className="border-border border-t px-4 py-4">
                             <h4 className="text-muted-foreground mb-3 text-xs font-semibold uppercase tracking-wide">
                               {t.recentQuizzesHeading}
