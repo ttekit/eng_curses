@@ -55,6 +55,8 @@ export function HeroSection() {
                 src="/Greeting.svg"
                 className="w-54 h-62 animate-float"
                 alt=""
+                fetchPriority="high"
+                loading="eager"
               />
             </div>
           </div>
