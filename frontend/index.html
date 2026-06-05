@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-  <!-- Baseline SEO before JS (SPA); react-helmet updates these on navigations with content. -->
   <meta name="description"
     content="Explys — learn English with adaptive video lessons, quizzes, and AI-assisted practice. Personalized learning for your level and interests." />
   <meta name="theme-color" content="#813dec" />
@@ -26,17 +25,73 @@
   <meta name="twitter:image" content="https://explys.com/og-image.png" />
   <link rel="canonical" href="https://explys.com/" />
   <link rel="icon" sizes="32x32" type="image/x-icon" href="/Icon.svg" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" href="/Greeting.svg" as="image" />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
     rel="stylesheet" />
+
   <title>Explys — Learn English with video lessons</title>
+
+  <style>
+    body {
+      margin: 0;
+      background-color: #09090b;
+    }
+  </style>
 </head>
 
 <body class="antialiased">
-  <div id="root"></div>
+  <div id="root">
+    <style>
+      .shell-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        font-family: sans-serif;
+      }
+
+      .shell-header {
+        height: 72px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+      }
+
+      .shell-main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at top, rgba(129, 61, 236, 0.15) 0%, transparent 50%);
+      }
+
+      .shell-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-left-color: #813dec;
+        border-radius: 50%;
+        animation: shell-spin 1s linear infinite;
+      }
+
+      @keyframes shell-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <div class="shell-wrapper">
+      <div class="shell-header"></div>
+      <div class="shell-main">
+        <div class="shell-spinner"></div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
