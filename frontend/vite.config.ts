@@ -25,7 +25,10 @@ export default defineConfig(({ mode }) => {
         subscriptionDevModeResolved,
       ),
     },
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss()
+    ],
     server: {
       proxy: useApiProxy
         ? {
@@ -56,11 +59,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-
             vendor: ['react', 'react-dom', 'react-router', 'react-router-dom'],
-
             player: ['hls.js'],
-
             icons: ['lucide-react']
           }
         }
