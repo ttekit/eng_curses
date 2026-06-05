@@ -34,4 +34,8 @@ export class TeacherUploadContentDto {
   @IsOptional()
   @IsISO8601()
   deadline?: string;
+
+  @IsString()
+  @IsOptional()
+  ageRestriction?: string;
 }

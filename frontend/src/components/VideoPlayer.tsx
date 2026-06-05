@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import Hls from "hls.js";
 import { cn } from "../lib/utils";
@@ -18,35 +19,27 @@ import {
   RotateCcw,
   RotateCw,
   Loader2,
+  Captions,
 } from "lucide-react";
-
-export type VideoTimelineMarker = {
-  id: string;
-  sec: number;
-  label: string;
-  status?: "pending" | "answered" | "active";
-};
 
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
   src: string;
-  timelineMarkers?: VideoTimelineMarker[];
+  transcript?: { startSec?: number; endSec?: number; text: string }[];
   onEnded?: () => void;
   onPlay?: () => void;
   onPlaybackTime?: (seconds: number) => void;
   onPlaybackFraction?: (fraction: number) => void;
-  onDuration?: (seconds: number) => void;
   onVideoMount?: (el: HTMLVideoElement | null) => void;
   onClose?: () => void;
 }
 
 export default function VideoPlayer({
   src,
-  timelineMarkers = [],
+  transcript,
   onEnded,
   onPlay,
   onPlaybackTime,
   onPlaybackFraction,
-  onDuration,
   onVideoMount,
   onClose,
   className,
@@ -106,6 +99,7 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(true);
 
   const [showLeftAnimation, setShowLeftAnimation] = useState(false);
   const [showRightAnimation, setShowRightAnimation] = useState(false);
@@ -123,6 +117,19 @@ export default function VideoPlayer({
   const singleTapTimerRef = useRef<number | null>(null);
 
   const [bufferedProgress, setBufferedProgress] = useState(0);
+
+  const activeSubtitle = useMemo(() => {
+    if (!subtitlesEnabled || !transcript || transcript.length === 0) return null;
+    for (let i = 0; i < transcript.length; i++) {
+      const cue = transcript[i];
+      if (typeof cue.startSec === 'number' && typeof cue.endSec === 'number') {
+        if (currentTime >= cue.startSec && currentTime <= cue.endSec) {
+          return cue.text;
+        }
+      }
+    }
+    return null;
+  }, [currentTime, transcript, subtitlesEnabled]);
 
   const setBufferingState = useCallback((val: boolean) => {
     setIsBuffering(val);
@@ -202,13 +209,6 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     setDuration(video.duration);
-    if (
-      video.duration &&
-      Number.isFinite(video.duration) &&
-      video.duration > 0
-    ) {
-      onDuration?.(video.duration);
-    }
   }
 
   function formatTime(secs: number) {
@@ -415,11 +415,16 @@ export default function VideoPlayer({
           e.preventDefault();
           toggleFullscreen();
           break;
+        case "c":
+          e.preventDefault();
+          setSubtitlesEnabled((prev) => !prev);
+          showControlsTemporarily();
+          break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleToggle, handleSkip, volume]);
+  }, [handleToggle, handleSkip, volume, showControlsTemporarily]);
 
   return (
     <div
@@ -470,6 +475,22 @@ export default function VideoPlayer({
         style={{ touchAction: "manipulation" }}
         onClick={handleGesture}
       />
+
+      {activeSubtitle ? (
+        <div
+          className={cn(
+            "absolute left-4 right-4 z-20 flex justify-center pointer-events-none transition-all duration-300",
+            showControls ? "bottom-24" : "bottom-8"
+          )}
+        >
+          <span
+            className="bg-black/60 text-white px-4 py-1.5 text-center text-sm md:text-base lg:text-lg font-medium rounded-lg backdrop-blur-md drop-shadow-md max-w-4xl"
+            style={{ textShadow: "0px 1px 2px rgba(0,0,0,0.8)" }}
+          >
+            {activeSubtitle}
+          </span>
+        </div>
+      ) : null}
 
       <div
         className={cn(
@@ -574,7 +595,7 @@ export default function VideoPlayer({
       </div>
       <div
         className={cn(
-          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-10 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
+          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-20 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
           showControls
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none",
@@ -602,37 +623,8 @@ export default function VideoPlayer({
             style={{ width: `${progress}%` }}
           />
 
-          {duration > 0
-            ? timelineMarkers.map((marker) => {
-                const pct = Math.min(
-                  100,
-                  Math.max(0, (marker.sec / duration) * 100),
-                );
-                const status = marker.status ?? "pending";
-                return (
-                  <div
-                    key={marker.id}
-                    className="absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ left: `${pct}%` }}
-                    title={marker.label}
-                    aria-hidden
-                  >
-                    <div
-                      className={cn(
-                        "h-3.5 w-1 rounded-full shadow-sm transition-colors",
-                        status === "answered" && "bg-emerald-400/95",
-                        status === "active" &&
-                          "h-4 w-1.5 bg-white ring-2 ring-primary/90",
-                        status === "pending" && "bg-amber-400/95",
-                      )}
-                    />
-                  </div>
-                );
-              })
-            : null}
-
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150 z-20"
+            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150"
             style={{ left: `calc(${progress}% - 8px)` }}
           />
         </div>
@@ -647,7 +639,7 @@ export default function VideoPlayer({
           </div>
 
           <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2.5 group/volume">
+            <div className="flex items-center gap-2.5 group/volume hidden sm:flex">
               <button
                 type="button"
                 onClick={toggleMute}
@@ -682,10 +674,25 @@ export default function VideoPlayer({
               <option value="2">2.0x</option>
             </select>
 
+            {transcript && transcript.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSubtitlesEnabled((prev) => !prev)}
+                className={cn(
+                  "transition-colors",
+                  subtitlesEnabled ? "text-white drop-shadow-md" : "text-white/50 hover:text-white/80"
+                )}
+                title="Toggle Captions (C)"
+              >
+                <Captions className="size-5.5 hover:cursor-pointer" />
+              </button>
+            )}
+
             <button
               type="button"
               onClick={toggleFullscreen}
               className="text-white/80 hover:text-white transition-colors"
+              title="Fullscreen (F)"
             >
               <Maximize className="size-5.5 hover:cursor-pointer" />
             </button>

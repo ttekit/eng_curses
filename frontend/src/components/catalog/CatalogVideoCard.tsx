@@ -10,6 +10,7 @@ export interface CatalogCardVideo {
   progress?: number;
   thumbnailUrl?: string;
   videoLink?: string;
+  ageRestriction?: string;
 }
 
 const levelLike = /^(A1|A2|B1|B2|C1|C2)$/i;
@@ -28,6 +29,17 @@ const badgeClassForLabel = (label: string) => {
     return map[t] ?? "bg-muted text-muted-foreground";
   }
   return "bg-accent/20 text-accent";
+};
+
+const ageRestrictionClass = (age: string) => {
+  const map: Record<string, string> = {
+    "0+": "bg-accent/20 text-accent",
+    "12+": "bg-(--yellow)/20 text-(--yellow)",
+    "16+": "bg-(--orange)/20 text-(--orange)",
+    "18+": "bg-destructive/20 text-destructive",
+    "21+": "bg-primary/20 text-primary",
+  };
+  return map[age] ?? "bg-muted text-muted-foreground";
 };
 
 interface CatalogVideoCardProps {
@@ -75,6 +87,17 @@ export function CatalogVideoCard({
         >
           {video.categoryLabel}
         </span>
+
+        {video.ageRestriction ? (
+          <span
+            className={cn(
+              "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font-bold z-10",
+              ageRestrictionClass(video.ageRestriction),
+            )}
+          >
+            {video.ageRestriction}
+          </span>
+        ) : null}
 
         {video.durationLabel ? (
           <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">

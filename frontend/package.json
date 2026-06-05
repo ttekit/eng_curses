@@ -12,6 +12,7 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "postbuild": "react-snap",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -49,9 +50,17 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "react-snap": "^1.23.0",
     "typescript-eslint": "^8.57.2",
     "vite": "^7.3.1",
     "vitest": "^3.2.6",
     "wrangler": "^4.21.2"
+  },
+  "reactSnap": {
+    "source": "dist",
+    "minifyHtml": {
+      "collapseWhitespace": false,
+      "removeComments": false
+    }
   }
 }

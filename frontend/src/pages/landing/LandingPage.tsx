@@ -1,15 +1,27 @@
+import React, { Suspense } from "react";
 import { HeroSection } from "../../components/landing/HeroSection";
-import { FeaturesSection } from "../../components/landing/FeaturesSection";
-import { HowItWorksSection } from "../../components/landing/HowItWorksSection";
-import { CtaSection } from "../../components/landing/CtaSection";
-import { LandingFooter } from "../../components/landing/LandingFooter";
-import { LandingPricingSection } from "../../components/landing/LandingPricingSection";
 import ContentHeader from "../../components/catalog/ContentHeader";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { buildLandingJsonLdSchemas } from "../../lib/seoStructuredData";
 import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+
+const FeaturesSection = React.lazy(() =>
+  import("../../components/landing/FeaturesSection").then(m => ({ default: m.FeaturesSection }))
+);
+const HowItWorksSection = React.lazy(() =>
+  import("../../components/landing/HowItWorksSection").then(m => ({ default: m.HowItWorksSection }))
+);
+const LandingPricingSection = React.lazy(() =>
+  import("../../components/landing/LandingPricingSection").then(m => ({ default: m.LandingPricingSection }))
+);
+const CtaSection = React.lazy(() =>
+  import("../../components/landing/CtaSection").then(m => ({ default: m.CtaSection }))
+);
+const LandingFooter = React.lazy(() =>
+  import("../../components/landing/LandingFooter").then(m => ({ default: m.LandingFooter }))
+);
 
 export default function LandingPage() {
   const { messages, locale } = useLandingLocale();
@@ -32,11 +44,14 @@ export default function LandingPage() {
       />
       <ContentHeader variant="landing" />
       <HeroSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <LandingPricingSection />
-      <CtaSection />
-      <LandingFooter />
+
+      <Suspense fallback={<div className="min-h-screen" />}>
+        <FeaturesSection />
+        <HowItWorksSection />
+        <LandingPricingSection />
+        <CtaSection />
+        <LandingFooter />
+      </Suspense>
     </main>
   );
 }

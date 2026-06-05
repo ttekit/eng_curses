@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, MaxLength, MinLength } from "class-validator";
+import { IsString, MaxLength, MinLength, IsOptional } from "class-validator";
 
 export class AddContentEpisodeDto {
   @ApiProperty()
@@ -12,4 +12,8 @@ export class AddContentEpisodeDto {
   @IsString()
   @MaxLength(4000)
   videoDescription?: string;
+
+  @IsString()
+  @IsOptional()
+  ageRestriction?: string;
 }

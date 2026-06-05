@@ -22,7 +22,9 @@ import { TeacherPatchContentVisibilityDto } from "src/contents/dto/teacher-patch
 import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content.dto";
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
 import { buildSafeS3ObjectKey, publicS3ObjectUrl } from "../common/s3-key.util";
-import { UserRole } from "@generated/prisma/enums";
+import { AuthMethod, UserRole } from "@generated/prisma/enums";
+import * as XLSX from "xlsx";
+import * as bcrypt from "bcrypt";
 import { Redis } from "ioredis";
 import AdmZip = require("adm-zip");
 
@@ -142,7 +144,7 @@ export class ContentsService {
   }
 
   async createContent(
-    dto: CreateContentDto & { videoLink?: string },
+    dto: any,
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
@@ -200,6 +202,7 @@ export class ContentsService {
                 videoName: dto.name,
                 playlistPosition: 0,
                 thumbnailUrl: thumbnailUrl,
+                ageRestriction: dto.ageRestriction || "0+",
               },
             },
           },
@@ -318,6 +321,20 @@ export class ContentsService {
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
     return updateContent;
+  }
+
+  async updateEpisodeText(id: number, data: { videoName: string; videoDescription?: string; ageRestriction?: string }) {
+    const updated = await this.prisma.contentVideo.update({
+      where: { id },
+      data: {
+        videoName: data.videoName,
+        videoDescription: data.videoDescription,
+        ageRestriction: data.ageRestriction || "0+",
+      },
+    });
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+    return updated;
   }
 
   async updateEpisodeThumbnail(id: number, file: Express.Multer.File) {
@@ -453,7 +470,7 @@ export class ContentsService {
 
   async addEpisode(
     contentId: number,
-    dto: AddContentEpisodeDto & { videoLink?: string },
+    dto: any,
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
@@ -521,6 +538,7 @@ export class ContentsService {
             videoDescription: dto.videoDescription ?? null,
             playlistPosition: 0,
             thumbnailUrl: thumbnailUrl,
+            ageRestriction: dto.ageRestriction || "0+",
           },
         },
       },
@@ -558,7 +576,7 @@ export class ContentsService {
 
   async createTeacherUpload(
     userId: number,
-    dto: TeacherUploadContentDto & { videoLink?: string },
+    dto: any,
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
@@ -603,9 +621,7 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException(
-        "You must provide either a video file or a videoLink",
-      );
+      throw new BadRequestException("You must provide either a video file or a videoLink");
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -636,8 +652,6 @@ export class ContentsService {
         friendlyLink,
         ownerUserId: userId,
         visibility,
-        availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
-        deadline: dto.deadline ? new Date(dto.deadline) : null,
         category: {
           create: {
             playlistPosition: 0,
@@ -647,6 +661,7 @@ export class ContentsService {
                 videoName: name,
                 playlistPosition: 0,
                 thumbnailUrl: thumbnailUrl,
+                ageRestriction: dto.ageRestriction || "0+",
               },
             },
           },
@@ -660,25 +675,21 @@ export class ContentsService {
         },
       },
     });
-
     const contentVideoId = created.category[0]?.ContentVideo?.[0]?.id;
     if (contentVideoId == null) {
       throw new InternalServerErrorException(
         "Created content is missing a ContentVideo id",
       );
     }
-
-    this.videoCaptionsService.generateCaptions(contentVideoId).catch((err) => {
-      console.error("Background captions generation failed:", err);
-    });
-
+    const captionsRow =
+      await this.videoCaptionsService.generateCaptions(contentVideoId);
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
     return {
       ...created,
       contentVideoId,
-      captionsReady: false,
+      captionsReady: captionsRow != null,
     };
   }
 
@@ -720,8 +731,6 @@ export class ContentsService {
         systemTags: stats?.systemTags ?? [],
         userTags: stats?.userTags ?? [],
         processingComplexity: stats?.processingComplexity ?? null,
-        availableFrom: c.availableFrom?.toISOString() ?? null,
-        deadline: c.deadline?.toISOString() ?? null,
       };
     });
   }
@@ -766,7 +775,7 @@ export class ContentsService {
       );
     }
 
-    const updatedContent = await this.prisma.content.update({
+    const updatedContent = this.prisma.content.update({
       where: { id: contentId },
       data: { visibility },
       select: {
@@ -776,7 +785,6 @@ export class ContentsService {
         visibility: true,
       },
     });
-
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
@@ -794,24 +802,10 @@ export class ContentsService {
       return [];
     }
 
-    const now = new Date();
-
     const rows = await this.prisma.content.findMany({
       where: {
         ownerUserId: student.teacherId,
-        OR: [
-          { visibility: "public" },
-
-          {
-            visibility: "unlisted",
-            AND: [
-              {
-                OR: [{ availableFrom: null }, { availableFrom: { lte: now } }],
-              },
-              { OR: [{ deadline: null }, { deadline: { gt: now } }] },
-            ],
-          },
-        ],
+        visibility: { in: ["public", "unlisted"] },
       },
       orderBy: { createAt: "desc" },
       include: {
@@ -838,8 +832,6 @@ export class ContentsService {
         contentVideoId: vid?.id ?? null,
         videoLink: vid?.videoLink ?? null,
         thumbnailUrl: vid?.thumbnailUrl ?? null,
-        availableFrom: c.availableFrom?.toISOString() ?? null,
-        deadline: c.deadline?.toISOString() ?? null,
       };
     });
   }
@@ -976,6 +968,151 @@ export class ContentsService {
     });
 
     return { students: out };
+  }
+
+  async addStudent(teacherId: number, data: { name: string; email: string }) {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (existing) {
+      throw new ForbiddenException("Пользователь с таким email уже существует");
+    }
+
+    const chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const tempPassword = Array.from(
+      { length: 8 },
+      () => chars[Math.floor(Math.random() * chars.length)],
+    ).join("");
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const created = await this.prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email.toLowerCase(),
+        password: hashedPassword,
+        role: "STUDENT",
+        teacherId: teacherId,
+        method: "CREDENTIALS",
+        isVerified: true,
+      },
+    });
+
+    return { student: created, tempPassword };
+  }
+
+  async exportStudentsExcel(teacherId: number): Promise<Buffer> {
+    const students = await this.prisma.user.findMany({
+      where: { teacherId },
+      select: {
+        name: true,
+        email: true,
+        additionalUserData: { select: { englishLevel: true } },
+        watchSessions: { where: { completed: true } },
+        comprehensionTestAttempts: true,
+      },
+    });
+
+    const data = students.map((s) => {
+      const attemptsCount = s.comprehensionTestAttempts.length;
+      const avgScore =
+        attemptsCount > 0
+          ? s.comprehensionTestAttempts.reduce(
+            (acc, curr) => acc + curr.scorePct,
+            0,
+          ) / attemptsCount
+          : 0;
+
+      return {
+        "Student Name": s.name,
+        "Email Address": s.email,
+        "English Level": s.additionalUserData?.englishLevel || "-",
+        "Completed Videos": s.watchSessions.length,
+        "Quiz Attempts": attemptsCount,
+        "Average Score (%)": Math.round(avgScore * 10) / 10,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "My Students");
+
+    return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  }
+
+  async updateStudent(
+    teacherId: number,
+    studentId: number,
+    data: { name: string; email: string },
+  ) {
+    const student = await this.prisma.user.findFirst({
+      where: { id: studentId, teacherId },
+    });
+    if (!student)
+      throw new ForbiddenException("Ученик не найден или не принадлежит вам");
+
+    return this.prisma.user.update({
+      where: { id: studentId },
+      data: { name: data.name, email: data.email },
+    });
+  }
+
+  async removeStudent(teacherId: number, studentId: number) {
+    const student = await this.prisma.user.findFirst({
+      where: { id: studentId, teacherId },
+    });
+    if (!student) throw new ForbiddenException("Ученик не найден");
+
+    return this.prisma.user.delete({
+      where: { id: studentId },
+    });
+  }
+
+  async exportStudentsCsv(teacherId: number): Promise<string> {
+    const students = await this.prisma.user.findMany({
+      where: { teacherId },
+      select: {
+        name: true,
+        email: true,
+        additionalUserData: { select: { englishLevel: true } },
+        watchSessions: { where: { completed: true } },
+        comprehensionTestAttempts: true,
+      },
+    });
+
+    const headers = [
+      "Name",
+      "Email",
+      "English Level",
+      "Videos Completed",
+      "Quiz Attempts",
+      "Avg Score %",
+    ];
+
+    const rows = students.map((s) => {
+      const attemptsCount = s.comprehensionTestAttempts.length;
+      const avgScore =
+        attemptsCount > 0
+          ? s.comprehensionTestAttempts.reduce(
+            (acc, curr) => acc + curr.scorePct,
+            0,
+          ) / attemptsCount
+          : 0;
+
+      return [
+        `"${s.name}"`,
+        `"${s.email}"`,
+        `"${s.additionalUserData?.englishLevel || "N/A"}"`,
+        s.watchSessions.length,
+        attemptsCount,
+        `"${Math.round(avgScore * 10) / 10}"`,
+      ];
+    });
+
+    return (
+      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
+    );
   }
 
   async deleteTeacherContent(teacherId: number, contentId: number) {

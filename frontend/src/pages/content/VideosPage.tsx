@@ -51,6 +51,7 @@ interface ContentVideo {
   videoLink: string;
   thumbnailUrl?: string;
   playlistPosition?: number;
+  ageRestriction?: string;
   content: {
     id: number;
     playlistPosition?: number;
@@ -75,6 +76,7 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
     categoryLabel: video.content.category.name,
     thumbnailUrl: video.thumbnailUrl,
     videoLink: video.videoLink,
+    ageRestriction: video.ageRestriction,
   };
 }
 
@@ -315,6 +317,14 @@ export default function VideoPage() {
     return map;
   }, [videos]);
 
+  const ageRestrictionByVideoId = useMemo(() => {
+    const map = new Map<number, string | undefined>();
+    for (const v of videos) {
+      map.set(v.id, v.ageRestriction);
+    }
+    return map;
+  }, [videos]);
+
   useEffect(() => {
     if (loading) return;
     if (videos.length === 0) {
@@ -334,6 +344,7 @@ export default function VideoPage() {
             data.recommendations,
             thumbnailByVideoId,
             12,
+            ageRestrictionByVideoId
           );
         }
       }
@@ -350,7 +361,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [loading, videos, user, thumbnailByVideoId]);
+  }, [loading, videos, user, thumbnailByVideoId, ageRestrictionByVideoId]);
 
   useEffect(() => {
     const raw = location.state as
@@ -473,21 +484,19 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
-  const hasFilters =
-    selectedLevel !== "All" ||
-    selectedGenre !== "All";
+  const hasFilters = selectedLevel !== "All" || selectedGenre !== "All";
 
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
@@ -557,12 +566,7 @@ export default function VideoPage() {
           videos: sorted.map(toCardVideo),
         };
       });
-  }, [
-    filteredVideos,
-    selectedLevel,
-    selectedGenre,
-    hasFilters,
-  ]);
+  }, [filteredVideos, selectedLevel, selectedGenre, hasFilters]);
 
   // Exclude filtered videos from recommendation rows.
   const visibleRecommended = useMemo(() => {
@@ -747,9 +751,7 @@ export default function VideoPage() {
                     {cb.emptyTitle}
                   </h2>
                   <p className="mt-2 text-muted-foreground text-sm">
-                    {videos.length === 0
-                      ? cb.emptyNoVideos
-                      : cb.emptyFiltered}
+                    {videos.length === 0 ? cb.emptyNoVideos : cb.emptyFiltered}
                   </p>
                 </div>
               ) : hasFilters ? (
@@ -824,7 +826,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

@@ -282,21 +282,21 @@ export function ProfileTeacherStudents() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="grid grid-cols-1 gap-6 w-full min-w-0">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center w-full">
         <p className="text-sm text-muted-foreground max-w-xl">{t.intro}</p>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 w-full sm:w-auto">
           <AdminButton
             variant="outline"
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto justify-center"
             onClick={handleExport}
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 shrink-0" />
             {t.downloadExcel}
           </AdminButton>
-          <AdminButton className="gap-2" onClick={openAddModal}>
-            <Plus className="h-4 w-4" />
+          <AdminButton className="gap-2 w-full sm:w-auto justify-center" onClick={openAddModal}>
+            <Plus className="h-4 w-4 shrink-0" />
             {t.addStudent}
           </AdminButton>
         </div>
@@ -312,6 +312,7 @@ export function ProfileTeacherStudents() {
               variant="outline"
               onClick={() => setIsModalOpen(false)}
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               {t.cancel}
             </AdminButton>
@@ -319,6 +320,7 @@ export function ProfileTeacherStudents() {
               type="submit"
               form="add-student-form"
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               {isSaving ? t.saving : t.saveStudent}
             </AdminButton>
@@ -334,12 +336,13 @@ export function ProfileTeacherStudents() {
             void handleSaveStudent();
           }}
         >
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">{t.firstNameLabel}</label>
               <AdminInput
                 placeholder={t.firstNamePlaceholder}
                 value={formData.firstName}
+                className="w-full"
                 onChange={(e) => handleNameChange("firstName", e.target.value)}
                 required
               />
@@ -349,6 +352,7 @@ export function ProfileTeacherStudents() {
               <AdminInput
                 placeholder={t.lastNamePlaceholder}
                 value={formData.lastName}
+                className="w-full"
                 onChange={(e) => handleNameChange("lastName", e.target.value)}
                 required
               />
@@ -361,7 +365,7 @@ export function ProfileTeacherStudents() {
               placeholder={t.generatedEmailPlaceholder}
               value={formData.email}
               readOnly
-              className="bg-muted text-muted-foreground cursor-not-allowed"
+              className="bg-muted w-full text-muted-foreground cursor-not-allowed"
             />
             {!editingId && (
               <p className="text-xs text-muted-foreground mt-1">{t.passwordHint}</p>
@@ -375,7 +379,7 @@ export function ProfileTeacherStudents() {
         onClose={() => setNewStudentCreds(null)}
         title={`🎉 ${t.registeredTitle}`}
         footer={
-          <AdminButton onClick={() => setNewStudentCreds(null)}>
+          <AdminButton className="w-full sm:w-auto" onClick={() => setNewStudentCreds(null)}>
             {t.credentialsSaved}
           </AdminButton>
         }
@@ -395,11 +399,11 @@ export function ProfileTeacherStudents() {
                 <AdminInput
                   value={newStudentCreds?.email || ""}
                   readOnly
-                  className="bg-background text-foreground"
+                  className="bg-background text-foreground flex-1"
                 />
                 <AdminButton
                   variant="outline"
-                  className="px-3"
+                  className="px-3 shrink-0"
                   onClick={() => {
                     navigator.clipboard.writeText(newStudentCreds?.email || "");
                     toast.success(t.emailCopied);
@@ -419,11 +423,11 @@ export function ProfileTeacherStudents() {
                 <AdminInput
                   value={newStudentCreds?.password || ""}
                   readOnly
-                  className="bg-background font-mono text-foreground font-bold"
+                  className="bg-background font-mono text-foreground font-bold flex-1"
                 />
                 <AdminButton
                   variant="outline"
-                  className="px-3"
+                  className="px-3 shrink-0"
                   onClick={() => {
                     navigator.clipboard.writeText(
                       newStudentCreds?.password || "",
@@ -440,7 +444,7 @@ export function ProfileTeacherStudents() {
 
           <AdminButton
             variant="outline"
-            className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/10"
+            className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/10 justify-center"
             onClick={() => {
               if (newStudentCreds) {
                 navigator.clipboard.writeText(
@@ -450,7 +454,7 @@ export function ProfileTeacherStudents() {
               }
             }}
           >
-            <Copy className="size-4" />
+            <Copy className="size-4 shrink-0" />
             {t.copyBoth}
           </AdminButton>
         </div>
@@ -466,6 +470,7 @@ export function ProfileTeacherStudents() {
               variant="outline"
               onClick={() => setDeleteModalOpen(false)}
               disabled={isDeleting}
+              className="w-full sm:w-auto"
             >
               {t.cancel}
             </AdminButton>
@@ -475,7 +480,7 @@ export function ProfileTeacherStudents() {
                 deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase
               }
               onClick={confirmDeleteStudent}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
             >
               {isDeleting ? t.removing : t.removeStudentCta}
             </AdminButton>
@@ -497,6 +502,7 @@ export function ProfileTeacherStudents() {
               placeholder={t.deleteConfirmPhrase}
               value={deletePhrase}
               autoComplete="off"
+              className="w-full"
               onChange={(e) => setDeletePhrase(e.target.value)}
               onKeyDown={(e) => {
                 if (
@@ -519,12 +525,12 @@ export function ProfileTeacherStudents() {
         title={
           selectedQuiz
             ? formatMessage(t.quizDetailsNamed, {
-                name: selectedQuiz.videoName,
-              })
+              name: selectedQuiz.videoName,
+            })
             : t.quizDetailsTitle
         }
         footer={
-          <AdminButton onClick={() => setSelectedQuiz(null)}>{t.close}</AdminButton>
+          <AdminButton className="w-full sm:w-auto" onClick={() => setSelectedQuiz(null)}>{t.close}</AdminButton>
         }
       >
         {selectedQuiz && (
@@ -550,9 +556,9 @@ export function ProfileTeacherStudents() {
                 <p className="text-xl font-bold text-foreground">
                   {selectedQuiz.correct}{" "}
                   <span className="text-muted-foreground text-sm">
-                  {formatMessage(t.correctFraction, {
-                    total: String(selectedQuiz.total),
-                  })}
+                    {formatMessage(t.correctFraction, {
+                      total: String(selectedQuiz.total),
+                    })}
                   </span>
                 </p>
               </div>
@@ -572,7 +578,7 @@ export function ProfileTeacherStudents() {
                       <p className="text-[10px] font-bold text-primary tracking-wider mb-2">
                         {t.writtenSummaryCaps}
                       </p>
-                      <p className="text-sm italic text-foreground">
+                      <p className="text-sm italic text-foreground break-words">
                         "{selectedQuiz.summaryText}"
                       </p>
                     </div>
@@ -600,7 +606,7 @@ export function ProfileTeacherStudents() {
                       if (typeof optionsArray === "string") {
                         try {
                           optionsArray = JSON.parse(optionsArray);
-                        } catch (e) {}
+                        } catch (e) { }
                       }
 
                       const isWritten = typeof value === "string";
@@ -609,14 +615,14 @@ export function ProfileTeacherStudents() {
                       return (
                         <div
                           key={key}
-                          className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3"
+                          className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3 overflow-hidden"
                         >
-                          <span className="text-sm text-foreground font-medium">
+                          <span className="text-sm text-foreground font-medium break-words">
                             {questionText
                               ? questionText
                               : formatMessage(t.questionIdFallback, {
-                                  id: key.replace("q_", "").substring(0, 4),
-                                })}
+                                id: key.replace("q_", "").substring(0, 4),
+                              })}
                           </span>
 
                           {isWritten ? (
@@ -624,7 +630,7 @@ export function ProfileTeacherStudents() {
                               <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
                                 {t.writtenSummaryCaps}
                               </p>
-                              <p className="text-sm italic text-foreground">
+                              <p className="text-sm italic text-foreground break-words">
                                 "{value}"
                               </p>
                             </div>
@@ -664,21 +670,23 @@ export function ProfileTeacherStudents() {
                                   <div
                                     key={idx}
                                     className={cn(
-                                      "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
+                                      "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
                                       variantClass,
                                     )}
                                   >
-                                    <span
-                                      className={cn(
-                                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
-                                        badgeClass,
-                                      )}
-                                    >
-                                      {String.fromCharCode(65 + idx)}
-                                    </span>
-                                    <span>{opt}</span>
+                                    <div className="flex items-center gap-2 max-w-full">
+                                      <span
+                                        className={cn(
+                                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
+                                          badgeClass,
+                                        )}
+                                      >
+                                        {String.fromCharCode(65 + idx)}
+                                      </span>
+                                      <span className="break-words">{opt}</span>
+                                    </div>
                                     {statusText && (
-                                      <span className="ml-auto text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                                      <span className="sm:ml-auto text-[11px] font-semibold uppercase tracking-wider opacity-80 shrink-0">
                                         {statusText}
                                       </span>
                                     )}
@@ -694,7 +702,7 @@ export function ProfileTeacherStudents() {
                                 })}
                               </span>
                               {answerText ? (
-                                <span className="text-sm font-semibold text-primary/90">
+                                <span className="text-sm font-semibold text-primary/90 break-words">
                                   {String(answerText)}
                                 </span>
                               ) : (
@@ -717,7 +725,7 @@ export function ProfileTeacherStudents() {
                           <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
                             {t.writtenSummaryCaps}
                           </p>
-                          <p className="text-sm italic text-foreground">
+                          <p className="text-sm italic text-foreground break-words">
                             "{selectedQuiz.summaryText}"
                           </p>
                         </div>
@@ -733,198 +741,196 @@ export function ProfileTeacherStudents() {
 
       {students.length === 0 ? (
         <ProfileCard title={t.cardTitle}>
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
             <GraduationCap className="size-12 text-muted-foreground opacity-50" />
             <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
           </div>
         </ProfileCard>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border/50 bg-card/50">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-3 font-medium w-10" />
-                  <th className="p-3 font-medium">{t.colStudent}</th>
-                  <th className="p-3 font-medium">{t.colLevel}</th>
-                  <th className="p-3 text-center font-medium">{t.colVideosDone}</th>
-                  <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
-                  <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
-                  <th className="p-3 font-medium w-24 text-right">{t.colActions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((s) => {
-                  const isOpen = expanded.has(s.id);
-                  return (
-                    <Fragment key={s.id}>
-                      <tr className="border-border/60 hover:bg-muted/20 border-b transition-colors">
-                        <td className="p-2">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-border/50 bg-card/50">
+          <table className="w-full min-w-[800px] text-left text-sm whitespace-nowrap">
+            <thead>
+              <tr className="border-border bg-muted/30 border-b text-muted-foreground">
+                <th className="p-3 font-medium w-10 shrink-0" />
+                <th className="p-3 font-medium">{t.colStudent}</th>
+                <th className="p-3 font-medium">{t.colLevel}</th>
+                <th className="p-3 text-center font-medium">{t.colVideosDone}</th>
+                <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
+                <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
+                <th className="p-3 font-medium w-24 text-right">{t.colActions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((s) => {
+                const isOpen = expanded.has(s.id);
+                return (
+                  <Fragment key={s.id}>
+                    <tr className="border-border/60 hover:bg-muted/20 border-b transition-colors">
+                      <td className="p-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleRow(s.id)}
+                          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg p-1.5"
+                          aria-expanded={isOpen}
+                        >
+                          {isOpen ? (
+                            <ChevronDown className="size-4" />
+                          ) : (
+                            <ChevronRight className="size-4" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-foreground font-medium truncate max-w-[200px]">
+                          {s.name}
+                        </div>
+                        <div className="text-muted-foreground text-xs truncate max-w-[200px]">
+                          {s.email}
+                        </div>
+                      </td>
+                      <td className="text-foreground p-3">
+                        {s.englishLevel?.trim() || "—"}
+                      </td>
+                      <td className="p-3 text-center tabular-nums">
+                        {s.videosCompleted}
+                      </td>
+                      <td className="p-3 text-center tabular-nums">
+                        {s.quizAttempts}
+                      </td>
+                      <td className="p-3 text-center tabular-nums">
+                        {s.avgQuizScorePct != null
+                          ? `${s.avgQuizScorePct}%`
+                          : "—"}
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
                           <button
-                            type="button"
-                            onClick={() => toggleRow(s.id)}
-                            className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg p-1.5"
-                            aria-expanded={isOpen}
+                            onClick={() => openEditModal(s)}
+                            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            title={t.editStudentAria}
                           >
-                            {isOpen ? (
-                              <ChevronDown className="size-4" />
-                            ) : (
-                              <ChevronRight className="size-4" />
-                            )}
+                            <Edit className="size-4" />
                           </button>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-foreground font-medium">
-                            {s.name}
-                          </div>
-                          <div className="text-muted-foreground text-xs">
-                            {s.email}
-                          </div>
-                        </td>
-                        <td className="text-foreground p-3">
-                          {s.englishLevel?.trim() || "—"}
-                        </td>
-                        <td className="p-3 text-center tabular-nums">
-                          {s.videosCompleted}
-                        </td>
-                        <td className="p-3 text-center tabular-nums">
-                          {s.quizAttempts}
-                        </td>
-                        <td className="p-3 text-center tabular-nums">
-                          {s.avgQuizScorePct != null
-                            ? `${s.avgQuizScorePct}%`
-                            : "—"}
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => openEditModal(s)}
-                              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                              title={t.editStudentAria}
-                            >
-                              <Edit className="size-4" />
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(s.id)}
-                              className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                              title={t.removeStudentAria}
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
+                          <button
+                            onClick={() => openDeleteModal(s.id)}
+                            className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                            title={t.removeStudentAria}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isOpen ? (
+                      <tr className="bg-background/50 whitespace-normal">
+                        <td colSpan={7} className="p-0">
+                          <div className="border-border border-t px-4 py-4">
+                            <h4 className="text-muted-foreground mb-3 text-xs font-semibold uppercase tracking-wide">
+                              {t.recentQuizzesHeading}
+                            </h4>
+                            {s.recentQuizzes.length === 0 ? (
+                              <p className="text-muted-foreground text-sm">
+                                {t.noQuizzesYet}
+                              </p>
+                            ) : (
+                              <ul className="space-y-3">
+                                {s.recentQuizzes.map((q) => {
+                                  let writtenText = q.summaryText;
+                                  if (
+                                    !writtenText &&
+                                    q.answers &&
+                                    typeof q.answers === "object"
+                                  ) {
+                                    const found = Object.values(
+                                      q.answers,
+                                    ).find(
+                                      (v) =>
+                                        typeof v === "string" &&
+                                        !String(v).includes("_text") &&
+                                        !String(v).includes("["),
+                                    );
+                                    if (found) writtenText = found as string;
+                                  }
+
+                                  return (
+                                    <li
+                                      key={q.id}
+                                      className="border-border/40 bg-card/80 flex flex-col gap-2 rounded-lg border px-4 py-3"
+                                    >
+                                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0 flex-1">
+                                          <Link
+                                            to={`/content/${q.contentVideoId}`}
+                                            className="text-primary font-medium hover:underline block break-words"
+                                          >
+                                            {q.videoName}
+                                          </Link>
+                                          <div className="text-muted-foreground mt-0.5 text-xs">
+                                            {new Date(
+                                              q.createdAt,
+                                            ).toLocaleString()}
+                                          </div>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-3 text-sm mt-1 sm:mt-0 flex-wrap">
+                                          <span
+                                            className={cn(
+                                              "font-semibold tabular-nums",
+                                              q.passed
+                                                ? "text-accent"
+                                                : "text-muted-foreground",
+                                            )}
+                                          >
+                                            {Math.round(q.scorePct)}%
+                                          </span>
+                                          <span className="text-muted-foreground tabular-nums">
+                                            {q.correct}/{q.total}
+                                          </span>
+                                          <span
+                                            className={cn(
+                                              "rounded px-2 py-0.5 text-xs font-medium",
+                                              q.passed
+                                                ? "bg-accent/15 text-accent"
+                                                : "bg-muted text-muted-foreground",
+                                            )}
+                                          >
+                                            {q.passed ? t.passed : t.review}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      {writtenText ? (
+                                        <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3">
+                                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                                            {t.writtenSummary}
+                                          </span>
+                                          <p className="text-sm text-foreground italic break-words">
+                                            "{writtenText}"
+                                          </p>
+                                        </div>
+                                      ) : null}
+
+                                      <div className="mt-1">
+                                        <button
+                                          onClick={() => setSelectedQuiz(q)}
+                                          className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-md transition-colors"
+                                        >
+                                          {t.viewAllAnswers}
+                                        </button>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
                           </div>
                         </td>
                       </tr>
-                      {isOpen ? (
-                        <tr className="bg-background/50">
-                          <td colSpan={7} className="p-0">
-                            <div className="border-border border-t px-4 py-4">
-                              <h4 className="text-muted-foreground mb-3 text-xs font-semibold uppercase tracking-wide">
-                                {t.recentQuizzesHeading}
-                              </h4>
-                              {s.recentQuizzes.length === 0 ? (
-                                <p className="text-muted-foreground text-sm">
-                                  {t.noQuizzesYet}
-                                </p>
-                              ) : (
-                                <ul className="space-y-3">
-                                  {s.recentQuizzes.map((q) => {
-                                    let writtenText = q.summaryText;
-                                    if (
-                                      !writtenText &&
-                                      q.answers &&
-                                      typeof q.answers === "object"
-                                    ) {
-                                      const found = Object.values(
-                                        q.answers,
-                                      ).find(
-                                        (v) =>
-                                          typeof v === "string" &&
-                                          !String(v).includes("_text") &&
-                                          !String(v).includes("["),
-                                      );
-                                      if (found) writtenText = found as string;
-                                    }
-
-                                    return (
-                                      <li
-                                        key={q.id}
-                                        className="border-border/40 bg-card/80 flex flex-col gap-2 rounded-lg border px-4 py-3"
-                                      >
-                                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                          <div className="min-w-0 flex-1">
-                                            <Link
-                                              to={`/content/${q.contentVideoId}`}
-                                              className="text-primary font-medium hover:underline"
-                                            >
-                                              {q.videoName}
-                                            </Link>
-                                            <div className="text-muted-foreground mt-0.5 text-xs">
-                                              {new Date(
-                                                q.createdAt,
-                                              ).toLocaleString()}
-                                            </div>
-                                          </div>
-                                          <div className="flex shrink-0 items-center gap-3 text-sm mt-2 sm:mt-0">
-                                            <span
-                                              className={cn(
-                                                "font-semibold tabular-nums",
-                                                q.passed
-                                                  ? "text-accent"
-                                                  : "text-muted-foreground",
-                                              )}
-                                            >
-                                              {Math.round(q.scorePct)}%
-                                            </span>
-                                            <span className="text-muted-foreground tabular-nums">
-                                              {q.correct}/{q.total}
-                                            </span>
-                                            <span
-                                              className={cn(
-                                                "rounded px-2 py-0.5 text-xs font-medium",
-                                                q.passed
-                                                  ? "bg-accent/15 text-accent"
-                                                  : "bg-muted text-muted-foreground",
-                                              )}
-                                            >
-                                              {q.passed ? t.passed : t.review}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {writtenText ? (
-                                          <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
-                                              {t.writtenSummary}
-                                            </span>
-                                            <p className="text-sm text-foreground italic line-clamp-2">
-                                              "{writtenText}"
-                                            </p>
-                                          </div>
-                                        ) : null}
-
-                                        <div className="mt-1">
-                                          <button
-                                            onClick={() => setSelectedQuiz(q)}
-                                            className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-md transition-colors"
-                                          >
-                                            {t.viewAllAnswers}
-                                          </button>
-                                        </div>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

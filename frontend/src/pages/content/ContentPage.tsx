@@ -17,18 +17,12 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { cn } from "../../lib/utils";
-import VideoPlayer, {
-  type VideoTimelineMarker,
-} from "../../components/VideoPlayer";
+import VideoPlayer from "../../components/VideoPlayer";
 import { VideoVocabulary } from "../../components/content-watch/VideoVocabulary";
 import { VideoTranscript } from "../../components/content-watch/VideoTranscript";
 import { useUser } from "../../context/UserContext";
 import { VideoQuiz } from "../../components/content-watch/VideoQuiz";
 import type { VideoQuizCompleteSummary } from "../../components/content-watch/VideoQuiz";
-import {
-  InVideoQuestionOverlay,
-  type InVideoAnswerPayload,
-} from "../../components/content-watch/InVideoQuestionOverlay";
 import type { LessonSummaryState } from "./LessonSummaryPage";
 import {
   defaultQuizQuestions,
@@ -46,14 +40,6 @@ import { appEn } from "../../locales/app/en";
 import { formatMessage } from "../../lib/formatMessage";
 import { useIsLgUp } from "../../hooks/useMediaQuery";
 import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
-import {
-  assignMcqCueTimes,
-  isMcqQuizQuestion,
-  isOpenQuizQuestion,
-  mcqQuestionsWithCues,
-  parseTimestampToSec,
-} from "../../lib/quizCueTimes";
-import type { QuizWrongReviewItem } from "../../components/content-watch/VideoQuiz";
 
 const LESSON_XP = 150;
 const LESSON_SUMMARY_STORAGE = "lessonSummary:";
@@ -117,18 +103,10 @@ function mapApiTestsToQuiz(
           : catRaw === "comprehension"
             ? ("comprehension" as const)
             : undefined;
-    const apiTimestamp =
-      typeof (t as { timestamp?: unknown }).timestamp === "string"
-        ? (t as { timestamp: string }).timestamp
-        : typeof (t as { cueTime?: unknown }).cueTime === "string"
-          ? (t as { cueTime: string }).cueTime
-          : "—";
-    const parsedSec = parseTimestampToSec(apiTimestamp);
 
     return {
       id,
-      timestamp: apiTimestamp,
-      timestampSec: parsedSec ?? undefined,
+      timestamp: "—",
       question: t.question ?? "",
       questionType: "multiple_choice",
       options,
@@ -360,6 +338,65 @@ function readWrittenSummaryScoreFromSubmit(
     return undefined;
   }
   return undefined;
+}
+
+function splitLongTranscriptLines(lines: TranscriptLine[], maxChars = 80): TranscriptLine[] {
+  const out: TranscriptLine[] = [];
+  const softLimit = Math.floor(maxChars * 0.5);
+
+  for (const line of lines) {
+    if (!line.text || typeof line.startSec !== 'number' || typeof line.endSec !== 'number') {
+      out.push(line);
+      continue;
+    }
+    if (line.text.length <= maxChars) {
+      out.push(line);
+      continue;
+    }
+
+    const words = line.text.split(' ');
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const word of words) {
+      const hasPunctuation = /[.,!?;:]$/.test(word);
+      const nextLength = (currentChunk ? currentChunk.length + 1 : 0) + word.length;
+
+      if (nextLength > maxChars && currentChunk.length > 0) {
+        chunks.push(currentChunk.trim());
+        currentChunk = word;
+      } else {
+        currentChunk += (currentChunk ? ' ' : '') + word;
+        if (hasPunctuation && currentChunk.length >= softLimit) {
+          chunks.push(currentChunk.trim());
+          currentChunk = '';
+        }
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk.trim());
+
+    const totalDuration = line.endSec - line.startSec;
+    const totalChars = chunks.reduce((acc, c) => acc + c.length, 0);
+
+    let currentStart = line.startSec;
+    for (const chunk of chunks) {
+      const chunkDuration = (chunk.length / totalChars) * totalDuration;
+      const chunkEnd = currentStart + chunkDuration;
+
+      const m = Math.floor(currentStart / 60);
+      const s = Math.floor(currentStart % 60);
+      const timeLabel = `${m}:${s.toString().padStart(2, "0")}`;
+
+      out.push({
+        time: timeLabel,
+        startSec: currentStart,
+        endSec: chunkEnd,
+        text: chunk
+      });
+      currentStart = chunkEnd;
+    }
+  }
+  return out;
 }
 
 type TabId = "vocabulary" | "transcript" | "quiz";
@@ -647,17 +684,6 @@ export default function ContentPage() {
   const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [playbackSec, setPlaybackSec] = useState(0);
-  const [videoDurationSec, setVideoDurationSec] = useState(0);
-  const [activeInVideoQuestion, setActiveInVideoQuestion] =
-    useState<QuizQuestion | null>(null);
-  const [inVideoAnswers, setInVideoAnswers] = useState<
-    Record<string, number | string>
-  >({});
-  const [inVideoCorrectCount, setInVideoCorrectCount] = useState(0);
-  const [inVideoWrongReview, setInVideoWrongReview] = useState<
-    QuizWrongReviewItem[]
-  >([]);
-  const prevPlaybackSecRef = useRef(0);
   const [vocabularyHintMap, setVocabularyHintMap] = useState<
     Record<
       string,
@@ -671,7 +697,7 @@ export default function ContentPage() {
 
   const isLgUp = useIsLgUp();
 
-  /** True once playback reaches threshold for this lesson (quiz + Watched label). */
+  /** True once playback reaches threshold for this lesson (quiz + backend watch-complete). */
   const progressedToWatchedRef = useRef(false);
   /** POST /watch-complete fire-once guard (survey + analytics). */
   const watchCompletePostedRef = useRef(false);
@@ -871,7 +897,8 @@ export default function ContentPage() {
           return;
         }
         const raw = await r.text();
-        setTranscriptLines(parseWebVttTranscriptLines(raw));
+        const parsed = parseWebVttTranscriptLines(raw);
+        setTranscriptLines(splitLongTranscriptLines(parsed, 80));
       })
       .catch(() => {
         if (!cancelled) setTranscriptLines([]);
@@ -890,12 +917,6 @@ export default function ContentPage() {
     setLessonSideBundle(null);
     setTranscriptLines([]);
     setPlaybackSec(0);
-    setVideoDurationSec(0);
-    setActiveInVideoQuestion(null);
-    setInVideoAnswers({});
-    setInVideoCorrectCount(0);
-    setInVideoWrongReview([]);
-    prevPlaybackSecRef.current = 0;
     setTranscriptLoading(false);
     setVocabularyHintMap({});
     progressedToWatchedRef.current = false;
@@ -933,6 +954,10 @@ export default function ContentPage() {
         clearInterval(heartbeatIntervalRef.current);
     };
   }, [id]);
+
+  const headerRight = isVideoComplete
+    ? L.quizUnlocked
+    : formatMessage(L.xpAvailable, { xp: String(LESSON_XP) });
 
   const displayVocabulary = useMemo((): VocabularyItem[] => {
     const api = lessonSideBundle?.vocabulary;
@@ -1041,152 +1066,6 @@ export default function ContentPage() {
     [displayVocabulary, vocabularyHintMap],
   );
 
-  const baseQuizQuestions = useMemo((): QuizQuestion[] => {
-    if (
-      lessonSideBundle?.quizQuestions &&
-      lessonSideBundle.quizQuestions.length > 0
-    ) {
-      return lessonSideBundle.quizQuestions;
-    }
-    return defaultQuizQuestions;
-  }, [lessonSideBundle?.quizQuestions]);
-
-  const cuedQuizQuestions = useMemo(
-    () => assignMcqCueTimes(baseQuizQuestions, videoDurationSec),
-    [baseQuizQuestions, videoDurationSec],
-  );
-
-  const inVideoMcqQuestions = useMemo(
-    () => mcqQuestionsWithCues(cuedQuizQuestions),
-    [cuedQuizQuestions],
-  );
-
-  const answeredInVideoMcqCount = useMemo(
-    () =>
-      inVideoMcqQuestions.filter((q) => inVideoAnswers[q.id] !== undefined)
-        .length,
-    [inVideoMcqQuestions, inVideoAnswers],
-  );
-
-  const postVideoQuizQuestions = useMemo(() => {
-    const remainingMcqs = cuedQuizQuestions.filter(
-      (q) => isMcqQuizQuestion(q) && inVideoAnswers[q.id] === undefined,
-    );
-    const openQuestions = cuedQuizQuestions.filter(isOpenQuizQuestion);
-    return [...remainingMcqs, ...openQuestions];
-  }, [cuedQuizQuestions, inVideoAnswers]);
-
-  const quizTimelineMarkers = useMemo((): VideoTimelineMarker[] => {
-    return inVideoMcqQuestions.map((q, idx) => {
-      const status: VideoTimelineMarker["status"] =
-        activeInVideoQuestion?.id === q.id
-          ? "active"
-          : inVideoAnswers[q.id] !== undefined
-            ? "answered"
-            : "pending";
-      return {
-        id: q.id,
-        sec: q.timestampSec ?? 0,
-        label: formatMessage(
-          status === "answered"
-            ? L.timelineQuestionAnswered
-            : L.timelineQuestionMarker,
-          {
-            n: String(idx + 1),
-            time: q.timestamp,
-          },
-        ),
-        status,
-      };
-    });
-  }, [inVideoMcqQuestions, inVideoAnswers, activeInVideoQuestion, L]);
-
-  const headerRight = isVideoComplete
-    ? L.quizUnlocked
-    : inVideoMcqQuestions.length > 0
-      ? formatMessage(L.inVideoQuizProgress, {
-          answered: String(answeredInVideoMcqCount),
-          total: String(inVideoMcqQuestions.length),
-        })
-      : formatMessage(L.xpAvailable, { xp: String(LESSON_XP) });
-
-  useEffect(() => {
-    if (activeInVideoQuestion) return;
-    if (inVideoMcqQuestions.length === 0) return;
-
-    const prev = prevPlaybackSecRef.current;
-    const current = playbackSec;
-    prevPlaybackSecRef.current = current;
-
-    for (const q of inVideoMcqQuestions) {
-      if (inVideoAnswers[q.id] !== undefined) continue;
-      const cue = q.timestampSec ?? 0;
-      const crossedForward = prev < cue && current >= cue;
-      const seekedPast = prev > current + 1 && current >= cue;
-      if (!crossedForward && !seekedPast) continue;
-
-      const el = videoElRef.current;
-      if (el && !el.paused) {
-        el.pause();
-      }
-      setActiveInVideoQuestion(q);
-      setActiveTab("quiz");
-      break;
-    }
-  }, [playbackSec, activeInVideoQuestion, inVideoMcqQuestions, inVideoAnswers]);
-
-  const handleInVideoAnswer = useCallback(
-    (payload: InVideoAnswerPayload) => {
-      if (payload.isCorrect) {
-        setInVideoCorrectCount((prev) => prev + 1);
-      } else {
-        setInVideoWrongReview((prev) => [
-          ...prev,
-          {
-            question: payload.question,
-            options: payload.options,
-            selectedIndex: payload.selectedIndex,
-            correctIndex: payload.correctIndex,
-            explanation: payload.explanation,
-            category: payload.category,
-          },
-        ]);
-      }
-      setInVideoAnswers((prev) => {
-        const updated: Record<string, number | string> = {
-          ...prev,
-          [payload.questionId]: payload.selectedIndex,
-          [`${payload.questionId}_text`]: payload.options[payload.selectedIndex],
-          [`${payload.questionId}_question`]: payload.question,
-          [`${payload.questionId}_options`]: JSON.stringify(payload.options),
-          [`${payload.questionId}_correct`]: payload.correctIndex,
-        };
-        const el = videoElRef.current;
-        const t = el?.currentTime ?? 0;
-        const next = inVideoMcqQuestions.find(
-          (q) =>
-            updated[q.id] === undefined && (q.timestampSec ?? 0) <= t + 0.25,
-        );
-        queueMicrotask(() => {
-          if (next) {
-            el?.pause();
-            setActiveInVideoQuestion(next);
-            setActiveTab("quiz");
-          } else {
-            setActiveInVideoQuestion(null);
-            if (el) {
-              void el.play().catch(() => {
-                /* autoplay blocked or user gesture required */
-              });
-            }
-          }
-        });
-        return updated;
-      });
-    },
-    [inVideoMcqQuestions],
-  );
-
   const lessonSideBundleRef = useRef(lessonSideBundle);
   const sideBundleLoadingRef = useRef(sideBundleLoading);
   useEffect(() => {
@@ -1227,15 +1106,8 @@ export default function ContentPage() {
     async (summary: VideoQuizCompleteSummary) => {
       if (!id || !videoData) return;
       const vid = Number.parseInt(String(id), 10);
-      let correctCount = inVideoCorrectCount + summary.correctCount;
-      let totalQuestions =
-        inVideoMcqQuestions.length +
-        cuedQuizQuestions.filter(isOpenQuizQuestion).length;
-      const mergedAnswers = { ...inVideoAnswers, ...summary.answersById };
-      const mergedWrongReview = [
-        ...inVideoWrongReview,
-        ...summary.wrongReview,
-      ];
+      let correctCount = summary.correctCount;
+      let totalQuestions = summary.totalQuestions;
 
       const readyBundle = (b: typeof lessonSideBundle) =>
         Boolean(
@@ -1255,7 +1127,7 @@ export default function ContentPage() {
         ? bundle!.quizQuestions
         : defaultQuizQuestions;
       const writtenSummaryText = extractOpenWrittenAnswer(
-        mergedAnswers,
+        summary.answersById,
         questions,
       );
       let writtenSummaryFeedback: string | null | undefined = undefined;
@@ -1274,7 +1146,7 @@ export default function ContentPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               token: bundle!.gradingToken,
-              answers: mergedAnswers,
+              answers: summary.answersById,
               keyVocabularyTerms,
               keyVocabularyDetails,
             }),
@@ -1340,8 +1212,8 @@ export default function ContentPage() {
         themeTags,
         levelTags,
         quizReview:
-          mergedWrongReview.length > 0
-            ? { wrong: mergedWrongReview }
+          summary.wrongReview.length > 0
+            ? { wrong: summary.wrongReview }
             : undefined,
         writtenSummaryText,
         writtenSummaryFeedback,
@@ -1366,11 +1238,6 @@ export default function ContentPage() {
       waitForLessonSideBundleWithToken,
       refreshProfile,
       L,
-      inVideoCorrectCount,
-      inVideoAnswers,
-      inVideoWrongReview,
-      inVideoMcqQuestions.length,
-      cuedQuizQuestions,
     ],
   );
 
@@ -1443,26 +1310,13 @@ export default function ContentPage() {
     (!lessonSideBundle?.gradingToken ||
       (lessonSideBundle.quizQuestions?.length ?? 0) === 0);
 
-  const inVideoQuizProgressPanel = (
-    <div className="space-y-3 py-6 text-center">
-      <p className="text-sm font-medium text-foreground">{L.quizDuringVideoLead}</p>
-      <p className="text-xs text-muted-foreground">{L.quizDuringVideoHint}</p>
-      <p className="text-sm text-muted-foreground">
-        {formatMessage(L.inVideoQuizProgress, {
-          answered: String(answeredInVideoMcqCount),
-          total: String(inVideoMcqQuestions.length),
-        })}
-      </p>
-    </div>
-  );
-
-  const activeInVideoIndex =
-    activeInVideoQuestion != null
-      ? inVideoMcqQuestions.findIndex((q) => q.id === activeInVideoQuestion.id)
-      : -1;
-
   const quizPanel: ReactNode = !isVideoComplete ? (
-    inVideoQuizProgressPanel
+    <VideoQuiz
+      key={`quiz-lock-${id}`}
+      questions={defaultQuizQuestions}
+      isVideoComplete={false}
+      onComplete={handleQuizComplete}
+    />
   ) : quizWaitingForServer ? (
     <div className="py-10 text-center">
       <div
@@ -1481,12 +1335,8 @@ export default function ContentPage() {
     </div>
   ) : (
     <VideoQuiz
-      key={`quiz-${id}-${lessonSideBundle!.gradingToken!.slice(0, 36)}-${answeredInVideoMcqCount}`}
-      questions={
-        postVideoQuizQuestions.length > 0
-          ? postVideoQuizQuestions
-          : lessonSideBundle!.quizQuestions
-      }
+      key={`quiz-${id}-${lessonSideBundle!.gradingToken!.slice(0, 36)}`}
+      questions={lessonSideBundle!.quizQuestions}
       isVideoComplete={true}
       onComplete={handleQuizComplete}
     />
@@ -1514,30 +1364,19 @@ export default function ContentPage() {
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
-              <div className="relative mt-5 overflow-hidden rounded-xl border border-border bg-muted ring-1 ring-border/40">
+              <div className="overflow-hidden rounded-xl mt-5 border border-border bg-muted ring-1 ring-border/40">
                 <VideoPlayer
                   src={videoData.videoLink}
-                  timelineMarkers={quizTimelineMarkers}
+                  transcript={transcriptLines}
                   onEnded={handleVideoEnded}
                   onPlay={handleVideoPlay}
                   onPlaybackTime={(t) => setPlaybackSec(t)}
                   onPlaybackFraction={handlePlaybackFraction}
-                  onDuration={(d) => setVideoDurationSec(d)}
                   onVideoMount={(el) => {
                     videoElRef.current = el;
                   }}
                   className="rounded-none border-0"
                 />
-                {activeInVideoQuestion && !isVideoComplete ? (
-                  <InVideoQuestionOverlay
-                    question={activeInVideoQuestion}
-                    questionIndex={
-                      activeInVideoIndex >= 0 ? activeInVideoIndex : 0
-                    }
-                    totalMcq={inVideoMcqQuestions.length}
-                    onAnswer={handleInVideoAnswer}
-                  />
-                ) : null}
               </div>
 
               <div>
@@ -1549,9 +1388,8 @@ export default function ContentPage() {
                     <span className="text-sm text-accent">{L.watched}</span>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      {formatMessage(L.inVideoQuizProgress, {
-                        answered: String(answeredInVideoMcqCount),
-                        total: String(inVideoMcqQuestions.length),
+                      {formatMessage(L.watchToUnlock, {
+                        pct: String(Math.round(WATCHED_COMPLETED_RATIO * 100)),
                       })}
                     </span>
                   )}
