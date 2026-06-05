@@ -344,7 +344,7 @@ export default function VideoPage() {
             data.recommendations,
             thumbnailByVideoId,
             12,
-            ageRestrictionByVideoId
+            ageRestrictionByVideoId,
           );
         }
       }
@@ -484,15 +484,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
@@ -634,7 +634,7 @@ export default function VideoPage() {
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "left")}
-                      className="absolute left-0 z-20 hidden h-7 w-7 -translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer  left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -667,7 +667,7 @@ export default function VideoPage() {
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "right")}
-                      className="absolute right-0 z-20 hidden h-7 w-7 translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -690,7 +690,7 @@ export default function VideoPage() {
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "left")}
-                        className="absolute left-0 z-20 hidden h-7 w-7 -translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
@@ -723,7 +723,7 @@ export default function VideoPage() {
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "right")}
-                        className="absolute right-0 z-20 hidden h-7 w-7 translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
@@ -826,7 +826,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
+                        "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>
