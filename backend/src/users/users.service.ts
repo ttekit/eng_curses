@@ -47,7 +47,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   private readonly userSelect = {
     id: true,
@@ -90,6 +90,12 @@ export class UsersService {
         playbackSpeed: true,
         currentResolution: true,
       },
+    },
+    class: {
+      select: { name: true },
+    },
+    teacher: {
+      select: { name: true },
     },
   };
 
@@ -158,14 +164,14 @@ export class UsersService {
       favoriteGenres:
         favoriteGenres && favoriteGenres.length > 0
           ? {
-            connect: favoriteGenres.map((id) => ({ id })),
-          }
+              connect: favoriteGenres.map((id) => ({ id })),
+            }
           : undefined,
       hatedGenres:
         hatedGenres && hatedGenres.length > 0
           ? {
-            connect: hatedGenres.map((id) => ({ id })),
-          }
+              connect: hatedGenres.map((id) => ({ id })),
+            }
           : undefined,
     };
 
@@ -187,7 +193,9 @@ export class UsersService {
       name,
       password: hashedPassword,
       ...(role ? { role } : {}),
-      dateOfBirth: createUserDto.dateOfBirth ? new Date(createUserDto.dateOfBirth) : null,
+      dateOfBirth: createUserDto.dateOfBirth
+        ? new Date(createUserDto.dateOfBirth)
+        : null,
       hasCompletedPlacement: role === "TEACHER" || role === "ADMIN",
     };
 
@@ -224,7 +232,11 @@ export class UsersService {
           select: this.userSelect,
         });
         await this.alcorythmService.analyzeUserLevel(created.id);
-        return created;
+        return {
+          ...created,
+          className: created.class?.name ?? null,
+          teacherName: created.teacher?.name ?? null,
+        };
       }
 
       if (error?.code !== "P2021") {
@@ -241,13 +253,22 @@ export class UsersService {
     }
 
     await this.alcorythmService.analyzeUserLevel(created.id);
-    return created;
+    return {
+      ...created,
+      className: created.class?.name ?? null,
+      teacherName: created.teacher?.name ?? null,
+    };
   }
 
   async findAll() {
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       select: this.userSelect,
     });
+    return users.map((user) => ({
+      ...user,
+      className: (user as any).class?.name ?? null,
+      teacherName: (user as any).teacher?.name ?? null,
+    }));
   }
 
   async findById(id: number) {
@@ -260,12 +281,17 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return user;
+    return {
+      ...user,
+      className: (user as any).class?.name ?? null,
+      teacherName: (user as any).teacher?.name ?? null,
+    };
   }
 
   async findOne(id: number) {
     return this.findById(id);
   }
+
   async FindByEmail(email: string) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -356,31 +382,31 @@ export class UsersService {
 
     const settingsUpsert = hasSettingsRowUpdate
       ? {
-        settings: {
-          upsert: {
-            create: {
-              playbackSpeed:
-                playbackSpeed === undefined ? null : Number(playbackSpeed),
-              currentResolution:
-                currentResolution === undefined
-                  ? null
-                  : String(currentResolution),
-            },
-            update: {
-              ...(playbackSpeed !== undefined
-                ? {
-                  playbackSpeed: Number(playbackSpeed),
-                }
-                : {}),
-              ...(currentResolution !== undefined
-                ? {
-                  currentResolution: String(currentResolution),
-                }
-                : {}),
+          settings: {
+            upsert: {
+              create: {
+                playbackSpeed:
+                  playbackSpeed === undefined ? null : Number(playbackSpeed),
+                currentResolution:
+                  currentResolution === undefined
+                    ? null
+                    : String(currentResolution),
+              },
+              update: {
+                ...(playbackSpeed !== undefined
+                  ? {
+                      playbackSpeed: Number(playbackSpeed),
+                    }
+                  : {}),
+                ...(currentResolution !== undefined
+                  ? {
+                      currentResolution: String(currentResolution),
+                    }
+                  : {}),
+              },
             },
           },
-        },
-      }
+        }
       : {};
 
     let updatedUser: any;
@@ -392,61 +418,61 @@ export class UsersService {
           ...settingsUpsert,
           ...(hasProfileUpdate
             ? {
-              additionalUserData: {
-                upsert: {
-                  create: {
-                    englishLevel,
-                    nativeLanguage,
-                    knownLanguages: knownLanguages || [],
-                    knownLanguageLevels,
-                    hobbies: hobbies || [],
-                    education,
-                    workField,
-                    learningGoal,
-                    timeToAchieve,
-                    favoriteGenres: favoriteGenres
-                      ? {
-                        connect: favoriteGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                    hatedGenres: hatedGenres
-                      ? {
-                        connect: hatedGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                  },
-                  update: {
-                    englishLevel,
-                    nativeLanguage,
-                    knownLanguages,
-                    knownLanguageLevels,
-                    hobbies,
-                    education,
-                    workField,
-                    learningGoal,
-                    timeToAchieve,
-                    favoriteGenres: favoriteGenres
-                      ? {
-                        set: favoriteGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                    hatedGenres: hatedGenres
-                      ? {
-                        set: hatedGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
+                additionalUserData: {
+                  upsert: {
+                    create: {
+                      englishLevel,
+                      nativeLanguage,
+                      knownLanguages: knownLanguages || [],
+                      knownLanguageLevels,
+                      hobbies: hobbies || [],
+                      education,
+                      workField,
+                      learningGoal,
+                      timeToAchieve,
+                      favoriteGenres: favoriteGenres
+                        ? {
+                            connect: favoriteGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                      hatedGenres: hatedGenres
+                        ? {
+                            connect: hatedGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                    },
+                    update: {
+                      englishLevel,
+                      nativeLanguage,
+                      knownLanguages,
+                      knownLanguageLevels,
+                      hobbies,
+                      education,
+                      workField,
+                      learningGoal,
+                      timeToAchieve,
+                      favoriteGenres: favoriteGenres
+                        ? {
+                            set: favoriteGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                      hatedGenres: hatedGenres
+                        ? {
+                            set: hatedGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                    },
                   },
                 },
-              },
-            }
+              }
             : {}),
         },
         select: this.userSelect,
@@ -482,16 +508,26 @@ export class UsersService {
       await this.alcorythmService.analyzeUserLevel(id);
     }
 
-    return updatedUser;
+    return {
+      ...updatedUser,
+      className: updatedUser.class?.name ?? null,
+      teacherName: updatedUser.teacher?.name ?? null,
+    };
   }
 
   async remove(id: number) {
     await this.findById(id);
 
-    return this.prisma.user.delete({
+    const deleted = await this.prisma.user.delete({
       where: { id },
       select: this.userSelect,
     });
+
+    return {
+      ...deleted,
+      className: (deleted as any).class?.name ?? null,
+      teacherName: (deleted as any).teacher?.name ?? null,
+    };
   }
 
   async updateActivityStreak(userId: number) {
@@ -510,7 +546,9 @@ export class UsersService {
     if (!user.lastActivityDate) {
       newStreak = newStreak > 0 ? newStreak + 1 : 1;
     } else {
-      const lastActivityStr = new Date(user.lastActivityDate).toISOString().split("T")[0];
+      const lastActivityStr = new Date(user.lastActivityDate)
+        .toISOString()
+        .split("T")[0];
 
       if (todayStr === lastActivityStr) {
         if (newStreak === 0) {

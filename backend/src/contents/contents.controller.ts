@@ -154,6 +154,36 @@ export class ContentsController {
     return this.contentsService.patchTeacherContentVisibility(userId, id, dto);
   }
 
+  @Patch("teacher/:id/deadlines")
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: "Teacher: update deadlines for owned video or assigned homework",
+  })
+  async updateTeacherContentDeadlines(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body() body: { availableFrom: string | null; deadline: string | null },
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.updateTeacherContentDeadlines(
+      teacherId,
+      id,
+      body.availableFrom,
+      body.deadline,
+    );
+  }
+
+  @Get("teacher/:id/student-results")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Get student quiz results for a specific video" })
+  async getVideoStudentResults(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.getVideoStudentResults(teacherId, id);
+  }
+
   @Get(":id")
   @SkipSubscriptionCheck()
   getContentById(@Param("id", ParseIntPipe) id: number) {

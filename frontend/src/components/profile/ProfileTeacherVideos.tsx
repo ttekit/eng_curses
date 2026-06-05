@@ -1,6 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
-import { Loader2, Video, Plus, Upload, Trash2, BookOpen } from "lucide-react";
+import {
+  Loader2,
+  Video,
+  Plus,
+  Upload,
+  Trash2,
+  BookOpen,
+  ChevronDown,
+  Clock,
+  FileText,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
@@ -27,7 +39,101 @@ export type TeacherSeriesItem = {
   availableFrom?: string | null;
   deadline?: string | null;
   classesAssigned?: string;
+  classIds?: number[];
 };
+
+function formatDateTimeLocal(dateStr?: string | null) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+}
+
+function isValidYear(dateString: string) {
+  if (!dateString) return true;
+  const year = dateString.split("-")[0];
+  return year.length <= 4;
+}
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  disabled,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <div className="relative w-full text-sm font-medium" ref={ref}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-foreground focus:outline-none transition-colors",
+          isOpen
+            ? "border-primary ring-1 ring-primary"
+            : "border-border hover:border-primary/50",
+          disabled && "opacity-50 cursor-not-allowed",
+          className,
+        )}
+      >
+        <span className="truncate">{selectedOption?.label}</span>
+        <ChevronDown
+          className={cn(
+            "ml-2 size-4 shrink-0 transition-transform opacity-50",
+            isOpen && "rotate-180",
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-primary bg-background py-1 shadow-xl">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center px-3 py-2.5 text-left transition-colors hover:bg-muted/50",
+                value === opt.value
+                  ? "text-primary font-bold bg-primary/10"
+                  : "text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function generateVideoThumbnailBlob(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -67,6 +173,7 @@ function generateVideoThumbnailBlob(file: File): Promise<Blob> {
 
 export function ProfileTeacherVideos() {
   const t = useAppMessages().profileTeacherVideos;
+  const tStudents = useAppMessages().profileTeacherStudents;
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
@@ -83,6 +190,8 @@ export function ProfileTeacherVideos() {
   const [assignedSeries, setAssignedSeries] = useState<TeacherSeriesItem[]>([]);
 
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
+  const [filterClassId, setFilterClassId] = useState<number | "all">("all");
+
   const [visibilityBusyId, setVisibilityBusyId] = useState<number | null>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -100,6 +209,14 @@ export function ProfileTeacherVideos() {
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
 
+  const [editDeadlineModalOpen, setEditDeadlineModalOpen] = useState(false);
+  const [editingDeadlineId, setEditingDeadlineId] = useState<number | null>(
+    null,
+  );
+  const [editOpenDateStr, setEditOpenDateStr] = useState("");
+  const [editCloseDateStr, setEditCloseDateStr] = useState("");
+  const [isSavingDeadline, setIsSavingDeadline] = useState(false);
+
   const [assignMode, setAssignMode] = useState<"all" | "classes">("all");
   const [deadlineMode, setDeadlineMode] = useState<
     "none" | "close" | "open_close"
@@ -113,6 +230,15 @@ export function ProfileTeacherVideos() {
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+
+  // States for student tests (quiz results by video)
+  const [resultsModalOpen, setResultsModalOpen] = useState(false);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [videoResults, setVideoResults] = useState<any>(null);
+  const [resultsClassFilter, setResultsClassFilter] = useState<number | "all">(
+    "all",
+  );
+  const [selectedStudentQuiz, setSelectedStudentQuiz] = useState<any>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -158,20 +284,28 @@ export function ProfileTeacherVideos() {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (uploadOpen && !uploadSaving) setUploadOpen(false);
-        if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
-        if (revokeModalOpen && !isRevoking) setRevokeModalOpen(false);
+        if (selectedStudentQuiz) setSelectedStudentQuiz(null);
+        else if (resultsModalOpen) setResultsModalOpen(false);
+        else if (uploadOpen && !uploadSaving) setUploadOpen(false);
+        else if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+        else if (revokeModalOpen && !isRevoking) setRevokeModalOpen(false);
+        else if (editDeadlineModalOpen && !isSavingDeadline)
+          setEditDeadlineModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [
+    selectedStudentQuiz,
+    resultsModalOpen,
     uploadOpen,
     uploadSaving,
     deleteModalOpen,
     isDeleting,
     revokeModalOpen,
     isRevoking,
+    editDeadlineModalOpen,
+    isSavingDeadline,
   ]);
 
   const updateVisibility = useCallback(
@@ -311,7 +445,6 @@ export function ProfileTeacherVideos() {
       toast.success(t.uploadSuccessToast);
       setUploadOpen(false);
 
-      // Reset form
       setUploadTitle("");
       setUploadDesc("");
       setUploadFile(null);
@@ -397,6 +530,77 @@ export function ProfileTeacherVideos() {
     }
   };
 
+  const openEditDeadlineModal = (item: TeacherSeriesItem) => {
+    setEditingDeadlineId(item.contentId);
+    setEditOpenDateStr(formatDateTimeLocal(item.availableFrom));
+    setEditCloseDateStr(formatDateTimeLocal(item.deadline));
+    setEditDeadlineModalOpen(true);
+  };
+
+  const handleSaveDeadline = async () => {
+    if (!editingDeadlineId) return;
+    setIsSavingDeadline(true);
+    try {
+      const res = await apiFetch(
+        `/contents/teacher/${editingDeadlineId}/deadlines`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            availableFrom: editOpenDateStr
+              ? new Date(editOpenDateStr).toISOString()
+              : null,
+            deadline: editCloseDateStr
+              ? new Date(editCloseDateStr).toISOString()
+              : null,
+          }),
+        },
+      );
+      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
+      toast.success("Deadlines updated successfully!");
+      setEditDeadlineModalOpen(false);
+      await loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update deadlines.");
+    } finally {
+      setIsSavingDeadline(false);
+    }
+  };
+
+  const openResultsModal = async (contentId: number) => {
+    setResultsLoading(true);
+    setResultsModalOpen(true);
+    setVideoResults(null);
+    setSelectedStudentQuiz(null);
+    setResultsClassFilter("all");
+    try {
+      const res = await apiFetch(
+        `/contents/teacher/${contentId}/student-results`,
+      );
+      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
+      const data = await res.json();
+      setVideoResults(data);
+      if (data.classes?.length === 1) {
+        setResultsClassFilter(data.classes[0].id);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to load results");
+      setResultsModalOpen(false);
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  const filteredSeries = series.filter((s) => {
+    if (filterClassId === "all") return true;
+    return s.classIds?.includes(filterClassId) || s.classIds?.length === 0;
+  });
+
+  const filteredAssignedSeries = assignedSeries.filter((s) => {
+    if (filterClassId === "all") return true;
+    return s.classIds?.includes(filterClassId) || s.classIds?.length === 0;
+  });
+
   if (loading) {
     return (
       <div className="flex min-h-60 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -417,35 +621,49 @@ export function ProfileTeacherVideos() {
   return (
     <div className="grid grid-cols-1 gap-6 w-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-        <div className="flex items-center bg-muted/50 p-1.5 rounded-xl border border-border/50 w-full sm:w-auto">
-          <button
-            onClick={() => setActiveTab("uploads")}
-            className={cn(
-              "flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
-              activeTab === "uploads"
-                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Video className="size-4" />
-            My Uploads
-          </button>
-          <button
-            onClick={() => setActiveTab("assigned")}
-            className={cn(
-              "flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
-              activeTab === "assigned"
-                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <BookOpen className="size-4" />
-            Assigned Homework
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
+          <div className="flex items-center bg-muted/50 p-1.5 rounded-xl border border-border/50 w-full sm:w-auto shrink-0">
+            <button
+              onClick={() => setActiveTab("uploads")}
+              className={cn(
+                "flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
+                activeTab === "uploads"
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Video className="size-4" />
+              My Uploads
+            </button>
+            <button
+              onClick={() => setActiveTab("assigned")}
+              className={cn(
+                "flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
+                activeTab === "assigned"
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <BookOpen className="size-4" />
+              Assigned Homework
+            </button>
+          </div>
+
+          <CustomSelect
+            value={filterClassId === "all" ? "all" : String(filterClassId)}
+            onChange={(val) =>
+              setFilterClassId(val === "all" ? "all" : Number(val))
+            }
+            options={[
+              { value: "all", label: "All Classes & Global" },
+              ...classes.map((c) => ({ value: String(c.id), label: c.name })),
+            ]}
+            className="w-full sm:w-56"
+          />
         </div>
 
         <AdminButton
-          className="gap-2 flex w-full sm:w-auto rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          className="gap-2 flex w-full sm:w-auto rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] shrink-0"
           onClick={() => setUploadOpen(true)}
         >
           <Plus className="h-4 w-4 shrink-0" />
@@ -472,7 +690,7 @@ export function ProfileTeacherVideos() {
               }
               className="w-full sm:w-auto"
             >
-              {uploadSaving ? t.cancelUpload : t.cancel}
+              {uploadSaving ? t.cancelUpload : "Cancel"}
             </AdminButton>
             <AdminButton
               type="submit"
@@ -536,14 +754,14 @@ export function ProfileTeacherVideos() {
               <label className="text-sm font-medium text-primary">
                 Assign To
               </label>
-              <select
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer font-medium"
+              <CustomSelect
                 value={assignMode}
-                onChange={(e) => setAssignMode(e.target.value as any)}
-              >
-                <option value="all">All my students</option>
-                <option value="classes">Specific classes</option>
-              </select>
+                onChange={(val) => setAssignMode(val as any)}
+                options={[
+                  { value: "all", label: "All my students" },
+                  { value: "classes", label: "Specific classes" },
+                ]}
+              />
             </div>
 
             {assignMode === "all" && (
@@ -552,21 +770,24 @@ export function ProfileTeacherVideos() {
                   <label className="text-sm font-medium text-muted-foreground">
                     Global Visibility Rules
                   </label>
-                  <select
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                  <CustomSelect
                     value={deadlineMode}
-                    onChange={(e) => setDeadlineMode(e.target.value as any)}
-                  >
-                    <option value="none">
-                      Manual start/stop (Starts Private)
-                    </option>
-                    <option value="close">
-                      Has closing deadline (Starts Public)
-                    </option>
-                    <option value="open_close">
-                      Schedule open & close dates (Starts Private)
-                    </option>
-                  </select>
+                    onChange={(val) => setDeadlineMode(val as any)}
+                    options={[
+                      {
+                        value: "none",
+                        label: "Manual start/stop (Starts Private)",
+                      },
+                      {
+                        value: "close",
+                        label: "Has closing deadline (Starts Public)",
+                      },
+                      {
+                        value: "open_close",
+                        label: "Schedule open & close dates (Starts Private)",
+                      },
+                    ]}
+                  />
                 </div>
 
                 {deadlineMode === "open_close" && (
@@ -580,7 +801,11 @@ export function ProfileTeacherVideos() {
                       value={openDateStr}
                       className="w-full"
                       max="9999-12-31T23:59"
-                      onChange={(e) => setOpenDateStr(e.target.value)}
+                      onChange={(e) => {
+                        if (isValidYear(e.target.value)) {
+                          setOpenDateStr(e.target.value);
+                        }
+                      }}
                       min={new Date().toISOString().slice(0, 16)}
                       required
                     />
@@ -599,7 +824,11 @@ export function ProfileTeacherVideos() {
                       value={closeDateStr}
                       className="w-full"
                       max="9999-12-31T23:59"
-                      onChange={(e) => setCloseDateStr(e.target.value)}
+                      onChange={(e) => {
+                        if (isValidYear(e.target.value)) {
+                          setCloseDateStr(e.target.value);
+                        }
+                      }}
                       min={
                         deadlineMode === "open_close" && openDateStr
                           ? openDateStr
@@ -675,15 +904,18 @@ export function ProfileTeacherVideos() {
                                   lang="en-GB"
                                   value={data.availableFrom}
                                   className="w-full"
-                                  onChange={(e) =>
-                                    setSelectedClasses((p) => ({
-                                      ...p,
-                                      [cls.id]: {
-                                        ...p[cls.id],
-                                        availableFrom: e.target.value,
-                                      },
-                                    }))
-                                  }
+                                  max="9999-12-31T23:59"
+                                  onChange={(e) => {
+                                    if (isValidYear(e.target.value)) {
+                                      setSelectedClasses((p) => ({
+                                        ...p,
+                                        [cls.id]: {
+                                          ...p[cls.id],
+                                          availableFrom: e.target.value,
+                                        },
+                                      }));
+                                    }
+                                  }}
                                 />
                               </div>
                               <div className="space-y-1.5">
@@ -695,15 +927,18 @@ export function ProfileTeacherVideos() {
                                   lang="en-GB"
                                   value={data.deadline}
                                   className="w-full"
-                                  onChange={(e) =>
-                                    setSelectedClasses((p) => ({
-                                      ...p,
-                                      [cls.id]: {
-                                        ...p[cls.id],
-                                        deadline: e.target.value,
-                                      },
-                                    }))
-                                  }
+                                  max="9999-12-31T23:59"
+                                  onChange={(e) => {
+                                    if (isValidYear(e.target.value)) {
+                                      setSelectedClasses((p) => ({
+                                        ...p,
+                                        [cls.id]: {
+                                          ...p[cls.id],
+                                          deadline: e.target.value,
+                                        },
+                                      }));
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -717,6 +952,68 @@ export function ProfileTeacherVideos() {
             )}
           </div>
         </form>
+      </AdminModal>
+
+      <AdminModal
+        open={editDeadlineModalOpen}
+        onClose={() => !isSavingDeadline && setEditDeadlineModalOpen(false)}
+        title="Edit Deadlines"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setEditDeadlineModalOpen(false)}
+              disabled={isSavingDeadline}
+              className="w-full sm:w-auto"
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton
+              onClick={handleSaveDeadline}
+              disabled={isSavingDeadline}
+              className="w-full sm:w-auto"
+            >
+              {isSavingDeadline ? "Saving..." : "Save Deadlines"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">
+              Opening Date (Becomes Public)
+            </label>
+            <AdminInput
+              type="datetime-local"
+              lang="en-GB"
+              value={editOpenDateStr}
+              className="w-full"
+              max="9999-12-31T23:59"
+              onChange={(e) => {
+                if (isValidYear(e.target.value)) {
+                  setEditOpenDateStr(e.target.value);
+                }
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">
+              Closing Deadline (Becomes Private)
+            </label>
+            <AdminInput
+              type="datetime-local"
+              lang="en-GB"
+              value={editCloseDateStr}
+              className="w-full"
+              max="9999-12-31T23:59"
+              onChange={(e) => {
+                if (isValidYear(e.target.value)) {
+                  setEditCloseDateStr(e.target.value);
+                }
+              }}
+            />
+          </div>
+        </div>
       </AdminModal>
 
       <AdminModal
@@ -757,7 +1054,7 @@ export function ProfileTeacherVideos() {
               disabled={isDeleting}
               className="w-full sm:w-auto"
             >
-              {t.cancel}
+              Cancel
             </AdminButton>
             <AdminButton
               disabled={
@@ -834,8 +1131,415 @@ export function ProfileTeacherVideos() {
         </p>
       </AdminModal>
 
+      <AdminModal
+        open={resultsModalOpen && !selectedStudentQuiz}
+        onClose={() => setResultsModalOpen(false)}
+        title={
+          videoResults ? `Tests: ${videoResults.contentName}` : "Student Tests"
+        }
+        footer={
+          <AdminButton
+            onClick={() => setResultsModalOpen(false)}
+            className="w-full sm:w-auto"
+          >
+            Close
+          </AdminButton>
+        }
+      >
+        {resultsLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="size-8 animate-spin text-primary" />
+          </div>
+        ) : videoResults ? (
+          <div className="space-y-4">
+            {videoResults.classes.length > 1 && (
+              <CustomSelect
+                value={
+                  resultsClassFilter === "all"
+                    ? "all"
+                    : String(resultsClassFilter)
+                }
+                onChange={(val) =>
+                  setResultsClassFilter(val === "all" ? "all" : Number(val))
+                }
+                options={[
+                  { value: "all", label: "All Classes" },
+                  ...videoResults.classes.map((c: any) => ({
+                    value: String(c.id),
+                    label: c.name,
+                  })),
+                ]}
+              />
+            )}
+
+            <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
+              {videoResults.students
+                .filter(
+                  (s: any) =>
+                    resultsClassFilter === "all" ||
+                    s.classId === resultsClassFilter,
+                )
+                .map((s: any) => (
+                  <div
+                    key={s.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-muted/10 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-foreground text-sm">
+                        {s.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {s.email}
+                      </span>
+                      <span className="mt-1.5 inline-flex w-fit items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">
+                        {s.className || "General (No Class)"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                      {s.attempt ? (
+                        <>
+                          <span
+                            className={cn(
+                              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide border",
+                              s.attempt.passed
+                                ? "bg-green-500/10 text-green-500 border-green-500/20"
+                                : "bg-destructive/10 text-destructive border-destructive/20",
+                            )}
+                          >
+                            {s.attempt.passed ? (
+                              <CheckCircle2 className="size-3.5" />
+                            ) : (
+                              <XCircle className="size-3.5" />
+                            )}
+                            {Math.round(s.attempt.scorePct)}%{" "}
+                            {s.attempt.passed ? "PASS" : "FAIL"}
+                          </span>
+                          <button
+                            onClick={() => setSelectedStudentQuiz(s)}
+                            className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground px-4 py-2 rounded-lg transition-colors"
+                          >
+                            View Answers
+                          </button>
+                        </>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide bg-muted border border-border/50 text-muted-foreground">
+                          Not started
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+              {videoResults.students.filter(
+                (s: any) =>
+                  resultsClassFilter === "all" ||
+                  s.classId === resultsClassFilter,
+              ).length === 0 && (
+                <div className="py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50">
+                  No students found in this category.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="py-12 text-center text-destructive">
+            Failed to load results.
+          </div>
+        )}
+      </AdminModal>
+
+      <AdminModal
+        open={!!selectedStudentQuiz}
+        onClose={() => setSelectedStudentQuiz(null)}
+        title={
+          selectedStudentQuiz
+            ? `Test Details: ${selectedStudentQuiz.name}`
+            : "Quiz Details"
+        }
+        footer={
+          <AdminButton
+            className="w-full sm:w-auto"
+            onClick={() => setSelectedStudentQuiz(null)}
+          >
+            Back
+          </AdminButton>
+        }
+      >
+        {selectedStudentQuiz && selectedStudentQuiz.attempt && (
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border border-border">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Final Score
+                </p>
+                <p
+                  className={cn(
+                    "text-3xl font-bold",
+                    selectedStudentQuiz.attempt.passed
+                      ? "text-accent"
+                      : "text-destructive",
+                  )}
+                >
+                  {Math.round(selectedStudentQuiz.attempt.scorePct)}%
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Result
+                </p>
+                <p className="text-xl font-bold text-foreground">
+                  {selectedStudentQuiz.attempt.correct}{" "}
+                  <span className="text-muted-foreground text-sm">
+                    / {selectedStudentQuiz.attempt.total} correct
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pb-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">
+                Student Answers
+              </h4>
+              {(() => {
+                let answers = selectedStudentQuiz.attempt.answers;
+
+                if (typeof answers === "string") {
+                  try {
+                    answers = JSON.parse(answers);
+                  } catch (e) {}
+                }
+
+                if (
+                  !answers ||
+                  (typeof answers !== "object" && !Array.isArray(answers))
+                ) {
+                  return (
+                    <p className="text-sm text-muted-foreground ml-1">
+                      No detailed data recorded.
+                    </p>
+                  );
+                }
+
+                const renderMCQ = (q: any, idx: number) => {
+                  const questionText =
+                    q.question || q.prompt || `Question ${idx + 1}`;
+                  const options = q.options || q.choices || [];
+                  const studentChoice =
+                    q.studentIndex ??
+                    q.studentChoice ??
+                    q.userAnswer ??
+                    q.answer ??
+                    -1;
+                  const correctChoice =
+                    q.correctIndex ??
+                    q.correctChoice ??
+                    q.correctAnswer ??
+                    q.correct ??
+                    -1;
+
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-muted/10 border border-border/60 rounded-xl p-5 flex flex-col gap-4 shadow-sm mb-4"
+                    >
+                      <span className="text-[15px] text-foreground font-semibold break-words leading-snug">
+                        {questionText}
+                      </span>
+                      <div className="flex flex-col gap-2.5 mt-1">
+                        {options.map((opt: string, optIdx: number) => {
+                          const isStudentChoice = studentChoice === optIdx;
+                          const isCorrectChoice = correctChoice === optIdx;
+
+                          let variantClass =
+                            "border-border/40 bg-background/40 text-muted-foreground";
+                          let badgeClass =
+                            "bg-background border border-border/50 text-muted-foreground";
+                          let statusText = null;
+
+                          if (isCorrectChoice && isStudentChoice) {
+                            variantClass =
+                              "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400 font-medium shadow-sm";
+                            badgeClass =
+                              "bg-green-500 text-white border-green-500";
+                            statusText = "Correct";
+                          } else if (isStudentChoice) {
+                            variantClass =
+                              "border-destructive/40 bg-destructive/10 text-destructive font-medium shadow-sm";
+                            badgeClass =
+                              "bg-destructive text-white border-destructive";
+                            statusText = "Student's choice";
+                          } else if (isCorrectChoice) {
+                            variantClass =
+                              "border-green-500/30 bg-background text-green-600 dark:text-green-400";
+                            badgeClass =
+                              "bg-green-500/20 text-green-600 border-green-500/30";
+                            statusText = "Correct Answer";
+                          }
+
+                          return (
+                            <div
+                              key={optIdx}
+                              className={cn(
+                                "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-lg border p-3 text-sm transition-colors",
+                                variantClass,
+                              )}
+                            >
+                              <div className="flex items-center gap-3 max-w-full">
+                                <span
+                                  className={cn(
+                                    "flex items-center justify-center shrink-0 rounded-md size-6 text-[11px] font-bold",
+                                    badgeClass,
+                                  )}
+                                >
+                                  {String.fromCharCode(65 + optIdx)}
+                                </span>
+                                <span className="break-words leading-tight">
+                                  {opt}
+                                </span>
+                              </div>
+                              {statusText && (
+                                <span className="sm:ml-auto text-[10px] font-bold uppercase tracking-wider opacity-80 shrink-0 mt-2 sm:mt-0">
+                                  {statusText}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                };
+
+                if (Array.isArray(answers)) {
+                  return (
+                    <div className="flex flex-col">
+                      {answers.map((q, i) => renderMCQ(q, i))}
+                    </div>
+                  );
+                }
+
+                const qArray = Array.isArray(answers.answers)
+                  ? answers.answers
+                  : Array.isArray(answers.questions)
+                    ? answers.questions
+                    : null;
+                if (qArray) {
+                  return (
+                    <div className="flex flex-col">
+                      {qArray.map((q, i) => renderMCQ(q, i))}
+                      {Object.entries(answers).map(([k, v]) => {
+                        if (
+                          k === "answers" ||
+                          k === "questions" ||
+                          k === "summary" ||
+                          k === "summaryText"
+                        )
+                          return null;
+                        return (
+                          <div
+                            key={k}
+                            className="bg-muted/10 border border-border/60 rounded-xl p-5 mb-4 shadow-sm"
+                          >
+                            <span className="text-[10px] font-bold text-primary tracking-wider uppercase mb-2 block">
+                              {k}
+                            </span>
+                            {typeof v === "string" ? (
+                              <p className="text-sm italic">"{v}"</p>
+                            ) : (
+                              <pre className="text-xs bg-background p-3 rounded-lg overflow-auto border border-border/50 text-muted-foreground">
+                                {JSON.stringify(v, null, 2)}
+                              </pre>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
+                const baseKeys = Object.keys(answers).filter(
+                  (k) =>
+                    !k.endsWith("_text") &&
+                    !k.endsWith("_options") &&
+                    !k.endsWith("_correct") &&
+                    !k.endsWith("_question") &&
+                    k !== "summaryText" &&
+                    k !== "summary",
+                );
+
+                return (
+                  <div className="flex flex-col gap-4">
+                    {baseKeys.map((key) => {
+                      const val = answers[key];
+
+                      if (typeof val === "object" && val !== null) {
+                        return (
+                          <div
+                            key={key}
+                            className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
+                          >
+                            <span className="text-[10px] font-bold text-primary tracking-wider uppercase mb-2 block">
+                              {key}
+                            </span>
+                            <pre className="text-xs bg-background p-3 rounded-lg overflow-auto border border-border/50 text-muted-foreground">
+                              {JSON.stringify(val, null, 2)}
+                            </pre>
+                          </div>
+                        );
+                      }
+
+                      const qText = answers[`${key}_question`];
+                      const aText = answers[`${key}_text`];
+                      let opts = answers[`${key}_options`];
+                      const corr = answers[`${key}_correct`];
+
+                      if (typeof opts === "string") {
+                        try {
+                          opts = JSON.parse(opts);
+                        } catch (e) {}
+                      }
+
+                      if (Array.isArray(opts)) {
+                        return renderMCQ(
+                          {
+                            question: qText || key,
+                            options: opts,
+                            studentIndex: Number(val),
+                            correctIndex: Number(corr),
+                          },
+                          parseInt(key.replace(/\D/g, "") || "0"),
+                        );
+                      } else if (
+                        typeof val === "string" ||
+                        typeof val === "number"
+                      ) {
+                        return (
+                          <div
+                            key={key}
+                            className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
+                          >
+                            <span className="text-[15px] text-foreground font-semibold break-words leading-snug mb-2 block">
+                              {qText || key}
+                            </span>
+                            <div className="bg-background/50 border border-border/50 p-3 rounded-lg">
+                              <p className="text-sm text-foreground">{val}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+      </AdminModal>
+
       {activeTab === "uploads" &&
-        (series.length === 0 ? (
+        (filteredSeries.length === 0 ? (
           <ProfileCard title={t.cardTitle}>
             <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
               <Video className="size-12 text-muted-foreground opacity-50" />
@@ -878,7 +1582,7 @@ export function ProfileTeacherVideos() {
                   </tr>
                 </thead>
                 <tbody>
-                  {series.map((s) => {
+                  {filteredSeries.map((s) => {
                     const busy = visibilityBusyId === s.contentId;
                     const vis = s.visibility.trim().toLowerCase();
                     const tags = [...s.systemTags, ...s.userTags].filter(
@@ -929,6 +1633,14 @@ export function ProfileTeacherVideos() {
                           >
                             {s.name}
                           </div>
+
+                          {s.classesAssigned && (
+                            <div className="mt-1.5 mb-1 flex flex-wrap gap-1">
+                              <span className="inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-primary truncate max-w-[200px]">
+                                {s.classesAssigned}
+                              </span>
+                            </div>
+                          )}
 
                           {(s.availableFrom || s.deadline) && (
                             <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
@@ -1015,32 +1727,29 @@ export function ProfileTeacherVideos() {
                             className="flex flex-col items-start gap-1.5"
                             style={{ width: "130px" }}
                           >
-                            <select
-                              className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
+                            <CustomSelect
                               value={computedVis}
                               disabled={
                                 busy || Boolean(s.availableFrom || s.deadline)
                               }
-                              aria-label={formatMessage(t.visibilityAria, {
-                                name: s.name,
-                              })}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                if (v !== "public" && v !== "unlisted") return;
-                                if (v === s.visibility) return;
+                              onChange={(val) => {
+                                if (val !== "public" && val !== "unlisted")
+                                  return;
+                                if (val === s.visibility) return;
                                 void updateVisibility(
                                   s.contentId,
-                                  v as "public" | "unlisted",
+                                  val as "public" | "unlisted",
                                 );
                               }}
-                            >
-                              <option value="public">
-                                {t.visibilityPublic}
-                              </option>
-                              <option value="unlisted">
-                                {t.visibilityPrivate}
-                              </option>
-                            </select>
+                              options={[
+                                { value: "public", label: t.visibilityPublic },
+                                {
+                                  value: "unlisted",
+                                  label: t.visibilityPrivate,
+                                },
+                              ]}
+                              className="py-1.5 font-semibold"
+                            />
                             {busy ? (
                               <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
                                 <Loader2 className="size-3.5 animate-spin shrink-0" />
@@ -1073,13 +1782,29 @@ export function ProfileTeacherVideos() {
                           </div>
                         </td>
                         <td className="p-4 align-middle text-right">
-                          <button
-                            onClick={() => openDeleteModal(s.contentId)}
-                            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
-                            title={t.deleteVideoAria}
-                          >
-                            <Trash2 className="size-4.5" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1 sm:gap-2">
+                            <button
+                              onClick={() => openResultsModal(s.contentId)}
+                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                              title="View Tests"
+                            >
+                              <FileText className="size-4.5" />
+                            </button>
+                            <button
+                              onClick={() => openEditDeadlineModal(s)}
+                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                              title="Edit Deadlines"
+                            >
+                              <Clock className="size-4.5" />
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(s.contentId)}
+                              className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
+                              title={t.deleteVideoAria}
+                            >
+                              <Trash2 className="size-4.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1091,7 +1816,7 @@ export function ProfileTeacherVideos() {
         ))}
 
       {activeTab === "assigned" &&
-        (assignedSeries.length === 0 ? (
+        (filteredAssignedSeries.length === 0 ? (
           <ProfileCard title="Assigned Homework">
             <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
               <BookOpen className="size-12 text-muted-foreground opacity-50" />
@@ -1117,7 +1842,7 @@ export function ProfileTeacherVideos() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assignedSeries.map((s) => (
+                  {filteredAssignedSeries.map((s) => (
                     <tr
                       key={s.contentId}
                       className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
@@ -1131,9 +1856,9 @@ export function ProfileTeacherVideos() {
                         </span>
                       </td>
                       <td className="p-4 align-middle">
-                        <div className="text-sm font-medium text-foreground max-w-[200px] truncate whitespace-normal leading-tight">
-                          {s.classesAssigned || "All Groups"}
-                        </div>
+                        <span className="inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-primary whitespace-normal leading-tight max-w-[200px]">
+                          {s.classesAssigned}
+                        </span>
                       </td>
                       <td className="p-4 align-middle">
                         <div className="flex flex-col gap-1 text-xs font-medium">
@@ -1183,13 +1908,29 @@ export function ProfileTeacherVideos() {
                         )}
                       </td>
                       <td className="p-4 align-middle text-right">
-                        <button
-                          onClick={() => openRevokeModal(s.contentId)}
-                          className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
-                          title="Remove Assignment"
-                        >
-                          <Trash2 className="size-4.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
+                          <button
+                            onClick={() => openResultsModal(s.contentId)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                            title="View Tests"
+                          >
+                            <FileText className="size-4.5" />
+                          </button>
+                          <button
+                            onClick={() => openEditDeadlineModal(s)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                            title="Edit Deadlines"
+                          >
+                            <Clock className="size-4.5" />
+                          </button>
+                          <button
+                            onClick={() => openRevokeModal(s.contentId)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+                            title="Remove Assignment"
+                          >
+                            <Trash2 className="size-4.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

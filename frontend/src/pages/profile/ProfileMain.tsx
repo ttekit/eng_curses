@@ -74,6 +74,7 @@ export default function ProfileMain() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
   const [joinMeta, setJoinMeta] = useState<{
     userId: string;
     label: string;
@@ -108,7 +109,7 @@ export default function ProfileMain() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, locale]);
 
   useEffect(() => {
     if (!user?.id || (activeTab !== "overview" && activeTab !== "activity"))
@@ -341,24 +342,39 @@ export default function ProfileMain() {
             <ProfileHeader user={headerModel} />
 
             {user?.role?.toLowerCase() === "student" &&
-              (user as any).teacherName && (
-                <div className="mt-4 flex items-center gap-3 rounded-xl bg-primary/10 px-5 py-3 border border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2">
-                  <div className="p-2 bg-primary/20 rounded-lg">
+              ((user as any).teacherName || user.className) && (
+                <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl bg-primary/10 px-5 py-3 border border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2">
+                  <div className="p-2 bg-primary/20 rounded-lg shrink-0">
                     <GraduationCap className="size-5 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                      {profile.yourTeacher}
-                    </p>
-                    <p className="text-sm font-medium text-foreground">
-                      <strong className="font-bold text-primary">
-                        {(user as any).teacherName}
-                      </strong>
-                    </p>
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                    {user.className && (
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                          Class
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          <strong className="font-bold text-primary">
+                            {user.className}
+                          </strong>
+                        </p>
+                      </div>
+                    )}
+                    {(user as any).teacherName && (
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                          {profile.yourTeacher || "Your Teacher"}
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          <strong className="font-bold text-primary">
+                            {(user as any).teacherName}
+                          </strong>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-            {/* ==================================== */}
 
             <div
               className="mt-8 flex flex-wrap gap-1 rounded-xl bg-secondary/50 p-1"

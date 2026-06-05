@@ -35,6 +35,8 @@ export type TeacherStudentQuizRow = {
   scorePct: number;
   passed: boolean;
   createdAt: string;
+  answers?: any;
+  summaryText?: string | null;
 };
 
 export type TeacherStudentResultRow = {
@@ -751,7 +753,9 @@ export class ContentsService {
       where: { ownerUserId: userId },
       orderBy: { createAt: "desc" },
       include: {
-        classAccesses: true,
+        classAccesses: {
+          include: { class: true },
+        },
         category: {
           orderBy: { playlistPosition: "asc" },
           take: 1,
@@ -793,6 +797,14 @@ export class ContentsService {
         }
       }
 
+      const classIds = c.classAccesses
+        ? c.classAccesses.map((a) => a.classId)
+        : [];
+      const classesAssigned =
+        c.classAccesses && c.classAccesses.length > 0
+          ? c.classAccesses.map((a) => a.class.name).join(", ")
+          : "All Students";
+
       return {
         contentId: c.id,
         name: c.name,
@@ -805,6 +817,8 @@ export class ContentsService {
         processingComplexity: stats?.processingComplexity ?? null,
         availableFrom: start ? start.toISOString() : null,
         deadline: end ? end.toISOString() : null,
+        classesAssigned,
+        classIds,
       };
     });
   }
@@ -832,6 +846,12 @@ export class ContentsService {
 
     return rows.map((c) => {
       const ca = c.classAccesses[0];
+      const classIds = c.classAccesses.map((a) => a.classId);
+      const classesAssigned =
+        c.classAccesses.length > 0
+          ? c.classAccesses.map((a) => a.class.name).join(", ")
+          : "All Students";
+
       return {
         contentId: c.id,
         name: c.name,
@@ -839,7 +859,8 @@ export class ContentsService {
         contentVideoId: c.category[0]?.ContentVideo?.[0]?.id || null,
         availableFrom: ca?.availableFrom?.toISOString() ?? null,
         deadline: ca?.deadline?.toISOString() ?? null,
-        classesAssigned: c.classAccesses.map((a) => a.class.name).join(", "),
+        classesAssigned,
+        classIds,
       };
     });
   }
@@ -854,6 +875,7 @@ export class ContentsService {
 
     return { success: true };
   }
+
   async deleteEpisode(contentMediaId: number) {
     const media = await this.prisma.contentMedia.findUnique({
       where: { id: contentMediaId },
@@ -912,6 +934,82 @@ export class ContentsService {
     return updatedContent;
   }
 
+  async updateTeacherContentDeadlines(
+    teacherId: number,
+    contentId: number,
+    availableFrom: string | null,
+    deadline: string | null,
+  ) {
+    await this.requireTeacherAccount(teacherId);
+
+    const content = await this.prisma.content.findUnique({
+      where: { id: contentId },
+    });
+
+    if (!content) throw new NotFoundException("Content not found");
+
+    const parsedAvailableFrom = availableFrom ? new Date(availableFrom) : null;
+    const parsedDeadline = deadline ? new Date(deadline) : null;
+
+    if (content.ownerUserId === teacherId) {
+      await this.prisma.content.update({
+        where: { id: contentId },
+        data: {
+          availableFrom: parsedAvailableFrom,
+          deadline: parsedDeadline,
+        },
+      });
+
+      const myClasses = await this.prisma.class.findMany({
+        where: { teacherId },
+        select: { id: true },
+      });
+      const myClassIds = myClasses.map((c) => c.id);
+
+      if (myClassIds.length > 0) {
+        await this.prisma.classContentAccess.updateMany({
+          where: { contentId, classId: { in: myClassIds } },
+          data: {
+            availableFrom: parsedAvailableFrom,
+            deadline: parsedDeadline,
+          },
+        });
+      }
+    } else {
+      const myClasses = await this.prisma.class.findMany({
+        where: { teacherId },
+        select: { id: true },
+      });
+      const myClassIds = myClasses.map((c) => c.id);
+
+      if (myClassIds.length === 0) {
+        throw new BadRequestException(
+          "You don't have any classes to update assignments for.",
+        );
+      }
+
+      const updated = await this.prisma.classContentAccess.updateMany({
+        where: { contentId, classId: { in: myClassIds } },
+        data: {
+          availableFrom: parsedAvailableFrom,
+          deadline: parsedDeadline,
+        },
+      });
+
+      if (updated.count === 0) {
+        throw new BadRequestException(
+          "You haven't assigned this video to any of your classes.",
+        );
+      }
+    }
+
+    await this.redis.del(`catalog:videos:teacher:${teacherId}`);
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+
+    return { success: true };
+  }
+
   async getVideosForStudent(studentId: number) {
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
@@ -923,6 +1021,8 @@ export class ContentsService {
     }
 
     const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const rows = await this.prisma.content.findMany({
       where: {
@@ -932,9 +1032,9 @@ export class ContentsService {
             classAccesses: { none: {} },
             OR: [
               { availableFrom: null, deadline: null, visibility: "public" },
-              { availableFrom: null, deadline: { gt: now } },
+              { availableFrom: null, deadline: { gt: sevenDaysAgo } },
               { availableFrom: { lte: now }, deadline: null },
-              { availableFrom: { lte: now }, deadline: { gt: now } },
+              { availableFrom: { lte: now }, deadline: { gt: sevenDaysAgo } },
             ],
           },
           ...(student.classId
@@ -949,9 +1049,12 @@ export class ContentsService {
                       classId: student.classId,
                       OR: [
                         { availableFrom: null, deadline: null },
-                        { availableFrom: null, deadline: { gt: now } },
+                        { availableFrom: null, deadline: { gt: sevenDaysAgo } },
                         { availableFrom: { lte: now }, deadline: null },
-                        { availableFrom: { lte: now }, deadline: { gt: now } },
+                        {
+                          availableFrom: { lte: now },
+                          deadline: { gt: sevenDaysAgo },
+                        },
                       ],
                     },
                   },
@@ -1105,17 +1208,28 @@ export class ContentsService {
     const out: TeacherStudentResultRow[] = students.map((s) => {
       const agg = attemptAvgMap.get(s.id);
       const recent = (recentByUser.get(s.id) ?? []).map(
-        (a): TeacherStudentQuizRow => ({
-          id: a.id,
-          contentVideoId: a.contentVideoId,
-          videoName: a.contentVideo.videoName,
-          correct: a.correct,
-          total: a.total,
-          scorePct: a.scorePct,
-          passed: a.passed,
-          createdAt: a.createdAt.toISOString(),
-        }),
+        (a: any): TeacherStudentQuizRow => {
+          let parsed = a.details;
+          if (typeof parsed === "string") {
+            try {
+              parsed = JSON.parse(parsed);
+            } catch (e) {}
+          }
+          return {
+            id: a.id,
+            contentVideoId: a.contentVideoId,
+            videoName: a.contentVideo.videoName,
+            correct: a.correct,
+            total: a.total,
+            scorePct: a.scorePct,
+            passed: a.passed,
+            createdAt: a.createdAt.toISOString(),
+            answers: parsed,
+            summaryText: parsed?.summaryText || parsed?.summary || null,
+          };
+        },
       );
+
       const lp = placementMap.get(s.id);
 
       return {
@@ -1138,6 +1252,118 @@ export class ContentsService {
     });
 
     return { students: out };
+  }
+
+  async getVideoStudentResults(teacherId: number, contentId: number) {
+    const content = await this.prisma.content.findFirst({
+      where: {
+        id: contentId,
+        OR: [
+          { ownerUserId: teacherId },
+          { classAccesses: { some: { class: { teacherId } } } },
+        ],
+      },
+      include: {
+        category: { include: { ContentVideo: true } },
+        classAccesses: { include: { class: true } },
+      },
+    });
+
+    if (!content)
+      throw new NotFoundException("Content not found or access denied");
+
+    const contentVideoId = content.category[0]?.ContentVideo[0]?.id;
+    if (!contentVideoId)
+      throw new BadRequestException("No video attached to this content");
+
+    let students: any[] = [];
+    let classes: any[] = [];
+
+    if (
+      content.ownerUserId === teacherId &&
+      content.classAccesses.length === 0
+    ) {
+      students = await this.prisma.user.findMany({
+        where: { teacherId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          classId: true,
+          class: { select: { name: true } },
+        },
+      });
+      classes = await this.prisma.class.findMany({
+        where: { teacherId },
+        select: { id: true, name: true },
+      });
+    } else {
+      const classIds = content.classAccesses.map((a: any) => a.classId);
+      classes = content.classAccesses.map((a: any) => a.class);
+      students = await this.prisma.user.findMany({
+        where: { teacherId, classId: { in: classIds } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          classId: true,
+          class: { select: { name: true } },
+        },
+      });
+    }
+
+    const studentIds = students.map((s: any) => s.id);
+    const attempts = await this.prisma.comprehensionTestAttempt.findMany({
+      where: {
+        userId: { in: studentIds },
+        contentVideoId: contentVideoId,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const attemptMap = new Map();
+    for (const att of attempts) {
+      if (!attemptMap.has(att.userId)) {
+        attemptMap.set(att.userId, att);
+      }
+    }
+
+    const results = students.map((s: any) => {
+      const att: any = attemptMap.get(s.id);
+
+      let parsed = att?.details;
+      if (typeof parsed === "string") {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {}
+      }
+
+      return {
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        classId: s.classId,
+        className: s.class?.name || null,
+        attempt: att
+          ? {
+              id: att.id,
+              scorePct: att.scorePct,
+              correct: att.correct,
+              total: att.total,
+              passed: att.passed,
+              answers: parsed,
+              summaryText: parsed?.summaryText || parsed?.summary || null,
+              createdAt: att.createdAt.toISOString(),
+            }
+          : null,
+      };
+    });
+
+    return {
+      contentName: content.name,
+      classes: classes.map((c: any) => ({ id: c.id, name: c.name })),
+      students: results,
+    };
   }
 
   async assignExistingToClasses(

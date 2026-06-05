@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { apiFetch } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
-import {
-  CatalogVideoCard,
-  type CatalogCardVideo,
-} from "../../components/catalog/CatalogVideoCard";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { cn } from "../../lib/utils";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Play, Lock, Clock, Info } from "lucide-react";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
+type ClassroomVideo = {
+  id: number;
+  title: string;
+  categoryLabel: string;
+  thumbnailUrl: string | null;
+  videoLink: string | null;
+  availableFrom: string | null;
+  deadline: string | null;
+};
+
 export default function ClassroomPage() {
-  const [videos, setVideos] = useState<CatalogCardVideo[]>([]);
+  const [videos, setVideos] = useState<ClassroomVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const { user } = useUser();
@@ -49,6 +55,8 @@ export default function ClassroomPage() {
                     : classroom.teacherLesson,
                   thumbnailUrl: d.thumbnailUrl,
                   videoLink: d.videoLink,
+                  availableFrom: d.availableFrom,
+                  deadline: d.deadline,
                 }))
                 .filter((v: any) => v.id != null),
             );
@@ -108,11 +116,7 @@ export default function ClassroomPage() {
             </div>
           ) : videos.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-3xl bg-card/30 py-20 text-center border border-border">
-              <img
-                src="/SadIcon.svg"
-                className="w-24 mb-4 opacity-80"
-                alt=""
-              />
+              <img src="/SadIcon.svg" className="w-24 mb-4 opacity-80" alt="" />
               <h2 className="text-xl font-bold">{classroom.emptyTitle}</h2>
               <p className="text-muted-foreground mt-2 max-w-md">
                 {isTeacher ? classroom.emptyTeacher : classroom.emptyStudent}
@@ -120,9 +124,127 @@ export default function ClassroomPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {videos.map((video) => (
-                <CatalogVideoCard key={video.id} video={video} />
-              ))}
+              {videos.map((video) => {
+                const now = new Date();
+                const openDate = video.availableFrom
+                  ? new Date(video.availableFrom)
+                  : null;
+                const closeDate = video.deadline
+                  ? new Date(video.deadline)
+                  : null;
+
+                // Если это учитель, видео всегда доступно для предпросмотра
+                const isLocked = !isTeacher && openDate && openDate > now;
+                const isClosed = !isTeacher && closeDate && closeDate < now;
+                const isPlayable = !isLocked && !isClosed;
+
+                let daysToDeletion = 0;
+                if (isClosed && closeDate) {
+                  const deleteTime =
+                    closeDate.getTime() + 7 * 24 * 60 * 60 * 1000;
+                  daysToDeletion = Math.max(
+                    1,
+                    Math.ceil(
+                      (deleteTime - now.getTime()) / (1000 * 60 * 60 * 24),
+                    ),
+                  );
+                }
+
+                return (
+                  <div key={video.id} className="flex flex-col gap-3 group">
+                    <div
+                      className={cn(
+                        "relative aspect-video rounded-xl overflow-hidden bg-muted border border-border/50",
+                        (isLocked || isClosed) && "opacity-70 grayscale-[50%]",
+                      )}
+                    >
+                      {video.thumbnailUrl ? (
+                        <img
+                          src={video.thumbnailUrl}
+                          alt={video.title}
+                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-muted to-accent/10" />
+                      )}
+
+                      <div className="absolute top-2 left-2 bg-primary/90 text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md backdrop-blur-sm shadow-sm">
+                        {video.categoryLabel}
+                      </div>
+
+                      {isPlayable ? (
+                        <Link
+                          to={`/content/${video.id}`}
+                          className="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40"
+                        >
+                          <div className="bg-primary text-primary-foreground rounded-full p-3 shadow-lg transform transition-transform scale-90 group-hover:scale-100">
+                            <Play className="size-6 fill-current ml-1" />
+                          </div>
+                        </Link>
+                      ) : (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                          <Lock className="size-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="px-1">
+                      <h3
+                        className={cn(
+                          "font-bold text-foreground line-clamp-2",
+                          (isLocked || isClosed) && "text-muted-foreground",
+                        )}
+                      >
+                        {video.title}
+                      </h3>
+
+                      {(openDate || closeDate) && !isTeacher && (
+                        <div className="mt-2 flex flex-col gap-1.5 text-xs font-semibold">
+                          {isLocked && openDate && (
+                            <div className="text-blue-500 flex items-center gap-1.5">
+                              <Clock className="size-3.5" />
+                              Opens:{" "}
+                              {openDate.toLocaleString([], {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </div>
+                          )}
+                          {closeDate && !isLocked && (
+                            <div
+                              className={cn(
+                                "flex items-center gap-1.5",
+                                isClosed
+                                  ? "text-destructive"
+                                  : "text-amber-500",
+                              )}
+                            >
+                              <Clock className="size-3.5" />
+                              {isClosed
+                                ? "Time expired"
+                                : `Closes: ${closeDate.toLocaleString([], {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  })}`}
+
+                              {isClosed && (
+                                <div className="group/tooltip relative flex items-center ml-0.5">
+                                  <Info className="size-4 text-muted-foreground hover:text-foreground cursor-help transition-colors" />
+                                  <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[200px] whitespace-normal text-center -translate-x-1/2 scale-95 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground opacity-0 shadow-xl transition-all group-hover/tooltip:scale-100 group-hover/tooltip:opacity-100">
+                                    This lesson will be removed in{" "}
+                                    {daysToDeletion} day
+                                    {daysToDeletion !== 1 ? "s" : ""}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

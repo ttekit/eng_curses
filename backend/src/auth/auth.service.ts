@@ -1049,6 +1049,9 @@ export class AuthService {
         teacher: {
           select: { name: true },
         },
+        class: {
+          select: { name: true },
+        },
       },
     });
 
@@ -1144,6 +1147,7 @@ export class AuthService {
       stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
       teacherId: (user as any).teacherId ?? null,
       teacherName: (user as any).teacher?.name ?? null,
+      className: (user as any).class?.name ?? null,
     };
   }
 

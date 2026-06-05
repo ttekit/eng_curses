@@ -1,8 +1,6 @@
-import { Fragment, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
-  ChevronRight,
   GraduationCap,
   Loader2,
   Download,
@@ -17,12 +15,10 @@ import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
 import { useAppMessages } from "../../hooks/useAppMessages";
-import { formatMessage } from "../../lib/formatMessage";
 import {
   AdminButton,
   AdminModal,
   AdminInput,
-  AdminSelectNative,
 } from "../../components/admin/adminUi";
 
 export type TeacherClass = {
@@ -49,21 +45,7 @@ export type TeacherStudentResult = {
     scoreTotal: number;
     createdAt: string;
   } | null;
-  recentQuizzes: {
-    id: number;
-    contentVideoId: number;
-    videoName: string;
-    correct: number;
-    total: number;
-    scorePct: number;
-    passed: boolean;
-    createdAt: string;
-    answers?: any;
-    summaryText?: string | null;
-  }[];
 };
-
-type QuizRow = TeacherStudentResult["recentQuizzes"][0];
 
 export function ProfileTeacherStudents() {
   const t = useAppMessages().profileTeacherStudents;
@@ -78,9 +60,6 @@ export function ProfileTeacherStudents() {
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [classNameInput, setClassNameInput] = useState("");
   const [isSavingClass, setIsSavingClass] = useState(false);
-
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const [selectedQuiz, setSelectedQuiz] = useState<QuizRow | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -127,7 +106,7 @@ export function ProfileTeacherStudents() {
       const handleClickOutside = (event: MouseEvent) => {
         if (ref.current && !ref.current.contains(event.target as Node)) {
           setIsOpen(false);
-          setSearchQuery(""); 
+          setSearchQuery("");
         }
       };
       document.addEventListener("mousedown", handleClickOutside);
@@ -262,7 +241,6 @@ export function ProfileTeacherStudents() {
         if (isModalOpen && !isSaving) setIsModalOpen(false);
         if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
         if (classModalOpen && !isSavingClass) setClassModalOpen(false);
-        if (selectedQuiz) setSelectedQuiz(null);
       }
     };
     window.addEventListener("keydown", handleEsc);
@@ -272,19 +250,9 @@ export function ProfileTeacherStudents() {
     isSaving,
     deleteModalOpen,
     isDeleting,
-    selectedQuiz,
     classModalOpen,
     isSavingClass,
   ]);
-
-  const toggleRow = (id: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const handleExport = async () => {
     try {
@@ -801,231 +769,6 @@ export function ProfileTeacherStudents() {
         </div>
       </AdminModal>
 
-      <AdminModal
-        open={!!selectedQuiz}
-        onClose={() => setSelectedQuiz(null)}
-        title={
-          selectedQuiz
-            ? formatMessage(t.quizDetailsNamed, {
-                name: selectedQuiz.videoName,
-              })
-            : t.quizDetailsTitle
-        }
-        footer={
-          <AdminButton
-            className="w-full sm:w-auto"
-            onClick={() => setSelectedQuiz(null)}
-          >
-            {t.close}
-          </AdminButton>
-        }
-      >
-        {selectedQuiz && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border border-border">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  {t.finalScore}
-                </p>
-                <p
-                  className={cn(
-                    "text-3xl font-bold",
-                    selectedQuiz.passed ? "text-accent" : "text-destructive",
-                  )}
-                >
-                  {Math.round(selectedQuiz.scorePct)}%
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-muted-foreground">
-                  {t.result}
-                </p>
-                <p className="text-xl font-bold text-foreground">
-                  {selectedQuiz.correct}{" "}
-                  <span className="text-muted-foreground text-sm">
-                    {formatMessage(t.correctFraction, {
-                      total: String(selectedQuiz.total),
-                    })}
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {t.studentInputs}
-              </h4>
-
-              {(() => {
-                const answers = selectedQuiz.answers;
-
-                if (!answers || typeof answers !== "object") {
-                  return selectedQuiz.summaryText ? (
-                    <div className="bg-card border border-border rounded-lg p-4 mb-4">
-                      <p className="text-[10px] font-bold text-primary tracking-wider mb-2">
-                        {t.writtenSummaryCaps}
-                      </p>
-                      <p className="text-sm italic text-foreground break-words">
-                        "{selectedQuiz.summaryText}"
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {t.noMcData}
-                    </p>
-                  );
-                }
-
-                const baseKeys = Object.keys(answers).filter(
-                  (k) => !k.includes("_"),
-                );
-                let renderedSummary = false;
-
-                return (
-                  <div className="flex flex-col gap-3">
-                    {baseKeys.map((key) => {
-                      const value = answers[key];
-                      const questionText = answers[`${key}_question`];
-                      const answerText = answers[`${key}_text`];
-                      let optionsArray = answers[`${key}_options`];
-                      const correctIndex = answers[`${key}_correct`];
-
-                      if (typeof optionsArray === "string") {
-                        try {
-                          optionsArray = JSON.parse(optionsArray);
-                        } catch (e) {}
-                      }
-
-                      const isWritten = typeof value === "string";
-                      if (isWritten) renderedSummary = true;
-
-                      return (
-                        <div
-                          key={key}
-                          className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3 overflow-hidden"
-                        >
-                          <span className="text-sm text-foreground font-medium break-words">
-                            {questionText
-                              ? questionText
-                              : formatMessage(t.questionIdFallback, {
-                                  id: key.replace("q_", "").substring(0, 4),
-                                })}
-                          </span>
-
-                          {isWritten ? (
-                            <div className="mt-1 rounded-md bg-background/50 border border-border/50 p-3">
-                              <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
-                                {t.writtenSummaryCaps}
-                              </p>
-                              <p className="text-sm italic text-foreground break-words">
-                                "{value}"
-                              </p>
-                            </div>
-                          ) : Array.isArray(optionsArray) ? (
-                            <div className="flex flex-col gap-2 mt-1">
-                              {optionsArray.map((opt, idx) => {
-                                const isStudentChoice = Number(value) === idx;
-                                const isCorrectChoice = correctIndex === idx;
-
-                                let variantClass =
-                                  "border-border/50 bg-background/50 text-muted-foreground";
-                                let badgeClass =
-                                  "bg-background border border-border/50 text-muted-foreground";
-                                let statusText = null;
-
-                                if (isCorrectChoice && isStudentChoice) {
-                                  variantClass =
-                                    "border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400 font-medium";
-                                  badgeClass =
-                                    "bg-green-500 text-white border-green-500";
-                                  statusText = t.correct;
-                                } else if (isStudentChoice) {
-                                  variantClass =
-                                    "border-destructive/50 bg-destructive/10 text-destructive font-medium";
-                                  badgeClass =
-                                    "bg-destructive text-white border-destructive";
-                                  statusText = t.studentChoice;
-                                } else if (isCorrectChoice) {
-                                  variantClass =
-                                    "border-green-500/30 bg-background text-green-600 dark:text-green-400";
-                                  badgeClass =
-                                    "bg-green-500/20 text-green-600 border-green-500/30";
-                                  statusText = t.correctAnswer;
-                                }
-
-                                return (
-                                  <div
-                                    key={idx}
-                                    className={cn(
-                                      "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
-                                      variantClass,
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-2 max-w-full">
-                                      <span
-                                        className={cn(
-                                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold",
-                                          badgeClass,
-                                        )}
-                                      >
-                                        {String.fromCharCode(65 + idx)}
-                                      </span>
-                                      <span className="break-words">{opt}</span>
-                                    </div>
-                                    {statusText && (
-                                      <span className="sm:ml-auto text-[11px] font-semibold uppercase tracking-wider opacity-80 shrink-0">
-                                        {statusText}
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs font-bold text-foreground bg-background border border-border px-2 py-1 rounded shrink-0">
-                                {formatMessage(t.optionN, {
-                                  n: String(Number(value) + 1),
-                                })}
-                              </span>
-                              {answerText ? (
-                                <span className="text-sm font-semibold text-primary/90 break-words">
-                                  {String(answerText)}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-muted-foreground italic">
-                                  {t.noTextSaved}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {!renderedSummary && selectedQuiz.summaryText && (
-                      <div className="bg-muted/30 border border-border/60 rounded-lg p-4 flex flex-col gap-3">
-                        <span className="text-sm text-foreground font-medium">
-                          {t.summaryLegacy}
-                        </span>
-                        <div className="mt-1 rounded-md bg-background/50 border border-border/50 p-3">
-                          <p className="text-[10px] font-bold text-primary tracking-wider mb-1.5">
-                            {t.writtenSummaryCaps}
-                          </p>
-                          <p className="text-sm italic text-foreground break-words">
-                            "{selectedQuiz.summaryText}"
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
-      </AdminModal>
-
       {students.length === 0 ? (
         <ProfileCard title={t.cardTitle}>
           <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
@@ -1038,196 +781,76 @@ export function ProfileTeacherStudents() {
           <table className="w-full min-w-[900px] text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                <th className="p-3 font-medium w-10 shrink-0" />
-                <th className="p-3 font-medium">{t.colStudent}</th>
-                <th className="p-3 font-medium">Class / Класс</th>
-                <th className="p-3 font-medium">{t.colLevel}</th>
-                <th className="p-3 text-center font-medium">
+                <th className="p-4 font-medium">{t.colStudent}</th>
+                <th className="p-4 font-medium">Class / Класс</th>
+                <th className="p-4 font-medium">{t.colLevel}</th>
+                <th className="p-4 text-center font-medium">
                   {t.colVideosDone}
                 </th>
-                <th className="p-3 text-center font-medium">{t.colQuizzes}</th>
-                <th className="p-3 text-center font-medium">{t.colAvgScore}</th>
-                <th className="p-3 font-medium w-24 text-right">
+                <th className="p-4 text-center font-medium">{t.colQuizzes}</th>
+                <th className="p-4 text-center font-medium">{t.colAvgScore}</th>
+                <th className="p-4 font-medium w-24 text-right">
                   {t.colActions}
                 </th>
               </tr>
             </thead>
             <tbody>
               {filteredStudents.map((s) => {
-                const isOpen = expanded.has(s.id);
                 return (
-                  <Fragment key={s.id}>
-                    <tr className="border-border/60 hover:bg-muted/20 border-b transition-colors">
-                      <td className="p-2">
+                  <tr
+                    key={s.id}
+                    className="border-border/60 hover:bg-muted/20 border-b transition-colors"
+                  >
+                    <td className="p-4">
+                      <div className="text-foreground font-medium truncate max-w-[200px]">
+                        {s.name}
+                      </div>
+                      <div className="text-muted-foreground text-xs truncate max-w-[200px]">
+                        {s.email}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      {s.className ? (
+                        <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                          {s.className}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="text-foreground p-4">
+                      {s.englishLevel?.trim() || "—"}
+                    </td>
+                    <td className="p-4 text-center tabular-nums">
+                      {s.videosCompleted}
+                    </td>
+                    <td className="p-4 text-center tabular-nums">
+                      {s.quizAttempts}
+                    </td>
+                    <td className="p-4 text-center tabular-nums">
+                      {s.avgQuizScorePct != null
+                        ? `${s.avgQuizScorePct}%`
+                        : "—"}
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-1 sm:gap-2">
                         <button
-                          type="button"
-                          onClick={() => toggleRow(s.id)}
-                          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg p-1.5"
-                          aria-expanded={isOpen}
+                          onClick={() => openEditModal(s)}
+                          className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                          title={t.editStudentAria}
                         >
-                          {isOpen ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
-                          )}
+                          <Edit className="size-4" />
                         </button>
-                      </td>
-                      <td className="p-3">
-                        <div className="text-foreground font-medium truncate max-w-[200px]">
-                          {s.name}
-                        </div>
-                        <div className="text-muted-foreground text-xs truncate max-w-[200px]">
-                          {s.email}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        {s.className ? (
-                          <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
-                            {s.className}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">
-                            —
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-foreground p-3">
-                        {s.englishLevel?.trim() || "—"}
-                      </td>
-                      <td className="p-3 text-center tabular-nums">
-                        {s.videosCompleted}
-                      </td>
-                      <td className="p-3 text-center tabular-nums">
-                        {s.quizAttempts}
-                      </td>
-                      <td className="p-3 text-center tabular-nums">
-                        {s.avgQuizScorePct != null
-                          ? `${s.avgQuizScorePct}%`
-                          : "—"}
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
-                          <button
-                            onClick={() => openEditModal(s)}
-                            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            title={t.editStudentAria}
-                          >
-                            <Edit className="size-4" />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(s.id)}
-                            className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                            title={t.removeStudentAria}
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {isOpen ? (
-                      <tr className="bg-background/50 whitespace-normal">
-                        <td colSpan={8} className="p-0">
-                          <div className="border-border border-t px-4 py-4">
-                            <h4 className="text-muted-foreground mb-3 text-xs font-semibold uppercase tracking-wide">
-                              {t.recentQuizzesHeading}
-                            </h4>
-                            {s.recentQuizzes.length === 0 ? (
-                              <p className="text-muted-foreground text-sm">
-                                {t.noQuizzesYet}
-                              </p>
-                            ) : (
-                              <ul className="space-y-3">
-                                {s.recentQuizzes.map((q) => {
-                                  let writtenText = q.summaryText;
-                                  if (
-                                    !writtenText &&
-                                    q.answers &&
-                                    typeof q.answers === "object"
-                                  ) {
-                                    const found = Object.values(q.answers).find(
-                                      (v) =>
-                                        typeof v === "string" &&
-                                        !String(v).includes("_text") &&
-                                        !String(v).includes("["),
-                                    );
-                                    if (found) writtenText = found as string;
-                                  }
-
-                                  return (
-                                    <li
-                                      key={q.id}
-                                      className="border-border/40 bg-card/80 flex flex-col gap-2 rounded-lg border px-4 py-3"
-                                    >
-                                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="min-w-0 flex-1">
-                                          <Link
-                                            to={`/content/${q.contentVideoId}`}
-                                            className="text-primary font-medium hover:underline block break-words"
-                                          >
-                                            {q.videoName}
-                                          </Link>
-                                          <div className="text-muted-foreground mt-0.5 text-xs">
-                                            {new Date(
-                                              q.createdAt,
-                                            ).toLocaleString()}
-                                          </div>
-                                        </div>
-                                        <div className="flex shrink-0 items-center gap-3 text-sm mt-1 sm:mt-0 flex-wrap">
-                                          <span
-                                            className={cn(
-                                              "font-semibold tabular-nums",
-                                              q.passed
-                                                ? "text-accent"
-                                                : "text-muted-foreground",
-                                            )}
-                                          >
-                                            {Math.round(q.scorePct)}%
-                                          </span>
-                                          <span className="text-muted-foreground tabular-nums">
-                                            {q.correct}/{q.total}
-                                          </span>
-                                          <span
-                                            className={cn(
-                                              "rounded px-2 py-0.5 text-xs font-medium",
-                                              q.passed
-                                                ? "bg-accent/15 text-accent"
-                                                : "bg-muted text-muted-foreground",
-                                            )}
-                                          >
-                                            {q.passed ? t.passed : t.review}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      {writtenText ? (
-                                        <div className="mt-2 rounded-md bg-background/50 border border-border/50 p-3">
-                                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
-                                            {t.writtenSummary}
-                                          </span>
-                                          <p className="text-sm text-foreground italic break-words">
-                                            "{writtenText}"
-                                          </p>
-                                        </div>
-                                      ) : null}
-
-                                      <div className="mt-1">
-                                        <button
-                                          onClick={() => setSelectedQuiz(q)}
-                                          className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-md transition-colors"
-                                        >
-                                          {t.viewAllAnswers}
-                                        </button>
-                                      </div>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
+                        <button
+                          onClick={() => openDeleteModal(s.id)}
+                          className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          title={t.removeStudentAria}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
