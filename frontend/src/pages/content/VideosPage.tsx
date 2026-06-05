@@ -317,6 +317,14 @@ export default function VideoPage() {
     return map;
   }, [videos]);
 
+  const ageRestrictionByVideoId = useMemo(() => {
+    const map = new Map<number, string | undefined>();
+    for (const v of videos) {
+      map.set(v.id, v.ageRestriction);
+    }
+    return map;
+  }, [videos]);
+
   useEffect(() => {
     if (loading) return;
     if (videos.length === 0) {
@@ -336,6 +344,7 @@ export default function VideoPage() {
             data.recommendations,
             thumbnailByVideoId,
             12,
+            ageRestrictionByVideoId
           );
         }
       }
@@ -352,7 +361,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [loading, videos, user, thumbnailByVideoId]);
+  }, [loading, videos, user, thumbnailByVideoId, ageRestrictionByVideoId]);
 
   useEffect(() => {
     const raw = location.state as
@@ -475,15 +484,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
@@ -817,7 +826,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

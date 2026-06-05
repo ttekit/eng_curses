@@ -121,12 +121,13 @@ export async function fetchContentRecommendations(
 }
 
 /**
- * Maps API recommendation rows to catalog cards, enriching thumbnails from the library list.
+ * Maps API recommendation rows to catalog cards, enriching thumbnails and age restrictions from the library list.
  */
 export function mapRecommendationsToCatalogCards(
   items: VideoRecommendationItem[],
   thumbnailById: ReadonlyMap<number, string | undefined>,
   limit = 12,
+  ageRestrictionById?: ReadonlyMap<number, string | undefined>
 ): CatalogCardVideo[] {
   const out: CatalogCardVideo[] = [];
   for (const item of items) {
@@ -138,7 +139,7 @@ export function mapRecommendationsToCatalogCards(
       categoryLabel: item.content.name,
       videoLink: item.contentVideo.videoLink,
       thumbnailUrl: thumbnailById.get(id),
-      ageRestriction: item.contentVideo.ageRestriction,
+      ageRestriction: ageRestrictionById?.has(id) ? ageRestrictionById.get(id) : item.contentVideo.ageRestriction,
     });
   }
   return out;
