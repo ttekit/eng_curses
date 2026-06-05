@@ -59,20 +59,20 @@ export class TeacherUploadContentDto {
   @IsOptional()
   ageRestriction?: string;
 
-  @ApiPropertyOptional({ type: [ClassAssignmentDto] })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ClassAssignmentDto)
   @Transform(({ value }) => {
     if (typeof value === "string") {
       try {
         return JSON.parse(value);
-      } catch {
-        return value;
+      } catch (e) {
+        return [];
       }
     }
     return value;
   })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ClassAssignmentDto)
   classAssignments?: ClassAssignmentDto[];
 }

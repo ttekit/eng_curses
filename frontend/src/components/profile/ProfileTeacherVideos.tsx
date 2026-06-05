@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Video, Plus, Upload, Trash2 } from "lucide-react";
+import { Loader2, Video, Plus, Upload, Trash2, BookOpen } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
@@ -12,7 +12,6 @@ import {
   AdminModal,
   AdminInput,
   AdminTextarea,
-  AdminSelectNative,
 } from "../../components/admin/adminUi";
 
 export type TeacherSeriesItem = {
@@ -27,9 +26,9 @@ export type TeacherSeriesItem = {
   processingComplexity: string | null;
   availableFrom?: string | null;
   deadline?: string | null;
+  classesAssigned?: string;
 };
 
-// Автоматически делает скриншот первого кадра видео
 function generateVideoThumbnailBlob(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -71,14 +70,24 @@ export function ProfileTeacherVideos() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
+
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const [activeTab, setActiveTab] = useState<"uploads" | "assigned">("uploads");
   const [series, setSeries] = useState<TeacherSeriesItem[]>([]);
+  const [assignedSeries, setAssignedSeries] = useState<TeacherSeriesItem[]>([]);
+
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [visibilityBusyId, setVisibilityBusyId] = useState<number | null>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
-  const [uploadAge, setUploadAge] = useState("0+");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
 
@@ -87,7 +96,10 @@ export function ProfileTeacherVideos() {
   const [deletePhrase, setDeletePhrase] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Настройки продвинутых дедлайнов
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [isRevoking, setIsRevoking] = useState(false);
+
   const [assignMode, setAssignMode] = useState<"all" | "classes">("all");
   const [deadlineMode, setDeadlineMode] = useState<
     "none" | "close" | "open_close"
@@ -106,9 +118,12 @@ export function ProfileTeacherVideos() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [resSeries, resClasses] = await Promise.all([
+      const [resSeries, resClasses, resAssigned] = await Promise.all([
         apiFetch("/contents/teacher/my-series", { method: "GET" }),
         apiFetch("/teacher/classes", { method: "GET" }),
+        apiFetch("/contents/teacher/assigned-homework", {
+          method: "GET",
+        }).catch(() => null),
       ]);
 
       if (!resSeries.ok) {
@@ -122,6 +137,11 @@ export function ProfileTeacherVideos() {
       if (resClasses.ok) {
         const clsData = await resClasses.json();
         setClasses(clsData);
+      }
+
+      if (resAssigned && resAssigned.ok) {
+        const assData = await resAssigned.json();
+        setAssignedSeries(Array.isArray(assData) ? assData : []);
       }
     } catch {
       setLoadError(t.loadError);
@@ -140,51 +160,62 @@ export function ProfileTeacherVideos() {
       if (e.key === "Escape") {
         if (uploadOpen && !uploadSaving) setUploadOpen(false);
         if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+        if (revokeModalOpen && !isRevoking) setRevokeModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [uploadOpen, uploadSaving, deleteModalOpen, isDeleting]);
+  }, [
+    uploadOpen,
+    uploadSaving,
+    deleteModalOpen,
+    isDeleting,
+    revokeModalOpen,
+    isRevoking,
+  ]);
 
-  async function updateVisibility(
-    contentId: number,
-    next: "public" | "unlisted",
-  ): Promise<void> {
-    setVisibilityBusyId(contentId);
-    setVisibilityError(null);
-    try {
-      const res = await apiFetch(`/contents/teacher/${contentId}/visibility`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visibility: next }),
-      });
-      if (!res.ok) {
-        setVisibilityError(await getResponseErrorMessage(res));
-        return;
-      }
-      const raw: unknown = await res.json();
-      if (raw && typeof raw === "object" && "visibility" in raw) {
-        const vis = (raw as { visibility?: unknown }).visibility;
-        if (typeof vis === "string") {
-          setSeries((prev) =>
-            prev.map((s) =>
-              s.contentId === contentId ? { ...s, visibility: vis } : s,
-            ),
-          );
+  const updateVisibility = useCallback(
+    async (contentId: number, next: "public" | "unlisted"): Promise<void> => {
+      setVisibilityBusyId(contentId);
+      setVisibilityError(null);
+      try {
+        const res = await apiFetch(
+          `/contents/teacher/${contentId}/visibility`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visibility: next }),
+          },
+        );
+        if (!res.ok) {
+          setVisibilityError(await getResponseErrorMessage(res));
           return;
         }
+        const raw: unknown = await res.json();
+        if (raw && typeof raw === "object" && "visibility" in raw) {
+          const vis = (raw as { visibility?: unknown }).visibility;
+          if (typeof vis === "string") {
+            setSeries((prev) =>
+              prev.map((s) =>
+                s.contentId === contentId ? { ...s, visibility: vis } : s,
+              ),
+            );
+            return;
+          }
+        }
+        setSeries((prev) =>
+          prev.map((s) =>
+            s.contentId === contentId ? { ...s, visibility: next } : s,
+          ),
+        );
+      } catch {
+        setVisibilityError(t.visibilityError);
+      } finally {
+        setVisibilityBusyId(null);
       }
-      setSeries((prev) =>
-        prev.map((s) =>
-          s.contentId === contentId ? { ...s, visibility: next } : s,
-        ),
-      );
-    } catch {
-      setVisibilityError(t.visibilityError);
-    } finally {
-      setVisibilityBusyId(null);
-    }
-  }
+    },
+    [t.visibilityError],
+  );
 
   const handleUpload = async () => {
     if (uploadSaving) return;
@@ -224,6 +255,8 @@ export function ProfileTeacherVideos() {
         finalOpen = oDate.toISOString();
         finalClose = cDate.toISOString();
         initialVisibility = "unlisted";
+      } else {
+        initialVisibility = "unlisted";
       }
     } else {
       initialVisibility = "unlisted";
@@ -240,7 +273,6 @@ export function ProfileTeacherVideos() {
       const fd = new FormData();
       fd.append("name", name);
       fd.append("visibility", initialVisibility);
-      fd.append("ageRestriction", uploadAge);
       fd.append("description", description);
 
       if (assignMode === "all") {
@@ -282,7 +314,6 @@ export function ProfileTeacherVideos() {
       // Reset form
       setUploadTitle("");
       setUploadDesc("");
-      setUploadAge("0+");
       setUploadFile(null);
       setAssignMode("all");
       setDeadlineMode("none");
@@ -342,6 +373,30 @@ export function ProfileTeacherVideos() {
     }
   };
 
+  const openRevokeModal = (id: number) => {
+    setRevokingId(id);
+    setRevokeModalOpen(true);
+  };
+
+  const confirmRevokeVideo = async () => {
+    if (!revokingId) return;
+    setIsRevoking(true);
+    try {
+      const res = await apiFetch(`/contents/teacher/assign/${revokingId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
+      toast.success("Assignment removed successfully!");
+      setRevokeModalOpen(false);
+      await loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to remove assignment.");
+    } finally {
+      setIsRevoking(false);
+      setRevokingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-60 flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -362,7 +417,33 @@ export function ProfileTeacherVideos() {
   return (
     <div className="grid grid-cols-1 gap-6 w-full min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-        <p className="text-sm text-muted-foreground flex-1">{t.intro}</p>
+        <div className="flex items-center bg-muted/50 p-1.5 rounded-xl border border-border/50 w-full sm:w-auto">
+          <button
+            onClick={() => setActiveTab("uploads")}
+            className={cn(
+              "flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
+              activeTab === "uploads"
+                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Video className="size-4" />
+            My Uploads
+          </button>
+          <button
+            onClick={() => setActiveTab("assigned")}
+            className={cn(
+              "flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
+              activeTab === "assigned"
+                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <BookOpen className="size-4" />
+            Assigned Homework
+          </button>
+        </div>
+
         <AdminButton
           className="gap-2 flex w-full sm:w-auto rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           onClick={() => setUploadOpen(true)}
@@ -437,23 +518,6 @@ export function ProfileTeacherVideos() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Age Restriction</label>
-              <AdminSelectNative
-                value={uploadAge}
-                onChange={(e) => setUploadAge(e.target.value)}
-                className="w-full"
-              >
-                <option value="0+">0+</option>
-                <option value="12+">12+</option>
-                <option value="16+">16+</option>
-                <option value="18+">18+</option>
-                <option value="21+">21+</option>
-              </AdminSelectNative>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium">
               {t.descriptionOptional}
@@ -477,10 +541,8 @@ export function ProfileTeacherVideos() {
                 value={assignMode}
                 onChange={(e) => setAssignMode(e.target.value as any)}
               >
-                <option value="all">All my students (Глобально всем)</option>
-                <option value="classes">
-                  Specific classes (Продвинутые дедлайны по группам)
-                </option>
+                <option value="all">All my students</option>
+                <option value="classes">Specific classes</option>
               </select>
             </div>
 
@@ -514,6 +576,7 @@ export function ProfileTeacherVideos() {
                     </label>
                     <AdminInput
                       type="datetime-local"
+                      lang="en-GB"
                       value={openDateStr}
                       className="w-full"
                       max="9999-12-31T23:59"
@@ -532,6 +595,7 @@ export function ProfileTeacherVideos() {
                     </label>
                     <AdminInput
                       type="datetime-local"
+                      lang="en-GB"
                       value={closeDateStr}
                       className="w-full"
                       max="9999-12-31T23:59"
@@ -601,14 +665,16 @@ export function ProfileTeacherVideos() {
                           </label>
 
                           {isSelected && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8 pt-1">
+                            <div className="flex flex-col gap-4 pl-8 pt-1">
                               <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">
                                   Open Date (Optional)
                                 </label>
                                 <AdminInput
                                   type="datetime-local"
+                                  lang="en-GB"
                                   value={data.availableFrom}
+                                  className="w-full"
                                   onChange={(e) =>
                                     setSelectedClasses((p) => ({
                                       ...p,
@@ -626,7 +692,9 @@ export function ProfileTeacherVideos() {
                                 </label>
                                 <AdminInput
                                   type="datetime-local"
+                                  lang="en-GB"
                                   value={data.deadline}
+                                  className="w-full"
                                   onChange={(e) =>
                                     setSelectedClasses((p) => ({
                                       ...p,
@@ -736,205 +804,400 @@ export function ProfileTeacherVideos() {
         </div>
       </AdminModal>
 
-      {series.length === 0 ? (
-        <ProfileCard title={t.cardTitle}>
-          <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
-            <Video className="size-12 text-muted-foreground opacity-50" />
-            <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
-          </div>
-        </ProfileCard>
-      ) : (
-        <div
-          className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm"
-          style={{ maxWidth: "100%", overflow: "hidden" }}
-        >
-          <div
-            style={{
-              overflowX: "auto",
-              width: "100%",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            <table
-              className="text-left text-sm"
-              style={{ minWidth: "900px", width: "100%", whiteSpace: "nowrap" }}
+      <AdminModal
+        open={revokeModalOpen}
+        onClose={() => !isRevoking && setRevokeModalOpen(false)}
+        title="Remove Homework Assignment"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setRevokeModalOpen(false)}
+              disabled={isRevoking}
+              className="w-full sm:w-auto"
             >
-              <thead>
-                <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                  <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                  <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
-                  <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
-                  <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
-                  <th className="p-4 font-semibold text-sm text-right">
-                    {t.colActions}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {series.map((s) => {
-                  const busy = visibilityBusyId === s.contentId;
-                  const vis = s.visibility.trim().toLowerCase();
-                  const isPublic = vis === "public";
-                  const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
+              Cancel
+            </AdminButton>
+            <AdminButton
+              onClick={confirmRevokeVideo}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
+            >
+              {isRevoking ? "Removing..." : "Remove Assignment"}
+            </AdminButton>
+          </>
+        }
+      >
+        <p className="text-sm text-muted-foreground">
+          Are you sure you want to remove this homework assignment? Your
+          students will no longer see this video in their lessons. The video
+          itself will remain in the global catalog.
+        </p>
+      </AdminModal>
 
-                  return (
+      {activeTab === "uploads" &&
+        (series.length === 0 ? (
+          <ProfileCard title={t.cardTitle}>
+            <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
+              <Video className="size-12 text-muted-foreground opacity-50" />
+              <p className="max-w-md text-muted-foreground">{t.emptyBody}</p>
+            </div>
+          </ProfileCard>
+        ) : (
+          <div
+            className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm"
+            style={{ maxWidth: "100%", overflow: "hidden" }}
+          >
+            <div
+              style={{
+                overflowX: "auto",
+                width: "100%",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              <table
+                className="text-left text-sm"
+                style={{
+                  minWidth: "900px",
+                  width: "100%",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <thead>
+                  <tr className="border-border bg-muted/30 border-b text-muted-foreground">
+                    <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
+                    <th className="p-4 font-semibold text-sm">
+                      {t.colCaptions}
+                    </th>
+                    <th className="p-4 font-semibold text-sm">
+                      {t.colCatalog}
+                    </th>
+                    <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
+                    <th className="p-4 font-semibold text-sm text-right">
+                      {t.colActions}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {series.map((s) => {
+                    const busy = visibilityBusyId === s.contentId;
+                    const vis = s.visibility.trim().toLowerCase();
+                    const tags = [...s.systemTags, ...s.userTags].filter(
+                      Boolean,
+                    );
+
+                    const now = new Date(currentTime);
+                    const openDate = s.availableFrom
+                      ? new Date(s.availableFrom)
+                      : null;
+                    const closeDate = s.deadline ? new Date(s.deadline) : null;
+
+                    let computedVis = vis;
+
+                    if (openDate && closeDate) {
+                      if (now >= openDate && now < closeDate) {
+                        computedVis = "public";
+                      } else {
+                        computedVis = "unlisted";
+                      }
+                    } else if (!openDate && closeDate) {
+                      if (now < closeDate) {
+                        computedVis = "public";
+                      } else {
+                        computedVis = "unlisted";
+                      }
+                    } else if (openDate && !closeDate) {
+                      if (now >= openDate) {
+                        computedVis = "public";
+                      } else {
+                        computedVis = "unlisted";
+                      }
+                    }
+
+                    return (
+                      <tr
+                        key={s.contentId}
+                        className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
+                      >
+                        <td className="p-4 align-middle">
+                          <div
+                            className="text-foreground text-base font-bold truncate"
+                            style={{
+                              maxWidth: "200px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {s.name}
+                          </div>
+
+                          {(s.availableFrom || s.deadline) && (
+                            <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
+                              {s.availableFrom && (
+                                <span
+                                  className={
+                                    new Date(s.availableFrom) > now
+                                      ? "text-blue-500"
+                                      : "text-muted-foreground"
+                                  }
+                                >
+                                  Opens:{" "}
+                                  {new Date(s.availableFrom).toLocaleString(
+                                    "en-GB",
+                                    {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    },
+                                  )}
+                                </span>
+                              )}
+                              {s.deadline && (
+                                <span
+                                  className={
+                                    new Date(s.deadline) <= now
+                                      ? "text-destructive"
+                                      : "text-amber-500"
+                                  }
+                                >
+                                  Closes:{" "}
+                                  {new Date(s.deadline).toLocaleString(
+                                    "en-GB",
+                                    {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    },
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {s.processingComplexity ? (
+                            <div
+                              className="text-muted-foreground mt-1 text-xs truncate"
+                              style={{
+                                maxWidth: "200px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {t.processingPrefix} {s.processingComplexity}
+                            </div>
+                          ) : null}
+                          {tags.length > 0 ? (
+                            <div
+                              className="text-muted-foreground mt-1.5 text-xs truncate"
+                              style={{
+                                maxWidth: "200px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {tags.join(" · ")}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="p-4 align-middle">
+                          <span
+                            className={cn(
+                              "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
+                              s.captionsReady
+                                ? "bg-green-500/15 text-green-500"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {s.captionsReady
+                              ? t.captionsReady
+                              : t.captionsPending}
+                          </span>
+                        </td>
+                        <td className="p-4 align-middle">
+                          <div
+                            className="flex flex-col items-start gap-1.5"
+                            style={{ width: "130px" }}
+                          >
+                            <select
+                              className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
+                              value={computedVis}
+                              disabled={
+                                busy || Boolean(s.availableFrom || s.deadline)
+                              }
+                              aria-label={formatMessage(t.visibilityAria, {
+                                name: s.name,
+                              })}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v !== "public" && v !== "unlisted") return;
+                                if (v === s.visibility) return;
+                                void updateVisibility(
+                                  s.contentId,
+                                  v as "public" | "unlisted",
+                                );
+                              }}
+                            >
+                              <option value="public">
+                                {t.visibilityPublic}
+                              </option>
+                              <option value="unlisted">
+                                {t.visibilityPrivate}
+                              </option>
+                            </select>
+                            {busy ? (
+                              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                                <Loader2 className="size-3.5 animate-spin shrink-0" />
+                                {t.visibilitySaving}
+                              </span>
+                            ) : null}
+                            {Boolean(s.availableFrom || s.deadline) && (
+                              <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                                Managed by deadline
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 align-middle">
+                          <div className="flex flex-col gap-2">
+                            {s.contentVideoId != null ? (
+                              <Link
+                                to={`/content/${s.contentVideoId}`}
+                                className="text-primary font-semibold text-sm hover:underline block"
+                              >
+                                {t.watchLesson}
+                              </Link>
+                            ) : null}
+                            <Link
+                              to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
+                              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline block"
+                            >
+                              {t.seriesPage}
+                            </Link>
+                          </div>
+                        </td>
+                        <td className="p-4 align-middle text-right">
+                          <button
+                            onClick={() => openDeleteModal(s.contentId)}
+                            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
+                            title={t.deleteVideoAria}
+                          >
+                            <Trash2 className="size-4.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+
+      {activeTab === "assigned" &&
+        (assignedSeries.length === 0 ? (
+          <ProfileCard title="Assigned Homework">
+            <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
+              <BookOpen className="size-12 text-muted-foreground opacity-50" />
+              <p className="max-w-md text-muted-foreground">
+                You haven't assigned any lessons from the catalog yet. Go to the
+                Catalog, find a video, and click "Assign Homework".
+              </p>
+            </div>
+          </ProfileCard>
+        ) : (
+          <div className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm overflow-hidden">
+            <div style={{ overflowX: "auto", width: "100%" }}>
+              <table className="text-left text-sm w-full whitespace-nowrap min-w-[700px]">
+                <thead>
+                  <tr className="border-border bg-muted/30 border-b text-muted-foreground">
+                    <th className="p-4 font-semibold text-sm">Lesson Name</th>
+                    <th className="p-4 font-semibold text-sm">Assigned To</th>
+                    <th className="p-4 font-semibold text-sm">Deadlines</th>
+                    <th className="p-4 font-semibold text-sm">Link</th>
+                    <th className="p-4 font-semibold text-sm text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignedSeries.map((s) => (
                     <tr
                       key={s.contentId}
                       className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
                     >
                       <td className="p-4 align-middle">
-                        <div
-                          className="text-foreground text-base font-bold truncate"
-                          style={{
-                            maxWidth: "200px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
+                        <div className="text-foreground text-base font-bold truncate max-w-[250px]">
                           {s.name}
                         </div>
-
-                        {(s.availableFrom || s.deadline) && (
-                          <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
-                            {s.availableFrom && (
-                              <span
-                                className={
-                                  new Date(s.availableFrom) > new Date()
-                                    ? "text-blue-500"
-                                    : "text-muted-foreground"
-                                }
-                              >
-                                Opens:{" "}
-                                {new Date(s.availableFrom).toLocaleString([], {
-                                  dateStyle: "short",
-                                  timeStyle: "short",
-                                })}
-                              </span>
-                            )}
-                            {s.deadline && (
-                              <span
-                                className={
-                                  new Date(s.deadline) < new Date()
-                                    ? "text-destructive"
-                                    : "text-amber-500"
-                                }
-                              >
-                                Closes:{" "}
-                                {new Date(s.deadline).toLocaleString([], {
-                                  dateStyle: "short",
-                                  timeStyle: "short",
-                                })}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {s.processingComplexity ? (
-                          <div
-                            className="text-muted-foreground mt-1 text-xs truncate"
-                            style={{
-                              maxWidth: "200px",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {t.processingPrefix} {s.processingComplexity}
-                          </div>
-                        ) : null}
-                        {tags.length > 0 ? (
-                          <div
-                            className="text-muted-foreground mt-1.5 text-xs truncate"
-                            style={{
-                              maxWidth: "200px",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {tags.join(" · ")}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="p-4 align-middle">
-                        <span
-                          className={cn(
-                            "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
-                            s.captionsReady
-                              ? "bg-green-500/15 text-green-500"
-                              : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {s.captionsReady
-                            ? t.captionsReady
-                            : t.captionsPending}
+                        <span className="inline-block mt-1 text-[10px] font-bold tracking-wider uppercase text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                          Global Catalog
                         </span>
                       </td>
                       <td className="p-4 align-middle">
-                        <div
-                          className="flex flex-col items-start gap-1.5"
-                          style={{ width: "130px" }}
-                        >
-                          <select
-                            className="w-full border-border bg-background text-foreground focus:ring-primary rounded-lg border px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:outline-none disabled:opacity-60 cursor-pointer"
-                            value={isPublic ? "public" : "unlisted"}
-                            disabled={busy}
-                            aria-label={formatMessage(t.visibilityAria, {
-                              name: s.name,
-                            })}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              if (v !== "public" && v !== "unlisted") return;
-                              if (v === s.visibility) return;
-                              void updateVisibility(s.contentId, v);
-                            }}
-                          >
-                            <option value="public">{t.visibilityPublic}</option>
-                            <option value="unlisted">
-                              {t.visibilityPrivate}
-                            </option>
-                          </select>
-                          {busy ? (
-                            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                              <Loader2 className="size-3.5 animate-spin shrink-0" />
-                              {t.visibilitySaving}
-                            </span>
-                          ) : null}
+                        <div className="text-sm font-medium text-foreground max-w-[200px] truncate whitespace-normal leading-tight">
+                          {s.classesAssigned || "All Groups"}
                         </div>
                       </td>
                       <td className="p-4 align-middle">
-                        <div className="flex flex-col gap-2">
-                          {s.contentVideoId != null ? (
-                            <Link
-                              to={`/content/${s.contentVideoId}`}
-                              className="text-primary font-semibold text-sm hover:underline block"
+                        <div className="flex flex-col gap-1 text-xs font-medium">
+                          {s.availableFrom ? (
+                            <span className="text-blue-500">
+                              Opens:{" "}
+                              {new Date(s.availableFrom).toLocaleString(
+                                "en-GB",
+                                { dateStyle: "short", timeStyle: "short" },
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Opens: Now
+                            </span>
+                          )}
+
+                          {s.deadline ? (
+                            <span
+                              className={
+                                new Date(s.deadline) < new Date(currentTime)
+                                  ? "text-destructive"
+                                  : "text-amber-500"
+                              }
                             >
-                              {t.watchLesson}
-                            </Link>
-                          ) : null}
-                          <Link
-                            to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
-                            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline block"
-                          >
-                            {t.seriesPage}
-                          </Link>
+                              Closes:{" "}
+                              {new Date(s.deadline).toLocaleString("en-GB", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Closes: Never
+                            </span>
+                          )}
                         </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        {s.contentVideoId != null && (
+                          <Link
+                            to={`/content/${s.contentVideoId}`}
+                            className="text-primary font-semibold text-sm hover:underline"
+                          >
+                            Open Lesson
+                          </Link>
+                        )}
                       </td>
                       <td className="p-4 align-middle text-right">
                         <button
-                          onClick={() => openDeleteModal(s.contentId)}
-                          className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
-                          title={t.deleteVideoAria}
+                          onClick={() => openRevokeModal(s.contentId)}
+                          className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+                          title="Remove Assignment"
                         >
                           <Trash2 className="size-4.5" />
                         </button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        ))}
     </div>
   );
 }

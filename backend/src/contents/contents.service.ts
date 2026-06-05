@@ -385,7 +385,31 @@ export class ContentsService {
   }
 
   async getAllContent() {
-    return await this.prisma.content.findMany();
+    const now = new Date();
+
+    return await this.prisma.content.findMany({
+      where: {
+        OR: [
+          {
+            availableFrom: null,
+            deadline: null,
+            visibility: "public",
+          },
+          {
+            availableFrom: null,
+            deadline: { gt: now },
+          },
+          {
+            availableFrom: { lte: now },
+            deadline: null,
+          },
+          {
+            availableFrom: { lte: now },
+            deadline: { gt: now },
+          },
+        ],
+      },
+    });
   }
 
   async getContentById(id: number) {
@@ -650,6 +674,9 @@ export class ContentsService {
       );
     }
 
+    const validClassAssignments =
+      dto.classAssignments?.filter((a) => a && a.classId) || [];
+
     const created = await this.prisma.content.create({
       data: {
         name,
@@ -660,19 +687,18 @@ export class ContentsService {
         availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
         deadline: dto.deadline ? new Date(dto.deadline) : null,
 
-        classAccesses: dto.classAssignments?.length
-          ? {
-              create: dto.classAssignments.map((assignment) => ({
-                classId: assignment.classId,
-                availableFrom: assignment.availableFrom
-                  ? new Date(assignment.availableFrom)
-                  : null,
-                deadline: assignment.deadline
-                  ? new Date(assignment.deadline)
-                  : null,
-              })),
-            }
-          : undefined,
+        classAccesses:
+          validClassAssignments.length > 0
+            ? {
+                create: validClassAssignments.map((a) => ({
+                  classId: Number(a.classId),
+                  availableFrom: a.availableFrom
+                    ? new Date(a.availableFrom)
+                    : null,
+                  deadline: a.deadline ? new Date(a.deadline) : null,
+                })),
+              }
+            : undefined,
 
         category: {
           create: {
@@ -725,6 +751,7 @@ export class ContentsService {
       where: { ownerUserId: userId },
       orderBy: { createAt: "desc" },
       include: {
+        classAccesses: true,
         category: {
           orderBy: { playlistPosition: "asc" },
           take: 1,
@@ -733,9 +760,7 @@ export class ContentsService {
               orderBy: { playlistPosition: "asc" },
               take: 1,
               include: {
-                videoCaption: {
-                  select: { subtitlesFileLink: true },
-                },
+                videoCaption: { select: { subtitlesFileLink: true } },
               },
             },
             stats: true,
@@ -743,10 +768,31 @@ export class ContentsService {
         },
       },
     });
+
     return rows.map((c) => {
       const slot = c.category[0];
       const vid = slot?.ContentVideo?.[0];
       const stats = slot?.stats;
+
+      let start = c.availableFrom;
+      let end = c.deadline;
+
+      if (c.classAccesses && c.classAccesses.length > 0) {
+        const starts = c.classAccesses
+          .map((a) => a.availableFrom)
+          .filter(Boolean) as Date[];
+        const ends = c.classAccesses
+          .map((a) => a.deadline)
+          .filter(Boolean) as Date[];
+
+        if (starts.length > 0) {
+          start = new Date(Math.min(...starts.map((d) => d.getTime())));
+        }
+        if (ends.length > 0) {
+          end = new Date(Math.max(...ends.map((d) => d.getTime())));
+        }
+      }
+
       return {
         contentId: c.id,
         name: c.name,
@@ -757,12 +803,57 @@ export class ContentsService {
         systemTags: stats?.systemTags ?? [],
         userTags: stats?.userTags ?? [],
         processingComplexity: stats?.processingComplexity ?? null,
-        availableFrom: c.availableFrom?.toISOString() ?? null,
-        deadline: c.deadline?.toISOString() ?? null,
+        availableFrom: start ? start.toISOString() : null,
+        deadline: end ? end.toISOString() : null,
       };
     });
   }
 
+  async getAssignedHomework(teacherId: number) {
+    const rows = await this.prisma.content.findMany({
+      where: {
+        ownerUserId: null,
+        classAccesses: { some: { class: { teacherId } } },
+      },
+      include: {
+        category: {
+          orderBy: { playlistPosition: "asc" },
+          take: 1,
+          include: {
+            ContentVideo: { orderBy: { playlistPosition: "asc" }, take: 1 },
+          },
+        },
+        classAccesses: {
+          where: { class: { teacherId } },
+          include: { class: true },
+        },
+      },
+    });
+
+    return rows.map((c) => {
+      const ca = c.classAccesses[0];
+      return {
+        contentId: c.id,
+        name: c.name,
+        friendlyLink: c.friendlyLink,
+        contentVideoId: c.category[0]?.ContentVideo?.[0]?.id || null,
+        availableFrom: ca?.availableFrom?.toISOString() ?? null,
+        deadline: ca?.deadline?.toISOString() ?? null,
+        classesAssigned: c.classAccesses.map((a) => a.class.name).join(", "),
+      };
+    });
+  }
+
+  async revokeAssignment(teacherId: number, contentId: number) {
+    const classes = await this.prisma.class.findMany({ where: { teacherId } });
+    const classIds = classes.map((c) => c.id);
+
+    await this.prisma.classContentAccess.deleteMany({
+      where: { contentId: Number(contentId), classId: { in: classIds } },
+    });
+
+    return { success: true };
+  }
   async deleteEpisode(contentMediaId: number) {
     const media = await this.prisma.contentMedia.findUnique({
       where: { id: contentMediaId },
@@ -838,67 +929,29 @@ export class ContentsService {
         OR: [
           {
             ownerUserId: student.teacherId,
+            classAccesses: { none: {} },
             OR: [
-              { visibility: "public" },
-              {
-                visibility: "unlisted",
-                OR: [
-                  {
-                    classAccesses: { none: {} },
-                    AND: [
-                      {
-                        OR: [
-                          { availableFrom: null },
-                          { availableFrom: { lte: now } },
-                        ],
-                      },
-                      { OR: [{ deadline: null }, { deadline: { gt: now } }] },
-                    ],
-                  },
-                  ...(student.classId
-                    ? [
-                        {
-                          classAccesses: {
-                            some: {
-                              classId: student.classId,
-                              AND: [
-                                {
-                                  OR: [
-                                    { availableFrom: null },
-                                    { availableFrom: { lte: now } },
-                                  ],
-                                },
-                                {
-                                  OR: [
-                                    { deadline: null },
-                                    { deadline: { gt: now } },
-                                  ],
-                                },
-                              ],
-                            },
-                          },
-                        },
-                      ]
-                    : []),
-                ],
-              },
+              { availableFrom: null, deadline: null, visibility: "public" },
+              { availableFrom: null, deadline: { gt: now } },
+              { availableFrom: { lte: now }, deadline: null },
+              { availableFrom: { lte: now }, deadline: { gt: now } },
             ],
           },
           ...(student.classId
             ? [
                 {
-                  ownerUserId: null,
+                  OR: [
+                    { ownerUserId: student.teacherId },
+                    { ownerUserId: null },
+                  ],
                   classAccesses: {
                     some: {
                       classId: student.classId,
-                      AND: [
-                        {
-                          OR: [
-                            { availableFrom: null },
-                            { availableFrom: { lte: now } },
-                          ],
-                        },
-                        { OR: [{ deadline: null }, { deadline: { gt: now } }] },
+                      OR: [
+                        { availableFrom: null, deadline: null },
+                        { availableFrom: null, deadline: { gt: now } },
+                        { availableFrom: { lte: now }, deadline: null },
+                        { availableFrom: { lte: now }, deadline: { gt: now } },
                       ],
                     },
                   },
@@ -932,9 +985,13 @@ export class ContentsService {
       const slot = c.category[0];
       const vid = slot?.ContentVideo?.[0];
 
+      let actualAvailableFrom = c.availableFrom;
+      let actualDeadline = c.deadline;
       const classAccess = c.classAccesses?.[0];
-      const actualAvailableFrom = classAccess?.availableFrom ?? c.availableFrom;
-      const actualDeadline = classAccess?.deadline ?? c.deadline;
+      if (classAccess) {
+        actualAvailableFrom = classAccess.availableFrom;
+        actualDeadline = classAccess.deadline;
+      }
 
       return {
         contentId: c.id,

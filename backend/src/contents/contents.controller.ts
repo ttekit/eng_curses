@@ -107,11 +107,22 @@ export class ContentsController {
       );
     }
 
-    const fullDto = { ...dto, videoLink };
+    const fullDto: any = { ...dto, videoLink };
+
+    if (
+      req.body.classAssignments &&
+      typeof req.body.classAssignments === "string"
+    ) {
+      try {
+        fullDto.classAssignments = JSON.parse(req.body.classAssignments);
+      } catch (e) {}
+    }
+    if (req.body.availableFrom) fullDto.availableFrom = req.body.availableFrom;
+    if (req.body.deadline) fullDto.deadline = req.body.deadline;
 
     return this.contentsService.createTeacherUpload(
       userId,
-      fullDto as any,
+      fullDto,
       videoFile,
       thumbnailFile,
     );
@@ -248,6 +259,25 @@ export class ContentsController {
       videoFile,
       thumbnailFile,
     );
+  }
+
+  @Get("teacher/assigned-homework")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Получить список домашек из каталога" })
+  async getAssignedHomework(@Req() req: Request & { user?: unknown }) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.getAssignedHomework(teacherId);
+  }
+
+  @Delete("teacher/assign/:contentId")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Отменить заданную домашку" })
+  async revokeAssignment(
+    @Req() req: Request & { user?: unknown },
+    @Param("contentId", ParseIntPipe) contentId: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.revokeAssignment(teacherId, contentId);
   }
 
   @Post("teacher/assign/:id")
