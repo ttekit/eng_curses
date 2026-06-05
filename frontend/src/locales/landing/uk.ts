@@ -167,6 +167,13 @@ export const landingUk = {
     fullPageLink: "Усі тарифи на окремій сторінці",
   },
 
+  marketingFaq: {
+    landingTitle: "Часті запитання",
+    landingSubtitle: "Коротко про те, як працює Explys.",
+    pricingTitle: "Питання про тарифи",
+    pricingSubtitle: "Плани, оплата та оновлення.",
+  },
+
   cta: {
     titleBefore: "Готові розпочати",
     titleAccent: "свою подорож англійською",

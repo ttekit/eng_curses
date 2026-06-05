@@ -166,6 +166,13 @@ export const landingEn = {
     fullPageLink: "Full pricing page",
   },
 
+  marketingFaq: {
+    landingTitle: "Frequently asked questions",
+    landingSubtitle: "Quick answers about how Explys works.",
+    pricingTitle: "Pricing questions",
+    pricingSubtitle: "Plans, billing, and upgrades.",
+  },
+
   cta: {
     titleBefore: "Ready to start your",
     titleAccent: "English journey",

@@ -10,6 +10,8 @@ import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { buildPricingJsonLdSchemas } from "../../lib/seoStructuredData";
+import { pricingFaqEn } from "../../lib/marketingSeoContent";
+import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
 
 export default function PricingPage() {
   const [searchParams] = useSearchParams();
@@ -90,6 +92,14 @@ export default function PricingPage() {
             </button>
           </div>
         : null}
+
+        <MarketingFaqSection
+          id="pricing-faq"
+          title={messages.marketingFaq.pricingTitle}
+          subtitle={messages.marketingFaq.pricingSubtitle}
+          items={pricingFaqEn}
+          className="mt-16 border-t-0 bg-transparent py-0 sm:py-4"
+        />
       </main>
     </div>
   );

@@ -1,0 +1,61 @@
+{
+  "landingFaq": [
+    {
+      "question": "What is Explys?",
+      "answer": "Explys is a personalized English learning platform with adaptive video lessons, subtitles, interactive quizzes, and AI-assisted practice matched to your level and interests."
+    },
+    {
+      "question": "Is Explys free to start?",
+      "answer": "Yes. You can create an account and start learning for free without a credit card. Paid plans (Light, Smart, and Family) unlock additional features when you are ready to subscribe."
+    },
+    {
+      "question": "How does Explys personalize my lessons?",
+      "answer": "After sign-up, learners complete a short placement questionnaire. Explys uses your level, interests, and goals to recommend video lessons and build a student learning plan with phases and weekly habits."
+    },
+    {
+      "question": "How do video lessons and quizzes work?",
+      "answer": "Choose a lesson in the catalog, watch with subtitles, answer comprehension questions during or after the clip, and track progress in your profile. Completed lessons inform what your plan suggests next."
+    }
+  ],
+  "pricingFaq": [
+    {
+      "question": "How much does Explys cost?",
+      "answer": "Light (Essentials) is $7 per month, Smart (Adaptive) is $12 per month, and Family (LMS/Pro) is $19 per month. Teacher / Enterprise pricing is custom — contact us for schools and private teachers."
+    },
+    {
+      "question": "Which Explys plan is most popular?",
+      "answer": "Smart (Adaptive) is our most popular plan. It includes AI error analysis, unlimited interactive exercises, deep progress analytics, leaderboards, and a personalized growth plan."
+    },
+    {
+      "question": "Can I upgrade my plan later?",
+      "answer": "Yes. You can upgrade anytime from the pricing page after you sign in. Payments are processed securely by Stripe."
+    },
+    {
+      "question": "Do I need an account before subscribing?",
+      "answer": "Yes. Sign in to subscribe to Light, Smart, or Family. Family plans include up to three profiles with shared parental controls and all Smart features."
+    }
+  ],
+  "subscriptionProducts": [
+    {
+      "id": "light",
+      "name": "Explys Light (Essentials)",
+      "description": "Self-paced English learning with full video library access, basic quests, and a personal vocabulary dictionary.",
+      "price": "7.00",
+      "priceCurrency": "USD"
+    },
+    {
+      "id": "smart",
+      "name": "Explys Smart (Adaptive)",
+      "description": "Adaptive AI English program with error analysis, unlimited exercises, analytics, leaderboards, and a personalized growth plan.",
+      "price": "12.00",
+      "priceCurrency": "USD"
+    },
+    {
+      "id": "family",
+      "name": "Explys Family (LMS/Pro)",
+      "description": "Smart plan benefits for up to three family profiles with parental controls and family tournaments.",
+      "price": "19.00",
+      "priceCurrency": "USD"
+    }
+  ]
+}

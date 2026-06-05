@@ -1,9 +1,11 @@
 import React, { Suspense } from "react";
 import { HeroSection } from "../../components/landing/HeroSection";
+import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
 import ContentHeader from "../../components/catalog/ContentHeader";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { buildLandingJsonLdSchemas } from "../../lib/seoStructuredData";
+import { landingFaqEn } from "../../lib/marketingSeoContent";
 import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
@@ -49,6 +51,12 @@ export default function LandingPage() {
         <FeaturesSection />
         <HowItWorksSection />
         <LandingPricingSection />
+        <MarketingFaqSection
+          id="faq"
+          title={messages.marketingFaq.landingTitle}
+          subtitle={messages.marketingFaq.landingSubtitle}
+          items={landingFaqEn}
+        />
         <CtaSection />
         <LandingFooter />
       </Suspense>

@@ -2,6 +2,62 @@ import { getSiteUrl } from "./siteUrl";
 import type { LandingLocaleId } from "../locales/landing";
 import { landingEn } from "../locales/landing/en";
 import { landingUk } from "../locales/landing/uk";
+import {
+  landingFaqEn,
+  pricingFaqEn,
+  subscriptionProductsEn,
+  type MarketingFaqItem,
+  type SubscriptionProductSnapshot,
+} from "./marketingSeoContent";
+
+/** FAQPage JSON-LD — eligible for Google FAQ rich results when content is visible on page. */
+export function buildFaqPageJsonLd(items: MarketingFaqItem[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+/** BreadcrumbList JSON-LD — eligible for breadcrumb rich results. */
+export function buildMarketingBreadcrumbJsonLd(
+  items: { name: string; path: string }[],
+) {
+  return buildBreadcrumbJsonLd(items);
+}
+
+/** Product JSON-LD for each subscription tier on /pricing. */
+export function buildPricingProductJsonLd(
+  origin: string,
+  products: SubscriptionProductSnapshot[] = subscriptionProductsEn,
+) {
+  return products.map((product) => ({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    brand: {
+      "@type": "Brand",
+      name: "Explys",
+    },
+    category: "Software > Language Learning Subscription",
+    offers: {
+      "@type": "Offer",
+      url: `${origin}/pricing`,
+      price: product.price,
+      priceCurrency: product.priceCurrency,
+      availability: "https://schema.org/InStock",
+      priceValidUntil: `${new Date().getUTCFullYear() + 1}-12-31`,
+    },
+  }));
+}
 
 /** Organization + WebSite JSON-LD for the marketing site (no server required). */
 export function buildExplysOrganizationJsonLd(origin: string) {
@@ -39,42 +95,26 @@ export function buildLandingJsonLdSchemas() {
   return [
     buildExplysOrganizationJsonLd(origin),
     buildExplysWebSiteJsonLd(origin),
+    buildFaqPageJsonLd(landingFaqEn),
   ];
 }
-
-type PricingPlanId = "light" | "smart" | "family" | "teacher";
 
 function getPricingMessages(locale: LandingLocaleId) {
   return locale === "uk" ? landingUk : landingEn;
 }
 
-/** OfferCatalog JSON-LD for the public pricing page. */
+/** Pricing page JSON-LD: FAQ, breadcrumbs, and Product offers (rich-result eligible). */
 export function buildPricingJsonLdSchemas(locale: LandingLocaleId = "en") {
   const origin = getSiteUrl();
-  const cards = getPricingMessages(locale).pricingCards.plans;
-  const planOrder: PricingPlanId[] = ["light", "smart", "family", "teacher"];
-
-  const offers = planOrder.map((planId) => {
-    const plan = cards[planId];
-    return {
-      "@type": "Offer",
-      name: plan.name,
-      description: plan.description,
-      url: `${origin}/pricing`,
-      category: planId === "teacher" ? "Enterprise" : "Subscription",
-    };
-  });
 
   return [
     buildExplysOrganizationJsonLd(origin),
-    {
-      "@context": "https://schema.org",
-      "@type": "OfferCatalog",
-      name: getPricingMessages(locale).pricingPage.title,
-      description: getPricingMessages(locale).pricingPage.description,
-      url: `${origin}/pricing`,
-      itemListElement: offers,
-    },
+    buildMarketingBreadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: getPricingMessages(locale).pricingPage.title, path: "/pricing" },
+    ]),
+    buildFaqPageJsonLd(pricingFaqEn),
+    ...buildPricingProductJsonLd(origin),
   ];
 }
 
