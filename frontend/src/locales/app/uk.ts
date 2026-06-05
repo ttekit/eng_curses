@@ -888,6 +888,7 @@ export const appUk = {
     saveWordAria: "Зберегти слово",
     completeBannerTitle: "Урок завершено",
     completeBannerXp: "Ви отримали {xp} XP",
+    warning: "Увага! Вікове обмеження: ",
   },
 
   lessonSummaryPage: {

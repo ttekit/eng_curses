@@ -340,12 +340,19 @@ function readWrittenSummaryScoreFromSubmit(
   return undefined;
 }
 
-function splitLongTranscriptLines(lines: TranscriptLine[], maxChars = 80): TranscriptLine[] {
+function splitLongTranscriptLines(
+  lines: TranscriptLine[],
+  maxChars = 80,
+): TranscriptLine[] {
   const out: TranscriptLine[] = [];
   const softLimit = Math.floor(maxChars * 0.5);
 
   for (const line of lines) {
-    if (!line.text || typeof line.startSec !== 'number' || typeof line.endSec !== 'number') {
+    if (
+      !line.text ||
+      typeof line.startSec !== "number" ||
+      typeof line.endSec !== "number"
+    ) {
       out.push(line);
       continue;
     }
@@ -354,22 +361,23 @@ function splitLongTranscriptLines(lines: TranscriptLine[], maxChars = 80): Trans
       continue;
     }
 
-    const words = line.text.split(' ');
+    const words = line.text.split(" ");
     const chunks: string[] = [];
-    let currentChunk = '';
+    let currentChunk = "";
 
     for (const word of words) {
       const hasPunctuation = /[.,!?;:]$/.test(word);
-      const nextLength = (currentChunk ? currentChunk.length + 1 : 0) + word.length;
+      const nextLength =
+        (currentChunk ? currentChunk.length + 1 : 0) + word.length;
 
       if (nextLength > maxChars && currentChunk.length > 0) {
         chunks.push(currentChunk.trim());
         currentChunk = word;
       } else {
-        currentChunk += (currentChunk ? ' ' : '') + word;
+        currentChunk += (currentChunk ? " " : "") + word;
         if (hasPunctuation && currentChunk.length >= softLimit) {
           chunks.push(currentChunk.trim());
-          currentChunk = '';
+          currentChunk = "";
         }
       }
     }
@@ -391,7 +399,7 @@ function splitLongTranscriptLines(lines: TranscriptLine[], maxChars = 80): Trans
         time: timeLabel,
         startSec: currentStart,
         endSec: chunkEnd,
-        text: chunk
+        text: chunk,
       });
       currentStart = chunkEnd;
     }
@@ -654,6 +662,7 @@ export default function ContentPage() {
     videoName: string;
     videoLink: string;
     videoDescription: string | null;
+    ageRestriction: string | null;
     content: {
       category: {
         name: string;
@@ -858,8 +867,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -1153,7 +1162,7 @@ export default function ContentPage() {
           });
 
           if (r.ok) {
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1342,6 +1351,15 @@ export default function ContentPage() {
     />
   );
 
+  const ageRestriction: Record<string, string> = {
+    "0+": "bg-accent/20 text-accent border border-accent/40",
+    "6+": "bg-(--light-blue)/20 text-(--light-blue) border border-(--light-blue)/40",
+    "12+": "bg-(--yellow)/20 text-(--yellow) border border-(--yellow)/40",
+    "16+": "bg-(--orange)/20 text-(--orange) border border-(--orange)/40",
+    "18+": "bg-destructive/20 text-destructive border border-destructive/40",
+    "21+": "bg-primary/20 text-primary border border-primary/40",
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <SEO
@@ -1397,6 +1415,20 @@ export default function ContentPage() {
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
                   {videoData.videoName}
                 </h1>
+
+                {videoData.ageRestriction &&
+                  ageRestriction[videoData.ageRestriction] && (
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-[15px] px-2 py-0.5 text-xs font-semibold mb-3",
+                        ageRestriction[videoData.ageRestriction],
+                      )}
+                    >
+                      <p className="mr-1">{L.warning}</p>
+                      {videoData.ageRestriction}
+                    </span>
+                  )}
+
                 <p className="leading-relaxed text-muted-foreground">
                   {descriptionBlurb}
                 </p>
