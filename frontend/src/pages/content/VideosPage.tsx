@@ -51,6 +51,7 @@ interface ContentVideo {
   videoLink: string;
   thumbnailUrl?: string;
   playlistPosition?: number;
+  ageRestriction?: string;
   content: {
     id: number;
     playlistPosition?: number;
@@ -75,6 +76,7 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
     categoryLabel: video.content.category.name,
     thumbnailUrl: video.thumbnailUrl,
     videoLink: video.videoLink,
+    ageRestriction: video.ageRestriction,
   };
 }
 
@@ -485,9 +487,7 @@ export default function VideoPage() {
       : null;
   }, [featured]);
 
-  const hasFilters =
-    selectedLevel !== "All" ||
-    selectedGenre !== "All";
+  const hasFilters = selectedLevel !== "All" || selectedGenre !== "All";
 
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
@@ -557,12 +557,7 @@ export default function VideoPage() {
           videos: sorted.map(toCardVideo),
         };
       });
-  }, [
-    filteredVideos,
-    selectedLevel,
-    selectedGenre,
-    hasFilters,
-  ]);
+  }, [filteredVideos, selectedLevel, selectedGenre, hasFilters]);
 
   // Exclude filtered videos from recommendation rows.
   const visibleRecommended = useMemo(() => {
@@ -747,9 +742,7 @@ export default function VideoPage() {
                     {cb.emptyTitle}
                   </h2>
                   <p className="mt-2 text-muted-foreground text-sm">
-                    {videos.length === 0
-                      ? cb.emptyNoVideos
-                      : cb.emptyFiltered}
+                    {videos.length === 0 ? cb.emptyNoVideos : cb.emptyFiltered}
                   </p>
                 </div>
               ) : hasFilters ? (

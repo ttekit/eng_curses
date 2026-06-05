@@ -14,6 +14,7 @@ export type VideoRecommendationItem = {
     id: number;
     videoName: string;
     videoLink: string;
+    ageRestriction?: string;
   };
   content: {
     name: string;
@@ -29,6 +30,7 @@ type CatalogVideoLike = {
   videoName: string;
   videoLink: string;
   thumbnailUrl?: string;
+  ageRestriction?: string;
   content: {
     category: { name: string };
     stats?: {
@@ -106,10 +108,9 @@ export async function fetchContentRecommendations(
   userId: number,
 ): Promise<ContentRecommendationsResponse | null> {
   try {
-    const res = await apiFetch(
-      `/content-recommendations/for-user/${userId}`,
-      { method: "GET" },
-    );
+    const res = await apiFetch(`/content-recommendations/for-user/${userId}`, {
+      method: "GET",
+    });
     if (!res.ok) {
       return null;
     }
@@ -137,6 +138,7 @@ export function mapRecommendationsToCatalogCards(
       categoryLabel: item.content.name,
       videoLink: item.contentVideo.videoLink,
       thumbnailUrl: thumbnailById.get(id),
+      ageRestriction: item.contentVideo.ageRestriction,
     });
   }
   return out;
@@ -207,5 +209,6 @@ export function buildClientRecommendedVideos(
     categoryLabel: v.content.category.name,
     thumbnailUrl: v.thumbnailUrl,
     videoLink: v.videoLink,
+    ageRestriction: v.ageRestriction,
   }));
 }
