@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import type { TranscriptLine, VocabularyItem } from "./defaultLessonSides";
 import { X } from "lucide-react";
@@ -101,19 +101,6 @@ export function VideoTranscript({
     () => activeCueIndex(transcript, playbackSec),
     [transcript, playbackSec],
   );
-
-  useEffect(() => {
-    if (activeIndex < 0 || loading) return;
-    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
-    const root = listRef.current;
-    if (!root) return;
-    const el = root.querySelector(`[data-cue-index="${activeIndex}"]`);
-    el?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
-  }, [activeIndex, loading]);
 
   if (loading) {
     return (

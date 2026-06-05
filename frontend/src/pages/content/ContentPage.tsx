@@ -340,6 +340,65 @@ function readWrittenSummaryScoreFromSubmit(
   return undefined;
 }
 
+function splitLongTranscriptLines(lines: TranscriptLine[], maxChars = 80): TranscriptLine[] {
+  const out: TranscriptLine[] = [];
+  const softLimit = Math.floor(maxChars * 0.5);
+
+  for (const line of lines) {
+    if (!line.text || typeof line.startSec !== 'number' || typeof line.endSec !== 'number') {
+      out.push(line);
+      continue;
+    }
+    if (line.text.length <= maxChars) {
+      out.push(line);
+      continue;
+    }
+
+    const words = line.text.split(' ');
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const word of words) {
+      const hasPunctuation = /[.,!?;:]$/.test(word);
+      const nextLength = (currentChunk ? currentChunk.length + 1 : 0) + word.length;
+
+      if (nextLength > maxChars && currentChunk.length > 0) {
+        chunks.push(currentChunk.trim());
+        currentChunk = word;
+      } else {
+        currentChunk += (currentChunk ? ' ' : '') + word;
+        if (hasPunctuation && currentChunk.length >= softLimit) {
+          chunks.push(currentChunk.trim());
+          currentChunk = '';
+        }
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk.trim());
+
+    const totalDuration = line.endSec - line.startSec;
+    const totalChars = chunks.reduce((acc, c) => acc + c.length, 0);
+
+    let currentStart = line.startSec;
+    for (const chunk of chunks) {
+      const chunkDuration = (chunk.length / totalChars) * totalDuration;
+      const chunkEnd = currentStart + chunkDuration;
+
+      const m = Math.floor(currentStart / 60);
+      const s = Math.floor(currentStart % 60);
+      const timeLabel = `${m}:${s.toString().padStart(2, "0")}`;
+
+      out.push({
+        time: timeLabel,
+        startSec: currentStart,
+        endSec: chunkEnd,
+        text: chunk
+      });
+      currentStart = chunkEnd;
+    }
+  }
+  return out;
+}
+
 type TabId = "vocabulary" | "transcript" | "quiz";
 type LessonLabels = typeof appEn.lesson;
 
@@ -638,7 +697,7 @@ export default function ContentPage() {
 
   const isLgUp = useIsLgUp();
 
-  /** True once playback reaches threshold for this lesson (quiz + Watched label). */
+  /** True once playback reaches threshold for this lesson (quiz + backend watch-complete). */
   const progressedToWatchedRef = useRef(false);
   /** POST /watch-complete fire-once guard (survey + analytics). */
   const watchCompletePostedRef = useRef(false);
@@ -838,7 +897,8 @@ export default function ContentPage() {
           return;
         }
         const raw = await r.text();
-        setTranscriptLines(parseWebVttTranscriptLines(raw));
+        const parsed = parseWebVttTranscriptLines(raw);
+        setTranscriptLines(splitLongTranscriptLines(parsed, 80));
       })
       .catch(() => {
         if (!cancelled) setTranscriptLines([]);
