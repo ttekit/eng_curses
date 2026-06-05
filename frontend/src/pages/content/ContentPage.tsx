@@ -1307,6 +1307,7 @@ export default function ContentPage() {
               <div className="overflow-hidden rounded-xl mt-5 border border-border bg-muted ring-1 ring-border/40">
                 <VideoPlayer
                   src={videoData.videoLink}
+                  transcript={transcriptLines}
                   onEnded={handleVideoEnded}
                   onPlay={handleVideoPlay}
                   onPlaybackTime={(t) => setPlaybackSec(t)}
