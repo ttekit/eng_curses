@@ -13,16 +13,16 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { AvatarsService } from "./avatars.service";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
+import { AuthGuard } from "src/auth/auth.guard";
 import { ApiTokenOrJwtAuthGuard } from "src/auth/guards/api-token-or-jwt.guard";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 
 @ApiTags("avatars")
 @Controller("avatars")
 export class AvatarsController {
-  constructor(private readonly avatarsService: AvatarsService) {}
+  constructor(private readonly avatarsService: AvatarsService) { }
 
   @Get()
-  @UseGuards(ApiTokenOrJwtAuthGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiOperation({ summary: "Get all active avatars for selection" })
   async getActiveAvatars() {
