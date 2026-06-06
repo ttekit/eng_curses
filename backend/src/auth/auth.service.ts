@@ -60,7 +60,7 @@ export class AuthService {
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) {}
+  ) { }
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -135,6 +135,8 @@ export class AuthService {
         method: "CREDENTIALS",
         teacherId,
         isVerified: emailConfirmationDisabled,
+        subscriptionPlan: "smart",
+        subscriptionStatus: "active",
       },
     });
 
@@ -221,6 +223,8 @@ export class AuthService {
         isVerified: emailConfirmationDisabled,
         verificationCode: otpCode,
         verificationCodeExpires: otpExpires,
+        subscriptionPlan: "smart",
+        subscriptionStatus: "active",
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
         hasCompletedPlacement: roleLabel === "TEACHER",
         additionalUserData: {
@@ -522,11 +526,11 @@ export class AuthService {
         ...(data.role ? { role: data.role } : {}),
         additionalUserData: hasAdditionalData
           ? {
-              upsert: {
-                create: createData,
-                update: updateData,
-              },
-            }
+            upsert: {
+              create: createData,
+              update: updateData,
+            },
+          }
           : undefined,
       },
     });
