@@ -913,6 +913,7 @@ export default function AdminVideosPage() {
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
             >
               <option value="0+">0+</option>
+              <option value="6+">6+</option>
               <option value="12+">12+</option>
               <option value="16+">16+</option>
               <option value="18+">18+</option>
@@ -1074,6 +1075,7 @@ export default function AdminVideosPage() {
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
             >
               <option value="0+">0+</option>
+              <option value="6+">6+</option>
               <option value="12+">12+</option>
               <option value="16+">16+</option>
               <option value="18+">18+</option>
@@ -1142,6 +1144,7 @@ export default function AdminVideosPage() {
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
             >
               <option value="0+">0+</option>
+              <option value="6+">6+</option>
               <option value="12+">12+</option>
               <option value="16+">16+</option>
               <option value="18+">18+</option>

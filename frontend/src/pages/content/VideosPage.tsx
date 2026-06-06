@@ -484,15 +484,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
@@ -826,7 +826,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

@@ -18,6 +18,7 @@ import {
   AdminModal,
   AdminInput,
   AdminTextarea,
+  AdminSelectNative
 } from "../../components/admin/adminUi";
 
 export type TeacherSeriesItem = {
@@ -427,6 +428,7 @@ export function ProfileTeacherVideos() {
               className="w-full"
             >
               <option value="0+">0+</option>
+              <option value="6+">6+</option>
               <option value="12+">12+</option>
               <option value="16+">16+</option>
               <option value="18+">18+</option>
