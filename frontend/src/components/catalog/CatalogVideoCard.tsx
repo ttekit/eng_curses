@@ -33,11 +33,12 @@ const badgeClassForLabel = (label: string) => {
 
 const ageRestrictionClass = (age: string) => {
   const map: Record<string, string> = {
-    "0+": "bg-accent/20 text-accent",
-    "12+": "bg-(--yellow)/20 text-(--yellow)",
-    "16+": "bg-(--orange)/20 text-(--orange)",
-    "18+": "bg-destructive/20 text-destructive",
-    "21+": "bg-primary/20 text-primary",
+    "0+": "bg-accent text-foreground",
+    "6+": "bg-(--light-blue) text-foreground",
+    "12+": "bg-(--yellow) text-foreground",
+    "16+": "bg-(--orange) text-foreground",
+    "18+": "bg-destructive text-foreground",
+    "21+": "bg-primary text-foreground",
   };
   return map[age] ?? "bg-muted text-muted-foreground";
 };
@@ -91,7 +92,7 @@ export function CatalogVideoCard({
         {video.ageRestriction ? (
           <span
             className={cn(
-              "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font-bold z-10",
+              "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font- z-10",
               ageRestrictionClass(video.ageRestriction),
             )}
           >

@@ -877,6 +877,7 @@ export const appEn = {
     saveWordAria: "Save word",
     completeBannerTitle: "Lesson complete",
     completeBannerXp: "You earned {xp} XP",
+    warning: "Warning! Age resctriction:",
   },
 
   lessonSummaryPage: {
