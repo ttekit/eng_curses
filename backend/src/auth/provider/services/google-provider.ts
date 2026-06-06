@@ -13,10 +13,14 @@ type GoogleProviderOptions = {
 export class GoogleProvider implements OAuthProvider {
   readonly name = "google";
 
-  constructor(private readonly options: GoogleProviderOptions) {}
+  constructor(private readonly options: GoogleProviderOptions) { }
 
   getAuthUrl(state?: string): string {
-    const redirectUri = `${this.options.baseUrl}/auth/oauth/callback/google`;
+    const baseUrl = this.options.baseUrl.endsWith('/')
+      ? this.options.baseUrl.slice(0, -1)
+      : this.options.baseUrl;
+    const redirectUri = `${baseUrl}/auth/oauth / callback / google`;
+
     const params = new URLSearchParams({
       client_id: this.options.client_id,
       redirect_uri: redirectUri,
