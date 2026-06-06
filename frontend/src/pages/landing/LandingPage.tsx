@@ -1,4 +1,5 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
+import { useLocation } from "react-router"; // Додали хук для відслідковування URL
 import { HeroSection } from "../../components/landing/HeroSection";
 import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
 import ContentHeader from "../../components/catalog/ContentHeader";
@@ -28,6 +29,26 @@ const LandingFooter = React.lazy(() =>
 export default function LandingPage() {
   const { messages, locale } = useLandingLocale();
   const { seo } = messages;
+  const location = useLocation();
+
+  // Цей ефект ловить зміну хешу в URL і плавно скролить до елемента,
+  // навіть якщо він був завантажений через React.lazy
+  useEffect(() => {
+    if (location.hash) {
+      const targetId = location.hash.substring(1); // Прибираємо '#'
+
+      const scrollToElement = () => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      };
+
+      // Робимо невелику затримку, щоб Suspense встиг відрендерити компоненти
+      const timeoutId = setTimeout(scrollToElement, 150);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [location.hash]);
 
   return (
     <main
@@ -48,6 +69,7 @@ export default function LandingPage() {
       <HeroSection />
 
       <Suspense fallback={<div className="min-h-screen" />}>
+        {/* Прибрали зайві div-обгортки. Компоненти використовують свої власні ID */}
         <FeaturesSection />
         <HowItWorksSection />
         <LandingPricingSection />
