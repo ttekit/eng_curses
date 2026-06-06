@@ -12,6 +12,7 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
+  Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
@@ -40,6 +41,12 @@ export type TeacherSeriesItem = {
   deadline?: string | null;
   classesAssigned?: string;
   classIds?: number[];
+  classAccesses?: {
+    classId: number;
+    className: string;
+    availableFrom: string | null;
+    deadline: string | null;
+  }[];
 };
 
 function formatDateTimeLocal(dateStr?: string | null) {
@@ -213,8 +220,15 @@ export function ProfileTeacherVideos() {
   const [editingDeadlineId, setEditingDeadlineId] = useState<number | null>(
     null,
   );
-  const [editOpenDateStr, setEditOpenDateStr] = useState("");
-  const [editCloseDateStr, setEditCloseDateStr] = useState("");
+  const [editingDeadlines, setEditingDeadlines] = useState<{
+    global: { availableFrom: string; deadline: string };
+    classes: {
+      classId: number;
+      className: string;
+      availableFrom: string;
+      deadline: string;
+    }[];
+  } | null>(null);
   const [isSavingDeadline, setIsSavingDeadline] = useState(false);
 
   const [assignMode, setAssignMode] = useState<"all" | "classes">("all");
@@ -532,13 +546,68 @@ export function ProfileTeacherVideos() {
 
   const openEditDeadlineModal = (item: TeacherSeriesItem) => {
     setEditingDeadlineId(item.contentId);
-    setEditOpenDateStr(formatDateTimeLocal(item.availableFrom));
-    setEditCloseDateStr(formatDateTimeLocal(item.deadline));
+    setEditingDeadlines({
+      global: {
+        availableFrom: formatDateTimeLocal(item.availableFrom),
+        deadline: formatDateTimeLocal(item.deadline),
+      },
+      classes: item.classAccesses
+        ? item.classAccesses.map((ca) => ({
+            classId: ca.classId,
+            className: ca.className,
+            availableFrom: formatDateTimeLocal(ca.availableFrom),
+            deadline: formatDateTimeLocal(ca.deadline),
+          }))
+        : [],
+    });
     setEditDeadlineModalOpen(true);
   };
 
+  const handleClassDateChange = (
+    index: number,
+    field: "availableFrom" | "deadline",
+    value: string,
+  ) => {
+    if (!editingDeadlines) return;
+    const newClasses = [...editingDeadlines.classes];
+    newClasses[index] = { ...newClasses[index], [field]: value };
+    setEditingDeadlines({ ...editingDeadlines, classes: newClasses });
+  };
+
   const handleSaveDeadline = async () => {
-    if (!editingDeadlineId) return;
+    if (!editingDeadlineId || !editingDeadlines) return;
+
+    if (editingDeadlines.global.deadline) {
+      const cDate = new Date(editingDeadlines.global.deadline);
+      if (cDate <= new Date()) {
+        return toast.error("Global closing deadline cannot be in the past.");
+      }
+      if (
+        editingDeadlines.global.availableFrom &&
+        cDate <= new Date(editingDeadlines.global.availableFrom)
+      ) {
+        return toast.error(
+          "Global closing deadline must be after opening date.",
+        );
+      }
+    }
+
+    for (const cls of editingDeadlines.classes) {
+      if (cls.deadline) {
+        const cDate = new Date(cls.deadline);
+        if (cDate <= new Date()) {
+          return toast.error(
+            `Closing deadline for ${cls.className} cannot be in the past.`,
+          );
+        }
+        if (cls.availableFrom && cDate <= new Date(cls.availableFrom)) {
+          return toast.error(
+            `Closing deadline for ${cls.className} must be after opening date.`,
+          );
+        }
+      }
+    }
+
     setIsSavingDeadline(true);
     try {
       const res = await apiFetch(
@@ -547,12 +616,21 @@ export function ProfileTeacherVideos() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            availableFrom: editOpenDateStr
-              ? new Date(editOpenDateStr).toISOString()
-              : null,
-            deadline: editCloseDateStr
-              ? new Date(editCloseDateStr).toISOString()
-              : null,
+            global: {
+              availableFrom: editingDeadlines.global.availableFrom
+                ? new Date(editingDeadlines.global.availableFrom).toISOString()
+                : null,
+              deadline: editingDeadlines.global.deadline
+                ? new Date(editingDeadlines.global.deadline).toISOString()
+                : null,
+            },
+            classes: editingDeadlines.classes.map((c) => ({
+              classId: c.classId,
+              availableFrom: c.availableFrom
+                ? new Date(c.availableFrom).toISOString()
+                : null,
+              deadline: c.deadline ? new Date(c.deadline).toISOString() : null,
+            })),
           }),
         },
       );
@@ -593,12 +671,18 @@ export function ProfileTeacherVideos() {
 
   const filteredSeries = series.filter((s) => {
     if (filterClassId === "all") return true;
-    return s.classIds?.includes(filterClassId) || s.classIds?.length === 0;
+    return (
+      s.classAccesses?.some((ca) => ca.classId === filterClassId) ||
+      s.classAccesses?.length === 0
+    );
   });
 
   const filteredAssignedSeries = assignedSeries.filter((s) => {
     if (filterClassId === "all") return true;
-    return s.classIds?.includes(filterClassId) || s.classIds?.length === 0;
+    return (
+      s.classAccesses?.some((ca) => ca.classId === filterClassId) ||
+      s.classAccesses?.length === 0
+    );
   });
 
   if (loading) {
@@ -863,35 +947,44 @@ export function ProfileTeacherVideos() {
                         <div
                           key={cls.id}
                           className={cn(
-                            "border border-border/70 rounded-lg p-3 space-y-3 transition-colors",
+                            "border border-border/70 rounded-xl p-4 space-y-4 transition-colors",
                             isSelected
-                              ? "bg-primary/5 border-primary/30"
-                              : "bg-background",
+                              ? "bg-primary/5 border-primary/40 shadow-sm"
+                              : "bg-background hover:border-primary/30",
                           )}
                         >
-                          <label className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedClasses((p) => ({
-                                    ...p,
-                                    [cls.id]: {
-                                      availableFrom: "",
-                                      deadline: "",
-                                    },
-                                  }));
-                                } else {
-                                  const next = { ...selectedClasses };
-                                  delete next[cls.id];
-                                  setSelectedClasses(next);
-                                }
-                              }}
-                              className="rounded border-border text-primary focus:ring-primary size-4.5 cursor-pointer"
-                            />
-                            {cls.name}
-                          </label>
+                          <div
+                            onClick={(e) => {
+                              if (isSelected) {
+                                const next = { ...selectedClasses };
+                                delete next[cls.id];
+                                setSelectedClasses(next);
+                              } else {
+                                setSelectedClasses((p) => ({
+                                  ...p,
+                                  [cls.id]: {
+                                    availableFrom: "",
+                                    deadline: "",
+                                  },
+                                }));
+                              }
+                            }}
+                            className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none"
+                          >
+                            <div
+                              className={cn(
+                                "size-5 rounded flex items-center justify-center transition-colors shrink-0 border",
+                                isSelected
+                                  ? "bg-primary border-primary text-primary-foreground"
+                                  : "border-muted-foreground/40 bg-background",
+                              )}
+                            >
+                              {isSelected && (
+                                <Check className="size-3.5 stroke-[3]" />
+                              )}
+                            </div>
+                            <span className="text-foreground">{cls.name}</span>
+                          </div>
 
                           {isSelected && (
                             <div className="flex flex-col gap-4 pl-8 pt-1">
@@ -978,41 +1071,154 @@ export function ProfileTeacherVideos() {
           </>
         }
       >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Opening Date (Becomes Public)
-            </label>
-            <AdminInput
-              type="datetime-local"
-              lang="en-GB"
-              value={editOpenDateStr}
-              className="w-full"
-              max="9999-12-31T23:59"
-              onChange={(e) => {
-                if (isValidYear(e.target.value)) {
-                  setEditOpenDateStr(e.target.value);
-                }
-              }}
-            />
+        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="bg-muted/10 p-4 rounded-xl border border-border">
+            <h4 className="text-sm font-bold mb-3 text-foreground">
+              Global Rules (Applies to links)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase">
+                  Opening Date
+                </label>
+                <AdminInput
+                  id="edit-global-open-date"
+                  type="datetime-local"
+                  lang="en-GB"
+                  value={editingDeadlines?.global.availableFrom || ""}
+                  className="w-full"
+                  max="9999-12-31T23:59"
+                  onChange={(e) => {
+                    if (isValidYear(e.target.value) && editingDeadlines) {
+                      setEditingDeadlines({
+                        ...editingDeadlines,
+                        global: {
+                          ...editingDeadlines.global,
+                          availableFrom: e.target.value,
+                        },
+                      });
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      document
+                        .getElementById("edit-global-close-date")
+                        ?.focus();
+                    }
+                  }}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase">
+                  Closing Deadline
+                </label>
+                <AdminInput
+                  id="edit-global-close-date"
+                  type="datetime-local"
+                  lang="en-GB"
+                  value={editingDeadlines?.global.deadline || ""}
+                  className="w-full"
+                  max="9999-12-31T23:59"
+                  onChange={(e) => {
+                    if (isValidYear(e.target.value) && editingDeadlines) {
+                      setEditingDeadlines({
+                        ...editingDeadlines,
+                        global: {
+                          ...editingDeadlines.global,
+                          deadline: e.target.value,
+                        },
+                      });
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleSaveDeadline();
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Closing Deadline (Becomes Private)
-            </label>
-            <AdminInput
-              type="datetime-local"
-              lang="en-GB"
-              value={editCloseDateStr}
-              className="w-full"
-              max="9999-12-31T23:59"
-              onChange={(e) => {
-                if (isValidYear(e.target.value)) {
-                  setEditCloseDateStr(e.target.value);
-                }
-              }}
-            />
-          </div>
+
+          {editingDeadlines && editingDeadlines.classes.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-foreground">
+                Specific Class Deadlines
+              </h4>
+              {editingDeadlines.classes.map((cls, idx) => (
+                <div
+                  key={cls.classId}
+                  className="bg-primary/5 p-4 rounded-xl border border-primary/20"
+                >
+                  <span className="text-sm font-bold text-primary mb-3 block">
+                    {cls.className}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">
+                        Opening Date
+                      </label>
+                      <AdminInput
+                        id={`edit-open-date-${cls.classId}`}
+                        type="datetime-local"
+                        lang="en-GB"
+                        value={cls.availableFrom || ""}
+                        className="w-full"
+                        max="9999-12-31T23:59"
+                        onChange={(e) => {
+                          if (isValidYear(e.target.value)) {
+                            handleClassDateChange(
+                              idx,
+                              "availableFrom",
+                              e.target.value,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            document
+                              .getElementById(`edit-close-date-${cls.classId}`)
+                              ?.focus();
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">
+                        Closing Deadline
+                      </label>
+                      <AdminInput
+                        id={`edit-close-date-${cls.classId}`}
+                        type="datetime-local"
+                        lang="en-GB"
+                        value={cls.deadline || ""}
+                        className="w-full"
+                        max="9999-12-31T23:59"
+                        onChange={(e) => {
+                          if (isValidYear(e.target.value)) {
+                            handleClassDateChange(
+                              idx,
+                              "deadline",
+                              e.target.value,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            void handleSaveDeadline();
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </AdminModal>
 
@@ -1153,23 +1359,28 @@ export function ProfileTeacherVideos() {
         ) : videoResults ? (
           <div className="space-y-4">
             {videoResults.classes.length > 1 && (
-              <CustomSelect
-                value={
-                  resultsClassFilter === "all"
-                    ? "all"
-                    : String(resultsClassFilter)
-                }
-                onChange={(val) =>
-                  setResultsClassFilter(val === "all" ? "all" : Number(val))
-                }
-                options={[
-                  { value: "all", label: "All Classes" },
-                  ...videoResults.classes.map((c: any) => ({
-                    value: String(c.id),
-                    label: c.name,
-                  })),
-                ]}
-              />
+              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
+                <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">
+                  Filter by Assigned Class
+                </label>
+                <CustomSelect
+                  value={
+                    resultsClassFilter === "all"
+                      ? "all"
+                      : String(resultsClassFilter)
+                  }
+                  onChange={(val) =>
+                    setResultsClassFilter(val === "all" ? "all" : Number(val))
+                  }
+                  options={[
+                    { value: "all", label: "All Assigned Classes" },
+                    ...videoResults.classes.map((c: any) => ({
+                      value: String(c.id),
+                      label: c.name,
+                    })),
+                  ]}
+                />
+              </div>
             )}
 
             <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -1302,17 +1513,17 @@ export function ProfileTeacherVideos() {
                 Student Answers
               </h4>
               {(() => {
-                let answers = selectedStudentQuiz.attempt.answers;
+                let rawAnswers = selectedStudentQuiz.attempt.answers;
 
-                if (typeof answers === "string") {
+                if (typeof rawAnswers === "string") {
                   try {
-                    answers = JSON.parse(answers);
+                    rawAnswers = JSON.parse(rawAnswers);
                   } catch (e) {}
                 }
 
                 if (
-                  !answers ||
-                  (typeof answers !== "object" && !Array.isArray(answers))
+                  !rawAnswers ||
+                  (typeof rawAnswers !== "object" && !Array.isArray(rawAnswers))
                 ) {
                   return (
                     <p className="text-sm text-muted-foreground ml-1">
@@ -1321,136 +1532,130 @@ export function ProfileTeacherVideos() {
                   );
                 }
 
-                const renderMCQ = (q: any, idx: number) => {
-                  const questionText =
-                    q.question || q.prompt || `Question ${idx + 1}`;
-                  const options = q.options || q.choices || [];
-                  const studentChoice =
-                    q.studentIndex ??
-                    q.studentChoice ??
-                    q.userAnswer ??
-                    q.answer ??
-                    -1;
-                  const correctChoice =
-                    q.correctIndex ??
-                    q.correctChoice ??
-                    q.correctAnswer ??
-                    q.correct ??
-                    -1;
-
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-muted/10 border border-border/60 rounded-xl p-5 flex flex-col gap-4 shadow-sm mb-4"
-                    >
-                      <span className="text-[15px] text-foreground font-semibold break-words leading-snug">
-                        {questionText}
-                      </span>
-                      <div className="flex flex-col gap-2.5 mt-1">
-                        {options.map((opt: string, optIdx: number) => {
-                          const isStudentChoice = studentChoice === optIdx;
-                          const isCorrectChoice = correctChoice === optIdx;
-
-                          let variantClass =
-                            "border-border/40 bg-background/40 text-muted-foreground";
-                          let badgeClass =
-                            "bg-background border border-border/50 text-muted-foreground";
-                          let statusText = null;
-
-                          if (isCorrectChoice && isStudentChoice) {
-                            variantClass =
-                              "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400 font-medium shadow-sm";
-                            badgeClass =
-                              "bg-green-500 text-white border-green-500";
-                            statusText = "Correct";
-                          } else if (isStudentChoice) {
-                            variantClass =
-                              "border-destructive/40 bg-destructive/10 text-destructive font-medium shadow-sm";
-                            badgeClass =
-                              "bg-destructive text-white border-destructive";
-                            statusText = "Student's choice";
-                          } else if (isCorrectChoice) {
-                            variantClass =
-                              "border-green-500/30 bg-background text-green-600 dark:text-green-400";
-                            badgeClass =
-                              "bg-green-500/20 text-green-600 border-green-500/30";
-                            statusText = "Correct Answer";
-                          }
-
-                          return (
-                            <div
-                              key={optIdx}
-                              className={cn(
-                                "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-lg border p-3 text-sm transition-colors",
-                                variantClass,
-                              )}
-                            >
-                              <div className="flex items-center gap-3 max-w-full">
-                                <span
-                                  className={cn(
-                                    "flex items-center justify-center shrink-0 rounded-md size-6 text-[11px] font-bold",
-                                    badgeClass,
-                                  )}
-                                >
-                                  {String.fromCharCode(65 + optIdx)}
-                                </span>
-                                <span className="break-words leading-tight">
-                                  {opt}
-                                </span>
-                              </div>
-                              {statusText && (
-                                <span className="sm:ml-auto text-[10px] font-bold uppercase tracking-wider opacity-80 shrink-0 mt-2 sm:mt-0">
-                                  {statusText}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                };
-
-                if (Array.isArray(answers)) {
-                  return (
-                    <div className="flex flex-col">
-                      {answers.map((q, i) => renderMCQ(q, i))}
-                    </div>
-                  );
+                let flatData = rawAnswers;
+                if (
+                  rawAnswers.answers &&
+                  typeof rawAnswers.answers === "object" &&
+                  !Array.isArray(rawAnswers.answers)
+                ) {
+                  flatData = rawAnswers.answers;
+                } else if (
+                  rawAnswers.questions &&
+                  typeof rawAnswers.questions === "object" &&
+                  !Array.isArray(rawAnswers.questions)
+                ) {
+                  flatData = rawAnswers.questions;
                 }
 
-                const qArray = Array.isArray(answers.answers)
-                  ? answers.answers
-                  : Array.isArray(answers.questions)
-                    ? answers.questions
-                    : null;
-                if (qArray) {
+                if (Array.isArray(flatData)) {
                   return (
-                    <div className="flex flex-col">
-                      {qArray.map((q, i) => renderMCQ(q, i))}
-                      {Object.entries(answers).map(([k, v]) => {
-                        if (
-                          k === "answers" ||
-                          k === "questions" ||
-                          k === "summary" ||
-                          k === "summaryText"
-                        )
-                          return null;
+                    <div className="flex flex-col gap-4">
+                      {flatData.map((q: any, idx: number) => {
+                        const qText =
+                          q.question || q.prompt || `Question ${idx + 1}`;
+                        const opts = q.options || q.choices || [];
+                        const studentChoice =
+                          q.studentIndex ??
+                          q.studentChoice ??
+                          q.userAnswer ??
+                          q.answer ??
+                          -1;
+                        const correctChoice =
+                          q.correctIndex ??
+                          q.correctChoice ??
+                          q.correctAnswer ??
+                          q.correct ??
+                          -1;
+
+                        if (!opts || opts.length === 0) {
+                          const writtenAns =
+                            q.userAnswer || q.answer || q.text || String(q);
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
+                            >
+                              <p className="font-semibold text-foreground mb-3 text-[15px]">
+                                {qText}
+                              </p>
+                              <div className="bg-background/60 border border-border/50 p-4 rounded-lg">
+                                <p className="text-[10px] font-bold text-primary tracking-wider mb-2 uppercase">
+                                  WRITTEN ANSWER
+                                </p>
+                                <p className="text-sm italic text-foreground break-words leading-relaxed">
+                                  "{writtenAns}"
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div
-                            key={k}
-                            className="bg-muted/10 border border-border/60 rounded-xl p-5 mb-4 shadow-sm"
+                            key={idx}
+                            className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
                           >
-                            <span className="text-[10px] font-bold text-primary tracking-wider uppercase mb-2 block">
-                              {k}
+                            <span className="text-[15px] text-foreground font-semibold break-words leading-snug">
+                              {qText}
                             </span>
-                            {typeof v === "string" ? (
-                              <p className="text-sm italic">"{v}"</p>
-                            ) : (
-                              <pre className="text-xs bg-background p-3 rounded-lg overflow-auto border border-border/50 text-muted-foreground">
-                                {JSON.stringify(v, null, 2)}
-                              </pre>
-                            )}
+                            <div className="flex flex-col gap-2.5 mt-3">
+                              {opts.map((opt: string, optIdx: number) => {
+                                const isStudentChoice =
+                                  studentChoice === optIdx;
+                                const isCorrectChoice =
+                                  correctChoice === optIdx;
+
+                                let variantClass =
+                                  "border-border/40 bg-background/40 text-muted-foreground";
+                                let badgeClass =
+                                  "bg-background border border-border/50 text-muted-foreground";
+
+                                if (isCorrectChoice && isStudentChoice) {
+                                  variantClass =
+                                    "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400 font-medium shadow-sm";
+                                  badgeClass =
+                                    "bg-green-500 text-white border-green-500";
+                                } else if (isStudentChoice) {
+                                  variantClass =
+                                    "border-destructive/40 bg-destructive/10 text-destructive font-medium shadow-sm";
+                                  badgeClass =
+                                    "bg-destructive text-white border-destructive";
+                                } else if (isCorrectChoice) {
+                                  variantClass =
+                                    "border-green-500/30 bg-background text-green-600 dark:text-green-400";
+                                  badgeClass =
+                                    "bg-green-500/20 text-green-600 border-green-500/30";
+                                }
+
+                                return (
+                                  <div
+                                    key={optIdx}
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors",
+                                      variantClass,
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "flex items-center justify-center shrink-0 rounded-md size-6 text-[11px] font-bold",
+                                        badgeClass,
+                                      )}
+                                    >
+                                      {String.fromCharCode(65 + optIdx)}
+                                    </span>
+                                    <span className="break-words leading-tight flex-1">
+                                      {opt}
+                                    </span>
+                                    {isCorrectChoice && isStudentChoice && (
+                                      <CheckCircle2 className="size-4 shrink-0" />
+                                    )}
+                                    {isStudentChoice && !isCorrectChoice && (
+                                      <XCircle className="size-4 shrink-0" />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })}
@@ -1458,41 +1663,27 @@ export function ProfileTeacherVideos() {
                   );
                 }
 
-                const baseKeys = Object.keys(answers).filter(
+                // Flat object parser (for format like { c1: 2, c1_options: "[...]" })
+                const baseKeys = Object.keys(rawAnswers).filter(
                   (k) =>
                     !k.endsWith("_text") &&
                     !k.endsWith("_options") &&
                     !k.endsWith("_correct") &&
                     !k.endsWith("_question") &&
                     k !== "summaryText" &&
-                    k !== "summary",
+                    k !== "summary" &&
+                    k !== "open",
                 );
 
                 return (
                   <div className="flex flex-col gap-4">
                     {baseKeys.map((key) => {
-                      const val = answers[key];
-
-                      if (typeof val === "object" && val !== null) {
-                        return (
-                          <div
-                            key={key}
-                            className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
-                          >
-                            <span className="text-[10px] font-bold text-primary tracking-wider uppercase mb-2 block">
-                              {key}
-                            </span>
-                            <pre className="text-xs bg-background p-3 rounded-lg overflow-auto border border-border/50 text-muted-foreground">
-                              {JSON.stringify(val, null, 2)}
-                            </pre>
-                          </div>
-                        );
-                      }
-
-                      const qText = answers[`${key}_question`];
-                      const aText = answers[`${key}_text`];
-                      let opts = answers[`${key}_options`];
-                      const corr = answers[`${key}_correct`];
+                      const val = rawAnswers[key];
+                      const qText =
+                        rawAnswers[`${key}_question`] ||
+                        `Question ${key.toUpperCase()}`;
+                      let opts = rawAnswers[`${key}_options`];
+                      const corr = rawAnswers[`${key}_correct`];
 
                       if (typeof opts === "string") {
                         try {
@@ -1501,34 +1692,96 @@ export function ProfileTeacherVideos() {
                       }
 
                       if (Array.isArray(opts)) {
-                        return renderMCQ(
-                          {
-                            question: qText || key,
-                            options: opts,
-                            studentIndex: Number(val),
-                            correctIndex: Number(corr),
-                          },
-                          parseInt(key.replace(/\D/g, "") || "0"),
-                        );
-                      } else if (
-                        typeof val === "string" ||
-                        typeof val === "number"
-                      ) {
+                        const studentIdx = Number(val);
+                        const correctIdx = Number(corr);
                         return (
                           <div
                             key={key}
                             className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
                           >
-                            <span className="text-[15px] text-foreground font-semibold break-words leading-snug mb-2 block">
-                              {qText || key}
-                            </span>
-                            <div className="bg-background/50 border border-border/50 p-3 rounded-lg">
-                              <p className="text-sm text-foreground">{val}</p>
+                            <p className="font-semibold text-foreground mb-4 text-[15px]">
+                              {qText}
+                            </p>
+                            <div className="flex flex-col gap-2.5">
+                              {opts.map((opt: string, idx: number) => {
+                                const isStudent = studentIdx === idx;
+                                const isCorrect = correctIdx === idx;
+
+                                let variantClass =
+                                  "border-border/40 bg-background/40 text-muted-foreground";
+                                let badgeClass =
+                                  "bg-background border border-border/50 text-muted-foreground";
+
+                                if (isCorrect && isStudent) {
+                                  variantClass =
+                                    "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400 font-medium shadow-sm";
+                                  badgeClass =
+                                    "bg-green-500 text-white border-green-500";
+                                } else if (isStudent) {
+                                  variantClass =
+                                    "border-destructive/40 bg-destructive/10 text-destructive font-medium shadow-sm";
+                                  badgeClass =
+                                    "bg-destructive text-white border-destructive";
+                                } else if (isCorrect) {
+                                  variantClass =
+                                    "border-green-500/30 bg-background text-green-600 dark:text-green-400";
+                                  badgeClass =
+                                    "bg-green-500/20 text-green-600 border-green-500/30";
+                                }
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors",
+                                      variantClass,
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "flex items-center justify-center shrink-0 rounded-md size-6 text-[11px] font-bold",
+                                        badgeClass,
+                                      )}
+                                    >
+                                      {String.fromCharCode(65 + idx)}
+                                    </span>
+                                    <span className="break-words leading-tight flex-1">
+                                      {opt}
+                                    </span>
+                                    {isCorrect && isStudent && (
+                                      <CheckCircle2 className="size-4 shrink-0" />
+                                    )}
+                                    {isStudent && !isCorrect && (
+                                      <XCircle className="size-4 shrink-0" />
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
                       }
-                      return null;
+
+                      if (typeof val === "object" && val !== null) return null;
+
+                      return (
+                        <div
+                          key={key}
+                          className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
+                        >
+                          <p className="font-semibold text-foreground mb-3 text-[15px]">
+                            {qText}
+                          </p>
+                          <div className="bg-background/60 border border-border/50 p-4 rounded-lg">
+                            <p className="text-[10px] font-bold text-primary tracking-wider mb-2 uppercase">
+                              WRITTEN ANSWER
+                            </p>
+                            <p className="text-sm italic text-foreground break-words leading-relaxed">
+                              "{val}"
+                            </p>
+                          </div>
+                        </div>
+                      );
                     })}
                   </div>
                 );
@@ -1575,7 +1828,6 @@ export function ProfileTeacherVideos() {
                     <th className="p-4 font-semibold text-sm">
                       {t.colCatalog}
                     </th>
-                    <th className="p-4 font-semibold text-sm">{t.colOpen}</th>
                     <th className="p-4 font-semibold text-sm text-right">
                       {t.colActions}
                     </th>
@@ -1588,84 +1840,96 @@ export function ProfileTeacherVideos() {
                     const tags = [...s.systemTags, ...s.userTags].filter(
                       Boolean,
                     );
-
                     const now = new Date(currentTime);
-                    const openDate = s.availableFrom
-                      ? new Date(s.availableFrom)
-                      : null;
-                    const closeDate = s.deadline ? new Date(s.deadline) : null;
 
                     let computedVis = vis;
-
-                    if (openDate && closeDate) {
-                      if (now >= openDate && now < closeDate) {
-                        computedVis = "public";
-                      } else {
-                        computedVis = "unlisted";
-                      }
-                    } else if (!openDate && closeDate) {
-                      if (now < closeDate) {
-                        computedVis = "public";
-                      } else {
-                        computedVis = "unlisted";
-                      }
-                    } else if (openDate && !closeDate) {
-                      if (now >= openDate) {
-                        computedVis = "public";
-                      } else {
-                        computedVis = "unlisted";
-                      }
-                    }
 
                     return (
                       <tr
                         key={s.contentId}
                         className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
                       >
-                        <td className="p-4 align-middle">
-                          <div
-                            className="text-foreground text-base font-bold truncate"
-                            style={{
-                              maxWidth: "200px",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
+                        <td className="p-4 align-top">
+                          <div className="text-foreground text-base font-bold truncate max-w-[200px]">
                             {s.name}
                           </div>
 
-                          {s.classesAssigned && (
-                            <div className="mt-1.5 mb-1 flex flex-wrap gap-1">
-                              <span className="inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-primary truncate max-w-[200px]">
-                                {s.classesAssigned}
+                          {s.classAccesses && s.classAccesses.length > 0 ? (
+                            <details className="mt-1.5 group">
+                              <summary className="cursor-pointer text-[10px] font-bold tracking-wider text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md inline-flex items-center gap-1 select-none transition-colors w-fit">
+                                {s.classAccesses.length === 1
+                                  ? "1 CLASS ASSIGNED"
+                                  : `${s.classAccesses.length} CLASSES ASSIGNED`}
+                                <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
+                              </summary>
+                              <div className="mt-2 flex flex-col gap-2 pl-2 border-l-2 border-primary/20">
+                                {s.classAccesses.map((ca) => (
+                                  <div
+                                    key={ca.classId}
+                                    className="flex flex-col gap-0.5"
+                                  >
+                                    <span className="text-[10px] font-bold uppercase text-foreground">
+                                      {ca.className}
+                                    </span>
+                                    <div className="text-[10px] text-muted-foreground flex flex-col">
+                                      {ca.availableFrom ? (
+                                        <span>
+                                          Opens:{" "}
+                                          {new Date(
+                                            ca.availableFrom,
+                                          ).toLocaleString("en-GB", {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          })}
+                                        </span>
+                                      ) : (
+                                        <span>Opens: Now</span>
+                                      )}
+                                      {ca.deadline ? (
+                                        <span
+                                          className={
+                                            new Date(ca.deadline) < now
+                                              ? "text-destructive"
+                                              : "text-amber-500"
+                                          }
+                                        >
+                                          Closes:{" "}
+                                          {new Date(ca.deadline).toLocaleString(
+                                            "en-GB",
+                                            {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            },
+                                          )}
+                                        </span>
+                                      ) : (
+                                        <span>Closes: Never</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          ) : (
+                            <div className="mt-1.5 flex flex-col gap-0.5 text-[10px] font-medium text-muted-foreground">
+                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1">
+                                Global Catalog
                               </span>
-                            </div>
-                          )}
-
-                          {(s.availableFrom || s.deadline) && (
-                            <div className="mt-1.5 flex flex-col gap-0.5 text-xs font-medium">
-                              {s.availableFrom && (
-                                <span
-                                  className={
-                                    new Date(s.availableFrom) > now
-                                      ? "text-blue-500"
-                                      : "text-muted-foreground"
-                                  }
-                                >
+                              {s.availableFrom ? (
+                                <span>
                                   Opens:{" "}
                                   {new Date(s.availableFrom).toLocaleString(
                                     "en-GB",
-                                    {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    },
+                                    { dateStyle: "short", timeStyle: "short" },
                                   )}
                                 </span>
+                              ) : (
+                                <span>Opens: Now</span>
                               )}
-                              {s.deadline && (
+                              {s.deadline ? (
                                 <span
                                   className={
-                                    new Date(s.deadline) <= now
+                                    new Date(s.deadline) < now
                                       ? "text-destructive"
                                       : "text-amber-500"
                                   }
@@ -1673,19 +1937,18 @@ export function ProfileTeacherVideos() {
                                   Closes:{" "}
                                   {new Date(s.deadline).toLocaleString(
                                     "en-GB",
-                                    {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    },
+                                    { dateStyle: "short", timeStyle: "short" },
                                   )}
                                 </span>
+                              ) : (
+                                <span>Closes: Never</span>
                               )}
                             </div>
                           )}
 
                           {s.processingComplexity ? (
                             <div
-                              className="text-muted-foreground mt-1 text-xs truncate"
+                              className="text-muted-foreground mt-2 text-xs truncate"
                               style={{
                                 maxWidth: "200px",
                                 overflow: "hidden",
@@ -1708,7 +1971,7 @@ export function ProfileTeacherVideos() {
                             </div>
                           ) : null}
                         </td>
-                        <td className="p-4 align-middle">
+                        <td className="p-4 align-top">
                           <span
                             className={cn(
                               "inline-flex rounded-md px-2.5 py-1 text-xs font-bold tracking-wide",
@@ -1722,7 +1985,7 @@ export function ProfileTeacherVideos() {
                               : t.captionsPending}
                           </span>
                         </td>
-                        <td className="p-4 align-middle">
+                        <td className="p-4 align-top">
                           <div
                             className="flex flex-col items-start gap-1.5"
                             style={{ width: "130px" }}
@@ -1756,33 +2019,19 @@ export function ProfileTeacherVideos() {
                                 {t.visibilitySaving}
                               </span>
                             ) : null}
-                            {Boolean(s.availableFrom || s.deadline) && (
-                              <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                                Managed by deadline
-                              </span>
-                            )}
                           </div>
                         </td>
-                        <td className="p-4 align-middle">
-                          <div className="flex flex-col gap-2">
+                        <td className="p-4 align-top text-right">
+                          <div className="flex items-center justify-end gap-1 sm:gap-2">
                             {s.contentVideoId != null ? (
                               <Link
                                 to={`/content/${s.contentVideoId}`}
-                                className="text-primary font-semibold text-sm hover:underline block"
+                                className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                                title={t.watchLesson}
                               >
-                                {t.watchLesson}
+                                <Video className="size-4.5" />
                               </Link>
                             ) : null}
-                            <Link
-                              to={`/catalog/series/${encodeURIComponent(s.friendlyLink)}`}
-                              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors hover:underline block"
-                            >
-                              {t.seriesPage}
-                            </Link>
-                          </div>
-                        </td>
-                        <td className="p-4 align-middle text-right">
-                          <div className="flex items-center justify-end gap-1 sm:gap-2">
                             <button
                               onClick={() => openResultsModal(s.contentId)}
                               className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
@@ -1833,107 +2082,153 @@ export function ProfileTeacherVideos() {
                 <thead>
                   <tr className="border-border bg-muted/30 border-b text-muted-foreground">
                     <th className="p-4 font-semibold text-sm">Lesson Name</th>
-                    <th className="p-4 font-semibold text-sm">Assigned To</th>
-                    <th className="p-4 font-semibold text-sm">Deadlines</th>
-                    <th className="p-4 font-semibold text-sm">Link</th>
                     <th className="p-4 font-semibold text-sm text-right">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAssignedSeries.map((s) => (
-                    <tr
-                      key={s.contentId}
-                      className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
-                    >
-                      <td className="p-4 align-middle">
-                        <div className="text-foreground text-base font-bold truncate max-w-[250px]">
-                          {s.name}
-                        </div>
-                        <span className="inline-block mt-1 text-[10px] font-bold tracking-wider uppercase text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                          Global Catalog
-                        </span>
-                      </td>
-                      <td className="p-4 align-middle">
-                        <span className="inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase text-primary whitespace-normal leading-tight max-w-[200px]">
-                          {s.classesAssigned}
-                        </span>
-                      </td>
-                      <td className="p-4 align-middle">
-                        <div className="flex flex-col gap-1 text-xs font-medium">
-                          {s.availableFrom ? (
-                            <span className="text-blue-500">
-                              Opens:{" "}
-                              {new Date(s.availableFrom).toLocaleString(
-                                "en-GB",
-                                { dateStyle: "short", timeStyle: "short" },
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Opens: Now
-                            </span>
-                          )}
+                  {filteredAssignedSeries.map((s) => {
+                    const now = new Date(currentTime);
+                    return (
+                      <tr
+                        key={s.contentId}
+                        className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
+                      >
+                        <td className="p-4 align-top">
+                          <div className="text-foreground text-base font-bold truncate max-w-[250px]">
+                            {s.name}
+                          </div>
 
-                          {s.deadline ? (
-                            <span
-                              className={
-                                new Date(s.deadline) < new Date(currentTime)
-                                  ? "text-destructive"
-                                  : "text-amber-500"
-                              }
-                            >
-                              Closes:{" "}
-                              {new Date(s.deadline).toLocaleString("en-GB", {
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })}
-                            </span>
+                          {s.classAccesses && s.classAccesses.length > 0 ? (
+                            <details className="mt-1.5 group">
+                              <summary className="cursor-pointer text-[10px] font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-2 py-1 rounded-md inline-flex items-center gap-1 select-none transition-colors w-fit uppercase">
+                                {s.classAccesses.length === 1
+                                  ? "1 CLASS ASSIGNED"
+                                  : `${s.classAccesses.length} CLASSES ASSIGNED`}
+                                <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
+                              </summary>
+                              <div className="mt-2 flex flex-col gap-2 pl-2 border-l-2 border-accent/20">
+                                {s.classAccesses.map((ca) => (
+                                  <div
+                                    key={ca.classId}
+                                    className="flex flex-col gap-0.5"
+                                  >
+                                    <span className="text-[10px] font-bold uppercase text-foreground">
+                                      {ca.className}
+                                    </span>
+                                    <div className="text-[10px] text-muted-foreground flex flex-col">
+                                      {ca.availableFrom ? (
+                                        <span>
+                                          Opens:{" "}
+                                          {new Date(
+                                            ca.availableFrom,
+                                          ).toLocaleString("en-GB", {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          })}
+                                        </span>
+                                      ) : (
+                                        <span>Opens: Now</span>
+                                      )}
+                                      {ca.deadline ? (
+                                        <span
+                                          className={
+                                            new Date(ca.deadline) < now
+                                              ? "text-destructive"
+                                              : "text-amber-500"
+                                          }
+                                        >
+                                          Closes:{" "}
+                                          {new Date(ca.deadline).toLocaleString(
+                                            "en-GB",
+                                            {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            },
+                                          )}
+                                        </span>
+                                      ) : (
+                                        <span>Closes: Never</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
                           ) : (
-                            <span className="text-muted-foreground">
-                              Closes: Never
-                            </span>
+                            <div className="mt-1.5 flex flex-col gap-0.5 text-[10px] font-medium text-muted-foreground">
+                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1">
+                                Global Catalog
+                              </span>
+                              {s.availableFrom ? (
+                                <span>
+                                  Opens:{" "}
+                                  {new Date(s.availableFrom).toLocaleString(
+                                    "en-GB",
+                                    { dateStyle: "short", timeStyle: "short" },
+                                  )}
+                                </span>
+                              ) : (
+                                <span>Opens: Now</span>
+                              )}
+                              {s.deadline ? (
+                                <span
+                                  className={
+                                    new Date(s.deadline) < now
+                                      ? "text-destructive"
+                                      : "text-amber-500"
+                                  }
+                                >
+                                  Closes:{" "}
+                                  {new Date(s.deadline).toLocaleString(
+                                    "en-GB",
+                                    { dateStyle: "short", timeStyle: "short" },
+                                  )}
+                                </span>
+                              ) : (
+                                <span>Closes: Never</span>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      </td>
-                      <td className="p-4 align-middle">
-                        {s.contentVideoId != null && (
-                          <Link
-                            to={`/content/${s.contentVideoId}`}
-                            className="text-primary font-semibold text-sm hover:underline"
-                          >
-                            Open Lesson
-                          </Link>
-                        )}
-                      </td>
-                      <td className="p-4 align-middle text-right">
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
-                          <button
-                            onClick={() => openResultsModal(s.contentId)}
-                            className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
-                            title="View Tests"
-                          >
-                            <FileText className="size-4.5" />
-                          </button>
-                          <button
-                            onClick={() => openEditDeadlineModal(s)}
-                            className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
-                            title="Edit Deadlines"
-                          >
-                            <Clock className="size-4.5" />
-                          </button>
-                          <button
-                            onClick={() => openRevokeModal(s.contentId)}
-                            className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
-                            title="Remove Assignment"
-                          >
-                            <Trash2 className="size-4.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-4 align-top text-right">
+                          <div className="flex items-center justify-end gap-1 sm:gap-2">
+                            {s.contentVideoId != null && (
+                              <Link
+                                to={`/content/${s.contentVideoId}`}
+                                className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                                title="Open Lesson"
+                              >
+                                <Video className="size-4.5" />
+                              </Link>
+                            )}
+                            <button
+                              onClick={() => openResultsModal(s.contentId)}
+                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                              title="View Tests"
+                            >
+                              <FileText className="size-4.5" />
+                            </button>
+                            <button
+                              onClick={() => openEditDeadlineModal(s)}
+                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                              title="Edit Deadlines"
+                            >
+                              <Clock className="size-4.5" />
+                            </button>
+                            <button
+                              onClick={() => openRevokeModal(s.contentId)}
+                              className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+                              title="Remove Assignment"
+                            >
+                              <Trash2 className="size-4.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -157,19 +157,19 @@ export class ContentsController {
   @Patch("teacher/:id/deadlines")
   @UseGuards(AuthGuard)
   @ApiOperation({
-    summary: "Teacher: update deadlines for owned video or assigned homework",
+    summary:
+      "Teacher: update individual deadlines for assigned classes and global",
   })
   async updateTeacherContentDeadlines(
     @Req() req: Request & { user?: unknown },
     @Param("id", ParseIntPipe) id: number,
-    @Body() body: { availableFrom: string | null; deadline: string | null },
+    @Body() body: any,
   ) {
     const teacherId = jwtSubToUserId(req.user);
     return this.contentsService.updateTeacherContentDeadlines(
       teacherId,
       id,
-      body.availableFrom,
-      body.deadline,
+      body,
     );
   }
 

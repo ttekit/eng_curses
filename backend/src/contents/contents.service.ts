@@ -778,32 +778,17 @@ export class ContentsService {
       const vid = slot?.ContentVideo?.[0];
       const stats = slot?.stats;
 
-      let start = c.availableFrom;
-      let end = c.deadline;
-
-      if (c.classAccesses && c.classAccesses.length > 0) {
-        const starts = c.classAccesses
-          .map((a) => a.availableFrom)
-          .filter(Boolean) as Date[];
-        const ends = c.classAccesses
-          .map((a) => a.deadline)
-          .filter(Boolean) as Date[];
-
-        if (starts.length > 0) {
-          start = new Date(Math.min(...starts.map((d) => d.getTime())));
-        }
-        if (ends.length > 0) {
-          end = new Date(Math.max(...ends.map((d) => d.getTime())));
-        }
-      }
-
-      const classIds = c.classAccesses
-        ? c.classAccesses.map((a) => a.classId)
+      // Возвращаем массив классов для красивого UI
+      const classAccesses = c.classAccesses
+        ? c.classAccesses.map((a) => ({
+            classId: a.classId,
+            className: a.class.name,
+            availableFrom: a.availableFrom
+              ? a.availableFrom.toISOString()
+              : null,
+            deadline: a.deadline ? a.deadline.toISOString() : null,
+          }))
         : [];
-      const classesAssigned =
-        c.classAccesses && c.classAccesses.length > 0
-          ? c.classAccesses.map((a) => a.class.name).join(", ")
-          : "All Students";
 
       return {
         contentId: c.id,
@@ -815,10 +800,10 @@ export class ContentsService {
         systemTags: stats?.systemTags ?? [],
         userTags: stats?.userTags ?? [],
         processingComplexity: stats?.processingComplexity ?? null,
-        availableFrom: start ? start.toISOString() : null,
-        deadline: end ? end.toISOString() : null,
-        classesAssigned,
-        classIds,
+        classAccesses,
+        // Оставляем это для обратной совместимости, если глобальные даты есть
+        availableFrom: c.availableFrom ? c.availableFrom.toISOString() : null,
+        deadline: c.deadline ? c.deadline.toISOString() : null,
       };
     });
   }
@@ -845,22 +830,19 @@ export class ContentsService {
     });
 
     return rows.map((c) => {
-      const ca = c.classAccesses[0];
-      const classIds = c.classAccesses.map((a) => a.classId);
-      const classesAssigned =
-        c.classAccesses.length > 0
-          ? c.classAccesses.map((a) => a.class.name).join(", ")
-          : "All Students";
+      const classAccesses = c.classAccesses.map((a) => ({
+        classId: a.classId,
+        className: a.class.name,
+        availableFrom: a.availableFrom ? a.availableFrom.toISOString() : null,
+        deadline: a.deadline ? a.deadline.toISOString() : null,
+      }));
 
       return {
         contentId: c.id,
         name: c.name,
         friendlyLink: c.friendlyLink,
         contentVideoId: c.category[0]?.ContentVideo?.[0]?.id || null,
-        availableFrom: ca?.availableFrom?.toISOString() ?? null,
-        deadline: ca?.deadline?.toISOString() ?? null,
-        classesAssigned,
-        classIds,
+        classAccesses,
       };
     });
   }
@@ -937,69 +919,55 @@ export class ContentsService {
   async updateTeacherContentDeadlines(
     teacherId: number,
     contentId: number,
-    availableFrom: string | null,
-    deadline: string | null,
+    payload: any,
   ) {
     await this.requireTeacherAccount(teacherId);
 
     const content = await this.prisma.content.findUnique({
       where: { id: contentId },
+      include: { classAccesses: true },
     });
 
     if (!content) throw new NotFoundException("Content not found");
 
-    const parsedAvailableFrom = availableFrom ? new Date(availableFrom) : null;
-    const parsedDeadline = deadline ? new Date(deadline) : null;
+    // Если учитель владелец видео и передал глобальные дедлайны
+    if (content.ownerUserId === teacherId && payload.global) {
+      const parsedAvail = payload.global.availableFrom
+        ? new Date(payload.global.availableFrom)
+        : null;
+      const parsedDead = payload.global.deadline
+        ? new Date(payload.global.deadline)
+        : null;
 
-    if (content.ownerUserId === teacherId) {
       await this.prisma.content.update({
         where: { id: contentId },
         data: {
-          availableFrom: parsedAvailableFrom,
-          deadline: parsedDeadline,
+          availableFrom: parsedAvail,
+          deadline: parsedDead,
         },
       });
+    }
 
+    // Если переданы индивидуальные классы с дедлайнами
+    if (payload.classes && Array.isArray(payload.classes)) {
       const myClasses = await this.prisma.class.findMany({
         where: { teacherId },
         select: { id: true },
       });
-      const myClassIds = myClasses.map((c) => c.id);
+      const myClassIds = new Set(myClasses.map((c) => c.id));
 
-      if (myClassIds.length > 0) {
-        await this.prisma.classContentAccess.updateMany({
-          where: { contentId, classId: { in: myClassIds } },
-          data: {
-            availableFrom: parsedAvailableFrom,
-            deadline: parsedDeadline,
-          },
-        });
-      }
-    } else {
-      const myClasses = await this.prisma.class.findMany({
-        where: { teacherId },
-        select: { id: true },
-      });
-      const myClassIds = myClasses.map((c) => c.id);
-
-      if (myClassIds.length === 0) {
-        throw new BadRequestException(
-          "You don't have any classes to update assignments for.",
-        );
-      }
-
-      const updated = await this.prisma.classContentAccess.updateMany({
-        where: { contentId, classId: { in: myClassIds } },
-        data: {
-          availableFrom: parsedAvailableFrom,
-          deadline: parsedDeadline,
-        },
-      });
-
-      if (updated.count === 0) {
-        throw new BadRequestException(
-          "You haven't assigned this video to any of your classes.",
-        );
+      for (const clsData of payload.classes) {
+        if (myClassIds.has(Number(clsData.classId))) {
+          await this.prisma.classContentAccess.updateMany({
+            where: { contentId, classId: Number(clsData.classId) },
+            data: {
+              availableFrom: clsData.availableFrom
+                ? new Date(clsData.availableFrom)
+                : null,
+              deadline: clsData.deadline ? new Date(clsData.deadline) : null,
+            },
+          });
+        }
       }
     }
 
@@ -1352,7 +1320,6 @@ export class ContentsService {
               total: att.total,
               passed: att.passed,
               answers: parsed,
-              summaryText: parsed?.summaryText || parsed?.summary || null,
               createdAt: att.createdAt.toISOString(),
             }
           : null,
