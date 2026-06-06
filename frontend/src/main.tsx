@@ -45,7 +45,8 @@ import AboutPage from "./pages/legal/AboutPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
 import FeedbackPage from "./pages/legal/FeedbackPage";
-import { Error404Page } from "./pages/Error404Page";
+import GoogleDobPrompt from "./components/profile/GoogleDobPrompt";
+import OAuthSuccess from "./pages/login/OAuthSuccess";
 
 const router = createBrowserRouter([
   {
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
       { path: "/verify-email", element: <EmailVerification /> },
       { path: "/restore-account", element: <RestoreAccount /> },
       { path: "/loginForm", element: <LoginForm /> },
+      { path: "/oauth/success", element: <OAuthSuccess /> },
       { path: "/pricing", element: <PricingPage /> },
       { path: "/about", element: <AboutPage /> },
       { path: "/privacy", element: <PrivacyPolicyPage /> },
@@ -70,6 +72,7 @@ const router = createBrowserRouter([
       {
         element: <RequireAuth />,
         children: [
+          { path: "/onboarding/dob", element: <GoogleDobPrompt /> },
           { path: "/subscribe", element: <SubscribePage /> },
           {
             path: "/admin",

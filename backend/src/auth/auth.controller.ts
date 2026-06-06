@@ -15,6 +15,7 @@ import {
   UnauthorizedException,
   Delete,
   SetMetadata,
+  Redirect,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -52,8 +53,9 @@ export class AuthController {
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) { }
+  ) {}
 
+  @Public()
   @Post("register")
   @SkipSubscriptionCheck()
   @UseGuards(TurnstileGuard)
@@ -70,6 +72,7 @@ export class AuthController {
     return await this.authService.register(req, registerDto);
   }
 
+  @Public()
   @Post("login")
   @SkipSubscriptionCheck()
   @Throttle({ auth: { limit: 10, ttl: 60_000 } })
@@ -84,6 +87,7 @@ export class AuthController {
     return await this.authService.login(loginDto);
   }
 
+  @Public()
   @Post("verify-email")
   @SkipSubscriptionCheck()
   @Throttle({ auth: { limit: 10, ttl: 60_000 } })
@@ -137,9 +141,7 @@ export class AuthController {
     const userId = req.user?.id || req.user?.sub;
 
     if (!userId) {
-      throw new UnauthorizedException(
-        "Login failed: User ID is missing",
-      );
+      throw new UnauthorizedException("Login failed: User ID is missing");
     }
 
     return this.authService.updateUserPreferences(userId, body);
@@ -161,6 +163,7 @@ export class AuthController {
     return this.authService.toggleTwoFactor(req.user.sub, dto);
   }
 
+  @Public()
   @Post("verify-2fa")
   @SkipSubscriptionCheck()
   @Throttle({ auth: { limit: 10, ttl: 60_000 } })
@@ -198,9 +201,7 @@ export class AuthController {
         "DEBUG PROFILE: Invalid or missing ID in req.user:",
         req.user,
       );
-      throw new UnauthorizedException(
-        "Unable to determine the user's profile",
-      );
+      throw new UnauthorizedException("Unable to determine the user's profile");
     }
 
     return this.authService.getProfile(Number(userId));
@@ -292,10 +293,16 @@ export class AuthController {
   @SkipSubscriptionCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: "Regenerate personalised studying plan (v2 JSON with DB topics per phase)",
+    summary:
+      "Regenerate personalised studying plan (v2 JSON with DB topics per phase)",
   })
-  @ApiResponse({ status: 200, description: "Studying plan regenerated and saved." })
-  async regenerateStudyingPlan(@Req() req: { user?: { sub?: unknown; id?: unknown } }) {
+  @ApiResponse({
+    status: 200,
+    description: "Studying plan regenerated and saved.",
+  })
+  async regenerateStudyingPlan(
+    @Req() req: { user?: { sub?: unknown; id?: unknown } },
+  ) {
     const userId = Number(req.user?.sub ?? req.user?.id);
     if (!Number.isFinite(userId)) {
       throw new UnauthorizedException("User id not found in token");
@@ -303,38 +310,50 @@ export class AuthController {
     return this.studyingPlanRegeneration.regenerateForUser(userId);
   }
 
+  @Public()
+  @SkipSubscriptionCheck()
   @Get("/oauth/callback/:provider")
   @UseGuards(AuthProviderGuard)
   public async callback(
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
     @Query("code") code: string,
+    @Query("state") state: string,
     @Param("provider") provider: string,
   ) {
     if (!code) {
-      throw new BadRequestException("");
+      throw new BadRequestException("No code provided from Google");
     }
 
-    await this.authService.extractProfileFromCode(req, provider, code);
+    const result = await this.authService.extractProfileFromCode(
+      req,
+      provider,
+      code,
+      state,
+    );
 
-    req.session.save((err) => {
-      if (err) {
-        console.error("Error save session in Redis:", err);
-        throw new InternalServerErrorException("Failed to save session");
-      }
+    if (result.error === "USER_NOT_FOUND") {
+      const loginUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=GoogleAccountNotFound`;
+      return res.redirect(loginUrl);
+    }
 
-      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/dashboard/settings`;
-      res.redirect(redirectUrl);
-    });
+    const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.token}&isNewUser=${result.isNewUser}`;
+    return res.redirect(redirectUrl);
   }
 
+  @Public()
+  @SkipSubscriptionCheck()
   @UseGuards(AuthProviderGuard)
   @Get("/oauth/connect/:provider")
-  public async connect(@Param("provider") provider: string) {
+  @Redirect()
+  public async connect(
+    @Param("provider") provider: string,
+    @Query("action") action?: string,
+  ) {
     const providerInstance = this.providerService.findByService(provider);
 
     return {
-      url: providerInstance!.getAuthUrl(),
+      url: providerInstance!.getAuthUrl(action),
     };
   }
 
@@ -346,11 +365,13 @@ export class AuthController {
     return await this.authService.deleteAccount(req.user.sub, dto);
   }
 
+  @Public()
   @Post("restore-account")
   async restoreAccount(@Body() body: { token: string }) {
     return this.authService.restoreAccount(body.token);
   }
 
+  @Public()
   @Post("resend-verification")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Resend email confirmation code" })

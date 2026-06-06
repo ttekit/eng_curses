@@ -523,7 +523,11 @@ export class AuthService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.role ? { role: data.role } : {}),
+        ...(data.role ? { role: data.role.toUpperCase() as any } : {}),
+        ...(data.dateOfBirth
+          ? { dateOfBirth: new Date(data.dateOfBirth) }
+          : {}),
+
         additionalUserData: hasAdditionalData
           ? {
             upsert: {
@@ -872,12 +876,11 @@ export class AuthService {
     req: Request,
     provider: string,
     code: string,
+    state?: string,
   ) {
     const providerInstance = this.providerService.findByService(provider);
-
-    if (!providerInstance) {
+    if (!providerInstance)
       throw new NotFoundException(`Provider ${provider} not found`);
-    }
 
     const profile = await providerInstance.findUserByCode(code);
     const email = profile.email.toLowerCase();
@@ -886,7 +889,32 @@ export class AuthService {
       where: { email },
     });
 
+    if (state === "login" && !existingUser) {
+      return { error: "USER_NOT_FOUND" };
+    }
+
     if (existingUser) {
+      if ((existingUser as any).deletionScheduledAt) {
+        if ((existingUser as any).deletionScheduledAt > new Date()) {
+          await this.prisma.user.update({
+            where: { id: existingUser.id },
+            data: { deletionScheduledAt: null },
+          });
+          await this.prisma.token.deleteMany({
+            where: { email: existingUser.email, type: "ACCOUNT_RESTORE" },
+          });
+        } else {
+          throw new UnauthorizedException("The account has been deleted.");
+        }
+      }
+
+      if (!(existingUser as any).isVerified) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { isVerified: true },
+        });
+      }
+
       const linked = await this.prisma.account.findFirst({
         where: { userId: existingUser.id, provider: profile.provider },
       });
@@ -902,21 +930,25 @@ export class AuthService {
           },
         });
       }
+
       const full = await this.userService.findById(existingUser.id);
-      return this.saveSession(req, full);
+      const sessionResult = await this.saveSession(req, full);
+      return { ...(sessionResult as any), isNewUser: false };
     }
 
     const oauthMethod =
-      profile.provider.toLowerCase() === "google"
-        ? AuthMethod.GOOGLE
-        : AuthMethod.CREDENTIALS;
-
+      profile.provider.toLowerCase() === "google" ? "GOOGLE" : "CREDENTIALS";
     const created = await this.userService.create({
       email,
       password: "",
       name: profile.name,
       picture: profile.picture,
-      method: oauthMethod,
+      method: oauthMethod as any,
+    } as any);
+
+    await this.prisma.user.update({
+      where: { id: created.id },
+      data: { isVerified: true },
     });
 
     await this.prisma.account.create({
@@ -930,7 +962,8 @@ export class AuthService {
       },
     });
 
-    return this.saveSession(req, created);
+    const sessionResult = await this.saveSession(req, created);
+    return { ...(sessionResult as any), isNewUser: true };
   }
 
   public async logout(req: Request, res: Response): Promise<void> {
@@ -951,14 +984,18 @@ export class AuthService {
   }
 
   public async saveSession(req: Request, user: Partial<User>) {
-    return new Promise((resolve, reject) => {
-      if (!user || !user.id) {
-        throw new UnauthorizedException(
-          "User not found or session data is missing",
-        );
-      }
-      req.session.userId = user.id.toString();
+    if (!user || !user.id) {
+      throw new UnauthorizedException(
+        "User not found or session data is missing",
+      );
+    }
 
+    const payload = { sub: user.id, email: user.email };
+    const token = await this.jwtService.signAsync(payload);
+
+    req.session.userId = user.id.toString();
+
+    return new Promise((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
           return reject(
@@ -969,6 +1006,7 @@ export class AuthService {
         }
         resolve({
           user,
+          token,
         });
       });
     });
@@ -1013,6 +1051,9 @@ export class AuthService {
         },
         settings: true,
         teacher: {
+          select: { name: true },
+        },
+        class: {
           select: { name: true },
         },
       },
@@ -1110,6 +1151,7 @@ export class AuthService {
       stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
       teacherId: (user as any).teacherId ?? null,
       teacherName: (user as any).teacher?.name ?? null,
+      className: (user as any).class?.name ?? null,
     };
   }
 

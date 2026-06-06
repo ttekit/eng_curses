@@ -35,6 +35,7 @@ import { ReorderContentPlaylistDto } from "src/contents/dto/reorder-content-play
 import { TeacherPatchContentVisibilityDto } from "src/contents/dto/teacher-patch-content-visibility.dto";
 import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content.dto";
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
+import { AssignExistingContentDto } from "./dto/assign-existing.dto";
 
 function contentVideoMaxFileBytes(): number {
   const n = Number(process.env.CONTENT_VIDEO_MAX_FILE_BYTES);
@@ -49,7 +50,7 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) { }
+  constructor(private readonly contentsService: ContentsService) {}
 
   @Get("all")
   getContent() {
@@ -97,14 +98,27 @@ export class ContentsController {
     const thumbnailFile = files?.thumbnailFile?.[0];
 
     if (!videoFile && !videoLink) {
-      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
+      throw new BadRequestException(
+        "Video file, ZIP, or M3U8 link is required",
+      );
     }
 
-    const fullDto = { ...dto, videoLink, ageRestriction };
+    const fullDto: any = { ...dto, videoLink };
+
+    if (
+      req.body.classAssignments &&
+      typeof req.body.classAssignments === "string"
+    ) {
+      try {
+        fullDto.classAssignments = JSON.parse(req.body.classAssignments);
+      } catch (e) {}
+    }
+    if (req.body.availableFrom) fullDto.availableFrom = req.body.availableFrom;
+    if (req.body.deadline) fullDto.deadline = req.body.deadline;
 
     return this.contentsService.createTeacherUpload(
       userId,
-      fullDto as any,
+      fullDto,
       videoFile,
       thumbnailFile,
     );
@@ -134,6 +148,36 @@ export class ContentsController {
   ) {
     const userId = jwtSubToUserId(req.user);
     return this.contentsService.patchTeacherContentVisibility(userId, id, dto);
+  }
+
+  @Patch("teacher/:id/deadlines")
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary:
+      "Teacher: update individual deadlines for assigned classes and global",
+  })
+  async updateTeacherContentDeadlines(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body() body: any,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.updateTeacherContentDeadlines(
+      teacherId,
+      id,
+      body,
+    );
+  }
+
+  @Get("teacher/:id/student-results")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Get student quiz results for a specific video" })
+  async getVideoStudentResults(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.getVideoStudentResults(teacherId, id);
   }
 
   @Get(":id")
@@ -170,7 +214,9 @@ export class ContentsController {
     const thumbnailFile = files?.thumbnailFile?.[0];
 
     if (!videoFile && !videoLink) {
-      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
+      throw new BadRequestException(
+        "Video file, ZIP, or M3U8 link is required",
+      );
     }
 
     const fullDto = { ...createContentDto, videoLink, ageRestriction };
@@ -225,7 +271,9 @@ export class ContentsController {
     const thumbnailFile = files?.thumbnailFile?.[0];
 
     if (!videoFile && !videoLink) {
-      throw new BadRequestException("Video file, ZIP, or M3U8 link is required");
+      throw new BadRequestException(
+        "Video file, ZIP, or M3U8 link is required",
+      );
     }
 
     const fullDto = { ...dto, videoLink, ageRestriction };
@@ -235,6 +283,41 @@ export class ContentsController {
       fullDto as any,
       videoFile,
       thumbnailFile,
+    );
+  }
+
+  @Get("teacher/assigned-homework")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Получить список домашек из каталога" })
+  async getAssignedHomework(@Req() req: Request & { user?: unknown }) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.getAssignedHomework(teacherId);
+  }
+
+  @Delete("teacher/assign/:contentId")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Отменить заданную домашку" })
+  async revokeAssignment(
+    @Req() req: Request & { user?: unknown },
+    @Param("contentId", ParseIntPipe) contentId: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.revokeAssignment(teacherId, contentId);
+  }
+
+  @Post("teacher/assign/:id")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Assign an existing video as homework for classes" })
+  async assignExistingContent(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: AssignExistingContentDto,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.contentsService.assignExistingToClasses(
+      teacherId,
+      id,
+      dto.classAssignments,
     );
   }
 

@@ -14,11 +14,42 @@ jest.mock("src/common/mail/mail.service", () => ({
   MailService: class MockMailService {},
 }));
 
+import { Reflector } from "@nestjs/core";
 import { AuthController } from "./auth.controller";
+import { IS_PUBLIC_KEY } from "./decorators/public.decorator";
 
 describe("AuthController", () => {
   it("should be defined", () => {
     expect(AuthController).toBeDefined();
+  });
+
+  describe("public auth routes", () => {
+    const reflector = new Reflector();
+
+    it("marks the browser-facing auth endpoints as public", () => {
+      const publicRoutes = [
+        "register",
+        "login",
+        "verifyEmail",
+        "resendConfirmation",
+        "confirmEmail",
+        "verifyTwoFactorLogin",
+        "callback",
+        "connect",
+      ] as const;
+
+      for (const routeName of publicRoutes) {
+        const handler = AuthController.prototype[routeName] as unknown;
+
+        expect(typeof handler).toBe("function");
+        expect(
+          reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+            handler as never,
+            AuthController,
+          ]),
+        ).toBe(true);
+      }
+    });
   });
 
   describe("auth rate limits", () => {

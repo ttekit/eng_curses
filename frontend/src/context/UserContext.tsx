@@ -60,6 +60,7 @@ export interface UserData {
   /** Set when this account is a roster student under a teacher (exempt from consumer subscription). */
   teacherId?: number | null;
   teacherName?: string | null;
+  className?: string | null;
   currentStreak: number;
   xp: number;
   level: number;
@@ -205,6 +206,7 @@ function normalizeProfile(raw: unknown): UserData | null {
       return Number.isFinite(n) ? n : null;
     })(),
     teacherName: typeof r.teacherName === "string" ? r.teacherName : null,
+    className: typeof r.className === "string" ? r.className : null,
     currentStreak: Number(r.currentStreak) || 0,
     xp: Number(r.xp) || 0,
     level: Number(r.level) || 1,

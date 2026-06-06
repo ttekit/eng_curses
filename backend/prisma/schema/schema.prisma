@@ -40,7 +40,6 @@ model User {
 
   accounts Account[]
 
-
   statistic                 UserStatistic?
   languageData              UserLanguageData[]
   additionalUserData        AdditionalUserData?
@@ -78,18 +77,24 @@ model User {
 
   teacherOwnedContents Content[] @relation("TeacherOwnedContent")
 
+  classId        Int?    @map("class_id")
+  class          Class?  @relation("ClassStudents", fields: [classId], references: [id], onDelete: SetNull)
+  teacherClasses Class[] @relation("TeacherClasses")
+
   @@index([teacherId], map: "users_teacher_id_idx")
   @@map("users")
 }
+
 model Avatar {
   id        Int      @id @default(autoincrement())
-  url       String   // Публичная ссылка на картинку в S3
-  key       String   // Уникальный ключ файла в S3 (нужен, если админ захочет удалить аватарку)
+  url       String
+  key       String
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("avatars")
 }
+
 model UserAchievement {
   id            Int      @id @default(autoincrement())
   userId        Int
@@ -172,9 +177,9 @@ model AdditionalUserData {
   activePhaseEnteredAt     DateTime? @map("active_phase_entered_at")
 
   /// Scoring draft for the in-progress phase final test iframe.
-  phaseFinalTestDraft      Json?     @map("phase_final_test_draft")
+  phaseFinalTestDraft    Json? @map("phase_final_test_draft")
   /// Passed phase final tests: `{ "passedPhaseIndices": [0, 1, …] }`.
-  phaseFinalTestProgress   Json?     @map("phase_final_test_progress")
+  phaseFinalTestProgress Json? @map("phase_final_test_progress")
 
   teacherGrades        String?
   teacherTopics        String[]
@@ -330,3 +335,36 @@ model PlacementAttempt {
   @@map("placement_attempts")
 }
 
+model Class {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  teacherId Int  @map("teacher_id")
+  teacher   User @relation("TeacherClasses", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  students User[] @relation("ClassStudents")
+
+  contentAccesses ClassContentAccess[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model ClassContentAccess {
+  id Int @id @default(autoincrement())
+
+  classId Int   @map("class_id")
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  contentId Int     @map("content_id")
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  availableFrom DateTime? @map("available_from")
+  deadline      DateTime? @map("deadline")
+
+  @@unique([classId, contentId])
+  @@map("class_content_accesses")
+}

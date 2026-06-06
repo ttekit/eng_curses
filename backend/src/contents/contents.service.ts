@@ -37,6 +37,8 @@ export type TeacherStudentQuizRow = {
   scorePct: number;
   passed: boolean;
   createdAt: string;
+  answers?: any;
+  summaryText?: string | null;
 };
 
 export type TeacherStudentResultRow = {
@@ -79,7 +81,10 @@ export class ContentsService {
     });
   }
 
-  private async processAndUploadZip(file: Express.Multer.File, videoName: string): Promise<{ videoUrl: string, zipThumbnailUrl: string | null }> {
+  private async processAndUploadZip(
+    file: Express.Multer.File,
+    videoName: string,
+  ): Promise<{ videoUrl: string; zipThumbnailUrl: string | null }> {
     const zip = new AdmZip(file.buffer);
     const zipEntries = zip.getEntries();
 
@@ -98,7 +103,12 @@ export class ContentsService {
       const entryName = entry.entryName;
       const fileName = entry.name;
 
-      if (!fileName || fileName.startsWith("._") || entryName.includes("__MACOSX") || fileName === ".DS_Store") {
+      if (
+        !fileName ||
+        fileName.startsWith("._") ||
+        entryName.includes("__MACOSX") ||
+        fileName === ".DS_Store"
+      ) {
         return;
       }
 
@@ -106,7 +116,8 @@ export class ContentsService {
       const s3Key = `m3u8_videos/${folderUuid}/${entryName}`;
 
       let contentType = "application/octet-stream";
-      if (fileName.endsWith(".m3u8")) contentType = "application/vnd.apple.mpegurl";
+      if (fileName.endsWith(".m3u8"))
+        contentType = "application/vnd.apple.mpegurl";
       else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
       else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
       else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
@@ -117,14 +128,17 @@ export class ContentsService {
           Key: s3Key,
           Body: fileBuffer,
           ContentType: contentType,
-        })
+        }),
       );
 
       const currentUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
 
       if (fileName.endsWith(".m3u8")) {
         const lower = fileName.toLowerCase();
-        const isMaster = lower.includes("master") || lower.includes("playlist") || lower.includes("index");
+        const isMaster =
+          lower.includes("master") ||
+          lower.includes("playlist") ||
+          lower.includes("index");
 
         if (!m3u8Url || isMaster) {
           m3u8Url = currentUrl;
@@ -137,7 +151,9 @@ export class ContentsService {
     await Promise.all(uploadPromises);
 
     if (!m3u8Url) {
-      throw new BadRequestException("Invalid ZIP: No valid .m3u8 file found inside the archive.");
+      throw new BadRequestException(
+        "Invalid ZIP: No valid .m3u8 file found inside the archive.",
+      );
     }
 
     return { videoUrl: m3u8Url, zipThumbnailUrl: zipThumbUrl };
@@ -171,7 +187,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file, a ZIP archive, or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -292,7 +310,10 @@ export class ContentsService {
         let zipThumb: string | null = null;
 
         if (file.originalname.toLowerCase().endsWith(".zip")) {
-          const zipResult = await this.processAndUploadZip(file, updateContent.name);
+          const zipResult = await this.processAndUploadZip(
+            file,
+            updateContent.name,
+          );
           newUrl = zipResult.videoUrl;
           zipThumb = zipResult.zipThumbnailUrl;
         } else {
@@ -312,7 +333,7 @@ export class ContentsService {
           where: { contentId: contentMedia.id },
           data: {
             videoLink: newUrl,
-            ...(zipThumb ? { thumbnailUrl: zipThumb } : {})
+            ...(zipThumb ? { thumbnailUrl: zipThumb } : {}),
           },
         });
       }
@@ -358,7 +379,11 @@ export class ContentsService {
       }),
     );
 
-    const newThumbnailUrl = publicS3ObjectUrl(this.bucket, this.region, thumbKey);
+    const newThumbnailUrl = publicS3ObjectUrl(
+      this.bucket,
+      this.region,
+      thumbKey,
+    );
 
     const updated = await this.prisma.contentVideo.update({
       where: { id },
@@ -385,7 +410,31 @@ export class ContentsService {
   }
 
   async getAllContent() {
-    return await this.prisma.content.findMany();
+    const now = new Date();
+
+    return await this.prisma.content.findMany({
+      where: {
+        OR: [
+          {
+            availableFrom: null,
+            deadline: null,
+            visibility: "public",
+          },
+          {
+            availableFrom: null,
+            deadline: { gt: now },
+          },
+          {
+            availableFrom: { lte: now },
+            deadline: null,
+          },
+          {
+            availableFrom: { lte: now },
+            deadline: { gt: now },
+          },
+        ],
+      },
+    });
   }
 
   async getContentById(id: number) {
@@ -510,7 +559,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file, a ZIP archive, or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file, a ZIP archive, or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -645,6 +696,10 @@ export class ContentsService {
         'visibility must be "public" or "unlisted"',
       );
     }
+
+    const validClassAssignments =
+      dto.classAssignments?.filter((a) => a && a.classId) || [];
+
     const created = await this.prisma.content.create({
       data: {
         name,
@@ -652,6 +707,22 @@ export class ContentsService {
         friendlyLink,
         ownerUserId: userId,
         visibility,
+        availableFrom: dto.availableFrom ? new Date(dto.availableFrom) : null,
+        deadline: dto.deadline ? new Date(dto.deadline) : null,
+
+        classAccesses:
+          validClassAssignments.length > 0
+            ? {
+                create: validClassAssignments.map((a) => ({
+                  classId: Number(a.classId),
+                  availableFrom: a.availableFrom
+                    ? new Date(a.availableFrom)
+                    : null,
+                  deadline: a.deadline ? new Date(a.deadline) : null,
+                })),
+              }
+            : undefined,
+
         category: {
           create: {
             playlistPosition: 0,
@@ -699,6 +770,9 @@ export class ContentsService {
       where: { ownerUserId: userId },
       orderBy: { createAt: "desc" },
       include: {
+        classAccesses: {
+          include: { class: true },
+        },
         category: {
           orderBy: { playlistPosition: "asc" },
           take: 1,
@@ -707,9 +781,7 @@ export class ContentsService {
               orderBy: { playlistPosition: "asc" },
               take: 1,
               include: {
-                videoCaption: {
-                  select: { subtitlesFileLink: true },
-                },
+                videoCaption: { select: { subtitlesFileLink: true } },
               },
             },
             stats: true,
@@ -717,10 +789,24 @@ export class ContentsService {
         },
       },
     });
+
     return rows.map((c) => {
       const slot = c.category[0];
       const vid = slot?.ContentVideo?.[0];
       const stats = slot?.stats;
+
+      // Возвращаем массив классов для красивого UI
+      const classAccesses = c.classAccesses
+        ? c.classAccesses.map((a) => ({
+            classId: a.classId,
+            className: a.class.name,
+            availableFrom: a.availableFrom
+              ? a.availableFrom.toISOString()
+              : null,
+            deadline: a.deadline ? a.deadline.toISOString() : null,
+          }))
+        : [];
+
       return {
         contentId: c.id,
         name: c.name,
@@ -731,8 +817,62 @@ export class ContentsService {
         systemTags: stats?.systemTags ?? [],
         userTags: stats?.userTags ?? [],
         processingComplexity: stats?.processingComplexity ?? null,
+        classAccesses,
+        // Оставляем это для обратной совместимости, если глобальные даты есть
+        availableFrom: c.availableFrom ? c.availableFrom.toISOString() : null,
+        deadline: c.deadline ? c.deadline.toISOString() : null,
       };
     });
+  }
+
+  async getAssignedHomework(teacherId: number) {
+    const rows = await this.prisma.content.findMany({
+      where: {
+        ownerUserId: null,
+        classAccesses: { some: { class: { teacherId } } },
+      },
+      include: {
+        category: {
+          orderBy: { playlistPosition: "asc" },
+          take: 1,
+          include: {
+            ContentVideo: { orderBy: { playlistPosition: "asc" }, take: 1 },
+          },
+        },
+        classAccesses: {
+          where: { class: { teacherId } },
+          include: { class: true },
+        },
+      },
+    });
+
+    return rows.map((c) => {
+      const classAccesses = c.classAccesses.map((a) => ({
+        classId: a.classId,
+        className: a.class.name,
+        availableFrom: a.availableFrom ? a.availableFrom.toISOString() : null,
+        deadline: a.deadline ? a.deadline.toISOString() : null,
+      }));
+
+      return {
+        contentId: c.id,
+        name: c.name,
+        friendlyLink: c.friendlyLink,
+        contentVideoId: c.category[0]?.ContentVideo?.[0]?.id || null,
+        classAccesses,
+      };
+    });
+  }
+
+  async revokeAssignment(teacherId: number, contentId: number) {
+    const classes = await this.prisma.class.findMany({ where: { teacherId } });
+    const classIds = classes.map((c) => c.id);
+
+    await this.prisma.classContentAccess.deleteMany({
+      where: { contentId: Number(contentId), classId: { in: classIds } },
+    });
+
+    return { success: true };
   }
 
   async deleteEpisode(contentMediaId: number) {
@@ -792,23 +932,129 @@ export class ContentsService {
     return updatedContent;
   }
 
+  async updateTeacherContentDeadlines(
+    teacherId: number,
+    contentId: number,
+    payload: any,
+  ) {
+    await this.requireTeacherAccount(teacherId);
+
+    const content = await this.prisma.content.findUnique({
+      where: { id: contentId },
+      include: { classAccesses: true },
+    });
+
+    if (!content) throw new NotFoundException("Content not found");
+
+    // Если учитель владелец видео и передал глобальные дедлайны
+    if (content.ownerUserId === teacherId && payload.global) {
+      const parsedAvail = payload.global.availableFrom
+        ? new Date(payload.global.availableFrom)
+        : null;
+      const parsedDead = payload.global.deadline
+        ? new Date(payload.global.deadline)
+        : null;
+
+      await this.prisma.content.update({
+        where: { id: contentId },
+        data: {
+          availableFrom: parsedAvail,
+          deadline: parsedDead,
+        },
+      });
+    }
+
+    // Если переданы индивидуальные классы с дедлайнами
+    if (payload.classes && Array.isArray(payload.classes)) {
+      const myClasses = await this.prisma.class.findMany({
+        where: { teacherId },
+        select: { id: true },
+      });
+      const myClassIds = new Set(myClasses.map((c) => c.id));
+
+      for (const clsData of payload.classes) {
+        if (myClassIds.has(Number(clsData.classId))) {
+          await this.prisma.classContentAccess.updateMany({
+            where: { contentId, classId: Number(clsData.classId) },
+            data: {
+              availableFrom: clsData.availableFrom
+                ? new Date(clsData.availableFrom)
+                : null,
+              deadline: clsData.deadline ? new Date(clsData.deadline) : null,
+            },
+          });
+        }
+      }
+    }
+
+    await this.redis.del(`catalog:videos:teacher:${teacherId}`);
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+
+    return { success: true };
+  }
+
   async getVideosForStudent(studentId: number) {
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
-      select: { teacherId: true },
+      select: { teacherId: true, classId: true },
     });
 
     if (!student || !student.teacherId) {
       return [];
     }
 
+    const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
     const rows = await this.prisma.content.findMany({
       where: {
-        ownerUserId: student.teacherId,
-        visibility: { in: ["public", "unlisted"] },
+        OR: [
+          {
+            ownerUserId: student.teacherId,
+            classAccesses: { none: {} },
+            OR: [
+              { availableFrom: null, deadline: null, visibility: "public" },
+              { availableFrom: null, deadline: { gt: sevenDaysAgo } },
+              { availableFrom: { lte: now }, deadline: null },
+              { availableFrom: { lte: now }, deadline: { gt: sevenDaysAgo } },
+            ],
+          },
+          ...(student.classId
+            ? [
+                {
+                  OR: [
+                    { ownerUserId: student.teacherId },
+                    { ownerUserId: null },
+                  ],
+                  classAccesses: {
+                    some: {
+                      classId: student.classId,
+                      OR: [
+                        { availableFrom: null, deadline: null },
+                        { availableFrom: null, deadline: { gt: sevenDaysAgo } },
+                        { availableFrom: { lte: now }, deadline: null },
+                        {
+                          availableFrom: { lte: now },
+                          deadline: { gt: sevenDaysAgo },
+                        },
+                      ],
+                    },
+                  },
+                },
+              ]
+            : []),
+        ],
       },
       orderBy: { createAt: "desc" },
       include: {
+        classAccesses: student.classId
+          ? {
+              where: { classId: student.classId },
+              take: 1,
+            }
+          : false,
         category: {
           orderBy: { playlistPosition: "asc" },
           take: 1,
@@ -825,6 +1071,15 @@ export class ContentsService {
     return rows.map((c) => {
       const slot = c.category[0];
       const vid = slot?.ContentVideo?.[0];
+
+      let actualAvailableFrom = c.availableFrom;
+      let actualDeadline = c.deadline;
+      const classAccess = c.classAccesses?.[0];
+      if (classAccess) {
+        actualAvailableFrom = classAccess.availableFrom;
+        actualDeadline = classAccess.deadline;
+      }
+
       return {
         contentId: c.id,
         name: c.name,
@@ -832,6 +1087,8 @@ export class ContentsService {
         contentVideoId: vid?.id ?? null,
         videoLink: vid?.videoLink ?? null,
         thumbnailUrl: vid?.thumbnailUrl ?? null,
+        availableFrom: actualAvailableFrom?.toISOString() ?? null,
+        deadline: actualDeadline?.toISOString() ?? null,
       };
     });
   }
@@ -935,17 +1192,28 @@ export class ContentsService {
     const out: TeacherStudentResultRow[] = students.map((s) => {
       const agg = attemptAvgMap.get(s.id);
       const recent = (recentByUser.get(s.id) ?? []).map(
-        (a): TeacherStudentQuizRow => ({
-          id: a.id,
-          contentVideoId: a.contentVideoId,
-          videoName: a.contentVideo.videoName,
-          correct: a.correct,
-          total: a.total,
-          scorePct: a.scorePct,
-          passed: a.passed,
-          createdAt: a.createdAt.toISOString(),
-        }),
+        (a: any): TeacherStudentQuizRow => {
+          let parsed = a.details;
+          if (typeof parsed === "string") {
+            try {
+              parsed = JSON.parse(parsed);
+            } catch (e) {}
+          }
+          return {
+            id: a.id,
+            contentVideoId: a.contentVideoId,
+            videoName: a.contentVideo.videoName,
+            correct: a.correct,
+            total: a.total,
+            scorePct: a.scorePct,
+            passed: a.passed,
+            createdAt: a.createdAt.toISOString(),
+            answers: parsed,
+            summaryText: parsed?.summaryText || parsed?.summary || null,
+          };
+        },
       );
+
       const lp = placementMap.get(s.id);
 
       return {
@@ -970,149 +1238,156 @@ export class ContentsService {
     return { students: out };
   }
 
-  async addStudent(teacherId: number, data: { name: string; email: string }) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: data.email },
+  async getVideoStudentResults(teacherId: number, contentId: number) {
+    const content = await this.prisma.content.findFirst({
+      where: {
+        id: contentId,
+        OR: [
+          { ownerUserId: teacherId },
+          { classAccesses: { some: { class: { teacherId } } } },
+        ],
+      },
+      include: {
+        category: { include: { ContentVideo: true } },
+        classAccesses: { include: { class: true } },
+      },
     });
-    if (existing) {
-      throw new ForbiddenException("Пользователь с таким email уже существует");
+
+    if (!content)
+      throw new NotFoundException("Content not found or access denied");
+
+    const contentVideoId = content.category[0]?.ContentVideo[0]?.id;
+    if (!contentVideoId)
+      throw new BadRequestException("No video attached to this content");
+
+    let students: any[] = [];
+    let classes: any[] = [];
+
+    if (
+      content.ownerUserId === teacherId &&
+      content.classAccesses.length === 0
+    ) {
+      students = await this.prisma.user.findMany({
+        where: { teacherId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          classId: true,
+          class: { select: { name: true } },
+        },
+      });
+      classes = await this.prisma.class.findMany({
+        where: { teacherId },
+        select: { id: true, name: true },
+      });
+    } else {
+      const classIds = content.classAccesses.map((a: any) => a.classId);
+      classes = content.classAccesses.map((a: any) => a.class);
+      students = await this.prisma.user.findMany({
+        where: { teacherId, classId: { in: classIds } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          classId: true,
+          class: { select: { name: true } },
+        },
+      });
     }
 
-    const chars =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const tempPassword = Array.from(
-      { length: 8 },
-      () => chars[Math.floor(Math.random() * chars.length)],
-    ).join("");
-
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-    const created = await this.prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email.toLowerCase(),
-        password: hashedPassword,
-        role: "STUDENT",
-        teacherId: teacherId,
-        method: "CREDENTIALS",
-        isVerified: true,
+    const studentIds = students.map((s: any) => s.id);
+    const attempts = await this.prisma.comprehensionTestAttempt.findMany({
+      where: {
+        userId: { in: studentIds },
+        contentVideoId: contentVideoId,
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    return { student: created, tempPassword };
-  }
+    const attemptMap = new Map();
+    for (const att of attempts) {
+      if (!attemptMap.has(att.userId)) {
+        attemptMap.set(att.userId, att);
+      }
+    }
 
-  async exportStudentsExcel(teacherId: number): Promise<Buffer> {
-    const students = await this.prisma.user.findMany({
-      where: { teacherId },
-      select: {
-        name: true,
-        email: true,
-        additionalUserData: { select: { englishLevel: true } },
-        watchSessions: { where: { completed: true } },
-        comprehensionTestAttempts: true,
-      },
-    });
+    const results = students.map((s: any) => {
+      const att: any = attemptMap.get(s.id);
 
-    const data = students.map((s) => {
-      const attemptsCount = s.comprehensionTestAttempts.length;
-      const avgScore =
-        attemptsCount > 0
-          ? s.comprehensionTestAttempts.reduce(
-            (acc, curr) => acc + curr.scorePct,
-            0,
-          ) / attemptsCount
-          : 0;
+      let parsed = att?.details;
+      if (typeof parsed === "string") {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {}
+      }
 
       return {
-        "Student Name": s.name,
-        "Email Address": s.email,
-        "English Level": s.additionalUserData?.englishLevel || "-",
-        "Completed Videos": s.watchSessions.length,
-        "Quiz Attempts": attemptsCount,
-        "Average Score (%)": Math.round(avgScore * 10) / 10,
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        classId: s.classId,
+        className: s.class?.name || null,
+        attempt: att
+          ? {
+              id: att.id,
+              scorePct: att.scorePct,
+              correct: att.correct,
+              total: att.total,
+              passed: att.passed,
+              answers: parsed,
+              createdAt: att.createdAt.toISOString(),
+            }
+          : null,
       };
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "My Students");
-
-    return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    return {
+      contentName: content.name,
+      classes: classes.map((c: any) => ({ id: c.id, name: c.name })),
+      students: results,
+    };
   }
 
-  async updateStudent(
+  async assignExistingToClasses(
     teacherId: number,
-    studentId: number,
-    data: { name: string; email: string },
+    contentId: number,
+    classAssignments: any[],
   ) {
-    const student = await this.prisma.user.findFirst({
-      where: { id: studentId, teacherId },
+    const content = await this.prisma.content.findUnique({
+      where: { id: contentId },
     });
-    if (!student)
-      throw new ForbiddenException("Ученик не найден или не принадлежит вам");
+    if (!content) throw new NotFoundException("Content not found");
 
-    return this.prisma.user.update({
-      where: { id: studentId },
-      data: { name: data.name, email: data.email },
-    });
-  }
-
-  async removeStudent(teacherId: number, studentId: number) {
-    const student = await this.prisma.user.findFirst({
-      where: { id: studentId, teacherId },
-    });
-    if (!student) throw new ForbiddenException("Ученик не найден");
-
-    return this.prisma.user.delete({
-      where: { id: studentId },
-    });
-  }
-
-  async exportStudentsCsv(teacherId: number): Promise<string> {
-    const students = await this.prisma.user.findMany({
+    const myClasses = await this.prisma.class.findMany({
       where: { teacherId },
-      select: {
-        name: true,
-        email: true,
-        additionalUserData: { select: { englishLevel: true } },
-        watchSessions: { where: { completed: true } },
-        comprehensionTestAttempts: true,
+      select: { id: true },
+    });
+    const myClassIds = myClasses.map((c) => c.id);
+
+    const validAssignments = classAssignments.filter((a) =>
+      myClassIds.includes(a.classId),
+    );
+
+    await this.prisma.classContentAccess.deleteMany({
+      where: {
+        contentId,
+        classId: { in: myClassIds },
       },
     });
 
-    const headers = [
-      "Name",
-      "Email",
-      "English Level",
-      "Videos Completed",
-      "Quiz Attempts",
-      "Avg Score %",
-    ];
+    if (validAssignments.length > 0) {
+      await this.prisma.classContentAccess.createMany({
+        data: validAssignments.map((a) => ({
+          contentId,
+          classId: a.classId,
+          availableFrom: a.availableFrom ? new Date(a.availableFrom) : null,
+          deadline: a.deadline ? new Date(a.deadline) : null,
+        })),
+      });
+    }
 
-    const rows = students.map((s) => {
-      const attemptsCount = s.comprehensionTestAttempts.length;
-      const avgScore =
-        attemptsCount > 0
-          ? s.comprehensionTestAttempts.reduce(
-            (acc, curr) => acc + curr.scorePct,
-            0,
-          ) / attemptsCount
-          : 0;
-
-      return [
-        `"${s.name}"`,
-        `"${s.email}"`,
-        `"${s.additionalUserData?.englishLevel || "N/A"}"`,
-        s.watchSessions.length,
-        attemptsCount,
-        `"${Math.round(avgScore * 10) / 10}"`,
-      ];
-    });
-
-    return (
-      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n")
-    );
+    return { success: true };
   }
 
   async deleteTeacherContent(teacherId: number, contentId: number) {

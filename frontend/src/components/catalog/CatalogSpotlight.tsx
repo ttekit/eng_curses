@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { ArrowRight, Clapperboard, Search, X } from "lucide-react";
+import { ArrowRight, Search, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export type CatalogSpotlightItem = {
@@ -32,6 +32,7 @@ export function CatalogSpotlight({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
+
   const [activeIndex, setActiveIndex] = useState(0);
 
   const results = useMemo(() => {
@@ -209,7 +210,7 @@ export function CatalogSpotlight({
           >
             {results.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-                <img src="/SadIcon.svg" className="w-20 h-25" />
+                <img src="/SadIcon.svg" className="w-20 h-25" alt="sad" />
                 <p className="text-muted-foreground text-sm">
                   {videos.length === 0
                     ? "No lessons in the catalog yet."

@@ -275,9 +275,7 @@ export default function RegistrationDetails() {
           navigate("/registrationPreferences");
         }
       } else {
-        setFormError(
-          result.message || errors.registrationFailedRetry,
-        );
+        setFormError(result.message || errors.registrationFailedRetry);
       }
     } catch (err) {
       console.error("Error during registration:", err);
@@ -336,7 +334,9 @@ export default function RegistrationDetails() {
               </div>
 
               <div className="space-y-2">
-                <LabelRegister isRequired={true}>{step2.studentGrades}</LabelRegister>
+                <LabelRegister isRequired={true}>
+                  {step2.studentGrades}
+                </LabelRegister>
                 <SelectRegister
                   name="teacherGrades"
                   value={formData.teacherGrades}
@@ -366,9 +366,7 @@ export default function RegistrationDetails() {
                       : step2.topicsPlaceholder
                   }
                   noOptionsMessage={() =>
-                    topicsLoadError
-                      ? topicsLoadError
-                      : step2.noOptionsFound
+                    topicsLoadError ? topicsLoadError : step2.noOptionsFound
                   }
                 />
                 {topicsLoadError && (
@@ -380,7 +378,9 @@ export default function RegistrationDetails() {
 
               <div className="border-border border-t pt-6">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <LabelRegister isRequired={false}>{step2.pupilsList}</LabelRegister>
+                  <LabelRegister isRequired={false}>
+                    {step2.pupilsList}
+                  </LabelRegister>
                   <button
                     type="button"
                     onClick={addPupil}
@@ -395,7 +395,9 @@ export default function RegistrationDetails() {
                     <thead>
                       <tr className="text-muted-foreground border-border border-b">
                         <th className="pb-2 font-medium">{step2.pupilName}</th>
-                        <th className="pb-2 font-medium">{step2.pupilSurname}</th>
+                        <th className="pb-2 font-medium">
+                          {step2.pupilSurname}
+                        </th>
                         <th className="w-12 pb-2" aria-hidden />
                       </tr>
                     </thead>
@@ -451,9 +453,7 @@ export default function RegistrationDetails() {
             </section>
           )}
 
-          {emptyError && (
-            <ValidateError>{errors.selectRole}</ValidateError>
-          )}
+          {emptyError && <ValidateError>{errors.selectRole}</ValidateError>}
           {formError && <ValidateError>{formError}</ValidateError>}
 
           <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-stretch">

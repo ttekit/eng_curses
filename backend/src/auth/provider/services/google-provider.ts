@@ -15,7 +15,7 @@ export class GoogleProvider implements OAuthProvider {
 
   constructor(private readonly options: GoogleProviderOptions) {}
 
-  getAuthUrl(): string {
+  getAuthUrl(state?: string): string {
     const redirectUri = `${this.options.baseUrl}/auth/oauth/callback/google`;
     const params = new URLSearchParams({
       client_id: this.options.client_id,
@@ -25,6 +25,11 @@ export class GoogleProvider implements OAuthProvider {
       access_type: "offline",
       prompt: "consent",
     });
+
+    if (state) {
+      params.append("state", state);
+    }
+
     return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }
 
@@ -44,7 +49,9 @@ export class GoogleProvider implements OAuthProvider {
     });
     if (!tokenRes.ok) {
       const text = await tokenRes.text();
-      throw new Error(`Google token exchange failed: ${tokenRes.status} ${text}`);
+      throw new Error(
+        `Google token exchange failed: ${tokenRes.status} ${text}`,
+      );
     }
     const tokenJson = (await tokenRes.json()) as {
       access_token?: string;

@@ -108,7 +108,7 @@ export const EmailVerification: React.FC = () => {
           (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
           (!profile.hatedGenres || profile.hatedGenres.length === 0)
         ) {
-          navigate("/registrationPreferences");
+          navigate("/registrationDetails");
           return;
         }
 

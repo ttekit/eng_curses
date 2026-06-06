@@ -3,6 +3,8 @@ import { PrismaService } from "../prisma.service";
 import * as XLSX from "xlsx";
 import * as bcrypt from "bcrypt";
 import { generateSecurePassword } from "src/common/utils/password.util";
+import { CreateClassDto } from "./dto/create-class.dto";
+import { UpdateClassDto } from "./dto/update-class.dto";
 
 export type TeacherStudentQuizRow = {
   id: number;
@@ -26,6 +28,8 @@ export type TeacherStudentResultRow = {
   videosCompleted: number;
   quizAttempts: number;
   avgQuizScorePct: number | null;
+  classId: number | null;
+  className: string | null;
   lastPlacement: {
     scorePct: number;
     englishLevel: string;
@@ -59,6 +63,84 @@ export class TeacherStudentsService {
     return counts;
   }
 
+  async createClass(teacherId: number, dto: CreateClassDto) {
+    return this.prisma.class.create({
+      data: {
+        name: dto.name,
+        teacherId: teacherId,
+      },
+    });
+  }
+
+  async getMyClasses(teacherId: number) {
+    return this.prisma.class.findMany({
+      where: { teacherId },
+      orderBy: { name: "asc" },
+      include: {
+        _count: {
+          select: { students: true },
+        },
+      },
+    });
+  }
+
+  async getClassById(teacherId: number, classId: number) {
+    const targetClass = await this.prisma.class.findFirst({
+      where: { id: classId, teacherId },
+      include: {
+        students: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!targetClass) {
+      throw new ForbiddenException(
+        "The class was not found, or you do not have access to it.",
+      );
+    }
+
+    return targetClass;
+  }
+
+  async updateClass(teacherId: number, classId: number, dto: UpdateClassDto) {
+    const targetClass = await this.prisma.class.findFirst({
+      where: { id: classId, teacherId },
+    });
+
+    if (!targetClass) {
+      throw new ForbiddenException(
+        "The class was not found, or you do not have access to it.",
+      );
+    }
+
+    return this.prisma.class.update({
+      where: { id: classId },
+      data: { name: dto.name },
+    });
+  }
+
+  async removeClass(teacherId: number, classId: number) {
+    const targetClass = await this.prisma.class.findFirst({
+      where: { id: classId, teacherId },
+    });
+
+    if (!targetClass) {
+      throw new ForbiddenException(
+        "The class was not found, or you do not have access to it.",
+      );
+    }
+
+    return this.prisma.class.delete({
+      where: { id: classId },
+    });
+  }
+
   async getMyStudentsResults(
     teacherId: number,
   ): Promise<{ students: TeacherStudentResultRow[] }> {
@@ -79,6 +161,8 @@ export class TeacherStudentsService {
         name: true,
         email: true,
         role: true,
+        classId: true,
+        class: { select: { name: true } },
         additionalUserData: { select: { englishLevel: true } },
       },
     });
@@ -159,7 +243,9 @@ export class TeacherStudentsService {
         id: s.id,
         name: s.name,
         email: s.email,
-        role: s.role,
+        role: s.role as string,
+        classId: s.classId,
+        className: s.class?.name ?? null,
         englishLevel: s.additionalUserData?.englishLevel ?? null,
         videosCompleted: watchMap.get(s.id) ?? 0,
         quizAttempts: agg?.count ?? 0,
@@ -176,13 +262,26 @@ export class TeacherStudentsService {
 
     return { students: out };
   }
-
-  async addStudent(teacherId: number, data: { name: string; email: string }) {
+  async addStudent(
+    teacherId: number,
+    data: { name: string; email: string; classId?: number },
+  ) {
     const existing = await this.prisma.user.findUnique({
       where: { email: data.email },
     });
     if (existing) {
       throw new ForbiddenException("A user with this email already exists");
+    }
+
+    if (data.classId) {
+      const classExists = await this.prisma.class.findFirst({
+        where: { id: data.classId, teacherId },
+      });
+      if (!classExists) {
+        throw new ForbiddenException(
+          "The specified class was not found or does not belong to you.",
+        );
+      }
     }
 
     // 16-char password: 12 random + one of each required class.
@@ -204,7 +303,6 @@ export class TeacherStudentsService {
     }
 
     const tempPassword = pwdArray.sort(() => 0.5 - Math.random()).join("");
-    // -------------------------------------------------
 
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
@@ -214,8 +312,9 @@ export class TeacherStudentsService {
         email: data.email.toLowerCase(),
         password: hashedPassword,
         role: "STUDENT" as any,
-        method: "CREDENTIALS" as any, 
+        method: "CREDENTIALS" as any,
         teacherId: teacherId,
+        classId: data.classId || null,
         isVerified: true,
       },
     });

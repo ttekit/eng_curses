@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Loader2, Video, GraduationCap, Play, Clock, Lock } from "lucide-react";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { useAppMessages } from "../../hooks/useAppMessages";
+import { cn } from "../../lib/utils";
 
 export type StudentVideoItem = {
   contentId: number;
@@ -75,9 +76,7 @@ export function StudentTeacherVideos() {
       <div className="rounded-xl border border-border bg-card p-8 flex flex-col items-center gap-3 text-center">
         <GraduationCap className="size-12 text-muted-foreground opacity-50" />
         <h3 className="text-lg font-semibold">{t.emptyTitle}</h3>
-        <p className="max-w-md text-sm text-muted-foreground">
-          {t.emptyBody}
-        </p>
+        <p className="max-w-md text-sm text-muted-foreground">{t.emptyBody}</p>
       </div>
     );
   }
@@ -103,7 +102,6 @@ export function StudentTeacherVideos() {
             : null;
           const closeDate = video.deadline ? new Date(video.deadline) : null;
 
-          // Логика блокировки
           const isLocked = openDate && openDate > now;
           const isClosed = closeDate && closeDate < now;
           const isPlayable = video.contentVideoId && !isLocked && !isClosed;
@@ -118,7 +116,6 @@ export function StudentTeacherVideos() {
                   : "border-border hover:border-primary/40",
               )}
             >
-              {/* Превьюшка видео */}
               <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
                 {video.thumbnailUrl ? (
                   <img
@@ -149,7 +146,6 @@ export function StudentTeacherVideos() {
                 )}
               </div>
 
-              {/* Описание и переход */}
               <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                 <div>
                   <h3
@@ -163,7 +159,6 @@ export function StudentTeacherVideos() {
                     {video.name}
                   </h3>
 
-                  {/* Блок с дедлайнами для ученика */}
                   {(openDate || closeDate) && (
                     <div className="mt-2.5 flex flex-col gap-1">
                       {openDate && isLocked && (

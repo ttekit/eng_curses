@@ -22,6 +22,10 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const path = request.route?.path;
+    if (path?.includes("/oauth/")) {
+      return true;
+    }
     const token = extractAccessTokenFromRequest(request);
 
     if (!token) {

@@ -40,6 +40,7 @@ import { appEn } from "../../locales/app/en";
 import { formatMessage } from "../../lib/formatMessage";
 import { useIsLgUp } from "../../hooks/useMediaQuery";
 import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
+import { AssignHomeworkButton } from "../../components/AssignHomeworkButton";
 
 const LESSON_XP = 150;
 const LESSON_SUMMARY_STORAGE = "lessonSummary:";
@@ -655,6 +656,7 @@ export default function ContentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, refreshProfile } = useUser();
+  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
   const L = useAppMessages().lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
   const [isVideoComplete, setIsVideoComplete] = useState(false);
@@ -867,8 +869,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -1162,7 +1164,7 @@ export default function ContentPage() {
           });
 
           if (r.ok) {
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1410,6 +1412,16 @@ export default function ContentPage() {
                         pct: String(Math.round(WATCHED_COMPLETED_RATIO * 100)),
                       })}
                     </span>
+                  )}
+
+                  {(user?.role?.toLowerCase() === "teacher" ||
+                    user?.role?.toLowerCase() === "admin") && (
+                    <div className="ml-2 z-50">
+                      <AssignHomeworkButton
+                        contentId={Number(id)}
+                        contentName={videoData.videoName}
+                      />
+                    </div>
                   )}
                 </div>
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
