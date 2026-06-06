@@ -315,7 +315,8 @@ export default function LoginForm() {
             {show2FA ? loginSeo.verifyCode : loginSeo.submit}
           </Button>
 
-          {!show2FA && (
+          {/*google*/}
+          {/* {!show2FA && (
             <>
               <div className="flex items-center gap-4 py-2">
                 <div className="h-[1px] flex-1 bg-[#2a2b36]"></div>
@@ -353,7 +354,7 @@ export default function LoginForm() {
                 Continue with Google
               </button>
             </>
-          )}
+          )} */}
         </form>
 
         {!show2FA && (

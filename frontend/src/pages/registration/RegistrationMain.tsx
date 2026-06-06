@@ -459,7 +459,8 @@ export default function RegistrationMain() {
             {step1.continue}
             <ArrowRight className="size-4" />
           </Button>
-          <div className="flex items-center gap-4 py-2">
+          {/*google*/}
+          {/* <div className="flex items-center gap-4 py-2">
             <div className="h-[1px] flex-1 bg-[#2a2b36]"></div>
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               or sign up with
@@ -491,7 +492,7 @@ export default function RegistrationMain() {
               />
             </svg>
             Continue with Google
-          </button>
+          </button> */}
         </form>
 
         <div className="mt-6 flex flex-col gap-4">
