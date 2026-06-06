@@ -47,6 +47,8 @@ import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
 import FeedbackPage from "./pages/legal/FeedbackPage";
 import GoogleDobPrompt from "./components/profile/GoogleDobPrompt";
 import OAuthSuccess from "./pages/login/OAuthSuccess";
+import { Error404Page } from "./pages/Error404Page";
+
 
 const router = createBrowserRouter([
   {
