@@ -337,12 +337,15 @@ export default function VideoPlayer({
     setIsMuted(newVolume === 0);
   };
 
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    const nextMute = !isMuted;
-    setIsMuted(nextMute);
-    videoRef.current.muted = nextMute;
-  };
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (videoRef.current) {
+        videoRef.current.muted = next;
+      }
+      return next;
+    });
+  }, []);
 
   const handleSpeedChange = (speed: number) => {
     if (!videoRef.current) return;
@@ -411,6 +414,10 @@ export default function VideoPlayer({
           e.preventDefault();
           handleVolumeChange(Math.max(0, volume - 0.05));
           break;
+        case "m":
+          e.preventDefault();
+          toggleMute();
+          break;
         case "f":
           e.preventDefault();
           toggleFullscreen();
@@ -424,7 +431,7 @@ export default function VideoPlayer({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleToggle, handleSkip, volume, showControlsTemporarily]);
+  }, [handleToggle, handleSkip, volume, showControlsTemporarily, toggleMute]);
 
   return (
     <div
