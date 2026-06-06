@@ -81,22 +81,16 @@ export function CatalogVideoCard({
             </div>
           </div>
 
-        {video.ageRestriction ? (
-          <span
-            className={cn(
-              "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font- z-10",
-              ageRestrictionClass(video.ageRestriction),
-            )}
-          >
-            {video.ageRestriction}
-          </span>
-        ) : null}
-
-        {video.durationLabel ? (
-          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
-            <Clock className="h-3 w-3" />
-            {video.durationLabel}
-          </span>
+          {video.ageRestriction ? (
+            <span
+              className={cn(
+                "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font- z-10",
+                ageRestrictionClass(video.ageRestriction),
+              )}
+            >
+              {video.ageRestriction}
+            </span>
+          ) : null}
 
           {video.durationLabel ? (
             <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
