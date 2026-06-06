@@ -19,7 +19,7 @@ export function LandingPricingSection() {
       id="pricing"
       className="relative border-border border-t bg-background px-4 py-16 font-display sm:px-6 lg:px-8 lg:py-24"
     >
-      <div className="absolute inset-0 z-10 flex flex-col justify-center items-center">
+      <div className="relative sm:absolute inset-0 z-10 text-center flex flex-col mt-2 sm:justify-center items-center">
         <div className="relative flex justify-center items-center mb-5 w-50 h-50">
           <div className="absolute w-40 h-40 rounded-full bg-linear-to-tr from-primary to-accent opacity-40 blur-2xl animate-pulse" />
           <img
@@ -39,7 +39,7 @@ export function LandingPricingSection() {
           <ArrowRight className="w-4 h-4 ml-1" />
         </Link>
       </div>
-      <div className="relative mx-auto max-w-7xl opacity-20 pointer-events-none cursor-not-allowed select-none blur-[1px]">
+      <div className="hidden sm:block relative mx-auto max-w-7xl opacity-20 pointer-events-none cursor-not-allowed select-none blur-[1px]">
         <div className="mx-auto mb-12 max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             {pricingSection.title}

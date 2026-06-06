@@ -60,6 +60,8 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
+    freeAccess: "Free access in June 2026!",
+    startLearning: "Start learning now",
   },
 
   header: {

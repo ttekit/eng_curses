@@ -62,6 +62,8 @@ export const landingUk = {
     signInPromptAfter: ", щоб оформити Light, Smart або Family.",
     stripeTerms:
       "Оплата захищена Stripe. Продовжуючи, ви погоджуєтесь з умовами обраного тарифу.",
+    freeAccess: "Безкоштовний доступ у червні 2026!",
+    startLearning: "Почати навчання зараз",
   },
 
   header: {
