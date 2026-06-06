@@ -54,8 +54,7 @@ export const appEn = {
     loadError: "Could not load your lessons.",
     loading: "Loading…",
     emptyTitle: "No completed lessons yet",
-    emptyHint:
-      "Watch at least 75% of a catalog video to count it here.",
+    emptyHint: "Watch at least 75% of a catalog video to count it here.",
     goToCatalog: "Go to catalog",
     trainingHubTitle: "Training & summaries",
     trainingHubSubtitle:
@@ -74,7 +73,8 @@ export const appEn = {
     recapDonePeriod: "Completed for this period",
     recapLastScore: "Last score: {score}%",
     recapLessonsHint: "{count} lessons in range",
-    practiceSignInHint: "Sign in so quizzes and rerun sessions match your watched lessons.",
+    practiceSignInHint:
+      "Sign in so quizzes and rerun sessions match your watched lessons.",
     sectionPracticeTitle: "Practise from your mistakes",
     practicePendingBadge: "Remediation quiz queued",
     practicePendingBody:
@@ -87,7 +87,8 @@ export const appEn = {
       "Replay the weekly review: 10 mixed multiple-choice questions grounded in clips you watched this week (Mon–Sun UTC) — grammar, vocabulary, and comprehension in one run.",
     rerunTestCta: "Rerun recap quiz",
     suggestedTitle: "Suggested clips",
-    suggestedSubtitle: "Chosen from your level, interests, tags, and topic progress.",
+    suggestedSubtitle:
+      "Chosen from your level, interests, tags, and topic progress.",
     suggestedLoadError: "Could not load suggested clips.",
     suggestedEmpty:
       "We need a bit more from your placement or interests to rank picks — browse the catalog for now.",
@@ -145,7 +146,8 @@ export const appEn = {
     beforeEntryTitle: "Before your entry test",
     beforeEntryAdult:
       "Tell us about your work, education, and native language — then add hobbies and choose how you want to take the entry test.",
-    beforeEntryStudent: "A few quick preferences — then your placement questionnaire.",
+    beforeEntryStudent:
+      "A few quick preferences — then your placement questionnaire.",
     beforeEntryIndependentStudent:
       "Add your role or studies, education, native language, and hobbies — then your placement questionnaire.",
     placementFooterBlurb:
@@ -200,7 +202,7 @@ export const appEn = {
     roleStudent: "Student",
     roleTeacher: "Teacher",
     roleAdmin: "Administrator",
-    photoSoonAria: "Profile photo (coming soon)",
+    photoAria: "Change profile photo",
     learnerFallback: "Learner",
     joinedLine: "Joined {date}",
     levelLine: "Level {level}",
@@ -252,8 +254,7 @@ export const appEn = {
 
   profileAchievements: {
     hunterTitle: "Achievement hunter",
-    unlockedLead:
-      "You've unlocked {unlocked} out of {total} achievements.",
+    unlockedLead: "You've unlocked {unlocked} out of {total} achievements.",
     progressLabel: "Progress",
     unlockedExclaim: "Unlocked!",
     rarityCommon: "common",
@@ -327,11 +328,9 @@ export const appEn = {
     labelVideoQuality: "Video quality",
     videoQualityAuto: "Auto",
     autoplayNextTitle: "Auto-play next video",
-    autoplayNextDesc:
-      "Automatically play the next lesson in a row",
+    autoplayNextDesc: "Automatically play the next lesson in a row",
     showSubtitlesTitle: "Show subtitles by default",
-    showSubtitlesDesc:
-      "Prefer English subtitles when available",
+    showSubtitlesDesc: "Prefer English subtitles when available",
     cardDangerZone: "Danger zone",
     logoutTitle: "Log out",
     logoutDesc: "Sign out on this device. You can sign in again anytime.",
@@ -388,11 +387,11 @@ export const appEn = {
       "Are you sure you want to delete this video? This action cannot be undone.",
     deleteConfirmPrompt: "To confirm, type",
     deleteConfirmPhrase: "delete video",
-    deleteWrongPhrase: "Incorrect phrase. Please type \"delete video\".",
+    deleteWrongPhrase: 'Incorrect phrase. Please type "delete video".',
     deleteSuccessToast: "Video deleted successfully",
     deleteFailed: "Delete failed",
     emptyBody:
-      "You have not uploaded any lessons yet. Click \"Upload lesson\" above to publish your first video.",
+      'You have not uploaded any lessons yet. Click "Upload lesson" above to publish your first video.',
     colSeries: "Series",
     colCaptions: "Captions",
     colCatalog: "Catalog",
@@ -451,7 +450,7 @@ export const appEn = {
       "Are you sure you want to remove this student from your list? This action cannot be undone.",
     deleteConfirmPrompt: "To confirm, type",
     deleteConfirmPhrase: "delete student",
-    deleteWrongPhrase: "Incorrect phrase. Please type \"delete student\".",
+    deleteWrongPhrase: 'Incorrect phrase. Please type "delete student".',
     deleteSuccessToast: "Student removed successfully",
     deleteFailed: "Delete failed",
     exportFailed: "Export failed",
@@ -462,7 +461,7 @@ export const appEn = {
     studentUpdated: "Student updated!",
     operationFailed: "Operation failed",
     emptyBody:
-      "No students are linked to your teacher account yet. Click \"Add Student\" above to register them.",
+      'No students are linked to your teacher account yet. Click "Add Student" above to register them.',
     colStudent: "Student",
     colLevel: "Level",
     colVideosDone: "Videos done",
@@ -672,16 +671,15 @@ export const appEn = {
 
   subscription: {
     seoTitle: "Choose your plan · Explys",
-    seoDescription: "Subscribe to unlock every Explys lesson and placement flow.",
+    seoDescription:
+      "Subscribe to unlock every Explys lesson and placement flow.",
     title: "Pick your subscription",
     subtitle:
       "You need an active plan to open the catalog, lessons, and entry test. Choose Light, Smart, or Family — then continue learning.",
-    devModeBanner:
-      "Dev mode: subscription enforcement is off ({env}).",
+    devModeBanner: "Dev mode: subscription enforcement is off ({env}).",
     backToCatalog: "Back to catalog",
     signOut: "Sign out",
-    paymentsNote:
-      "Payments via Stripe. For schools and teams see ",
+    paymentsNote: "Payments via Stripe. For schools and teams see ",
     pricingLinkLabel: "pricing",
     teacherPlanNote: " or contact sales from the Teacher plan card.",
     continueCatalog: "Continue to catalog",
@@ -850,7 +848,8 @@ export const appEn = {
     errorFixingQuizBanner:
       "Error-fixing quiz — this set focuses on skills you recently missed. Take your time; your next regular quiz returns after you submit this one.",
     quizLocked: "Quiz locked",
-    quizLockedLead: "Finish watching the lesson to unlock the quiz and earn XP.",
+    quizLockedLead:
+      "Finish watching the lesson to unlock the quiz and earn XP.",
     selectOptionError: "Please select an option to continue.",
     questionOf: "Question {current} of {total}",
     categoryGrammar: "Grammar",
@@ -859,7 +858,8 @@ export const appEn = {
     categorySummary: "Summary",
     openPlaceholder:
       "Write 2–3 clear sentences in English or leave blank to skip.",
-    openHint: "Aim for at least {min} characters or clear the text to skip (-50 XP).",
+    openHint:
+      "Aim for at least {min} characters or clear the text to skip (-50 XP).",
     questionSkipped: "Question skipped.",
     responseSaved:
       "Response saved — your summary will be graded when you complete the lesson.",
@@ -877,21 +877,21 @@ export const appEn = {
     saveWordAria: "Save word",
     completeBannerTitle: "Lesson complete",
     completeBannerXp: "You earned {xp} XP",
+    warning: "Warning! Age resctriction:",
   },
 
   lessonSummaryPage: {
     missingLesson: "Missing lesson.",
     pageTitle: "Lesson summary",
     emptyLead:
-      'No results for this lesson. Open the lesson, finish the quiz, and tap “Complete lesson” to see your score here.',
+      "No results for this lesson. Open the lesson, finish the quiz, and tap “Complete lesson” to see your score here.",
     openLesson: "Open lesson",
     metaLead:
       "Complete the quiz on the lesson page to see your score, words, and topic updates here.",
     continueLesson: "Continue lesson",
     quizResults: "Quiz results",
     pctCorrect: "{pct}% correct",
-    moodStrong:
-      "Strong work — you’re ready for the next lesson.",
+    moodStrong: "Strong work — you’re ready for the next lesson.",
     moodGood: "Good effort — skim vocabulary once more.",
     moodReview: "Review the clip and vocabulary, then retry.",
     writtenSummaryHeading: "Your written summary",
@@ -899,7 +899,7 @@ export const appEn = {
       "Personalized comments on your answer, tailored to the lesson and your profile when you complete the quiz while signed in.",
     summaryScoreLine: "Summary score: {score}/10",
     noCoachComment:
-      'No written-summary coach comment was saved. Finish the lesson from the quiz tab and tap “Complete lesson” while the lesson tests have finished loading so the server can attach feedback.',
+      "No written-summary coach comment was saved. Finish the lesson from the quiz tab and tap “Complete lesson” while the lesson tests have finished loading so the server can attach feedback.",
     reviewWrongHeading: "Review tricky questions",
     reviewWrongLead:
       "Explanations for items you missed — skim these before the next quiz on this lesson.",
@@ -942,7 +942,8 @@ export const appEn = {
       job: "Job",
       jobPlaceholder: "e.g. Software engineer, teacher, student",
       education: "Education",
-      educationPlaceholder: "e.g. Bachelor's in design, high school, self-taught",
+      educationPlaceholder:
+        "e.g. Bachelor's in design, high school, self-taught",
       hobbies: "Hobbies",
       hobbiesPlaceholder: "Type a hobby, then press Enter",
       nativeLanguage: "Native language",
@@ -1042,5 +1043,10 @@ export const appEn = {
     french: "French",
     login: "Login",
     register: "Register",
+  },
+
+  errorPage: {
+    notFound: "Page not found",
+    returnToMain: "Return to main page",
   },
 } as const;

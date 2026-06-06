@@ -12,8 +12,15 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendRoot = path.resolve(__dirname, "..");
 const distDir = path.join(frontendRoot, "dist");
+const snapshotPath = path.join(
+  frontendRoot,
+  "src/lib/marketing-seo.snapshot.json",
+);
 
-const siteOrigin = (process.env.VITE_SITE_URL ?? "https://explys.com").replace(/\/+$/, "");
+const siteOrigin = (process.env.VITE_SITE_URL ?? "https://explys.com").replace(
+  /\/+$/,
+  "",
+);
 const ogImage = `${siteOrigin}/og-image.png`;
 
 function escapeHtml(value) {
@@ -53,46 +60,55 @@ function buildWebSiteJsonLd() {
   };
 }
 
-function buildPricingOfferCatalogJsonLd() {
-  const offers = [
-    {
-      name: "Light (Essentials)",
-      description: "For self-paced basic learning.",
-      category: "Subscription",
-    },
-    {
-      name: "Smart (Adaptive)",
-      description: "A dynamic AI program that saves you time.",
-      category: "Subscription",
-    },
-    {
-      name: "Family (LMS/Pro)",
-      description: "All the benefits of Smart for the whole family.",
-      category: "Subscription",
-    },
-    {
-      name: "Teacher (LMS Office)",
-      description:
-        "A tool for private teachers and schools (up to 40 students per class).",
-      category: "Enterprise",
-    },
-  ];
-
+function buildFaqPageJsonLd(items) {
   return {
     "@context": "https://schema.org",
-    "@type": "OfferCatalog",
-    name: "Pricing",
-    description:
-      "Simple plans from essentials to adaptive AI and family options — plus Teacher / Enterprise for schools.",
-    url: `${siteOrigin}/pricing`,
-    itemListElement: offers.map((offer) => ({
-      "@type": "Offer",
-      name: offer.name,
-      description: offer.description,
-      url: `${siteOrigin}/pricing`,
-      category: offer.category,
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
     })),
   };
+}
+
+function buildBreadcrumbJsonLd(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: `${siteOrigin}${item.path.startsWith("/") ? item.path : `/${item.path}`}`,
+    })),
+  };
+}
+
+function buildPricingProductJsonLd(products) {
+  const priceValidUntil = `${new Date().getUTCFullYear() + 1}-12-31`;
+  return products.map((product) => ({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    brand: {
+      "@type": "Brand",
+      name: "Explys",
+    },
+    category: "Software > Language Learning Subscription",
+    offers: {
+      "@type": "Offer",
+      url: `${siteOrigin}/pricing`,
+      price: product.price,
+      priceCurrency: product.priceCurrency,
+      availability: "https://schema.org/InStock",
+      priceValidUntil,
+    },
+  }));
 }
 
 function buildHreflangLinks(canonicalPath) {
@@ -172,25 +188,40 @@ function applyMarketingSeo(html, config) {
   return next.replace("</head>", `${seoBlock}\n</head>`);
 }
 
-const homeConfig = {
-  documentTitle: "Explys — Learn English with video lessons",
-  description:
-    "Learn English with interactive video lessons, subtitles, and AI-powered practice.",
-  canonicalUrl: `${siteOrigin}/`,
-  hreflangAlternates: buildHreflangLinks("/"),
-  jsonLdSchemas: [buildOrganizationJsonLd(), buildWebSiteJsonLd()],
-};
-
-const pricingConfig = {
-  documentTitle: "Pricing | Explys",
-  description:
-    "Simple plans from essentials to adaptive AI and family options — plus Teacher / Enterprise for schools.",
-  canonicalUrl: `${siteOrigin}/pricing`,
-  hreflangAlternates: buildHreflangLinks("/pricing"),
-  jsonLdSchemas: [buildOrganizationJsonLd(), buildPricingOfferCatalogJsonLd()],
-};
-
 async function main() {
+  const snapshotRaw = await readFile(snapshotPath, "utf8");
+  const snapshot = JSON.parse(snapshotRaw);
+
+  const homeConfig = {
+    documentTitle: "Explys — Learn English with video lessons",
+    description:
+      "Learn English with interactive video lessons, subtitles, and AI-powered practice.",
+    canonicalUrl: `${siteOrigin}/`,
+    hreflangAlternates: buildHreflangLinks("/"),
+    jsonLdSchemas: [
+      buildOrganizationJsonLd(),
+      buildWebSiteJsonLd(),
+      buildFaqPageJsonLd(snapshot.landingFaq),
+    ],
+  };
+
+  const pricingConfig = {
+    documentTitle: "Pricing | Explys",
+    description:
+      "Simple plans from essentials to adaptive AI and family options — plus Teacher / Enterprise for schools.",
+    canonicalUrl: `${siteOrigin}/pricing`,
+    hreflangAlternates: buildHreflangLinks("/pricing"),
+    jsonLdSchemas: [
+      buildOrganizationJsonLd(),
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Pricing", path: "/pricing" },
+      ]),
+      buildFaqPageJsonLd(snapshot.pricingFaq),
+      ...buildPricingProductJsonLd(snapshot.subscriptionProducts),
+    ],
+  };
+
   const indexPath = path.join(distDir, "index.html");
   const baseHtml = await readFile(indexPath, "utf8");
 

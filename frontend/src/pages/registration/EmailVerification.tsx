@@ -87,7 +87,9 @@ export const EmailVerification: React.FC = () => {
         if (
           !profile.role ||
           profile.role === "choose" ||
-          profile.role === "regular"
+          profile.role === "regular" ||
+
+          (!(profile as any).additionalUserData?.englishLevel && !profile.hasCompletedPlacement)
         ) {
           navigate("/registrationDetails");
           return;

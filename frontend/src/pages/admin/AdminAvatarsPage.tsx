@@ -90,6 +90,7 @@ export default function AdminAvatarsPage() {
         <AdminButton
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
+          className="flex rounded-[15px] bg-primary px-4 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
         >
           <Upload className="mr-2 h-4 w-4" />
           {isUploading ? "Uploading..." : "Upload New"}
@@ -142,6 +143,7 @@ export default function AdminAvatarsPage() {
                         title={
                           avatar.isActive ? "Hide from users" : "Show to users"
                         }
+                        className="hover:cursor-pointer"
                       >
                         {avatar.isActive ? (
                           <EyeOff className="h-4 w-4" />

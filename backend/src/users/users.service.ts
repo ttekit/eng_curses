@@ -197,6 +197,8 @@ export class UsersService {
         ? new Date(createUserDto.dateOfBirth)
         : null,
       hasCompletedPlacement: role === "TEACHER" || role === "ADMIN",
+      subscriptionPlan: "smart",
+      subscriptionStatus: "active",
     };
 
     let created: any;

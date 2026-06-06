@@ -22,7 +22,9 @@ import { TeacherPatchContentVisibilityDto } from "src/contents/dto/teacher-patch
 import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content.dto";
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
 import { buildSafeS3ObjectKey, publicS3ObjectUrl } from "../common/s3-key.util";
-import { UserRole } from "@generated/prisma/enums";
+import { AuthMethod, UserRole } from "@generated/prisma/enums";
+import * as XLSX from "xlsx";
+import * as bcrypt from "bcrypt";
 import { Redis } from "ioredis";
 import AdmZip = require("adm-zip");
 
@@ -158,7 +160,7 @@ export class ContentsService {
   }
 
   async createContent(
-    dto: CreateContentDto & { videoLink?: string },
+    dto: any,
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
@@ -253,6 +255,13 @@ export class ContentsService {
     dto: UpdateContentDto,
     file?: Express.Multer.File,
   ) {
+    const existing = await this.prisma.content.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Content with ID ${id} not found`);
+    }
     const updateContent = await this.prisma.content.update({
       where: { id },
       data: {
@@ -333,6 +342,20 @@ export class ContentsService {
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
     return updateContent;
+  }
+
+  async updateEpisodeText(id: number, data: { videoName: string; videoDescription?: string; ageRestriction?: string }) {
+    const updated = await this.prisma.contentVideo.update({
+      where: { id },
+      data: {
+        videoName: data.videoName,
+        videoDescription: data.videoDescription,
+        ageRestriction: data.ageRestriction || "0+",
+      },
+    });
+    await this.redis.del("catalog:videos");
+    await this.redis.del("catalog:videos:admin");
+    return updated;
   }
 
   async updateEpisodeThumbnail(id: number, file: Express.Multer.File) {
@@ -496,7 +519,7 @@ export class ContentsService {
 
   async addEpisode(
     contentId: number,
-    dto: AddContentEpisodeDto & { videoLink?: string },
+    dto: any,
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
@@ -604,7 +627,7 @@ export class ContentsService {
 
   async createTeacherUpload(
     userId: number,
-    dto: TeacherUploadContentDto & { videoLink?: string },
+    dto: any,
     file?: Express.Multer.File,
     thumbnailFile?: Express.Multer.File,
   ) {
@@ -649,9 +672,7 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException(
-        "You must provide either a video file or a videoLink",
-      );
+      throw new BadRequestException("You must provide either a video file or a videoLink");
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -725,25 +746,21 @@ export class ContentsService {
         },
       },
     });
-
     const contentVideoId = created.category[0]?.ContentVideo?.[0]?.id;
     if (contentVideoId == null) {
       throw new InternalServerErrorException(
         "Created content is missing a ContentVideo id",
       );
     }
-
-    this.videoCaptionsService.generateCaptions(contentVideoId).catch((err) => {
-      console.error("Background captions generation failed:", err);
-    });
-
+    const captionsRow =
+      await this.videoCaptionsService.generateCaptions(contentVideoId);
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
     return {
       ...created,
       contentVideoId,
-      captionsReady: false,
+      captionsReady: captionsRow != null,
     };
   }
 
@@ -898,7 +915,7 @@ export class ContentsService {
       );
     }
 
-    const updatedContent = await this.prisma.content.update({
+    const updatedContent = this.prisma.content.update({
       where: { id: contentId },
       data: { visibility },
       select: {
@@ -908,7 +925,6 @@ export class ContentsService {
         visibility: true,
       },
     });
-
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");

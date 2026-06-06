@@ -12,6 +12,7 @@ export interface CatalogCardVideo {
   progress?: number;
   thumbnailUrl?: string;
   videoLink?: string;
+  ageRestriction?: string;
 }
 
 const levelLike = /^(A1|A2|B1|B2|C1|C2)$/i;
@@ -30,6 +31,18 @@ const badgeClassForLabel = (label: string) => {
     return map[t] ?? "bg-muted text-muted-foreground";
   }
   return "bg-accent/20 text-accent";
+};
+
+const ageRestrictionClass = (age: string) => {
+  const map: Record<string, string> = {
+    "0+": "bg-accent text-foreground",
+    "6+": "bg-(--light-blue) text-foreground",
+    "12+": "bg-(--yellow) text-foreground",
+    "16+": "bg-(--orange) text-foreground",
+    "18+": "bg-destructive text-foreground",
+    "21+": "bg-primary text-foreground",
+  };
+  return map[age] ?? "bg-muted text-muted-foreground";
 };
 
 interface CatalogVideoCardProps {
@@ -68,13 +81,21 @@ export function CatalogVideoCard({
             </div>
           </div>
 
+        {video.ageRestriction ? (
           <span
             className={cn(
-              "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-medium z-10",
-              badgeClassForLabel(video.categoryLabel),
+              "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font- z-10",
+              ageRestrictionClass(video.ageRestriction),
             )}
           >
-            {video.categoryLabel}
+            {video.ageRestriction}
+          </span>
+        ) : null}
+
+        {video.durationLabel ? (
+          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
+            <Clock className="h-3 w-3" />
+            {video.durationLabel}
           </span>
 
           {video.durationLabel ? (

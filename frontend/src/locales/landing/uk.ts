@@ -22,7 +22,7 @@ export const landingUk = {
       saveErrorToast: "Не вдалося зберегти вподобання.",
       errorMissingUserId: "Не вдалося знайти акаунт. Оновіть сторінку.",
       saving: "Збереження...",
-      continueCta: "Продовжити"
+      continueCta: "Продовжити",
     },
     adult: {
       formIntro: "Розкажіть трохи про себе.",
@@ -35,8 +35,8 @@ export const landingUk = {
       nativeLanguagePlaceholder: "напр. Українська",
       errorJob: "Будь ласка, вкажіть вашу професію.",
       errorEducation: "Будь ласка, вкажіть вашу освіту.",
-      errorNativeLanguage: "Будь ласка, вкажіть вашу рідну мову."
-    }
+      errorNativeLanguage: "Будь ласка, вкажіть вашу рідну мову.",
+    },
   },
   seo: {
     title: "Explys — платформа для вивчення англійської мови через відео",
@@ -62,6 +62,8 @@ export const landingUk = {
     signInPromptAfter: ", щоб оформити Light, Smart або Family.",
     stripeTerms:
       "Оплата захищена Stripe. Продовжуючи, ви погоджуєтесь з умовами обраного тарифу.",
+    freeAccess: "Безкоштовний доступ у червні 2026!",
+    startLearning: "Почати навчання зараз",
   },
 
   header: {
@@ -165,6 +167,15 @@ export const landingUk = {
     subtitle:
       "Від базового доступу до адаптивного AI та сімейних планів — плюс рішення для навчальних закладів.",
     fullPageLink: "Усі тарифи на окремій сторінці",
+    freeAccess: "Безкоштовний доступ у червні 2026!",
+    startLearning: "Почати навчання зараз",
+  },
+
+  marketingFaq: {
+    landingTitle: "Часті запитання",
+    landingSubtitle: "Коротко про те, як працює Explys.",
+    pricingTitle: "Питання про тарифи",
+    pricingSubtitle: "Плани, оплата та оновлення.",
   },
 
   cta: {
@@ -207,7 +218,7 @@ export const landingUk = {
         ],
         ctaLabel: "Почати зі Смарт",
       },
-      
+
       family: {
         name: "Сімейний (LMS/Pro)",
         description: "Усі переваги Смарт для всієї родини в одній підписці.",
@@ -311,7 +322,8 @@ export const landingUk = {
     emailLinkConfirm: {
       loading: "Підтверджуємо вашу пошту…",
       successTitle: "Готово!",
-      successBody: "Пошту успішно підтверджено. Тепер ви можете увійти в систему.",
+      successBody:
+        "Пошту успішно підтверджено. Тепер ви можете увійти в систему.",
       errorTitle: "Помилка",
       errorBody: "Токен недійсний, або ви вже підтвердили пошту раніше.",
       goToLogin: "Перейти до входу",
@@ -324,7 +336,7 @@ export const landingUk = {
       title: "Перевірте пошту",
       leadPrefix: "Ми надіслали лист для підтвердження на",
       notConfirmedError:
-        'Ви ще не підтвердили пошту. Будь ласка, перевірте вхідні повідомлення або папку «Спам» та перейдіть за посиланням.',
+        "Ви ще не підтвердили пошту. Будь ласка, перевірте вхідні повідомлення або папку «Спам» та перейдіть за посиланням.",
       continue: "Продовжити",
       checking: "Перевірка…",
       resendPrompt: "Не отримали лист?",
@@ -332,7 +344,8 @@ export const landingUk = {
       resending: "Відправка…",
       backToLogin: "← Повернутися до входу",
       confirmedToast: "Пошту підтверджено!",
-      confirmedLoginMessage: "Пошту успішно підтверджено! Тепер ви можете увійти.",
+      confirmedLoginMessage:
+        "Пошту успішно підтверджено! Тепер ви можете увійти.",
       resendSuccess: "Лист успішно надіслано повторно!",
       resendFailed: "Не вдалося надіслати лист.",
       resendNetworkError: "Не вдалося надіслати лист. Перевірте з'єднання.",
@@ -398,8 +411,7 @@ export const landingUk = {
         pupilNameLatinOnly:
           "Для учня №{n} дозволені лише латинські літери. Без цифр, пробілів і символів.",
         registrationFailedRetry: "Реєстрація не вдалася. Спробуйте ще раз.",
-        networkCheckConnection:
-          "Мережева помилка. Перевірте з'єднання.",
+        networkCheckConnection: "Мережева помилка. Перевірте з'єднання.",
       },
       networkRegister:
         "Мережева помилка. Перевірте, чи запущений backend-сервер.",

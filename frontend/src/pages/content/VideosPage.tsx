@@ -51,6 +51,7 @@ interface ContentVideo {
   videoLink: string;
   thumbnailUrl?: string;
   playlistPosition?: number;
+  ageRestriction?: string;
   content: {
     id: number;
     playlistPosition?: number;
@@ -75,6 +76,7 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
     categoryLabel: video.content.category.name,
     thumbnailUrl: video.thumbnailUrl,
     videoLink: video.videoLink,
+    ageRestriction: video.ageRestriction,
   };
 }
 
@@ -102,6 +104,13 @@ function stripCheckoutSuccessSearch(): { pathname: string; search: string } {
 
 const LEVELS_LIST = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
+function getPaginationRange(current: number, total: number) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+  if (current >= total - 3) return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
+
 export default function VideoPage() {
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,6 +127,9 @@ export default function VideoPage() {
   const [recommendedCards, setRecommendedCards] = useState<CatalogCardVideo[]>(
     [],
   );
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const catalogTopRef = useRef<HTMLDivElement>(null);
 
   const { user, isLoading: userLoading, refreshProfile } = useUser();
   const isTeacherLinkedStudent =
@@ -140,6 +152,17 @@ export default function VideoPage() {
     },
     [],
   );
+
+  const scrollToCatalogTop = () => {
+    if (catalogTopRef.current) {
+      const y = catalogTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedLevel, selectedGenre]);
 
   const cb = locale === "uk" ? appUk.catalogBrowse : appEn.catalogBrowse;
 
@@ -315,6 +338,14 @@ export default function VideoPage() {
     return map;
   }, [videos]);
 
+  const ageRestrictionByVideoId = useMemo(() => {
+    const map = new Map<number, string | undefined>();
+    for (const v of videos) {
+      map.set(v.id, v.ageRestriction);
+    }
+    return map;
+  }, [videos]);
+
   useEffect(() => {
     if (loading) return;
     if (videos.length === 0) {
@@ -334,6 +365,7 @@ export default function VideoPage() {
             data.recommendations,
             thumbnailByVideoId,
             12,
+            ageRestrictionByVideoId,
           );
         }
       }
@@ -350,7 +382,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [loading, videos, user, thumbnailByVideoId]);
+  }, [loading, videos, user, thumbnailByVideoId, ageRestrictionByVideoId]);
 
   useEffect(() => {
     const raw = location.state as
@@ -473,55 +505,24 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
-  const hasFilters =
-    selectedLevel !== "All" ||
-    selectedGenre !== "All";
+  const hasFilters = selectedLevel !== "All" || selectedGenre !== "All";
 
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
-    if (hasFilters) {
-      const sorted = [...filteredVideos].sort((a, b) => {
-        const ma =
-          typeof a.content.playlistPosition === "number"
-            ? a.content.playlistPosition
-            : 0;
-        const mb =
-          typeof b.content.playlistPosition === "number"
-            ? b.content.playlistPosition
-            : 0;
-        if (ma !== mb) return ma - mb;
-        const va =
-          typeof a.playlistPosition === "number" ? a.playlistPosition : 0;
-        const vb =
-          typeof b.playlistPosition === "number" ? b.playlistPosition : 0;
-        if (va !== vb) return va - vb;
-        return a.id - b.id;
-      });
-      const link = sorted[0]?.content.category.friendlyLink?.trim() ?? "";
+    if (hasFilters) return [];
 
-      let dynamicTitle = buildFilteredTitle();
-
-      return [
-        {
-          title: dynamicTitle,
-          description: undefined as string | undefined,
-          seriesFriendlyLink: link.length > 0 ? link : undefined,
-          videos: sorted.map(toCardVideo),
-        },
-      ];
-    }
     const byCategory = new Map<string, ContentVideo[]>();
     for (const v of filteredVideos) {
       const key = v.content.category.name;
@@ -557,19 +558,29 @@ export default function VideoPage() {
           videos: sorted.map(toCardVideo),
         };
       });
-  }, [
-    filteredVideos,
-    selectedLevel,
-    selectedGenre,
-    hasFilters,
-  ]);
+  }, [filteredVideos, hasFilters]);
 
-  // Exclude filtered videos from recommendation rows.
   const visibleRecommended = useMemo(() => {
     if (recommendedCards.length === 0) return [];
     const allowedIds = new Set(filteredVideos.map((v) => v.id));
     return recommendedCards.filter((card) => allowedIds.has(card.id));
   }, [recommendedCards, filteredVideos]);
+
+  // Pagination Logic
+  const GRID_PAGE_SIZE = 24;
+  const ROWS_PAGE_SIZE = 10;
+
+  const totalPages = hasFilters
+    ? Math.ceil(filteredVideos.length / GRID_PAGE_SIZE)
+    : Math.ceil(catalogRows.length / ROWS_PAGE_SIZE);
+
+  const paginatedVideos = hasFilters
+    ? filteredVideos.slice((currentPage - 1) * GRID_PAGE_SIZE, currentPage * GRID_PAGE_SIZE)
+    : [];
+
+  const paginatedRows = !hasFilters
+    ? catalogRows.slice((currentPage - 1) * ROWS_PAGE_SIZE, currentPage * ROWS_PAGE_SIZE)
+    : [];
 
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex-col">
@@ -630,7 +641,7 @@ export default function VideoPage() {
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "left")}
-                      className="absolute left-0 z-20 hidden h-7 w-7 -translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer  left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -663,7 +674,7 @@ export default function VideoPage() {
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "right")}
-                      className="absolute right-0 z-20 hidden h-7 w-7 translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -686,7 +697,7 @@ export default function VideoPage() {
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "left")}
-                        className="absolute left-0 z-20 hidden h-7 w-7 -translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
@@ -719,7 +730,7 @@ export default function VideoPage() {
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "right")}
-                        className="absolute right-0 z-20 hidden h-7 w-7 translate-x-1 items-center justify-center rounded-full bg-background shadow-md border border-border md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
@@ -731,7 +742,8 @@ export default function VideoPage() {
 
             <div
               id="catalog-library"
-              className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2"
+              ref={catalogTopRef}
+              className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2 scroll-mt-24"
             >
               {loading ? (
                 <div className="flex h-60 bg-card/30 flex-col items-center rounded-[30px] justify-center space-y-4">
@@ -747,9 +759,7 @@ export default function VideoPage() {
                     {cb.emptyTitle}
                   </h2>
                   <p className="mt-2 text-muted-foreground text-sm">
-                    {videos.length === 0
-                      ? cb.emptyNoVideos
-                      : cb.emptyFiltered}
+                    {videos.length === 0 ? cb.emptyNoVideos : cb.emptyFiltered}
                   </p>
                 </div>
               ) : hasFilters ? (
@@ -758,7 +768,7 @@ export default function VideoPage() {
                     {buildFilteredTitle()}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {filteredVideos.map((video) => (
+                    {paginatedVideos.map((video) => (
                       <CatalogVideoCard
                         key={video.id}
                         video={toCardVideo(video)}
@@ -768,7 +778,7 @@ export default function VideoPage() {
                 </div>
               ) : (
                 <>
-                  {visibleRecommended.length > 0 ? (
+                  {currentPage === 1 && visibleRecommended.length > 0 ? (
                     <CatalogVideoRow
                       title={cb.recommendedTitle}
                       description={cb.recommendedDescription}
@@ -776,7 +786,7 @@ export default function VideoPage() {
                     />
                   ) : null}
 
-                  {catalogRows.map((row) => (
+                  {paginatedRows.map((row) => (
                     <CatalogVideoRow
                       key={row.title}
                       title={row.title}
@@ -786,6 +796,51 @@ export default function VideoPage() {
                     />
                   ))}
                 </>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && !loading && (
+                <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
+                  <button
+                    type="button"
+                    onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); scrollToCatalogTop(); }}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl bg-card border border-border text-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    Prev
+                  </button>
+
+                  {getPaginationRange(currentPage, totalPages).map((p, i) => (
+                    p === "..." ? (
+                      <span key={`ellipsis-${i}`} className="flex items-center justify-center px-2 py-2 min-h-[44px] text-muted-foreground font-bold">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        onClick={() => { setCurrentPage(p as number); scrollToCatalogTop(); }}
+                        className={cn(
+                          "flex items-center justify-center min-w-[44px] px-3 py-2 min-h-[44px] rounded-xl font-bold transition-colors cursor-pointer",
+                          currentPage === p
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "bg-card border border-border text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {p}
+                      </button>
+                    )
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); scrollToCatalogTop(); }}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-hover transition-all cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                  >
+                    Next
+                  </button>
+                </div>
               )}
             </div>
           </main>
@@ -824,7 +879,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

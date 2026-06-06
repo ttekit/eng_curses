@@ -7,12 +7,15 @@ Use this after deploying SEO changes to production.
 1. Verify property ownership for `https://explys.com` (DNS TXT or HTML file).
 2. Submit sitemap: `https://explys.com/sitemap.xml`
 3. Monitor **Pages** → indexed vs. excluded (expect only `/` and `/pricing` under Path A).
-4. Review **Core Web Vitals** and **Enhancements** → structured data (Organization, OfferCatalog).
+4. Review **Core Web Vitals** and **Enhancements** → structured data (FAQ, Product, BreadcrumbList on `/pricing`; FAQ on `/`).
 
 ## Rich results smoke test
 
 - [Google Rich Results Test](https://search.google.com/test/rich-results): test `/` and `/pricing`
-- Confirm title, description, and OG image without running JavaScript (post-`npm run build` SEO head injection)
+- **Homepage (`/`):** expect **FAQ** detected (`FAQPage` JSON-LD + visible `#faq` section)
+- **Pricing (`/pricing`):** expect **FAQ**, **Breadcrumbs**, and **Product** snippets (`Product` + `Offer` per plan)
+- Organization / WebSite alone do **not** appear as rich results — that is normal
+- Confirm JSON-LD in **View tested page → HTML** (post-build inject) and matching visible FAQ copy on the rendered page
 
 ## Environment variables
 

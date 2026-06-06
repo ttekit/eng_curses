@@ -25,6 +25,10 @@
   --ring: oklch(0.65 0.25 295);
   --header-background: rgba(7, 9, 15, 1);
 
+  --yellow: rgba(180, 180, 37, 1);
+  --orange: rgba(168, 100, 27, 1);
+  --light-blue: rgba(39, 115, 169, 1);
+
   /* Legacy app tokens mapped to theme */
   --purple-default: oklch(0.65 0.25 295);
   --purple-hover: oklch(0.72 0.22 295);

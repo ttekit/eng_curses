@@ -18,38 +18,53 @@ export default defineConfig(({ mode }) => {
   const subscriptionDevModeResolved =
     (env.DEV_MODE ?? env.VITE_DEV_MODE ?? "").trim() ||
     (mode === "development" ? "1" : "0");
+
   return {
     define: {
       "import.meta.env.VITE_APP_SUBSCRIPTION_DEV_MODE": JSON.stringify(
         subscriptionDevModeResolved,
       ),
     },
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss()
+    ],
     server: {
       proxy: useApiProxy
         ? {
-            "/__proxy": {
-              target: proxyTarget,
-              changeOrigin: true,
-              secure: true,
-              rewrite: (path) => path.replace(/^\/__proxy/, "") || "/",
-              configure(proxy) {
-                proxy.on("proxyReq", (proxyReq) => {
-                  if (proxyBasicAuthHeader) {
-                    proxyReq.setHeader("Authorization", proxyBasicAuthHeader);
-                  }
-                });
-                proxy.on("proxyRes", (proxyRes) => {
-                  if (!proxyBasicAuthHeader) {
-                    return;
-                  }
-                  delete proxyRes.headers["www-authenticate"];
-                  delete proxyRes.headers["WWW-Authenticate"];
-                });
-              },
+          "/__proxy": {
+            target: proxyTarget,
+            changeOrigin: true,
+            secure: true,
+            rewrite: (path) => path.replace(/^\/__proxy/, "") || "/",
+            configure(proxy) {
+              proxy.on("proxyReq", (proxyReq) => {
+                if (proxyBasicAuthHeader) {
+                  proxyReq.setHeader("Authorization", proxyBasicAuthHeader);
+                }
+              });
+              proxy.on("proxyRes", (proxyRes) => {
+                if (!proxyBasicAuthHeader) {
+                  return;
+                }
+                delete proxyRes.headers["www-authenticate"];
+                delete proxyRes.headers["WWW-Authenticate"];
+              });
             },
-          }
+          },
+        }
         : undefined,
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+            player: ['hls.js'],
+            icons: ['lucide-react']
+          }
+        }
+      }
+    }
   };
 });

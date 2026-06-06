@@ -130,6 +130,7 @@ const router = createBrowserRouter([
           },
         ],
       },
+      { path: "*", element: <Error404Page /> },
     ],
   },
 ]);

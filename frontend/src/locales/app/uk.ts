@@ -88,7 +88,8 @@ export const appUk = {
       "Запусти тижневу вікторину знову: 10 питань із варіантами відповіді, прив’язаних до відео за цей тиждень (пн–нд за UTC) — граматика, словник і розуміння в одному проходженні.",
     rerunTestCta: "Пройти підсумковий тест знову",
     suggestedTitle: "Рекомендовані ролики",
-    suggestedSubtitle: "За твоїм рівнем, вподобаннями, темами й прогресом по топіках.",
+    suggestedSubtitle:
+      "За твоїм рівнем, вподобаннями, темами й прогресом по топіках.",
     suggestedLoadError: "Не вдалося завантажити рекомендації.",
     suggestedEmpty:
       "Щоб персональні добірки спрацювали краще, заверши розміщення рівня або вподобання й зазирни в каталог.",
@@ -122,7 +123,7 @@ export const appUk = {
     matchingLessons: "Відповідні уроки",
     browseCatalog: "Переглянути каталог",
     noLessonsYet: "У каталозі ще немає уроків.",
-    noMatches: 'Немає збігів для «{query}»',
+    noMatches: "Немає збігів для «{query}»",
     startTyping: "Почни вводити текст, щоб знайти урок",
     navigate: "Навігація",
     open: "Відкрити",
@@ -146,7 +147,8 @@ export const appUk = {
     beforeEntryTitle: "Перед вхідним тестом",
     beforeEntryAdult:
       "Розкажи про роботу, освіту та рідну мову — додай хобі й обери, як проходити вхідний тест.",
-    beforeEntryStudent: "Кілька швидких вподобань — потім опитувальник для рівня.",
+    beforeEntryStudent:
+      "Кілька швидких вподобань — потім опитувальник для рівня.",
     beforeEntryIndependentStudent:
       "Вкажи діяльність або навчання, освіту, рідну мову та хобі — потім опитувальник для рівня.",
     placementFooterBlurb:
@@ -201,7 +203,7 @@ export const appUk = {
     roleStudent: "Учень",
     roleTeacher: "Викладач",
     roleAdmin: "Адміністратор",
-    photoSoonAria: "Фото профілю (незабаром)",
+    photoAria: "Змінити фото профілю",
     learnerFallback: "Учень",
     joinedLine: "З нами з {date}",
     levelLine: "Рівень {level}",
@@ -253,8 +255,7 @@ export const appUk = {
 
   profileAchievements: {
     hunterTitle: "Досягнення",
-    unlockedLead:
-      "Відкрито {unlocked} з {total} досягнень.",
+    unlockedLead: "Відкрито {unlocked} з {total} досягнень.",
     progressLabel: "Прогрес",
     unlockedExclaim: "Відкрито!",
     rarityCommon: "звичайне",
@@ -293,7 +294,8 @@ export const appUk = {
     signOutToast: "Ви вийшли з облікового запису.",
     dangerReset: "Скинути прогрес?",
     dangerDelete: "Видалити обліковий запис?",
-    deletionUnavailable: "Видалення облікового запису ще недоступне в застосунку.",
+    deletionUnavailable:
+      "Видалення облікового запису ще недоступне в застосунку.",
     cardProfileInfo: "Інформація профілю",
     cardProfileInfoLead:
       "Оновлюй особисті дані. Email привʼязано до входу й тут не змінюється.",
@@ -308,8 +310,7 @@ export const appUk = {
     removeHobbyAria: "Прибрати {name}",
     addHobbyAria: "Додати хобі",
     genresHeading: "Уподобання за жанрами",
-    genresLead:
-      "Зліва — улюблені жанри, справа — ті, яких краще уникати.",
+    genresLead: "Зліва — улюблені жанри, справа — ті, яких краще уникати.",
     avoidGenreAria: "Уникати {name}",
     genreLegendPrefer: "Подобається",
     genreLegendAvoid: "Уникати",
@@ -328,20 +329,20 @@ export const appUk = {
     labelVideoQuality: "Якість відео",
     videoQualityAuto: "Авто",
     autoplayNextTitle: "Наступне відео автоматично",
-    autoplayNextDesc:
-      "Автоматично переходити до наступного уроку в ряду",
+    autoplayNextDesc: "Автоматично переходити до наступного уроку в ряду",
     showSubtitlesTitle: "Типові субтитри",
-    showSubtitlesDesc:
-      "Увімкнути англійські субтитри там, де вони доступні",
+    showSubtitlesDesc: "Увімкнути англійські субтитри там, де вони доступні",
     cardDangerZone: "Небезпечна зона",
     logoutTitle: "Вихід",
-    logoutDesc: "Вийти з облікового запису на цьому пристрої. Знову можна увійти будь-коли.",
+    logoutDesc:
+      "Вийти з облікового запису на цьому пристрої. Знову можна увійти будь-коли.",
     logoutCta: "Вийти",
     resetProgressTitle: "Скинути прогрес",
     resetProgressDesc: "Очистити прогрес навчання (поки недоступно)",
     resetProgressCta: "Скинути",
     deleteAccountTitle: "Видалити обліковий запис",
-    deleteAccountDesc: "Незворотне видалення облікового запису (поки недоступно)",
+    deleteAccountDesc:
+      "Незворотне видалення облікового запису (поки недоступно)",
     deleteAccountCta: "Видалити обліковий запис",
     modalUnavailableResetLead:
       "Ця дія поки недоступна в застосунку. Напиши в підтримку, якщо потрібна допомога.",
@@ -385,8 +386,7 @@ export const appUk = {
     deleteVideoTitle: "Видалити відео",
     deleting: "Видалення…",
     deleteVideoCta: "Видалити відео",
-    deleteVideoBody:
-      "Справді видалити це відео? Цю дію не можна скасувати.",
+    deleteVideoBody: "Справді видалити це відео? Цю дію не можна скасувати.",
     deleteConfirmPrompt: "Щоб підтвердити, введи",
     deleteConfirmPhrase: "delete video",
     deleteWrongPhrase: "Неправильна фраза. Введи «delete video».",
@@ -434,8 +434,7 @@ export const appUk = {
       "Безпечний випадковий пароль буде згенеровано і показано після натискання «Зберегти».",
     registeredTitle: "Учня зареєстровано!",
     credentialsSaved: "Я зберіг/ла облікові дані",
-    credentialsLead:
-      "Скопіюй і збережи ці дані зараз. З міркувань безпеки",
+    credentialsLead: "Скопіюй і збережи ці дані зараз. З міркувань безпеки",
     credentialsPasswordNote: "пароль більше не буде показано.",
     emailAddressLabel: "Адреса email",
     tempPasswordLabel: "Тимчасовий пароль",
@@ -611,7 +610,8 @@ export const appUk = {
     quizActivitySubtitleFailed: "{videoTitle} · {score}% · не пройдено",
     vocabActivityTitle: "Збережене слово",
     achievementActivityTitle: "Відкрито досягнення",
-    bestPerformanceEmpty: "Пройдіть кілька вікторин, щоб тут з’явився найкращий результат.",
+    bestPerformanceEmpty:
+      "Пройдіть кілька вікторин, щоб тут з’явився найкращий результат.",
     bestScoreBadge: "{score}%",
     bestQuizLessonFallback: "Урок",
     weekdayAbbrev: {
@@ -678,12 +678,10 @@ export const appUk = {
     title: "Обери підписку",
     subtitle:
       "Потрібна активна підписка, щоб відкривати каталог, уроки та вхідне тестування. Обери Light, Smart або Family — і продовжуй навчання.",
-    devModeBanner:
-      "Режим розробки: перевірку підписки вимкнено ({env}).",
+    devModeBanner: "Режим розробки: перевірку підписки вимкнено ({env}).",
     backToCatalog: "До каталогу",
     signOut: "Вийти",
-    paymentsNote:
-      "Оплата через Stripe. Для шкіл і команд див. ",
+    paymentsNote: "Оплата через Stripe. Для шкіл і команд див. ",
     pricingLinkLabel: "тарифи",
     teacherPlanNote: " або зв’яжіться з нами через картку Teacher.",
     continueCatalog: "Перейти до каталогу",
@@ -744,8 +742,7 @@ export const appUk = {
     weeklyRhythm: "Тижневий ритм",
     goCatalog: "До каталогу",
     updateProfileGoal: "Оновити профіль і мету",
-    profileIncompleteLead:
-      "Твій маршрут з’явиться після вхідного тесту.",
+    profileIncompleteLead: "Твій маршрут з’явиться після вхідного тесту.",
     profileIncompleteBody:
       "Відкрий каталог і пройди коротке вхідне тестування. Тоді ми підлаштуємо етапи, тижневі звички та мету під твій рівень.",
     profileDescription:
@@ -795,7 +792,8 @@ export const appUk = {
     phaseFinalTestLoadError: "Не вдалося завантажити тест.",
     phaseFinalTestClose: "Закрити",
     phaseFinalTestPassedBadge: "Підсумковий тест етапу пройдено",
-    phaseFinalTestPassedToast: "Підсумковий тест пройдено — можна переходити далі.",
+    phaseFinalTestPassedToast:
+      "Підсумковий тест пройдено — можна переходити далі.",
     phaseFinalTestFailedToast:
       "Потрібно щонайменше 70% для переходу. Спробуй ще раз після повторення тем.",
     phaseFinalTestLocked:
@@ -854,6 +852,15 @@ export const appUk = {
     quizLocked: "Тест заблоковано",
     quizLockedLead:
       "Додивіться урок до кінця, щоб відкрити тест і отримати XP.",
+    quizDuringVideoLead: "Під час перегляду відео зупиняється для питань.",
+    quizDuringVideoHint:
+      "Відповідай на кожне питання, щоб продовжити. Після кліпу — письмовий підсумок.",
+    inVideoQuizHint: "Відповідай, щоб продовжити перегляд",
+    inVideoQuestionOf: "Питання під час відео {current} з {total}",
+    inVideoQuizProgress: "{answered} / {total} відповідей під час відео",
+    continueWatching: "Продовжити перегляд",
+    timelineQuestionMarker: "Питання {n} о {time}",
+    timelineQuestionAnswered: "Питання {n} відповіли ({time})",
     selectOptionError: "Оберіть варіант, щоб продовжити.",
     questionOf: "Питання {current} з {total}",
     categoryGrammar: "Граматика",
@@ -876,26 +883,26 @@ export const appUk = {
     vocabTitle: "Ключова лексика",
     vocabEmpty:
       "Ще немає підібраних слів — відкрийте урок після генерації субтитрів або увійдіть для персоналізації.",
-    vocabSavedToast: '«{word}» додано до вашого словника!',
+    vocabSavedToast: "«{word}» додано до вашого словника!",
     vocabSaveError: "Не вдалося зберегти слово.",
     saveWordAria: "Зберегти слово",
     completeBannerTitle: "Урок завершено",
     completeBannerXp: "Ви отримали {xp} XP",
+    warning: "Увага! Вікове обмеження: ",
   },
 
   lessonSummaryPage: {
     missingLesson: "Урок відсутній.",
     pageTitle: "Підсумок уроку",
     emptyLead:
-      'Немає результатів для цього уроку. Відкрий урок, заверши вікторину й натисни «Завершити урок», щоб тут побачити бал.',
+      "Немає результатів для цього уроку. Відкрий урок, заверши вікторину й натисни «Завершити урок», щоб тут побачити бал.",
     openLesson: "Відкрити урок",
     metaLead:
       "Пройди вікторину на сторінці уроку, щоб тут побачити бал, слова й оновлення тем.",
     continueLesson: "Продовжити урок",
     quizResults: "Результати вікторини",
     pctCorrect: "{pct}% правильних відповідей",
-    moodStrong:
-      "Чудова робота — можна переходити до наступного уроку.",
+    moodStrong: "Чудова робота — можна переходити до наступного уроку.",
     moodGood: "Гарне зусилля — ще раз переглянь словниковий блок.",
     moodReview: "Переглянь фрагмент і слова, потім спробуй ще раз.",
     writtenSummaryHeading: "Твій письмовий підсумок",
@@ -903,7 +910,7 @@ export const appUk = {
       "Персональні коментарі до твоєї відповіді з огляду на урок і профіль, коли ти завершуєш вікторину, будучи в системі.",
     summaryScoreLine: "Бал за підсумок: {score}/10",
     noCoachComment:
-      'Коментар тренера до письмового підсумку не збережено. Заверши урок із вкладки вікторини й натисни «Завершити урок», коли тести вже завантажаться — тоді сервер зможе додати відгук.',
+      "Коментар тренера до письмового підсумку не збережено. Заверши урок із вкладки вікторини й натисни «Завершити урок», коли тести вже завантажаться — тоді сервер зможе додати відгук.",
     reviewWrongHeading: "Розбір складних запитань",
     reviewWrongLead:
       "Пояснення до того, що не вийшло — пробіжись перед наступною вікториною на цьому урокі.",
@@ -966,7 +973,7 @@ export const appUk = {
       continueCta: "Далі до вхідного тесту",
       continueWithoutTestCta: "Далі без вхідного тесту",
       addChip: "Додати",
-      addChipNamed: 'Додати «{name}»',
+      addChipNamed: "Додати «{name}»",
       hobbyNoOptions: "Почни вводити хобі, потім Enter, щоб додати.",
       sectionAbout: "Про тебе",
       sectionInterests: "Інтереси",
@@ -992,7 +999,7 @@ export const appUk = {
       saving: "Збереження…",
       continueCta: "Далі до вхідного тесту",
       addChip: "Додати",
-      addChipNamed: 'Додати «{name}»',
+      addChipNamed: "Додати «{name}»",
       hobbyNoOptions: "Почни вводити хобі, потім Enter, щоб додати.",
     },
   },
@@ -1046,5 +1053,10 @@ export const appUk = {
     french: "Французька",
     login: "Увійти",
     register: "Реєстрація",
+  },
+
+  errorPage: {
+    notFound: "Сторінка не знайдена",
+    returnToMain: "Повернутись на головну сторінку",
   },
 } as const;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router";
 import {
@@ -38,6 +38,7 @@ import {
   AdminSelectNative,
   AdminTextarea,
 } from "../../components/admin/adminUi";
+import { cn } from "../../lib/utils";
 import {
   AdminRowMenu,
   AdminRowMenuItem,
@@ -49,7 +50,6 @@ import {
   fetchAdminCatalogVideos,
   fetchAdminVideoSubtitlesVtt,
   matchesVideoLevelFilter,
-  patchAdminContentVideo,
   patchAdminSeriesPlaylistOrder,
   postAdminSeriesEpisode,
   regenerateAdminVideoLevelTags,
@@ -161,6 +161,13 @@ function ChipList(props: { tags: string[]; emptyLabel: string }) {
   );
 }
 
+function getPaginationRange(current: number, total: number) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+  if (current >= total - 3) return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
+
 export default function AdminVideosPage() {
   const navigate = useNavigate();
   const [videos, setVideos] = useState<AdminCatalogVideoRow[]>([]);
@@ -169,12 +176,15 @@ export default function AdminVideosPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [seriesFilter, setSeriesFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const listTopRef = useRef<HTMLDivElement>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadMode, setUploadMode] = useState<"file" | "link" | "zip">("file");
   const [uploadLink, setUploadLink] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
+  const [uploadAge, setUploadAge] = useState("0+");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadThumb, setUploadThumb] = useState<File | null>(null);
   const [uploadSaving, setUploadSaving] = useState(false);
@@ -207,6 +217,7 @@ export default function AdminVideosPage() {
     useState<AdminVideoSeriesGroup | null>(null);
   const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
   const [addEpisodeDesc, setAddEpisodeDesc] = useState("");
+  const [addEpisodeAge, setAddEpisodeAge] = useState("0+");
   const [addEpisodeFile, setAddEpisodeFile] = useState<File | null>(null);
   const [addEpisodeThumb, setAddEpisodeThumb] = useState<File | null>(null);
   const [addEpisodeSaving, setAddEpisodeSaving] = useState(false);
@@ -246,6 +257,10 @@ export default function AdminVideosPage() {
   useEffect(() => {
     void loadVideos();
   }, [loadVideos]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, seriesFilter, levelFilter]);
 
   useEffect(() => {
     setSubtitleText(null);
@@ -356,11 +371,19 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      await patchAdminContentVideo(editing.id, {
-        videoName: name,
-        videoDescription: editDesc.trim() || null,
-        ageRestriction: editAge,
-      } as any);
+      const resData = await apiFetch(`/contents/episode/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoName: name,
+          videoDescription: editDesc.trim() || null,
+          ageRestriction: editAge,
+        }),
+      });
+
+      if (!resData.ok) {
+        throw new Error("Failed to update episode metadata");
+      }
 
       if (editThumb) {
         const fd = new FormData();
@@ -523,6 +546,7 @@ export default function AdminVideosPage() {
     const fd = new FormData();
     fd.append("name", name);
     fd.append("friendlyLink", slugFriendly(name));
+    fd.append("ageRestriction", uploadAge);
     fd.append(
       "description",
       (description || `${name} — learner catalog.`).slice(0, 250),
@@ -576,13 +600,14 @@ export default function AdminVideosPage() {
       setUploadOpen(false);
       setUploadTitle("");
       setUploadDesc("");
+      setUploadAge("0+");
       setUploadFile(null);
       setUploadLink("");
       setUploadThumb(null);
       await loadVideos();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
-    } {
+    } finally {
       setUploadSaving(false);
     }
   };
@@ -660,6 +685,7 @@ export default function AdminVideosPage() {
       setAddEpisodeSeries(group);
       setAddEpisodeTitle("");
       setAddEpisodeDesc("");
+      setAddEpisodeAge("0+");
       setAddEpisodeFile(null);
       setAddEpisodeLink("");
       setAddEpisodeThumb(null);
@@ -678,6 +704,7 @@ export default function AdminVideosPage() {
 
     const fd = new FormData();
     fd.append("videoName", name);
+    fd.append("ageRestriction", addEpisodeAge);
     const d = addEpisodeDesc.trim();
     if (d) fd.append("videoDescription", d);
 
@@ -740,6 +767,17 @@ export default function AdminVideosPage() {
   const levelFor = videoLevelBadge;
   const ratingProgress = (r: number) =>
     Math.min(100, Math.round((Math.max(0, r) / 5) * 100));
+
+  const scrollToListTop = () => {
+    if (listTopRef.current) {
+      const y = listTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  const ADMIN_PAGE_SIZE = 10;
+  const totalPages = Math.ceil(groupedSeries.length / ADMIN_PAGE_SIZE);
+  const paginatedSeries = groupedSeries.slice((currentPage - 1) * ADMIN_PAGE_SIZE, currentPage * ADMIN_PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -891,6 +929,23 @@ export default function AdminVideosPage() {
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <select
+              value={uploadAge}
+              onChange={(e) => setUploadAge(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            >
+              <option value="0+">0+</option>
+              <option value="6+">6+</option>
+              <option value="12+">12+</option>
+              <option value="16+">16+</option>
+              <option value="18+">18+</option>
+              <option value="21+">21+</option>
+            </select>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-vid-desc">
               Lesson / series description
@@ -1036,6 +1091,23 @@ export default function AdminVideosPage() {
               onChange={(e) => setAddEpisodeTitle(e.target.value)}
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <select
+              value={addEpisodeAge}
+              onChange={(e) => setAddEpisodeAge(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+            >
+              <option value="0+">0+</option>
+              <option value="6+">6+</option>
+              <option value="12+">12+</option>
+              <option value="16+">16+</option>
+              <option value="18+">18+</option>
+              <option value="21+">21+</option>
+            </select>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-ep-desc">
               Description (optional)
@@ -1097,6 +1169,7 @@ export default function AdminVideosPage() {
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
             >
               <option value="0+">0+</option>
+              <option value="6+">6+</option>
               <option value="12+">12+</option>
               <option value="16+">16+</option>
               <option value="18+">18+</option>
@@ -1474,6 +1547,7 @@ export default function AdminVideosPage() {
       </div>
 
       <AdminCard>
+        <div ref={listTopRef} className="scroll-mt-24" />
         <AdminCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-border border-b pt-6">
           <AdminButton
             variant="outline"
@@ -1551,7 +1625,7 @@ export default function AdminVideosPage() {
             </div>
           ) : (
             <div className="space-y-10">
-              {groupedSeries.map((group) => (
+              {paginatedSeries.map((group) => (
                 <div key={group.contentRootId} className="space-y-4">
                   <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -1622,7 +1696,13 @@ export default function AdminVideosPage() {
                               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted to-accent/20" />
                             )}
                             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                              <AdminBadge variant="accent">catalog</AdminBadge>
+                              {(video as any).ageRestriction ? (
+                                <AdminBadge variant="accent">
+                                  {(video as any).ageRestriction}
+                                </AdminBadge>
+                              ) : (
+                                <AdminBadge variant="accent">0+</AdminBadge>
+                              )}
                               {group.rows.length > 1 ? (
                                 <AdminBadge variant="secondary">
                                   #{episodeIndex + 1}
@@ -1786,11 +1866,55 @@ export default function AdminVideosPage() {
                   </div>
                 </div>
               ))}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-12 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); scrollToListTop(); }}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center px-4 py-2 min-h-[40px] rounded-lg bg-card border border-border text-foreground font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
+                  >
+                    Prev
+                  </button>
+
+                  {getPaginationRange(currentPage, totalPages).map((p, i) => (
+                    p === "..." ? (
+                      <span key={`ellipsis-${i}`} className="flex items-center justify-center px-2 py-2 min-h-[40px] text-muted-foreground font-medium">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        onClick={() => { setCurrentPage(p as number); scrollToListTop(); }}
+                        className={cn(
+                          "flex items-center justify-center min-w-[40px] px-3 py-2 min-h-[40px] rounded-lg font-medium text-sm transition-colors cursor-pointer",
+                          currentPage === p
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "bg-card border border-border text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {p}
+                      </button>
+                    )
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); scrollToListTop(); }}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center px-4 py-2 min-h-[40px] rounded-lg bg-primary text-primary-foreground font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-hover transition-all cursor-pointer shadow-md"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {!loading ? (
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Showing {filtered.length} of {videos.length}
+            <p className="mt-6 text-center text-sm text-muted-foreground border-t border-border pt-6">
+              Showing series {(currentPage - 1) * ADMIN_PAGE_SIZE + 1} - {Math.min(currentPage * ADMIN_PAGE_SIZE, groupedSeries.length)} of {groupedSeries.length} (filtered, {filtered.length} total episodes)
             </p>
           ) : null}
         </AdminCardContent>

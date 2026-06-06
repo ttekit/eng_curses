@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
 import type { TranscriptLine, VocabularyItem } from "./defaultLessonSides";
 import { X } from "lucide-react";
@@ -103,17 +103,31 @@ export function VideoTranscript({
   );
 
   useEffect(() => {
-    if (activeIndex < 0 || loading) return;
-    if (typeof window !== "undefined" && window.innerWidth < 1024) return;
-    const root = listRef.current;
-    if (!root) return;
-    const el = root.querySelector(`[data-cue-index="${activeIndex}"]`);
-    el?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
-  }, [activeIndex, loading]);
+    if (activeIndex === -1 || !listRef.current) return;
+
+    const activeEl = listRef.current.querySelector(`[data-cue-index="${activeIndex}"]`) as HTMLElement;
+    if (!activeEl) return;
+
+    let scrollContainer: HTMLElement | null = listRef.current;
+    while (scrollContainer) {
+      const style = window.getComputedStyle(scrollContainer);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        break;
+      }
+      scrollContainer = scrollContainer.parentElement;
+    }
+
+    if (scrollContainer) {
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const activeRect = activeEl.getBoundingClientRect();
+      const offset = activeRect.top - containerRect.top + scrollContainer.scrollTop - (containerRect.height / 2) + (activeRect.height / 2);
+
+      scrollContainer.scrollTo({
+        top: offset,
+        behavior: "smooth"
+      });
+    }
+  }, [activeIndex]);
 
   if (loading) {
     return (

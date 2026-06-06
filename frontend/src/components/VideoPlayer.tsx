@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import Hls from "hls.js";
 import { cn } from "../lib/utils";
@@ -18,10 +19,12 @@ import {
   RotateCcw,
   RotateCw,
   Loader2,
+  Captions,
 } from "lucide-react";
 
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
   src: string;
+  transcript?: { startSec?: number; endSec?: number; text: string }[];
   onEnded?: () => void;
   onPlay?: () => void;
   onPlaybackTime?: (seconds: number) => void;
@@ -32,6 +35,7 @@ interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
 
 export default function VideoPlayer({
   src,
+  transcript,
   onEnded,
   onPlay,
   onPlaybackTime,
@@ -95,6 +99,7 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(true);
 
   const [showLeftAnimation, setShowLeftAnimation] = useState(false);
   const [showRightAnimation, setShowRightAnimation] = useState(false);
@@ -112,6 +117,19 @@ export default function VideoPlayer({
   const singleTapTimerRef = useRef<number | null>(null);
 
   const [bufferedProgress, setBufferedProgress] = useState(0);
+
+  const activeSubtitle = useMemo(() => {
+    if (!subtitlesEnabled || !transcript || transcript.length === 0) return null;
+    for (let i = 0; i < transcript.length; i++) {
+      const cue = transcript[i];
+      if (typeof cue.startSec === 'number' && typeof cue.endSec === 'number') {
+        if (currentTime >= cue.startSec && currentTime <= cue.endSec) {
+          return cue.text;
+        }
+      }
+    }
+    return null;
+  }, [currentTime, transcript, subtitlesEnabled]);
 
   const setBufferingState = useCallback((val: boolean) => {
     setIsBuffering(val);
@@ -319,12 +337,15 @@ export default function VideoPlayer({
     setIsMuted(newVolume === 0);
   };
 
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    const nextMute = !isMuted;
-    setIsMuted(nextMute);
-    videoRef.current.muted = nextMute;
-  };
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (videoRef.current) {
+        videoRef.current.muted = next;
+      }
+      return next;
+    });
+  }, []);
 
   const handleSpeedChange = (speed: number) => {
     if (!videoRef.current) return;
@@ -393,15 +414,24 @@ export default function VideoPlayer({
           e.preventDefault();
           handleVolumeChange(Math.max(0, volume - 0.05));
           break;
+        case "m":
+          e.preventDefault();
+          toggleMute();
+          break;
         case "f":
           e.preventDefault();
           toggleFullscreen();
+          break;
+        case "c":
+          e.preventDefault();
+          setSubtitlesEnabled((prev) => !prev);
+          showControlsTemporarily();
           break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleToggle, handleSkip, volume]);
+  }, [handleToggle, handleSkip, volume, showControlsTemporarily, toggleMute]);
 
   return (
     <div
@@ -452,6 +482,22 @@ export default function VideoPlayer({
         style={{ touchAction: "manipulation" }}
         onClick={handleGesture}
       />
+
+      {activeSubtitle ? (
+        <div
+          className={cn(
+            "absolute left-4 right-4 z-20 flex justify-center pointer-events-none transition-all duration-300",
+            showControls ? "bottom-24" : "bottom-8"
+          )}
+        >
+          <span
+            className="bg-black/60 text-white px-4 py-1.5 text-center text-sm md:text-base lg:text-lg font-medium rounded-lg backdrop-blur-md drop-shadow-md max-w-4xl"
+            style={{ textShadow: "0px 1px 2px rgba(0,0,0,0.8)" }}
+          >
+            {activeSubtitle}
+          </span>
+        </div>
+      ) : null}
 
       <div
         className={cn(
@@ -556,7 +602,7 @@ export default function VideoPlayer({
       </div>
       <div
         className={cn(
-          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-10 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
+          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-20 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
           showControls
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none",
@@ -600,7 +646,7 @@ export default function VideoPlayer({
           </div>
 
           <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2.5 group/volume">
+            <div className="flex items-center gap-2.5 group/volume hidden sm:flex">
               <button
                 type="button"
                 onClick={toggleMute}
@@ -635,10 +681,25 @@ export default function VideoPlayer({
               <option value="2">2.0x</option>
             </select>
 
+            {transcript && transcript.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSubtitlesEnabled((prev) => !prev)}
+                className={cn(
+                  "transition-colors",
+                  subtitlesEnabled ? "text-white drop-shadow-md" : "text-white/50 hover:text-white/80"
+                )}
+                title="Toggle Captions (C)"
+              >
+                <Captions className="size-5.5 hover:cursor-pointer" />
+              </button>
+            )}
+
             <button
               type="button"
               onClick={toggleFullscreen}
               className="text-white/80 hover:text-white transition-colors"
+              title="Fullscreen (F)"
             >
               <Maximize className="size-5.5 hover:cursor-pointer" />
             </button>
