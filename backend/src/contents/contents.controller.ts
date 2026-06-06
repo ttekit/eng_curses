@@ -24,6 +24,8 @@ import {
   FileFieldsInterceptor,
 } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
+import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
 import { Express, Request, Response } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
@@ -50,14 +52,16 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) {}
+  constructor(private readonly contentsService: ContentsService) { }
 
   @Get("all")
+  @SkipSubscriptionCheck()
   getContent() {
     return this.contentsService.getAllContent();
   }
 
   @Get("series/:friendlyLink")
+  @SkipSubscriptionCheck()
   @ApiOperation({
     summary: "Ordered playlist for a series (Content) by friendly link",
   })
@@ -66,6 +70,7 @@ export class ContentsController {
   }
 
   @Post("teacher/upload")
+  @Throttle({ upload: { limit: 10, ttl: 60_000 } })
   @UseGuards(AuthGuard)
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -84,9 +89,8 @@ export class ContentsController {
   })
   async teacherUpload(
     @Req() req: Request & { user?: unknown },
-    @Body() dto: any,
-    @Body('videoLink') videoLink: string,
-    @Body('ageRestriction') ageRestriction: string,
+    @Body() dto: TeacherUploadContentDto,
+    @Body("videoLink") videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -111,7 +115,7 @@ export class ContentsController {
     ) {
       try {
         fullDto.classAssignments = JSON.parse(req.body.classAssignments);
-      } catch (e) {}
+      } catch (e) { }
     }
     if (req.body.availableFrom) fullDto.availableFrom = req.body.availableFrom;
     if (req.body.deadline) fullDto.deadline = req.body.deadline;
@@ -181,11 +185,13 @@ export class ContentsController {
   }
 
   @Get(":id")
+  @SkipSubscriptionCheck()
   getContentById(@Param("id", ParseIntPipe) id: number) {
     return this.contentsService.getContentById(id);
   }
 
   @Post("create")
+  @Throttle({ upload: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAdminGuard)
   @ApiBearerAuth("JWT-auth")
   @UseInterceptors(
@@ -201,9 +207,8 @@ export class ContentsController {
   )
   @ApiOperation({ summary: "Admin: Create new content series" })
   async createContent(
-    @Body() createContentDto: any,
-    @Body('videoLink') videoLink: string,
-    @Body('ageRestriction') ageRestriction: string,
+    @Body() createContentDto: CreateContentDto,
+    @Body("videoLink") videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -219,7 +224,7 @@ export class ContentsController {
       );
     }
 
-    const fullDto = { ...createContentDto, videoLink, ageRestriction };
+    const fullDto = { ...createContentDto, videoLink };
 
     return await this.contentsService.createContent(
       fullDto as any,
@@ -241,6 +246,7 @@ export class ContentsController {
   }
 
   @Post(":id/episodes")
+  @Throttle({ upload: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtAdminGuard)
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -258,9 +264,8 @@ export class ContentsController {
   })
   async addEpisode(
     @Param("id", ParseIntPipe) id: number,
-    @Body() dto: any,
-    @Body('videoLink') videoLink: string,
-    @Body('ageRestriction') ageRestriction: string,
+    @Body() dto: AddContentEpisodeDto,
+    @Body("videoLink") videoLink: string,
     @UploadedFiles()
     files: {
       file?: Express.Multer.File[];
@@ -276,7 +281,7 @@ export class ContentsController {
       );
     }
 
-    const fullDto = { ...dto, videoLink, ageRestriction };
+    const fullDto = { ...dto, videoLink };
 
     return await this.contentsService.addEpisode(
       id,
@@ -336,15 +341,6 @@ export class ContentsController {
     return this.contentsService.updateContent(id, dto, thumbnailFile);
   }
 
-  @Patch("episode/:id")
-  @UseGuards(JwtAdminGuard)
-  async updateEpisodeText(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() body: { videoName: string; videoDescription?: string; ageRestriction?: string }
-  ) {
-    return this.contentsService.updateEpisodeText(id, body);
-  }
-
   @Get("student/teacher-videos")
   @UseGuards(AuthGuard)
   @ApiOperation({
@@ -353,57 +349,6 @@ export class ContentsController {
   async getStudentTeacherVideos(@Req() req: Request & { user?: unknown }) {
     const studentId = jwtSubToUserId(req.user);
     return this.contentsService.getVideosForStudent(studentId);
-  }
-
-  @Post("teacher/my-students")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Add a new student" })
-  async addStudent(
-    @Req() req: Request & { user?: unknown },
-    @Body() body: { name: string; email: string },
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    return this.contentsService.addStudent(teacherId, body);
-  }
-
-  @Patch("teacher/my-students/:id")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Edit student details" })
-  async updateStudent(
-    @Req() req: Request & { user?: unknown },
-    @Param("id", ParseIntPipe) id: number,
-    @Body() body: { name: string; email: string },
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    return this.contentsService.updateStudent(teacherId, id, body);
-  }
-
-  @Delete("teacher/my-students/:id")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Remove a student" })
-  async removeStudent(
-    @Req() req: Request & { user?: unknown },
-    @Param("id", ParseIntPipe) id: number,
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    return this.contentsService.removeStudent(teacherId, id);
-  }
-
-  @Get("teacher/my-students/export")
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: "Export students to Excel (.xlsx)" })
-  @Header(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  )
-  @Header("Content-Disposition", 'attachment; filename="students.xlsx"')
-  async exportStudents(
-    @Req() req: Request & { user?: unknown },
-    @Res() res: Response,
-  ) {
-    const teacherId = jwtSubToUserId(req.user);
-    const buffer = await this.contentsService.exportStudentsExcel(teacherId);
-    res.send(buffer);
   }
 
   @Get("teacher/my-students/results")
