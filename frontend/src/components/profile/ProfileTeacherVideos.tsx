@@ -25,7 +25,6 @@ import {
   AdminModal,
   AdminInput,
   AdminTextarea,
-  AdminSelectNative
 } from "../../components/admin/adminUi";
 
 export type TeacherSeriesItem = {
@@ -554,11 +553,11 @@ export function ProfileTeacherVideos() {
       },
       classes: item.classAccesses
         ? item.classAccesses.map((ca) => ({
-            classId: ca.classId,
-            className: ca.className,
-            availableFrom: formatDateTimeLocal(ca.availableFrom),
-            deadline: formatDateTimeLocal(ca.deadline),
-          }))
+          classId: ca.classId,
+          className: ca.className,
+          availableFrom: formatDateTimeLocal(ca.availableFrom),
+          deadline: formatDateTimeLocal(ca.deadline),
+        }))
         : [],
     });
     setEditDeadlineModalOpen(true);
@@ -822,23 +821,9 @@ export function ProfileTeacherVideos() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
-            <AdminSelectNative
-              value={uploadAge}
-              onChange={(e) => setUploadAge(e.target.value)}
-              className="w-full"
-            >
-              <option value="0+">0+</option>
-              <option value="6+">6+</option>
-              <option value="12+">12+</option>
-              <option value="16+">16+</option>
-              <option value="18+">18+</option>
-              <option value="21+">21+</option>
-            </AdminSelectNative>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t.descriptionOptional}</label>
+            <label className="text-sm font-medium">
+              {t.descriptionOptional}
+            </label>
             <AdminTextarea
               placeholder={t.descriptionPlaceholder}
               value={uploadDesc}
@@ -913,30 +898,30 @@ export function ProfileTeacherVideos() {
 
                 {(deadlineMode === "close" ||
                   deadlineMode === "open_close") && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Closing Deadline (Becomes Private)
-                    </label>
-                    <AdminInput
-                      type="datetime-local"
-                      lang="en-GB"
-                      value={closeDateStr}
-                      className="w-full"
-                      max="9999-12-31T23:59"
-                      onChange={(e) => {
-                        if (isValidYear(e.target.value)) {
-                          setCloseDateStr(e.target.value);
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Closing Deadline (Becomes Private)
+                      </label>
+                      <AdminInput
+                        type="datetime-local"
+                        lang="en-GB"
+                        value={closeDateStr}
+                        className="w-full"
+                        max="9999-12-31T23:59"
+                        onChange={(e) => {
+                          if (isValidYear(e.target.value)) {
+                            setCloseDateStr(e.target.value);
+                          }
+                        }}
+                        min={
+                          deadlineMode === "open_close" && openDateStr
+                            ? openDateStr
+                            : new Date().toISOString().slice(0, 16)
                         }
-                      }}
-                      min={
-                        deadlineMode === "open_close" && openDateStr
-                          ? openDateStr
-                          : new Date().toISOString().slice(0, 16)
-                      }
-                      required
-                    />
-                  </div>
-                )}
+                        required
+                      />
+                    </div>
+                  )}
               </div>
             )}
 
@@ -1462,10 +1447,10 @@ export function ProfileTeacherVideos() {
                   resultsClassFilter === "all" ||
                   s.classId === resultsClassFilter,
               ).length === 0 && (
-                <div className="py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50">
-                  No students found in this category.
-                </div>
-              )}
+                  <div className="py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50">
+                    No students found in this category.
+                  </div>
+                )}
             </div>
           </div>
         ) : (
@@ -1533,7 +1518,7 @@ export function ProfileTeacherVideos() {
                 if (typeof rawAnswers === "string") {
                   try {
                     rawAnswers = JSON.parse(rawAnswers);
-                  } catch (e) {}
+                  } catch (e) { }
                 }
 
                 if (
@@ -1703,7 +1688,7 @@ export function ProfileTeacherVideos() {
                       if (typeof opts === "string") {
                         try {
                           opts = JSON.parse(opts);
-                        } catch (e) {}
+                        } catch (e) { }
                       }
 
                       if (Array.isArray(opts)) {
