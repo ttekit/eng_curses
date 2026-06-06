@@ -17,7 +17,8 @@ export const landingEn = {
       errorHobbies: "Please add at least one hobby.",
       errorGenres: "Please select at least one genre.",
       saveErrorToast: "Failed to save preferences.",
-      errorMissingUserId: "Could not resolve your account. Please refresh the page.",
+      errorMissingUserId:
+        "Could not resolve your account. Please refresh the page.",
       saving: "Saving...",
       continueCta: "Continue",
     },
@@ -59,6 +60,8 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
+    freeAccess: "Free access in June 2026!",
+    startLearning: "Start learning now",
   },
 
   header: {
@@ -164,6 +167,8 @@ export const landingEn = {
     subtitle:
       "From essentials to adaptive AI and family plans — plus solutions for schools.",
     fullPageLink: "Full pricing page",
+    freeAccess: "Free access in June 2026!",
+    startLearning: "Start learning now",
   },
 
   marketingFaq: {
@@ -327,7 +332,7 @@ export const landingEn = {
       title: "Check your email",
       leadPrefix: "We sent a confirmation email to",
       notConfirmedError:
-        'You have not confirmed your email yet. Check your inbox or spam folder and follow the link.',
+        "You have not confirmed your email yet. Check your inbox or spam folder and follow the link.",
       continue: "Continue",
       checking: "Checking…",
       resendPrompt: "Didn't get the email?",
@@ -400,8 +405,7 @@ export const landingEn = {
         pupilNameLatinOnly:
           "Only English letters are allowed for pupil #{n}. No numbers, spaces, or symbols.",
         registrationFailedRetry: "Registration failed. Please try again.",
-        networkCheckConnection:
-          "Network error. Please check your connection.",
+        networkCheckConnection: "Network error. Please check your connection.",
       },
       networkRegister:
         "Network error. Please check if your backend server is running.",
@@ -610,7 +614,8 @@ export const landingEn = {
 
   feedbackPage: {
     seoTitle: "Feedback",
-    seoDescription: "Send feedback, report issues, or ask questions about Explys.",
+    seoDescription:
+      "Send feedback, report issues, or ask questions about Explys.",
     title: "Feedback",
     lead: "Tell us what works, what doesn't, or what you'd like to see next. We read every message.",
     nameLabel: "Name (optional)",
