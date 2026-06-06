@@ -19,7 +19,7 @@ export class GoogleProvider implements OAuthProvider {
     const baseUrl = this.options.baseUrl.endsWith('/')
       ? this.options.baseUrl.slice(0, -1)
       : this.options.baseUrl;
-    const redirectUri = `${baseUrl}/auth/oauth / callback / google`;
+    const redirectUri = `${baseUrl}/auth/oauth/callback/google`;
 
     const params = new URLSearchParams({
       client_id: this.options.client_id,
