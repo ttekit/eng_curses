@@ -891,9 +891,17 @@ export class AuthService {
     });
 
     if (existingUser) {
+      if (!existingUser.isVerified) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { isVerified: true },
+        });
+      }
+
       const linked = await this.prisma.account.findFirst({
         where: { userId: existingUser.id, provider: profile.provider },
       });
+
       if (!linked) {
         await this.prisma.account.create({
           data: {
@@ -906,12 +914,14 @@ export class AuthService {
           },
         });
       }
+
       const full = await this.userService.findById(existingUser.id);
 
       const payload = { sub: full.id, email: full.email };
       return {
         access_token: await this.jwtService.signAsync(payload),
         user: full,
+        isNewUser: false,
       };
     }
 
@@ -928,6 +938,11 @@ export class AuthService {
       method: oauthMethod,
     });
 
+    await this.prisma.user.update({
+      where: { id: created.id },
+      data: { isVerified: true },
+    });
+
     await this.prisma.account.create({
       data: {
         userId: created.id,
@@ -940,9 +955,11 @@ export class AuthService {
     });
 
     const payload = { sub: created.id, email: created.email };
+
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: created,
+      isNewUser: true,
     };
   }
 
