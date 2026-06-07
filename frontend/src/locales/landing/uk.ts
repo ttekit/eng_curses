@@ -306,6 +306,7 @@ export const landingUk = {
       resendFailed: "Не вдалося надіслати код",
       resendError: "Помилка під час повторного надсилання коду",
       verifiedWelcomeBack: "Email підтверджено! З поверненням.",
+      spamText: "Будь ласка, перевірте папку спам",
     },
     restoreAccount: {
       seoTitle: "Відновлення акаунту",
@@ -496,7 +497,7 @@ export const landingUk = {
         genresAvoid: "Жанри уникати(не обов'язково)",
         genresAvoidHint: "Ми відфільтруємо контент із цих категорій.",
         register: "Зареєструватися",
-        continueToPlans: "Далі до тарифів",
+        continueToPlans: "Далі",
       },
       step3Alerts: {
         failedPrefix: "Реєстрація не вдалася:",

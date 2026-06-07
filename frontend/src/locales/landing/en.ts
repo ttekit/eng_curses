@@ -304,6 +304,7 @@ export const landingEn = {
       resendFailed: "Failed to resend code",
       resendError: "Error while resending code",
       verifiedWelcomeBack: "Email verified! Welcome back.",
+      spamText: "Please, check your spam folder",
     },
     restoreAccount: {
       seoTitle: "Restore account",
@@ -489,7 +490,7 @@ export const landingEn = {
         genresAvoid: "Genres to avoid",
         genresAvoidHint: "We'll filter out selections from these buckets.",
         register: "Register",
-        continueToPlans: "Continue to plans",
+        continueToPlans: "Continue",
       },
       step3Alerts: {
         failedPrefix: "Registration failed:",

@@ -88,8 +88,8 @@ export const EmailVerification: React.FC = () => {
           !profile.role ||
           profile.role === "choose" ||
           profile.role === "regular" ||
-
-          (!(profile as any).additionalUserData?.englishLevel && !profile.hasCompletedPlacement)
+          (!(profile as any).additionalUserData?.englishLevel &&
+            !profile.hasCompletedPlacement)
         ) {
           navigate("/registrationDetails");
           return;
@@ -185,10 +185,12 @@ export const EmailVerification: React.FC = () => {
           <h1 className="font-display text-2xl font-bold">{verify.title}</h1>
         </div>
 
-        <p className="mb-8 text-sm text-muted-foreground">
+        <p className="mb-1 text-sm text-muted-foreground">
           {verify.leadPrefix} <br />
           <span className="font-medium text-primary">{maskEmail(email)}</span>
         </p>
+
+        <p className="mb-8 text-sm">Please, check your spam folder</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {errorText && (
