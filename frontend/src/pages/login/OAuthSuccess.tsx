@@ -21,7 +21,7 @@ export default function OAuthSuccess() {
 
       refreshProfile().then(() => {
         if (isNewUser) {
-          navigate("/onboarding/dob", { replace: true });
+          navigate("/registrationDetails", { replace: true });
         } else {
           navigate("/catalog", { replace: true });
         }
