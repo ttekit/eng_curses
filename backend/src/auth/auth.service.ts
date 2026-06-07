@@ -876,11 +876,12 @@ export class AuthService {
     req: Request,
     provider: string,
     code: string,
-    state?: string,
   ) {
     const providerInstance = this.providerService.findByService(provider);
-    if (!providerInstance)
+
+    if (!providerInstance) {
       throw new NotFoundException(`Provider ${provider} not found`);
+    }
 
     const profile = await providerInstance.findUserByCode(code);
     const email = profile.email.toLowerCase();
@@ -889,32 +890,7 @@ export class AuthService {
       where: { email },
     });
 
-    if (state === "login" && !existingUser) {
-      return { error: "USER_NOT_FOUND" };
-    }
-
     if (existingUser) {
-      if ((existingUser as any).deletionScheduledAt) {
-        if ((existingUser as any).deletionScheduledAt > new Date()) {
-          await this.prisma.user.update({
-            where: { id: existingUser.id },
-            data: { deletionScheduledAt: null },
-          });
-          await this.prisma.token.deleteMany({
-            where: { email: existingUser.email, type: "ACCOUNT_RESTORE" },
-          });
-        } else {
-          throw new UnauthorizedException("The account has been deleted.");
-        }
-      }
-
-      if (!(existingUser as any).isVerified) {
-        await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: { isVerified: true },
-        });
-      }
-
       const linked = await this.prisma.account.findFirst({
         where: { userId: existingUser.id, provider: profile.provider },
       });
@@ -930,25 +906,26 @@ export class AuthService {
           },
         });
       }
-
       const full = await this.userService.findById(existingUser.id);
-      const sessionResult = await this.saveSession(req, full);
-      return { ...(sessionResult as any), isNewUser: false };
+
+      const payload = { sub: full.id, email: full.email };
+      return {
+        access_token: await this.jwtService.signAsync(payload),
+        user: full,
+      };
     }
 
     const oauthMethod =
-      profile.provider.toLowerCase() === "google" ? "GOOGLE" : "CREDENTIALS";
+      profile.provider.toLowerCase() === "google"
+        ? AuthMethod.GOOGLE
+        : AuthMethod.CREDENTIALS;
+
     const created = await this.userService.create({
       email,
       password: "",
       name: profile.name,
       picture: profile.picture,
-      method: oauthMethod as any,
-    } as any);
-
-    await this.prisma.user.update({
-      where: { id: created.id },
-      data: { isVerified: true },
+      method: oauthMethod,
     });
 
     await this.prisma.account.create({
@@ -962,8 +939,11 @@ export class AuthService {
       },
     });
 
-    const sessionResult = await this.saveSession(req, created);
-    return { ...(sessionResult as any), isNewUser: true };
+    const payload = { sub: created.id, email: created.email };
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      user: created,
+    };
   }
 
   public async logout(req: Request, res: Response): Promise<void> {
