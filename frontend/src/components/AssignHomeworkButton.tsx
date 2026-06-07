@@ -1,9 +1,65 @@
-import { useState, useEffect } from "react";
-import { BookOpen, Loader2 } from "lucide-react";
+import { useState, useEffect, forwardRef } from "react";
+import { BookOpen, Loader2, CalendarIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { apiFetch, getResponseErrorMessage } from "../lib/api";
 import { cn } from "../lib/utils";
-import { AdminButton, AdminModal, AdminInput } from "./admin/adminUi";
+import { AdminButton, AdminModal } from "./admin/adminUi";
+
+const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+  const { onClick, value, onChange, onKeyDown, placeholder, id } = props;
+  return (
+    <div className="relative w-full">
+      <input
+        id={id}
+        type="text"
+        ref={ref}
+        value={value || ""}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder || "mm/dd/yyyy --:-- --"}
+        autoComplete="off"
+        className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer shadow-sm"
+      />
+      <button
+        type="button"
+        onClick={onClick}
+        tabIndex={-1}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+      >
+        <CalendarIcon className="size-5" />
+      </button>
+    </div>
+  );
+});
+CustomDateTimeInput.displayName = "CustomDateTimeInput";
+
+const ExplysDatePicker = ({
+  selected,
+  onChange,
+  id,
+  onKeyDown,
+  placeholder,
+}: any) => (
+  <DatePicker
+    selected={selected}
+    onChange={onChange}
+    showTimeSelect
+    timeFormat="HH:mm"
+    timeIntervals={15}
+    dateFormat="yyyy-MM-dd'T'HH:mm"
+    wrapperClassName="w-full"
+    portalId="calendar-portal"
+    customInput={
+      <CustomDateTimeInput
+        id={id}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+      />
+    }
+  />
+);
 
 export function AssignHomeworkButton({
   contentId,
@@ -67,20 +123,6 @@ export function AssignHomeworkButton({
       setIsSaving(false);
     }
   };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (e.key === "Escape") {
-        if (!isSaving) setIsOpen(false);
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (!isSaving) void handleSave();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSaving, selectedClasses]);
 
   return (
     <>
@@ -167,21 +209,23 @@ export function AssignHomeworkButton({
                     </label>
 
                     {isSelected && (
-                      <div className="flex flex-col gap-4 pl-8 pt-1 animate-in fade-in zoom-in-95">
+                      <div className="flex flex-col gap-4 pl-8 pt-1">
                         <div className="space-y-1.5">
                           <label className="text-xs font-medium text-muted-foreground">
                             Available from (optional)
                           </label>
-                          <AdminInput
-                            type="datetime-local"
-                            value={data.availableFrom}
-                            className="w-full"
-                            onChange={(e) =>
+                          <ExplysDatePicker
+                            selected={
+                              data.availableFrom
+                                ? new Date(data.availableFrom)
+                                : null
+                            }
+                            onChange={(date: Date | null) =>
                               setSelectedClasses((p) => ({
                                 ...p,
                                 [cls.id]: {
                                   ...p[cls.id],
-                                  availableFrom: e.target.value,
+                                  availableFrom: date ? date.toISOString() : "",
                                 },
                               }))
                             }
@@ -191,16 +235,16 @@ export function AssignHomeworkButton({
                           <label className="text-xs font-medium text-muted-foreground">
                             Deadline (optional)
                           </label>
-                          <AdminInput
-                            type="datetime-local"
-                            value={data.deadline}
-                            className="w-full"
-                            onChange={(e) =>
+                          <ExplysDatePicker
+                            selected={
+                              data.deadline ? new Date(data.deadline) : null
+                            }
+                            onChange={(date: Date | null) =>
                               setSelectedClasses((p) => ({
                                 ...p,
                                 [cls.id]: {
                                   ...p[cls.id],
-                                  deadline: e.target.value,
+                                  deadline: date ? date.toISOString() : "",
                                 },
                               }))
                             }

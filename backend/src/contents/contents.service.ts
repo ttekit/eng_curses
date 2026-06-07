@@ -344,7 +344,14 @@ export class ContentsService {
     return updateContent;
   }
 
-  async updateEpisodeText(id: number, data: { videoName: string; videoDescription?: string; ageRestriction?: string }) {
+  async updateEpisodeText(
+    id: number,
+    data: {
+      videoName: string;
+      videoDescription?: string;
+      ageRestriction?: string;
+    },
+  ) {
     const updated = await this.prisma.contentVideo.update({
       where: { id },
       data: {
@@ -632,6 +639,7 @@ export class ContentsService {
     thumbnailFile?: Express.Multer.File,
   ) {
     await this.requireTeacherAccount(userId);
+
     let friendlyLink = "";
     for (let attempt = 0; attempt < 12; attempt++) {
       friendlyLink = this.buildTeacherFriendlyLink(userId);
@@ -639,9 +647,7 @@ export class ContentsService {
         where: { friendlyLink },
         select: { id: true },
       });
-      if (!clash) {
-        break;
-      }
+      if (!clash) break;
       if (attempt === 11) {
         throw new InternalServerErrorException(
           "Could not allocate a unique link. Try again.",
@@ -672,7 +678,9 @@ export class ContentsService {
     }
 
     if (!videoUrl) {
-      throw new BadRequestException("You must provide either a video file or a videoLink");
+      throw new BadRequestException(
+        "You must provide either a video file or a videoLink",
+      );
     }
 
     let thumbnailUrl: string | null = zipThumb;
@@ -697,8 +705,22 @@ export class ContentsService {
       );
     }
 
-    const validClassAssignments =
-      dto.classAssignments?.filter((a) => a && a.classId) || [];
+    const rawAssignments = dto.classAssignments || [];
+    const uniqueAssignmentsMap = new Map<number, any>();
+
+    for (const a of rawAssignments) {
+      if (a && a.classId) {
+        const cId = Number(a.classId);
+        if (!uniqueAssignmentsMap.has(cId)) {
+          uniqueAssignmentsMap.set(cId, {
+            classId: cId,
+            availableFrom: a.availableFrom ? new Date(a.availableFrom) : null,
+            deadline: a.deadline ? new Date(a.deadline) : null,
+          });
+        }
+      }
+    }
+    const validClassAssignments = Array.from(uniqueAssignmentsMap.values());
 
     const created = await this.prisma.content.create({
       data: {
@@ -713,13 +735,7 @@ export class ContentsService {
         classAccesses:
           validClassAssignments.length > 0
             ? {
-                create: validClassAssignments.map((a) => ({
-                  classId: Number(a.classId),
-                  availableFrom: a.availableFrom
-                    ? new Date(a.availableFrom)
-                    : null,
-                  deadline: a.deadline ? new Date(a.deadline) : null,
-                })),
+                create: validClassAssignments,
               }
             : undefined,
 
@@ -746,17 +762,21 @@ export class ContentsService {
         },
       },
     });
+
     const contentVideoId = created.category[0]?.ContentVideo?.[0]?.id;
     if (contentVideoId == null) {
       throw new InternalServerErrorException(
         "Created content is missing a ContentVideo id",
       );
     }
+
     const captionsRow =
       await this.videoCaptionsService.generateCaptions(contentVideoId);
+
     await this.redis.del(`catalog:videos:teacher:${userId}`);
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
+
     return {
       ...created,
       contentVideoId,

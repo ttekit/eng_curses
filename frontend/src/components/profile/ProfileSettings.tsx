@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import {
-  Bell,
-  LogOut,
-  Palette,
-  Plus,
-  Save,
-  Shield,
-  User,
-  X,
-} from "lucide-react";
+import { Bell, LogOut, Plus, Save, Shield, User, X } from "lucide-react";
 import {
   apiFetch,
   getResponseErrorMessage,
@@ -30,8 +21,41 @@ import { Lock } from "lucide-react";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { maskEmail } from "../../lib/formatters";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { CalendarIcon } from "lucide-react";
+import { forwardRef } from "react";
 
 type GenreOption = { id: number; name: string };
+
+const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+  const { onClick, value, onChange, onKeyDown, id } = props;
+  return (
+    <div className="relative w-full">
+      <input
+        id={id}
+        type="date"
+        ref={ref}
+        value={value || ""}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        onClick={(e) => e.stopPropagation()}
+        onFocus={(e) => e.stopPropagation()}
+        autoComplete="off"
+        className="flex h-12 w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+      />
+      <button
+        type="button"
+        onClick={onClick}
+        tabIndex={-1}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+      >
+        <CalendarIcon className="size-5" />
+      </button>
+    </div>
+  );
+});
+CustomDateInput.displayName = "CustomDateInput";
 
 export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const { user, refreshProfile, logout } = useUser();
@@ -614,14 +638,25 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             <label className="text-sm font-medium text-muted-foreground">
               Date of Birth
             </label>
-            <InputText
-              name="dateOfBirth"
-              type="date"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-              min="1900-01-01"
-              max={new Date().toISOString().split("T")[0]}
-              className="w-full text-foreground scheme-dark [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity"
+            <DatePicker
+              selected={dateOfBirth ? new Date(dateOfBirth) : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setDateOfBirth(date.toISOString().split("T")[0]);
+                } else {
+                  setDateOfBirth("");
+                }
+              }}
+              dateFormat="yyyy-MM-dd" // Формат, который понимает type="date"
+              showYearDropdown
+              scrollableYearDropdown
+              yearDropdownItemNumber={100}
+              minDate={new Date("1900-01-01")}
+              maxDate={new Date()}
+              wrapperClassName="w-full"
+              portalId="calendar-portal"
+              preventOpenOnFocus={true} // Защита от случайного всплытия
+              customInput={<CustomDateInput id="profile-dob" />}
             />
           </div>
 
