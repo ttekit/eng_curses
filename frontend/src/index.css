@@ -167,26 +167,77 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(124, 58, 237, 0.3) transparent;
 }
+/* ==========================================================================
+   Кастомизация React Datepicker (Explys Theme - Компактный размер)
+   ========================================================================== */
 
-/* Кастомизация React Datepicker под стиль Explys */
+/* --- 1. Главный контейнер --- */
 .react-datepicker {
   background-color: #1a1b26 !important;
   border: 1px solid #2d2e3d !important;
   border-radius: 12px !important;
   font-family: inherit !important;
   color: #fff !important;
+  font-size: 0.85rem !important; /* Компактный шрифт для всего календаря */
 }
 
+/* Принудительно выносим календарь поверх всех модалок экрана */
+.react-datepicker-popper {
+  z-index: 999999 !important;
+}
+
+/* Прячем дефолтный треугольник сверху */
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+/* --- 2. Шапка календаря --- */
 .react-datepicker__header {
   background-color: #1a1b26 !important;
   border-bottom: 1px solid #2d2e3d !important;
   border-top-left-radius: 12px !important;
   border-top-right-radius: 12px !important;
+  padding-top: 10px !important;
 }
 
+/* Заголовки: Месяц, Год, Время */
 .react-datepicker__current-month,
 .react-datepicker-time__header,
-.react-datepicker-year-header,
+.react-datepicker-year-header {
+  color: #a1a1aa !important;
+  font-size: 0.95rem !important; /* Уменьшенный заголовок */
+  margin-bottom: 8px !important;
+  font-weight: 600 !important;
+}
+
+/* Селекты в шапке (если используются) */
+.react-datepicker__header select {
+  background-color: #1a1b26 !important;
+  color: #fff !important;
+  border: 1px solid #2d2e3d !important;
+  border-radius: 6px !important;
+  padding: 2px 4px !important;
+  outline: none !important;
+}
+
+/* Стрелки переключения месяцев */
+.react-datepicker__navigation-icon::before {
+  border-color: #a1a1aa !important;
+}
+.react-datepicker__navigation:hover *::before {
+  border-color: #fff !important;
+}
+
+/* --- 3. Сетка дней --- */
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker__time-name {
+  width: 1.8rem !important; /* Компактные квадратики */
+  line-height: 1.8rem !important;
+  margin: 0.15rem !important;
+  font-size: 0.85rem !important;
+}
+
 .react-datepicker__day-name {
   color: #a1a1aa !important;
 }
@@ -200,45 +251,19 @@
   border-radius: 8px !important;
 }
 
+/* Выбранный день */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
   background-color: #7c3aed !important;
   color: white !important;
   border-radius: 8px !important;
+  font-weight: bold !important;
 }
 
-.react-datepicker__header select {
-  background-color: #1a1b26 !important;
-  color: #fff !important;
-  border: 1px solid #2d2e3d !important;
-  border-radius: 6px !important;
-  padding: 2px 4px !important;
-  outline: none !important;
-}
-
-.react-datepicker__navigation-icon::before {
-  border-color: #a1a1aa !important;
-}
-.react-datepicker__navigation:hover *::before {
-  border-color: #fff !important;
-}
-
-/* --- Дополнение для времени и модалок --- */
-
-/* Прячем дефолтный треугольник сверху */
-.react-datepicker__triangle {
-  display: none;
-}
-
-/* Выносим календарь поверх любых других окон */
-.react-datepicker-popper {
-  z-index: 99999 !important;
-}
-
-/* Стили колонки со временем */
+/* --- 4. Колонка со временем --- */
 .react-datepicker__time-container {
+  width: 90px !important; /* Сужаем колонку времени */
   border-left: 1px solid #2d2e3d !important;
-  width: 100px !important;
 }
 
 .react-datepicker__time {
@@ -252,11 +277,14 @@
   border-bottom-right-radius: 12px !important;
 }
 
+/* Кнопки времени */
 .react-datepicker__time-list-item {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 40px !important;
+  height: 32px !important; /* Делаем элементы времени компактнее */
+  font-size: 0.85rem !important;
+  padding: 0 !important;
 }
 
 .react-datepicker__time-list-item:hover {
@@ -267,34 +295,6 @@
   background-color: #7c3aed !important;
   color: white !important;
   font-weight: bold !important;
-}
-
-.react-datepicker {
-  font-size: 1.1rem !important;
-}
-.react-datepicker__day-name,
-.react-datepicker__day,
-.react-datepicker__time-name {
-  width: 2.8rem !important;
-  line-height: 2.8rem !important;
-  margin: 0.2rem !important;
-  font-size: 1.1rem !important;
-}
-.react-datepicker__current-month {
-  font-size: 1.3rem !important;
-  margin-bottom: 8px !important;
-}
-
-/* Расширяем колонку времени */
-.react-datepicker__time-container {
-  width: 120px !important;
-  border-left: 1px solid #2d2e3d !important;
-}
-.react-datepicker__time-list-item {
-  height: 45px !important; /* Кнопки времени станут удобнее для клика */
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
 }
 
 /* Фиксим белый скролл в колонке времени */
@@ -312,12 +312,4 @@
 .react-datepicker__time-list::-webkit-scrollbar-thumb {
   background: rgba(124, 58, 237, 0.5);
   border-radius: 10px;
-}
-
-/* Принудительно выносим календарь поверх всех модалок экрана */
-.react-datepicker-popper {
-  z-index: 999999 !important;
-}
-.react-datepicker__triangle {
-  display: none;
 }

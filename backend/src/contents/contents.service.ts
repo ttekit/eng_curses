@@ -1360,25 +1360,52 @@ export class ContentsService {
 
   async assignExistingToClasses(
     teacherId: number,
-    videoId: number, 
+    idFromFrontend: number,
     classAssignments: any[],
   ) {
+    let realContentId: number;
+    let ageRestrictionToCheck: string | null = null;
+
     const video = await this.prisma.contentVideo.findUnique({
-      where: { id: videoId },
+      where: { id: idFromFrontend },
     });
-    if (!video) throw new NotFoundException("Video not found");
 
-    const media = await this.prisma.contentMedia.findUnique({
-      where: { id: video.contentId },
-    });
-    if (!media) throw new NotFoundException("Video slot not found");
+    if (video) {
+      ageRestrictionToCheck = video.ageRestriction;
+      const media = await this.prisma.contentMedia.findUnique({
+        where: { id: video.contentId },
+      });
+      if (!media) throw new NotFoundException("Video slot not found");
+      realContentId = media.categoryId;
+    } else {
+      const content = await this.prisma.content.findUnique({
+        where: { id: idFromFrontend },
+        include: {
+          category: {
+            include: { ContentVideo: true },
+          },
+        },
+      });
+      if (!content) throw new NotFoundException("Content not found");
 
-    const realContentId = media.categoryId;
+      realContentId = content.id;
+      const firstVideo = content.category[0]?.ContentVideo[0];
+      if (firstVideo) {
+        ageRestrictionToCheck = firstVideo.ageRestriction;
+      }
+    }
 
-    const content = await this.prisma.content.findUnique({
-      where: { id: realContentId },
-    });
-    if (!content) throw new NotFoundException("Content not found");
+    if (ageRestrictionToCheck === "16+") {
+      throw new BadRequestException(
+        "This content cannot be assigned to students as it has an age restriction of 16+.",
+      );
+    }
+    
+    if (ageRestrictionToCheck === "18+") {
+      throw new BadRequestException(
+        "This content cannot be assigned to students as it has an age restriction of 18+.",
+      );
+    }
 
     const myClasses = await this.prisma.class.findMany({
       where: { teacherId },
@@ -1400,7 +1427,7 @@ export class ContentsService {
     if (validAssignments.length > 0) {
       await this.prisma.classContentAccess.createMany({
         data: validAssignments.map((a) => ({
-          contentId: realContentId, 
+          contentId: realContentId,
           classId: a.classId,
           availableFrom: a.availableFrom ? new Date(a.availableFrom) : null,
           deadline: a.deadline ? new Date(a.deadline) : null,
