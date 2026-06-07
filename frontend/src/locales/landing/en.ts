@@ -85,6 +85,8 @@ export const landingEn = {
     lead: "Adaptive video lessons that match your interests, level, and learning style — like a chameleon adapting to its environment, we adapt to you.",
     ctaPrimary: "Start learning free",
     ctaSecondary: "Browse content",
+    videoMin: "Just 1 min - and you’re ready to start!",
+    videoWatch: "Watch the video",
   },
 
   features: {

@@ -51,13 +51,11 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
-              <img
-                src="/Greeting.svg"
-                className="w-54 h-62 animate-float"
-                alt=""
-                fetchPriority="high"
-                loading="eager"
-              />
+              <p className="text-right text-3xl items-start mb-4">
+                {hero.videoMin}{" "}
+                <span className="text-primary">{hero.videoWatch}</span>
+              </p>
+              <div className="w-150 h-100 bg-primary/10 rounded-[15px]"></div>
             </div>
           </div>
         </div>

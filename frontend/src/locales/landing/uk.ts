@@ -70,7 +70,7 @@ export const landingUk = {
     navLinks: [
       { hash: "why-choose-explys", label: "Чому Explys" },
       { hash: "how-explys-works", label: "Як це працює" },
-      { hash: "ready-to-start", label: "Готові почати" },
+      { hash: "ready-to-start", label: "Почати" },
     ],
     pricing: "Тарифи",
     catalog: "Каталог",
@@ -87,6 +87,8 @@ export const landingUk = {
     lead: "Адаптивні відеоуроки під твої інтереси, рівень і стиль навчання. Як хамелеон підлаштовується під середовище — так і ми підлаштовуємось під тебе.",
     ctaPrimary: "Почати безкоштовно",
     ctaSecondary: "Переглянути контент",
+    videoMin: "Лише 1 хвилина - і ви готові до старту!",
+    videoWatch: "Дивіться відео",
   },
 
   features: {
