@@ -884,17 +884,6 @@ export class ContentsService {
     });
   }
 
-  async revokeAssignment(teacherId: number, contentId: number) {
-    const classes = await this.prisma.class.findMany({ where: { teacherId } });
-    const classIds = classes.map((c) => c.id);
-
-    await this.prisma.classContentAccess.deleteMany({
-      where: { contentId: Number(contentId), classId: { in: classIds } },
-    });
-
-    return { success: true };
-  }
-
   async deleteEpisode(contentMediaId: number) {
     const media = await this.prisma.contentMedia.findUnique({
       where: { id: contentMediaId },
@@ -1371,11 +1360,23 @@ export class ContentsService {
 
   async assignExistingToClasses(
     teacherId: number,
-    contentId: number,
+    videoId: number, 
     classAssignments: any[],
   ) {
+    const video = await this.prisma.contentVideo.findUnique({
+      where: { id: videoId },
+    });
+    if (!video) throw new NotFoundException("Video not found");
+
+    const media = await this.prisma.contentMedia.findUnique({
+      where: { id: video.contentId },
+    });
+    if (!media) throw new NotFoundException("Video slot not found");
+
+    const realContentId = media.categoryId;
+
     const content = await this.prisma.content.findUnique({
-      where: { id: contentId },
+      where: { id: realContentId },
     });
     if (!content) throw new NotFoundException("Content not found");
 
@@ -1391,7 +1392,7 @@ export class ContentsService {
 
     await this.prisma.classContentAccess.deleteMany({
       where: {
-        contentId,
+        contentId: realContentId,
         classId: { in: myClassIds },
       },
     });
@@ -1399,13 +1400,36 @@ export class ContentsService {
     if (validAssignments.length > 0) {
       await this.prisma.classContentAccess.createMany({
         data: validAssignments.map((a) => ({
-          contentId,
+          contentId: realContentId, 
           classId: a.classId,
           availableFrom: a.availableFrom ? new Date(a.availableFrom) : null,
           deadline: a.deadline ? new Date(a.deadline) : null,
         })),
       });
     }
+
+    return { success: true };
+  }
+
+  async revokeAssignment(teacherId: number, videoId: number) {
+    const classes = await this.prisma.class.findMany({ where: { teacherId } });
+    const classIds = classes.map((c) => c.id);
+
+    const video = await this.prisma.contentVideo.findUnique({
+      where: { id: videoId },
+    });
+    if (!video) return { success: true };
+
+    const media = await this.prisma.contentMedia.findUnique({
+      where: { id: video.contentId },
+    });
+    if (!media) return { success: true };
+
+    const realContentId = media.categoryId;
+
+    await this.prisma.classContentAccess.deleteMany({
+      where: { contentId: realContentId, classId: { in: classIds } },
+    });
 
     return { success: true };
   }
