@@ -118,7 +118,8 @@ export default function RegistrationPreferences() {
 
       if (response.ok) {
         await refreshProfile();
-        navigate("/subscribe", { replace: true });
+        // navigate("/subscribe", { replace: true });
+        navigate("/catalog", { replace: true });
       } else {
         const errorData = await response.json();
         alert(
