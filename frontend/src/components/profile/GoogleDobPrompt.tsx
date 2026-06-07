@@ -18,7 +18,7 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
   return (
     <div className="relative w-full">
       <input
-        type="date"
+        type="text"
         ref={ref}
         value={dobValue || ""}
         onChange={(e) => onDobChange(e.target.value)}

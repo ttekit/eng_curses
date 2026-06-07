@@ -222,3 +222,102 @@
 .react-datepicker__navigation:hover *::before {
   border-color: #fff !important;
 }
+
+/* --- Дополнение для времени и модалок --- */
+
+/* Прячем дефолтный треугольник сверху */
+.react-datepicker__triangle {
+  display: none;
+}
+
+/* Выносим календарь поверх любых других окон */
+.react-datepicker-popper {
+  z-index: 99999 !important;
+}
+
+/* Стили колонки со временем */
+.react-datepicker__time-container {
+  border-left: 1px solid #2d2e3d !important;
+  width: 100px !important;
+}
+
+.react-datepicker__time {
+  background-color: #1a1b26 !important;
+  color: #fff !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+.react-datepicker__time-box {
+  width: 100% !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+.react-datepicker__time-list-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 40px !important;
+}
+
+.react-datepicker__time-list-item:hover {
+  background-color: rgba(124, 58, 237, 0.2) !important;
+}
+
+.react-datepicker__time-list-item--selected {
+  background-color: #7c3aed !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+.react-datepicker {
+  font-size: 1.1rem !important;
+}
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker__time-name {
+  width: 2.8rem !important;
+  line-height: 2.8rem !important;
+  margin: 0.2rem !important;
+  font-size: 1.1rem !important;
+}
+.react-datepicker__current-month {
+  font-size: 1.3rem !important;
+  margin-bottom: 8px !important;
+}
+
+/* Расширяем колонку времени */
+.react-datepicker__time-container {
+  width: 120px !important;
+  border-left: 1px solid #2d2e3d !important;
+}
+.react-datepicker__time-list-item {
+  height: 45px !important; /* Кнопки времени станут удобнее для клика */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Фиксим белый скролл в колонке времени */
+.react-datepicker__time-list {
+  background-color: #1a1b26 !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 58, 237, 0.5) #1a1b26;
+}
+.react-datepicker__time-list::-webkit-scrollbar {
+  width: 6px;
+}
+.react-datepicker__time-list::-webkit-scrollbar-track {
+  background: #1a1b26;
+}
+.react-datepicker__time-list::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.5);
+  border-radius: 10px;
+}
+
+/* Принудительно выносим календарь поверх всех модалок экрана */
+.react-datepicker-popper {
+  z-index: 999999 !important;
+}
+.react-datepicker__triangle {
+  display: none;
+}

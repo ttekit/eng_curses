@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, forwardRef } from "react";
 import { Link } from "react-router";
 import {
   Loader2,
@@ -13,13 +13,15 @@ import {
   CheckCircle2,
   XCircle,
   Check,
+  CalendarIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
 import { useAppMessages } from "../../hooks/useAppMessages";
-import { formatMessage } from "../../lib/formatMessage";
 import {
   AdminButton,
   AdminModal,
@@ -48,6 +50,51 @@ export type TeacherSeriesItem = {
     deadline: string | null;
   }[];
 };
+
+const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+  const { onClick, onFocus, value, onChange, onKeyDown, id } = props;
+
+  return (
+    <div className="relative w-full">
+      <input
+        id={id}
+        type="datetime-local"
+        ref={ref}
+        value={value || ""}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        onClick={(e) => e.stopPropagation()}
+        onFocus={(e) => e.stopPropagation()}
+        autoComplete="off"
+        className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+      />
+      <button
+        type="button"
+        onClick={onClick}
+        tabIndex={-1}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+      >
+        <CalendarIcon className="size-5" />
+      </button>
+    </div>
+  );
+});
+CustomDateTimeInput.displayName = "CustomDateTimeInput";
+
+const ExplysDatePicker = ({ selected, onChange, id, onKeyDown }: any) => (
+  <DatePicker
+    selected={selected}
+    onChange={onChange}
+    showTimeSelect
+    timeFormat="HH:mm"
+    timeIntervals={15}
+    dateFormat="yyyy-MM-dd'T'HH:mm"
+    wrapperClassName="w-full"
+    portalId="calendar-portal"
+    preventOpenOnFocus={true}
+    customInput={<CustomDateTimeInput id={id} onKeyDown={onKeyDown} />}
+  />
+);
 
 function formatDateTimeLocal(dateStr?: string | null) {
   if (!dateStr) return "";
@@ -180,7 +227,6 @@ function generateVideoThumbnailBlob(file: File): Promise<Blob> {
 
 export function ProfileTeacherVideos() {
   const t = useAppMessages().profileTeacherVideos;
-  const tStudents = useAppMessages().profileTeacherStudents;
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
@@ -245,7 +291,6 @@ export function ProfileTeacherVideos() {
     useState<AbortController | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
-  // States for student tests (quiz results by video)
   const [resultsModalOpen, setResultsModalOpen] = useState(false);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [videoResults, setVideoResults] = useState<any>(null);
@@ -548,16 +593,16 @@ export function ProfileTeacherVideos() {
     setEditingDeadlineId(item.contentId);
     setEditingDeadlines({
       global: {
-        availableFrom: formatDateTimeLocal(item.availableFrom),
-        deadline: formatDateTimeLocal(item.deadline),
+        availableFrom: item.availableFrom || "",
+        deadline: item.deadline || "",
       },
       classes: item.classAccesses
         ? item.classAccesses.map((ca) => ({
-          classId: ca.classId,
-          className: ca.className,
-          availableFrom: formatDateTimeLocal(ca.availableFrom),
-          deadline: formatDateTimeLocal(ca.deadline),
-        }))
+            classId: ca.classId,
+            className: ca.className,
+            availableFrom: ca.availableFrom || "",
+            deadline: ca.deadline || "",
+          }))
         : [],
     });
     setEditDeadlineModalOpen(true);
@@ -617,19 +662,13 @@ export function ProfileTeacherVideos() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             global: {
-              availableFrom: editingDeadlines.global.availableFrom
-                ? new Date(editingDeadlines.global.availableFrom).toISOString()
-                : null,
-              deadline: editingDeadlines.global.deadline
-                ? new Date(editingDeadlines.global.deadline).toISOString()
-                : null,
+              availableFrom: editingDeadlines.global.availableFrom || null,
+              deadline: editingDeadlines.global.deadline || null,
             },
             classes: editingDeadlines.classes.map((c) => ({
               classId: c.classId,
-              availableFrom: c.availableFrom
-                ? new Date(c.availableFrom).toISOString()
-                : null,
-              deadline: c.deadline ? new Date(c.deadline).toISOString() : null,
+              availableFrom: c.availableFrom || null,
+              deadline: c.deadline || null,
             })),
           }),
         },
@@ -879,49 +918,45 @@ export function ProfileTeacherVideos() {
                     <label className="text-sm font-medium text-muted-foreground">
                       Opening Date (Becomes Public)
                     </label>
-                    <AdminInput
-                      type="datetime-local"
-                      lang="en-GB"
-                      value={openDateStr}
-                      className="w-full"
-                      max="9999-12-31T23:59"
-                      onChange={(e) => {
-                        if (isValidYear(e.target.value)) {
-                          setOpenDateStr(e.target.value);
+                    <ExplysDatePicker
+                      id="upload-global-open"
+                      selected={openDateStr ? new Date(openDateStr) : null}
+                      onChange={(date: Date | null) =>
+                        setOpenDateStr(date ? date.toISOString() : "")
+                      }
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document
+                            .getElementById("upload-global-close")
+                            ?.focus();
                         }
                       }}
-                      min={new Date().toISOString().slice(0, 16)}
-                      required
                     />
                   </div>
                 )}
 
                 {(deadlineMode === "close" ||
                   deadlineMode === "open_close") && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Closing Deadline (Becomes Private)
-                      </label>
-                      <AdminInput
-                        type="datetime-local"
-                        lang="en-GB"
-                        value={closeDateStr}
-                        className="w-full"
-                        max="9999-12-31T23:59"
-                        onChange={(e) => {
-                          if (isValidYear(e.target.value)) {
-                            setCloseDateStr(e.target.value);
-                          }
-                        }}
-                        min={
-                          deadlineMode === "open_close" && openDateStr
-                            ? openDateStr
-                            : new Date().toISOString().slice(0, 16)
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Closing Deadline (Becomes Private)
+                    </label>
+                    <ExplysDatePicker
+                      id="upload-global-close"
+                      selected={closeDateStr ? new Date(closeDateStr) : null}
+                      onChange={(date: Date | null) =>
+                        setCloseDateStr(date ? date.toISOString() : "")
+                      }
+                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleUpload();
                         }
-                        required
-                      />
-                    </div>
-                  )}
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -954,7 +989,7 @@ export function ProfileTeacherVideos() {
                           )}
                         >
                           <div
-                            onClick={(e) => {
+                            onClick={() => {
                               if (isSelected) {
                                 const next = { ...selectedClasses };
                                 delete next[cls.id];
@@ -962,10 +997,7 @@ export function ProfileTeacherVideos() {
                               } else {
                                 setSelectedClasses((p) => ({
                                   ...p,
-                                  [cls.id]: {
-                                    availableFrom: "",
-                                    deadline: "",
-                                  },
+                                  [cls.id]: { availableFrom: "", deadline: "" },
                                 }));
                               }
                             }}
@@ -992,21 +1024,34 @@ export function ProfileTeacherVideos() {
                                 <label className="text-xs font-medium text-muted-foreground">
                                   Open Date (Optional)
                                 </label>
-                                <AdminInput
-                                  type="datetime-local"
-                                  lang="en-GB"
-                                  value={data.availableFrom}
-                                  className="w-full"
-                                  max="9999-12-31T23:59"
-                                  onChange={(e) => {
-                                    if (isValidYear(e.target.value)) {
-                                      setSelectedClasses((p) => ({
-                                        ...p,
-                                        [cls.id]: {
-                                          ...p[cls.id],
-                                          availableFrom: e.target.value,
-                                        },
-                                      }));
+                                <ExplysDatePicker
+                                  id={`upload-open-${cls.id}`}
+                                  selected={
+                                    data.availableFrom
+                                      ? new Date(data.availableFrom)
+                                      : null
+                                  }
+                                  onChange={(date: Date | null) => {
+                                    setSelectedClasses((p) => ({
+                                      ...p,
+                                      [cls.id]: {
+                                        ...p[cls.id],
+                                        availableFrom: date
+                                          ? date.toISOString()
+                                          : "",
+                                      },
+                                    }));
+                                  }}
+                                  onKeyDown={(
+                                    e: React.KeyboardEvent<HTMLInputElement>,
+                                  ) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      document
+                                        .getElementById(
+                                          `upload-close-${cls.id}`,
+                                        )
+                                        ?.focus();
                                     }
                                   }}
                                 />
@@ -1015,21 +1060,50 @@ export function ProfileTeacherVideos() {
                                 <label className="text-xs font-medium text-muted-foreground">
                                   Deadline (Optional)
                                 </label>
-                                <AdminInput
-                                  type="datetime-local"
-                                  lang="en-GB"
-                                  value={data.deadline}
-                                  className="w-full"
-                                  max="9999-12-31T23:59"
-                                  onChange={(e) => {
-                                    if (isValidYear(e.target.value)) {
-                                      setSelectedClasses((p) => ({
-                                        ...p,
-                                        [cls.id]: {
-                                          ...p[cls.id],
-                                          deadline: e.target.value,
-                                        },
-                                      }));
+                                <ExplysDatePicker
+                                  id={`upload-close-${cls.id}`}
+                                  selected={
+                                    data.deadline
+                                      ? new Date(data.deadline)
+                                      : null
+                                  }
+                                  onChange={(date: Date | null) => {
+                                    setSelectedClasses((p) => ({
+                                      ...p,
+                                      [cls.id]: {
+                                        ...p[cls.id],
+                                        deadline: date
+                                          ? date.toISOString()
+                                          : "",
+                                      },
+                                    }));
+                                  }}
+                                  onKeyDown={(
+                                    e: React.KeyboardEvent<HTMLInputElement>,
+                                  ) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      const currentIdx = classes.findIndex(
+                                        (c) => c.id === cls.id,
+                                      );
+                                      let nextId = null;
+                                      for (
+                                        let i = currentIdx + 1;
+                                        i < classes.length;
+                                        i++
+                                      ) {
+                                        if (selectedClasses[classes[i].id]) {
+                                          nextId = `upload-open-${classes[i].id}`;
+                                          break;
+                                        }
+                                      }
+                                      if (nextId) {
+                                        document
+                                          .getElementById(nextId)
+                                          ?.focus();
+                                      } else {
+                                        void handleUpload();
+                                      }
                                     }
                                   }}
                                 />
@@ -1071,7 +1145,7 @@ export function ProfileTeacherVideos() {
           </>
         }
       >
-        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 pb-16">
           <div className="bg-muted/10 p-4 rounded-xl border border-border">
             <h4 className="text-sm font-bold mb-3 text-foreground">
               Global Rules (Applies to links)
@@ -1081,25 +1155,25 @@ export function ProfileTeacherVideos() {
                 <label className="text-xs font-semibold text-muted-foreground uppercase">
                   Opening Date
                 </label>
-                <AdminInput
+                <ExplysDatePicker
                   id="edit-global-open-date"
-                  type="datetime-local"
-                  lang="en-GB"
-                  value={editingDeadlines?.global.availableFrom || ""}
-                  className="w-full"
-                  max="9999-12-31T23:59"
-                  onChange={(e) => {
-                    if (isValidYear(e.target.value) && editingDeadlines) {
+                  selected={
+                    editingDeadlines?.global.availableFrom
+                      ? new Date(editingDeadlines.global.availableFrom)
+                      : null
+                  }
+                  onChange={(date: Date | null) => {
+                    if (editingDeadlines) {
                       setEditingDeadlines({
                         ...editingDeadlines,
                         global: {
                           ...editingDeadlines.global,
-                          availableFrom: e.target.value,
+                          availableFrom: date ? date.toISOString() : "",
                         },
                       });
                     }
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       document
@@ -1113,25 +1187,25 @@ export function ProfileTeacherVideos() {
                 <label className="text-xs font-semibold text-muted-foreground uppercase">
                   Closing Deadline
                 </label>
-                <AdminInput
+                <ExplysDatePicker
                   id="edit-global-close-date"
-                  type="datetime-local"
-                  lang="en-GB"
-                  value={editingDeadlines?.global.deadline || ""}
-                  className="w-full"
-                  max="9999-12-31T23:59"
-                  onChange={(e) => {
-                    if (isValidYear(e.target.value) && editingDeadlines) {
+                  selected={
+                    editingDeadlines?.global.deadline
+                      ? new Date(editingDeadlines.global.deadline)
+                      : null
+                  }
+                  onChange={(date: Date | null) => {
+                    if (editingDeadlines) {
                       setEditingDeadlines({
                         ...editingDeadlines,
                         global: {
                           ...editingDeadlines.global,
-                          deadline: e.target.value,
+                          deadline: date ? date.toISOString() : "",
                         },
                       });
                     }
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       void handleSaveDeadline();
@@ -1160,23 +1234,21 @@ export function ProfileTeacherVideos() {
                       <label className="text-xs font-semibold text-muted-foreground uppercase">
                         Opening Date
                       </label>
-                      <AdminInput
+                      <ExplysDatePicker
                         id={`edit-open-date-${cls.classId}`}
-                        type="datetime-local"
-                        lang="en-GB"
-                        value={cls.availableFrom || ""}
-                        className="w-full"
-                        max="9999-12-31T23:59"
-                        onChange={(e) => {
-                          if (isValidYear(e.target.value)) {
-                            handleClassDateChange(
-                              idx,
-                              "availableFrom",
-                              e.target.value,
-                            );
-                          }
+                        selected={
+                          cls.availableFrom ? new Date(cls.availableFrom) : null
+                        }
+                        onChange={(date: Date | null) => {
+                          handleClassDateChange(
+                            idx,
+                            "availableFrom",
+                            date ? date.toISOString() : "",
+                          );
                         }}
-                        onKeyDown={(e) => {
+                        onKeyDown={(
+                          e: React.KeyboardEvent<HTMLInputElement>,
+                        ) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
                             document
@@ -1190,23 +1262,19 @@ export function ProfileTeacherVideos() {
                       <label className="text-xs font-semibold text-muted-foreground uppercase">
                         Closing Deadline
                       </label>
-                      <AdminInput
+                      <ExplysDatePicker
                         id={`edit-close-date-${cls.classId}`}
-                        type="datetime-local"
-                        lang="en-GB"
-                        value={cls.deadline || ""}
-                        className="w-full"
-                        max="9999-12-31T23:59"
-                        onChange={(e) => {
-                          if (isValidYear(e.target.value)) {
-                            handleClassDateChange(
-                              idx,
-                              "deadline",
-                              e.target.value,
-                            );
-                          }
+                        selected={cls.deadline ? new Date(cls.deadline) : null}
+                        onChange={(date: Date | null) => {
+                          handleClassDateChange(
+                            idx,
+                            "deadline",
+                            date ? date.toISOString() : "",
+                          );
                         }}
-                        onKeyDown={(e) => {
+                        onKeyDown={(
+                          e: React.KeyboardEvent<HTMLInputElement>,
+                        ) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
                             void handleSaveDeadline();
@@ -1447,10 +1515,10 @@ export function ProfileTeacherVideos() {
                   resultsClassFilter === "all" ||
                   s.classId === resultsClassFilter,
               ).length === 0 && (
-                  <div className="py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50">
-                    No students found in this category.
-                  </div>
-                )}
+                <div className="py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50">
+                  No students found in this category.
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -1518,7 +1586,7 @@ export function ProfileTeacherVideos() {
                 if (typeof rawAnswers === "string") {
                   try {
                     rawAnswers = JSON.parse(rawAnswers);
-                  } catch (e) { }
+                  } catch (e) {}
                 }
 
                 if (
@@ -1663,7 +1731,6 @@ export function ProfileTeacherVideos() {
                   );
                 }
 
-                // Flat object parser (for format like { c1: 2, c1_options: "[...]" })
                 const baseKeys = Object.keys(rawAnswers).filter(
                   (k) =>
                     !k.endsWith("_text") &&
@@ -1688,7 +1755,7 @@ export function ProfileTeacherVideos() {
                       if (typeof opts === "string") {
                         try {
                           opts = JSON.parse(opts);
-                        } catch (e) { }
+                        } catch (e) {}
                       }
 
                       if (Array.isArray(opts)) {
@@ -1809,12 +1876,13 @@ export function ProfileTeacherVideos() {
                 overflowX: "auto",
                 width: "100%",
                 WebkitOverflowScrolling: "touch",
+                minHeight: "220px",
               }}
             >
               <table
-                className="text-left text-sm"
+                className="text-left text-sm table-fixed"
                 style={{
-                  minWidth: "900px",
+                  minWidth: "1000px",
                   width: "100%",
                   whiteSpace: "nowrap",
                 }}
@@ -1822,6 +1890,7 @@ export function ProfileTeacherVideos() {
                 <thead>
                   <tr className="border-border bg-muted/30 border-b text-muted-foreground">
                     <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
+                    <th className="p-4 font-semibold text-sm">Assignments</th>
                     <th className="p-4 font-semibold text-sm">
                       {t.colCaptions}
                     </th>
@@ -1854,98 +1923,6 @@ export function ProfileTeacherVideos() {
                             {s.name}
                           </div>
 
-                          {s.classAccesses && s.classAccesses.length > 0 ? (
-                            <details className="mt-1.5 group">
-                              <summary className="cursor-pointer text-[10px] font-bold tracking-wider text-primary bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md inline-flex items-center gap-1 select-none transition-colors w-fit">
-                                {s.classAccesses.length === 1
-                                  ? "1 CLASS ASSIGNED"
-                                  : `${s.classAccesses.length} CLASSES ASSIGNED`}
-                                <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
-                              </summary>
-                              <div className="mt-2 flex flex-col gap-2 pl-2 border-l-2 border-primary/20">
-                                {s.classAccesses.map((ca) => (
-                                  <div
-                                    key={ca.classId}
-                                    className="flex flex-col gap-0.5"
-                                  >
-                                    <span className="text-[10px] font-bold uppercase text-foreground">
-                                      {ca.className}
-                                    </span>
-                                    <div className="text-[10px] text-muted-foreground flex flex-col">
-                                      {ca.availableFrom ? (
-                                        <span>
-                                          Opens:{" "}
-                                          {new Date(
-                                            ca.availableFrom,
-                                          ).toLocaleString("en-GB", {
-                                            dateStyle: "short",
-                                            timeStyle: "short",
-                                          })}
-                                        </span>
-                                      ) : (
-                                        <span>Opens: Now</span>
-                                      )}
-                                      {ca.deadline ? (
-                                        <span
-                                          className={
-                                            new Date(ca.deadline) < now
-                                              ? "text-destructive"
-                                              : "text-amber-500"
-                                          }
-                                        >
-                                          Closes:{" "}
-                                          {new Date(ca.deadline).toLocaleString(
-                                            "en-GB",
-                                            {
-                                              dateStyle: "short",
-                                              timeStyle: "short",
-                                            },
-                                          )}
-                                        </span>
-                                      ) : (
-                                        <span>Closes: Never</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </details>
-                          ) : (
-                            <div className="mt-1.5 flex flex-col gap-0.5 text-[10px] font-medium text-muted-foreground">
-                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1">
-                                Global Catalog
-                              </span>
-                              {s.availableFrom ? (
-                                <span>
-                                  Opens:{" "}
-                                  {new Date(s.availableFrom).toLocaleString(
-                                    "en-GB",
-                                    { dateStyle: "short", timeStyle: "short" },
-                                  )}
-                                </span>
-                              ) : (
-                                <span>Opens: Now</span>
-                              )}
-                              {s.deadline ? (
-                                <span
-                                  className={
-                                    new Date(s.deadline) < now
-                                      ? "text-destructive"
-                                      : "text-amber-500"
-                                  }
-                                >
-                                  Closes:{" "}
-                                  {new Date(s.deadline).toLocaleString(
-                                    "en-GB",
-                                    { dateStyle: "short", timeStyle: "short" },
-                                  )}
-                                </span>
-                              ) : (
-                                <span>Closes: Never</span>
-                              )}
-                            </div>
-                          )}
-
                           {s.processingComplexity ? (
                             <div
                               className="text-muted-foreground mt-2 text-xs truncate"
@@ -1971,6 +1948,108 @@ export function ProfileTeacherVideos() {
                             </div>
                           ) : null}
                         </td>
+
+                        {/* НОВАЯ КОЛОНКА ДЛЯ КЛАССОВ И ДЕДЛАЙНОВ */}
+                        <td className="p-4 align-top">
+                          {s.classAccesses && s.classAccesses.length > 0 ? (
+                            <details className="group">
+                              <summary className="cursor-pointer text-xs font-bold tracking-wider text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
+                                {s.classAccesses.length === 1
+                                  ? "1 CLASS ASSIGNED"
+                                  : `${s.classAccesses.length} CLASSES ASSIGNED`}
+                                <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+                              </summary>
+                              <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-primary/30">
+                                {s.classAccesses.map((ca) => (
+                                  <div
+                                    key={ca.classId}
+                                    className="flex flex-col gap-1"
+                                  >
+                                    <span className="text-xs font-bold uppercase text-foreground tracking-wide">
+                                      {ca.className}
+                                    </span>
+                                    <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
+                                      {ca.availableFrom ? (
+                                        <span>
+                                          Opens:{" "}
+                                          {new Date(
+                                            ca.availableFrom,
+                                          ).toLocaleString("en-GB", {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          })}
+                                        </span>
+                                      ) : (
+                                        <span>Opens: Now</span>
+                                      )}
+                                      {ca.deadline ? (
+                                        <span
+                                          className={
+                                            new Date(ca.deadline) < now
+                                              ? "text-destructive font-medium"
+                                              : "text-amber-500 font-medium"
+                                          }
+                                        >
+                                          Closes:{" "}
+                                          {new Date(ca.deadline).toLocaleString(
+                                            "en-GB",
+                                            {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            },
+                                          )}
+                                        </span>
+                                      ) : (
+                                        <span>Closes: Never</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 text-sm font-medium text-muted-foreground">
+                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
+                                Global Catalog
+                              </span>
+                              {s.availableFrom ? (
+                                <span>
+                                  Opens:{" "}
+                                  {new Date(s.availableFrom).toLocaleString(
+                                    "en-GB",
+                                    {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    },
+                                  )}
+                                </span>
+                              ) : (
+                                <span>Opens: Now</span>
+                              )}
+                              {s.deadline ? (
+                                <span
+                                  className={
+                                    new Date(s.deadline) < now
+                                      ? "text-destructive font-medium"
+                                      : "text-amber-500 font-medium"
+                                  }
+                                >
+                                  Closes:{" "}
+                                  {new Date(s.deadline).toLocaleString(
+                                    "en-GB",
+                                    {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    },
+                                  )}
+                                </span>
+                              ) : (
+                                <span>Closes: Never</span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+
                         <td className="p-4 align-top">
                           <span
                             className={cn(
@@ -2078,10 +2157,11 @@ export function ProfileTeacherVideos() {
         ) : (
           <div className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm overflow-hidden">
             <div style={{ overflowX: "auto", width: "100%" }}>
-              <table className="text-left text-sm w-full whitespace-nowrap min-w-[700px]">
+              <table className="text-left text-sm w-full whitespace-nowrap min-w-[800px]">
                 <thead>
                   <tr className="border-border bg-muted/30 border-b text-muted-foreground">
                     <th className="p-4 font-semibold text-sm">Lesson Name</th>
+                    <th className="p-4 font-semibold text-sm">Assigned To</th>
                     <th className="p-4 font-semibold text-sm text-right">
                       Actions
                     </th>
@@ -2099,25 +2179,28 @@ export function ProfileTeacherVideos() {
                           <div className="text-foreground text-base font-bold truncate max-w-[250px]">
                             {s.name}
                           </div>
+                        </td>
 
+                        {/* НОВАЯ КОЛОНКА ДЛЯ КЛАССОВ И ДЕДЛАЙНОВ */}
+                        <td className="p-4 align-top">
                           {s.classAccesses && s.classAccesses.length > 0 ? (
-                            <details className="mt-1.5 group">
-                              <summary className="cursor-pointer text-[10px] font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-2 py-1 rounded-md inline-flex items-center gap-1 select-none transition-colors w-fit uppercase">
+                            <details className="group">
+                              <summary className="cursor-pointer text-xs font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
                                 {s.classAccesses.length === 1
                                   ? "1 CLASS ASSIGNED"
                                   : `${s.classAccesses.length} CLASSES ASSIGNED`}
-                                <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
+                                <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
                               </summary>
-                              <div className="mt-2 flex flex-col gap-2 pl-2 border-l-2 border-accent/20">
+                              <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-accent/30">
                                 {s.classAccesses.map((ca) => (
                                   <div
                                     key={ca.classId}
-                                    className="flex flex-col gap-0.5"
+                                    className="flex flex-col gap-1"
                                   >
-                                    <span className="text-[10px] font-bold uppercase text-foreground">
+                                    <span className="text-xs font-bold uppercase text-foreground tracking-wide">
                                       {ca.className}
                                     </span>
-                                    <div className="text-[10px] text-muted-foreground flex flex-col">
+                                    <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                       {ca.availableFrom ? (
                                         <span>
                                           Opens:{" "}
@@ -2135,8 +2218,8 @@ export function ProfileTeacherVideos() {
                                         <span
                                           className={
                                             new Date(ca.deadline) < now
-                                              ? "text-destructive"
-                                              : "text-amber-500"
+                                              ? "text-destructive font-medium"
+                                              : "text-amber-500 font-medium"
                                           }
                                         >
                                           Closes:{" "}
@@ -2157,8 +2240,8 @@ export function ProfileTeacherVideos() {
                               </div>
                             </details>
                           ) : (
-                            <div className="mt-1.5 flex flex-col gap-0.5 text-[10px] font-medium text-muted-foreground">
-                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1">
+                            <div className="flex flex-col gap-1.5 text-sm font-medium text-muted-foreground">
+                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
                                 Global Catalog
                               </span>
                               {s.availableFrom ? (
@@ -2166,7 +2249,10 @@ export function ProfileTeacherVideos() {
                                   Opens:{" "}
                                   {new Date(s.availableFrom).toLocaleString(
                                     "en-GB",
-                                    { dateStyle: "short", timeStyle: "short" },
+                                    {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    },
                                   )}
                                 </span>
                               ) : (
@@ -2176,14 +2262,17 @@ export function ProfileTeacherVideos() {
                                 <span
                                   className={
                                     new Date(s.deadline) < now
-                                      ? "text-destructive"
-                                      : "text-amber-500"
+                                      ? "text-destructive font-medium"
+                                      : "text-amber-500 font-medium"
                                   }
                                 >
                                   Closes:{" "}
                                   {new Date(s.deadline).toLocaleString(
                                     "en-GB",
-                                    { dateStyle: "short", timeStyle: "short" },
+                                    {
+                                      dateStyle: "short",
+                                      timeStyle: "short",
+                                    },
                                   )}
                                 </span>
                               ) : (
@@ -2192,6 +2281,7 @@ export function ProfileTeacherVideos() {
                             </div>
                           )}
                         </td>
+
                         <td className="p-4 align-top text-right">
                           <div className="flex items-center justify-end gap-1 sm:gap-2">
                             {s.contentVideoId != null && (

@@ -3,9 +3,17 @@ import { TypeOptions } from "src/auth/provider/provider.constants";
 import { GoogleProvider } from "src/auth/provider/services/google-provider";
 
 function resolvePublicApiBaseUrl(configService: ConfigService): string {
-  const explicit = configService.get<string>("PUBLIC_API_URL")?.trim();
+  let explicit = configService.get<string>("PUBLIC_API_URL")?.trim();
+
   if (explicit) {
-    return explicit.replace(/^http:\/\//, 'https://').replace(/\/$/, '');
+    explicit = explicit.replace(/\/$/, "");
+
+    //для локалки(не трогать)
+    if (!explicit.includes("localhost")) {
+      explicit = explicit.replace(/^http:\/\//, "https://");
+    }
+
+    return explicit;
   }
   const port = configService.get<string>("PORT")?.trim() || "4200";
   if (process.env.NODE_ENV === "production") {
