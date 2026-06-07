@@ -13,18 +13,23 @@ export default function OAuthSuccess() {
     if (hasProcessed.current) return;
     hasProcessed.current = true;
 
+    // Читаємо параметри з URL, які передав бекенд
     const token = searchParams.get("token");
     const isNewUser = searchParams.get("isNewUser") === "true";
 
-    console.log("OAuth Debug:", { token: !!token, isNewUser });
+    console.log("OAuth Debug:", { token: !!token, isNewUser }); // Додаємо лог для перевірки
 
     if (token) {
+      // Зберігаємо токен
       setStoredAccessToken(token);
 
+      // Завантажуємо профіль
       refreshProfile().then(() => {
         if (isNewUser) {
+          // Якщо новий юзер -> на вибір ролі (Teacher/Student/Adult)
           navigate("/registrationDetails", { replace: true });
         } else {
+          // Якщо старий юзер -> в каталог
           navigate("/catalog", { replace: true });
         }
       }).catch((err) => {
@@ -32,6 +37,8 @@ export default function OAuthSuccess() {
         navigate("/loginForm", { replace: true });
       });
     } else {
+      // Якщо токена в URL немає
+      console.warn("Токен не знайдено в URL!");
       navigate("/loginForm", { replace: true });
     }
   }, [navigate, searchParams, refreshProfile]);
