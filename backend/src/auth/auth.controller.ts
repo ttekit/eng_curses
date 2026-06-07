@@ -53,7 +53,7 @@ export class AuthController {
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) {}
+  ) { }
 
   @Public()
   @Post("register")
@@ -325,20 +325,22 @@ export class AuthController {
       throw new BadRequestException("No code provided from Google");
     }
 
-    const result = await this.authService.extractProfileFromCode(
-      req,
-      provider,
-      code,
-      state,
-    );
+    try {
+      const result = await this.authService.extractProfileFromCode(
+        req,
+        provider,
+        code,
+      );
 
-    if (result.error === "USER_NOT_FOUND") {
-      const loginUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=GoogleAccountNotFound`;
-      return res.redirect(loginUrl);
+      const isNewUser = (result as any).isNewUser || false;
+      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.access_token}&isNewUser=${isNewUser}`;
+
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      console.error("OAuth Callback Error:", error);
+      const errorUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=oauth_failed`;
+      return res.redirect(errorUrl);
     }
-
-    const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.token}&isNewUser=${result.isNewUser}`;
-    return res.redirect(redirectUrl);
   }
 
   @Public()
