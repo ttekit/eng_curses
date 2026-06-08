@@ -92,26 +92,8 @@ export default function RegistrationMain() {
     passwordToCompare?: string,
   ) => {
     if (type === "password") {
-      if (value.length < 8) {
-        setErrorText(errors.passwordMin8);
-        return false;
-      }
-      if (!/[A-Z]/.test(value)) {
-        setErrorText(errors.passwordUpper);
-        return false;
-      }
-      if (!/[a-z]/.test(value)) {
-        setErrorText(errors.passwordLower);
-        return false;
-      }
-      if (!/\d/.test(value)) {
-        setErrorText(errors.passwordNumber);
-        return false;
-      }
-      if (!/[@$!%*?&]/.test(value)) {
-        setErrorText(errors.passwordSpecial);
-        return false;
-      }
+      setErrorText(null);
+      return isValidPassword(value);
     }
 
     if (type === "confirmPassword") {
@@ -289,6 +271,7 @@ export default function RegistrationMain() {
     });
   };
 
+  const pass = formData.password || "";
   return (
     <>
       <AuthPageSeo
@@ -394,6 +377,26 @@ export default function RegistrationMain() {
               placeholder={step1.placeholderPassword}
               autoComplete="new-password"
             />
+
+            {formData.password && !isValidPassword(formData.password) && (
+              <div className="flex flex-col gap-1 mt-1.5 px-1 text-[12px] font-medium text-destructive">
+                {formData.password.length < 8 && (
+                  <span>• {errors.passwordMin8}</span>
+                )}
+                {!/[A-Z]/.test(formData.password) && (
+                  <span>• {errors.passwordUpper}</span>
+                )}
+                {!/[a-z]/.test(formData.password) && (
+                  <span>• {errors.passwordLower}</span>
+                )}
+                {!/\d/.test(formData.password) && (
+                  <span>• {errors.passwordNumber}</span>
+                )}
+                {!/[@$!%*?&]/.test(formData.password) && (
+                  <span>• {errors.passwordSpecial}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
