@@ -1400,7 +1400,7 @@ export class ContentsService {
         "This content cannot be assigned to students as it has an age restriction of 16+.",
       );
     }
-    
+
     if (ageRestrictionToCheck === "18+") {
       throw new BadRequestException(
         "This content cannot be assigned to students as it has an age restriction of 18+.",
@@ -1438,29 +1438,20 @@ export class ContentsService {
     return { success: true };
   }
 
-  async revokeAssignment(teacherId: number, videoId: number) {
+  async revokeAssignment(teacherId: number, contentId: number) {
     const classes = await this.prisma.class.findMany({ where: { teacherId } });
     const classIds = classes.map((c) => c.id);
 
-    const video = await this.prisma.contentVideo.findUnique({
-      where: { id: videoId },
-    });
-    if (!video) return { success: true };
-
-    const media = await this.prisma.contentMedia.findUnique({
-      where: { id: video.contentId },
-    });
-    if (!media) return { success: true };
-
-    const realContentId = media.categoryId;
-
     await this.prisma.classContentAccess.deleteMany({
-      where: { contentId: realContentId, classId: { in: classIds } },
+      where: {
+        contentId: contentId,
+        classId: { in: classIds },
+      },
     });
 
     return { success: true };
   }
-
+  
   async deleteTeacherContent(teacherId: number, contentId: number) {
     const content = await this.prisma.content.findFirst({
       where: { id: contentId, ownerUserId: teacherId },
