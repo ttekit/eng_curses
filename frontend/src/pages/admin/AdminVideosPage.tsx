@@ -371,7 +371,7 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      const resData = await apiFetch(`/contents/episode/${editing.id}`, {
+      const resData = await apiFetch(`/content-video/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -389,7 +389,7 @@ export default function AdminVideosPage() {
         const fd = new FormData();
         fd.append("thumbnailFile", editThumb);
 
-        const res = await apiFetch(`/contents/episode/${editing.id}/thumbnail`, {
+        const res = await apiFetch(`/content-video/${editing.id}/thumbnail`, {
           method: "PATCH",
           body: fd,
         });
