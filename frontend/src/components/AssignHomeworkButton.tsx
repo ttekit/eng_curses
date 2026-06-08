@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef } from "react";
-import { BookOpen, Loader2, CalendarIcon } from "lucide-react";
+import { BookOpen, Loader2, CalendarIcon, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -8,19 +8,21 @@ import { cn } from "../lib/utils";
 import { AdminButton, AdminModal } from "./admin/adminUi";
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
-  const { onClick, value, onChange, onKeyDown, placeholder, id } = props;
+  const { onClick, onFocus, value, onChange, onKeyDown, id } = props;
+
   return (
     <div className="relative w-full">
       <input
         id={id}
-        type="text"
+        type="datetime-local"
         ref={ref}
         value={value || ""}
         onChange={onChange}
         onKeyDown={onKeyDown}
-        placeholder={placeholder || "mm/dd/yyyy --:-- --"}
+        onClick={(e) => e.stopPropagation()}
+        onFocus={(e) => e.stopPropagation()}
         autoComplete="off"
-        className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer shadow-sm"
+        className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
       />
       <button
         type="button"
@@ -35,13 +37,7 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
 });
 CustomDateTimeInput.displayName = "CustomDateTimeInput";
 
-const ExplysDatePicker = ({
-  selected,
-  onChange,
-  id,
-  onKeyDown,
-  placeholder,
-}: any) => (
+const ExplysDatePicker = ({ selected, onChange, id, onKeyDown }: any) => (
   <DatePicker
     selected={selected}
     onChange={onChange}
@@ -51,13 +47,8 @@ const ExplysDatePicker = ({
     dateFormat="yyyy-MM-dd'T'HH:mm"
     wrapperClassName="w-full"
     portalId="calendar-portal"
-    customInput={
-      <CustomDateTimeInput
-        id={id}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder}
-      />
-    }
+    preventOpenOnFocus={true}
+    customInput={<CustomDateTimeInput id={id} onKeyDown={onKeyDown} />}
   />
 );
 
@@ -166,7 +157,7 @@ export function AssignHomeworkButton({
               <Loader2 className="size-4 animate-spin" /> Loading classes...
             </div>
           ) : classes.length === 0 ? (
-            <div className="bg-muted p-4 rounded-lg text-sm text-center">
+            <div className="bg-muted p-4 rounded-lg text-sm text-center border border-border/50">
               You don't have any classes yet. Create one in the "Students" tab.
             </div>
           ) : (
@@ -181,32 +172,41 @@ export function AssignHomeworkButton({
                   <div
                     key={cls.id}
                     className={cn(
-                      "border border-border/70 rounded-lg p-3 space-y-3 transition-colors",
+                      "border border-border/70 rounded-xl p-4 space-y-4 transition-colors",
                       isSelected
-                        ? "bg-primary/5 border-primary/30"
-                        : "bg-background",
+                        ? "bg-primary/5 border-primary/40 shadow-sm"
+                        : "bg-background hover:border-primary/30",
                     )}
                   >
-                    <label className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedClasses((p) => ({
-                              ...p,
-                              [cls.id]: { availableFrom: "", deadline: "" },
-                            }));
-                          } else {
-                            const next = { ...selectedClasses };
-                            delete next[cls.id];
-                            setSelectedClasses(next);
-                          }
-                        }}
-                        className="rounded border-border text-primary focus:ring-primary size-4.5 cursor-pointer"
-                      />
-                      {cls.name}
-                    </label>
+                    <div
+                      onClick={() => {
+                        if (isSelected) {
+                          const next = { ...selectedClasses };
+                          delete next[cls.id];
+                          setSelectedClasses(next);
+                        } else {
+                          setSelectedClasses((p) => ({
+                            ...p,
+                            [cls.id]: { availableFrom: "", deadline: "" },
+                          }));
+                        }
+                      }}
+                      className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none"
+                    >
+                      <div
+                        className={cn(
+                          "size-5 rounded flex items-center justify-center transition-colors shrink-0 border",
+                          isSelected
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-muted-foreground/40 bg-background",
+                        )}
+                      >
+                        {isSelected && (
+                          <Check className="size-3.5 stroke-[3]" />
+                        )}
+                      </div>
+                      <span className="text-foreground">{cls.name}</span>
+                    </div>
 
                     {isSelected && (
                       <div className="flex flex-col gap-4 pl-8 pt-1">
@@ -215,6 +215,7 @@ export function AssignHomeworkButton({
                             Available from (optional)
                           </label>
                           <ExplysDatePicker
+                            id={`assign-open-${cls.id}`}
                             selected={
                               data.availableFrom
                                 ? new Date(data.availableFrom)
@@ -229,6 +230,16 @@ export function AssignHomeworkButton({
                                 },
                               }))
                             }
+                            onKeyDown={(
+                              e: React.KeyboardEvent<HTMLInputElement>,
+                            ) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                document
+                                  .getElementById(`assign-close-${cls.id}`)
+                                  ?.focus();
+                              }
+                            }}
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -236,6 +247,7 @@ export function AssignHomeworkButton({
                             Deadline (optional)
                           </label>
                           <ExplysDatePicker
+                            id={`assign-close-${cls.id}`}
                             selected={
                               data.deadline ? new Date(data.deadline) : null
                             }
@@ -248,6 +260,14 @@ export function AssignHomeworkButton({
                                 },
                               }))
                             }
+                            onKeyDown={(
+                              e: React.KeyboardEvent<HTMLInputElement>,
+                            ) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                void handleSave();
+                              }
+                            }}
                           />
                         </div>
                       </div>
