@@ -36,62 +36,80 @@ export function ProfileSubscriptions({ user }: { user: UserData }) {
   const hasPlan = Boolean(planId);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-xl font-semibold tracking-tight">
-          {p.sectionTitle}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {p.sectionLead}
+    <div className="relative">
+      <div className="absolute flex flex-col justify-center items-center w-full">
+        <div className="relative flex justify-center items-center mb-5 w-60 h-60">
+          <div className="absolute w-50 h-50 rounded-full bg-linear-to-tr from-primary to-accent opacity-40 blur-2xl animate-pulse" />
+          <img
+            src="./ResultHappy.svg"
+            className="relative z-10 w-full h-full"
+            alt="Happy icon"
+          />
+        </div>
+        <p className="text-3xl sm:text-4xl font-bold text-center text-muted-foreground mb-1">
+          {p.freeAcces}
         </p>
       </div>
-
-      <div className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="flex flex-wrap items-start gap-3">
-          <div className="rounded-xl bg-primary/15 p-3 text-primary">
-            <CreditCard className="size-6" />
+      <div className="relative opacity-20 pointer-events-none cursor-not-allowed select-none blur-[1px]">
+        <div className="space-y-6">
+          <div>
+            <h2 className="font-display text-xl font-semibold tracking-tight">
+              {p.sectionTitle}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {p.sectionLead}
+            </p>
           </div>
-          <div className="min-w-0 flex-1">
-            {!hasPlan ?
-              <>
-                <p className="font-medium text-foreground">
-                  {p.noSubscriptionTitle}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {p.noSubscriptionBody}
-                </p>
-                <Link
-                  to="/pricing"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  {p.viewPricing}
-                  <ExternalLink className="size-3.5 opacity-80" />
-                </Link>
-              </>
-            : <>
-                <p className="font-medium text-foreground">
-                  {planDisplayName(planId)}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {p.statusPrefix}{" "}
-                  <span className="font-medium text-foreground">
-                    {status ? statusLabel(status, p) : "—"}
-                  </span>
-                </p>
-                {subId ?
-                  <p className="mt-2 font-mono text-xs text-muted-foreground break-all">
-                    {p.subscriptionIdPrefix} {subId}
-                  </p>
-                : null}
-                <Link
-                  to="/pricing"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  {p.plansUpgrades}
-                  <ExternalLink className="size-3.5 opacity-80" />
-                </Link>
-              </>
-            }
+
+          <div className="rounded-2xl border border-border bg-card/60 p-6">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="rounded-xl bg-primary/15 p-3 text-primary">
+                <CreditCard className="size-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                {!hasPlan ? (
+                  <>
+                    <p className="font-medium text-foreground">
+                      {p.noSubscriptionTitle}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {p.noSubscriptionBody}
+                    </p>
+                    <Link
+                      to="/pricing"
+                      className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      {p.viewPricing}
+                      <ExternalLink className="size-3.5 opacity-80" />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-foreground">
+                      {planDisplayName(planId)}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {p.statusPrefix}{" "}
+                      <span className="font-medium text-foreground">
+                        {status ? statusLabel(status, p) : "—"}
+                      </span>
+                    </p>
+                    {subId ? (
+                      <p className="mt-2 font-mono text-xs text-muted-foreground break-all">
+                        {p.subscriptionIdPrefix} {subId}
+                      </p>
+                    ) : null}
+                    <Link
+                      to="/pricing"
+                      className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      {p.plansUpgrades}
+                      <ExternalLink className="size-3.5 opacity-80" />
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
