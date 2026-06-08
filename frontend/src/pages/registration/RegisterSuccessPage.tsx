@@ -137,12 +137,12 @@ export default function RegisterSuccessPage() {
             >
               {success.goSignIn}
             </Button>
-            <Link
-              to="/catalog"
-              className="hover:text-primary/90 mt-2 w-full text-center text-sm font-semibold text-primary hover:underline"
+            <a
+              href="/catalog"
+              className="hover:text-primary/90 mt-2 w-full block text-center text-sm font-semibold text-primary hover:underline"
             >
               {success.continueToSite}
-            </Link>
+            </a>
           </div>
         </div>
       </div>
