@@ -149,7 +149,7 @@ export function ProfileTeacherStudents() {
         </button>
 
         {isOpen && (
-          <div className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 flex flex-col">
+          <div className="absolute top-[calc(100%+8px)] left-0 z-[99999] w-full overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 flex flex-col">
             {showSearch && (
               <div className="border-b border-border/50 bg-muted/10 p-2">
                 <input
@@ -163,7 +163,7 @@ export function ProfileTeacherStudents() {
               </div>
             )}
 
-            <div className="max-h-[220px] overflow-y-auto py-1">
+            <div className="max-h-[220px] overflow-y-auto py-1 overscroll-contain">
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-center text-sm text-muted-foreground">
                   No classes found
