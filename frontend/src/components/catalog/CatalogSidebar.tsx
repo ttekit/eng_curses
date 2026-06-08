@@ -20,8 +20,8 @@ const sidebarLinkDefs = [
   { id: "search" as const, icon: Search, to: "/catalog" },
   { id: "classroom" as const, icon: GraduationCap, to: "/classroom" },
   { id: "myLessons" as const, icon: BookOpen, to: "/watched-lessons" },
-  { id: "progress" as const, icon: Trophy, to: "/profile?tab=progress" },
   { id: "profile" as const, icon: User, to: "/profile" },
+  { id: "progress" as const, icon: Trophy, to: "/profile?tab=progress" },
 ] as const;
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
@@ -321,7 +321,9 @@ export function CatalogSidebar({
                 to={link.to}
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors",
-                  linkActive(link.id) ? "text-primary" : "text-muted-foreground",
+                  linkActive(link.id)
+                    ? "text-primary"
+                    : "text-muted-foreground",
                 )}
               >
                 <link.icon className="h-5 w-5" />

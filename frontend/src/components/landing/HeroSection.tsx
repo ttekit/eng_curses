@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Play, Sparkles } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import VideoPlayer from "../VideoPlayer";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
@@ -55,7 +56,13 @@ export function HeroSection() {
                 {hero.videoMin}{" "}
                 <span className="text-primary">{hero.videoWatch}</span>
               </p>
-              <div className="w-150 h-100 bg-primary/10 rounded-[15px]"></div>
+              <div className="w-auto h-auto bg-primary/10 rounded-[15px]">
+                <VideoPlayer
+                  src={
+                    "https://kpi-eng-course.s3.us-east-1.amazonaws.com/uploads/Landing_video.MOV"
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>

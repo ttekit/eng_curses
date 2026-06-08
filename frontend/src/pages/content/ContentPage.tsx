@@ -446,7 +446,9 @@ function ContentWatchHeader({
           </Link>
 
           <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center">
-            <img src="/Icon.svg" className="w-15 h-18" />
+            <Link to="/catalog">
+              <img src="/Icon.svg" className="w-15 h-18 hover:cursor-pointer" />
+            </Link>
             <span className="font-display truncate font-bold text-foreground">
               Explys
             </span>

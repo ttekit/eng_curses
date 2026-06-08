@@ -249,7 +249,13 @@ export default function WatchedLessonsPage() {
           <div className="border-border border-b bg-card/30 px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex items-start gap-3">
-                <img src="/Icon.svg" className="h-18 w-15" alt="" />
+                <Link to="/catalog">
+                  <img
+                    src="/Icon.svg"
+                    className="h-18 w-15 hover:cursor-pointer"
+                    alt=""
+                  />
+                </Link>
                 <div>
                   <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
                     {M.heading}
