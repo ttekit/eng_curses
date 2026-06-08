@@ -9,6 +9,7 @@ import {
   Trash2,
   Copy,
   Users,
+  KeyRound,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
@@ -80,7 +81,10 @@ export function ProfileTeacherStudents() {
   const [newStudentCreds, setNewStudentCreds] = useState<{
     email: string;
     password: string;
+    isReset?: boolean;
   } | null>(null);
+
+  const [resettingId, setResettingId] = useState<number | null>(null);
 
   function CustomSelect({
     value,
@@ -316,6 +320,39 @@ export function ProfileTeacherStudents() {
       classId: student.classId ? String(student.classId) : "",
     });
     setIsModalOpen(true);
+  };
+
+  const handleResetPassword = async (student: TeacherStudentResult) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to generate a new password for ${student.name}?`,
+      )
+    )
+      return;
+
+    setResettingId(student.id);
+    try {
+      const res = await apiFetch(
+        `/teacher/my-students/${student.id}/reset-password`,
+        {
+          method: "POST",
+        },
+      );
+      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
+      const data = await res.json();
+
+      // Открываем модалку с новыми данными
+      setNewStudentCreds({
+        email: student.email,
+        password: data.tempPassword,
+        isReset: true,
+      });
+      toast.success("New password generated successfully!");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to reset password");
+    } finally {
+      setResettingId(null);
+    }
   };
 
   const handleSaveClass = async () => {
@@ -622,7 +659,11 @@ export function ProfileTeacherStudents() {
       <AdminModal
         open={!!newStudentCreds}
         onClose={() => setNewStudentCreds(null)}
-        title={`🎉 ${t.registeredTitle}`}
+        title={
+          newStudentCreds?.isReset
+            ? "🔑 New Password Generated"
+            : `🎉 ${t.registeredTitle}`
+        }
         footer={
           <AdminButton
             className="w-full sm:w-auto"
@@ -778,18 +819,22 @@ export function ProfileTeacherStudents() {
         </ProfileCard>
       ) : (
         <div className="w-full max-w-full overflow-x-auto rounded-xl border border-border/50 bg-card/50">
-          <table className="w-full min-w-[900px] text-left text-sm whitespace-nowrap">
+          <table className="w-full min-w-[1000px] text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                <th className="p-4 font-medium">{t.colStudent}</th>
-                <th className="p-4 font-medium">Class / Класс</th>
-                <th className="p-4 font-medium">{t.colLevel}</th>
-                <th className="p-4 text-center font-medium">
+                <th className="p-4 font-medium w-[280px]">{t.colStudent}</th>
+                <th className="p-4 font-medium w-[180px]">Class / Класс</th>
+                <th className="p-4 font-medium w-[120px]">{t.colLevel}</th>
+                <th className="p-4 text-center font-medium w-[120px]">
                   {t.colVideosDone}
                 </th>
-                <th className="p-4 text-center font-medium">{t.colQuizzes}</th>
-                <th className="p-4 text-center font-medium">{t.colAvgScore}</th>
-                <th className="p-4 font-medium w-24 text-right">
+                <th className="p-4 text-center font-medium w-[120px]">
+                  {t.colQuizzes}
+                </th>
+                <th className="p-4 text-center font-medium w-[120px]">
+                  {t.colAvgScore}
+                </th>
+                <th className="p-4 font-medium w-[140px] text-right">
                   {t.colActions}
                 </th>
               </tr>
@@ -801,39 +846,51 @@ export function ProfileTeacherStudents() {
                     key={s.id}
                     className="border-border/60 hover:bg-muted/20 border-b transition-colors"
                   >
-                    <td className="p-4">
-                      <div className="text-foreground font-medium truncate max-w-[200px]">
+                    <td className="p-4 align-middle">
+                      <div className="text-foreground font-medium truncate w-[250px]">
                         {s.name}
                       </div>
-                      <div className="text-muted-foreground text-xs truncate max-w-[200px]">
+                      <div className="text-muted-foreground text-xs truncate w-[250px]">
                         {s.email}
                       </div>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 align-middle">
                       {s.className ? (
-                        <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+                        <span className="inline-flex rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                           {s.className}
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>
                       )}
                     </td>
-                    <td className="text-foreground p-4">
+                    <td className="text-foreground p-4 align-middle">
                       {s.englishLevel?.trim() || "—"}
                     </td>
-                    <td className="p-4 text-center tabular-nums">
+                    <td className="p-4 text-center tabular-nums align-middle">
                       {s.videosCompleted}
                     </td>
-                    <td className="p-4 text-center tabular-nums">
+                    <td className="p-4 text-center tabular-nums align-middle">
                       {s.quizAttempts}
                     </td>
-                    <td className="p-4 text-center tabular-nums">
+                    <td className="p-4 text-center tabular-nums align-middle">
                       {s.avgQuizScorePct != null
                         ? `${s.avgQuizScorePct}%`
                         : "—"}
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-4 text-right align-middle">
                       <div className="flex items-center justify-end gap-1 sm:gap-2">
+                        <button
+                          onClick={() => handleResetPassword(s)}
+                          disabled={resettingId === s.id}
+                          className="rounded-md p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                          title="Generate New Password"
+                        >
+                          {resettingId === s.id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <KeyRound className="size-4" />
+                          )}
+                        </button>
                         <button
                           onClick={() => openEditModal(s)}
                           className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
