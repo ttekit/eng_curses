@@ -59,7 +59,7 @@ export function HeroSection() {
               <div className="w-auto h-auto bg-primary/10 rounded-[15px]">
                 <VideoPlayer
                   src={
-                    "https://kpi-eng-course.s3.us-east-1.amazonaws.com/uploads/Landing_video.MOV"
+                    "https://kpi-eng-course.s3.us-east-1.amazonaws.com/m3u8_videos/Landing_video/index.m3u8"
                   }
                 />
               </div>
