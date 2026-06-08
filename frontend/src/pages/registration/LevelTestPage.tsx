@@ -5,6 +5,7 @@ import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
+import { useUser } from "../../context/UserContext";
 
 const questions = [
   {
@@ -36,6 +37,7 @@ const questions = [
 
 export default function LevelTestPage() {
   const navigate = useNavigate();
+  const { refreshProfile } = useUser();
   const levelTest = useAppMessages().levelTestPage;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
@@ -143,7 +145,10 @@ export default function LevelTestPage() {
             </div>
 
             <button
-              onClick={() => navigate("/catalog")}
+              onClick={async () => {
+                await refreshProfile();
+                navigate("/catalog");
+              }}
               className="rounded-[15px] bg-primary px-10 py-5 text-md font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             >
               {levelTest.continueToCatalog}
