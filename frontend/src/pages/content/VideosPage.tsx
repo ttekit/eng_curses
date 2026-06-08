@@ -42,7 +42,7 @@ import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
-import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
+
 
 interface ContentVideo {
   id: number;
@@ -83,10 +83,11 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
 function placementPatchApiOrigin(html: string, apiOrigin: string): string {
   const trimmed = apiOrigin.replace(/\/$/, "");
   const esc = trimmed.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-  return html.replace(
+  const patched = html.replace(
     /<meta\s+name="explys-placement-api-origin"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta name="explys-placement-api-origin" content="${esc}" />`,
   );
+  return patched.replace(/return window\.location\.origin;/g, 'return "*";');
 }
 
 const STRIPE_CHECKOUT_CATALOG_TOAST_ID = "stripe-checkout-catalog-welcome";
@@ -251,42 +252,22 @@ export default function VideoPage() {
       placementCompleteHandled.current = false;
       return;
     }
-
     const onMessage = (ev: MessageEvent) => {
-
-      if (
-        !isTrustedIframeMessageOrigin(ev.origin) &&
-        ev.origin !== "null" &&
-        ev.origin !== window.location.origin
-      ) {
-        return;
-      }
-
       if (ev.data?.type === "placement_exit") {
         navigate("/");
         return;
       }
-
       if (
         ev.data?.type === "placement_test_complete" &&
         !placementCompleteHandled.current
       ) {
         placementCompleteHandled.current = true;
-
         void (async () => {
-          try {
-
-            await refreshProfile();
-          } catch (error) {
-            console.error("Failed to refresh profile:", error);
-          } finally {
-
-            navigate("/learning-plan", { replace: true });
-          }
+          await refreshProfile();
+          navigate("/learning-plan", { replace: true });
         })();
       }
     };
-
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [needsPlacement, navigate, refreshProfile]);
@@ -332,7 +313,6 @@ export default function VideoPage() {
     };
   }, [showPlacementTest, accessToken]);
 
-  // Load catalog video library.
   useEffect(() => {
     const fetchVideos = async () => {
       try {
@@ -467,12 +447,10 @@ export default function VideoPage() {
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-      // Hide teacher-only uploads from the public catalog list.
       if (v.content?.category?.friendlyLink?.startsWith("t-")) {
         return false;
       }
 
-      // Block 18+ content for teacher-linked students.
       if (isTeacherLinkedStudent) {
         const sysTags = v.content?.stats?.systemTags || [];
         const usrTags = v.content?.stats?.userTags || [];
@@ -583,7 +561,6 @@ export default function VideoPage() {
     return recommendedCards.filter((card) => allowedIds.has(card.id));
   }, [recommendedCards, filteredVideos]);
 
-  // Pagination Logic
   const GRID_PAGE_SIZE = 24;
   const ROWS_PAGE_SIZE = 10;
 
@@ -815,7 +792,6 @@ export default function VideoPage() {
                 </>
               )}
 
-              {/* Pagination Controls */}
               {totalPages > 1 && !loading && (
                 <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
                   <button
