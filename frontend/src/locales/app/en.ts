@@ -250,6 +250,7 @@ export const appEn = {
     statusCancelled: "Cancelled",
     statusPastDue: "Past due",
     statusTrial: "Trial",
+    freeAcces: "Free access in June 2026!",
   },
 
   profileAchievements: {

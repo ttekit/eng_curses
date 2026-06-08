@@ -18,7 +18,6 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { ChameleonMascot } from "../../components/ChameleonMascot";
 import {
   AdminBadge,
   AdminButton,

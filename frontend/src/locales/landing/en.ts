@@ -85,6 +85,8 @@ export const landingEn = {
     lead: "Adaptive video lessons that match your interests, level, and learning style — like a chameleon adapting to its environment, we adapt to you.",
     ctaPrimary: "Start learning free",
     ctaSecondary: "Browse content",
+    videoMin: "Just 1 min - and you’re ready to start!",
+    videoWatch: "Watch the video",
   },
 
   features: {
@@ -302,6 +304,7 @@ export const landingEn = {
       resendFailed: "Failed to resend code",
       resendError: "Error while resending code",
       verifiedWelcomeBack: "Email verified! Welcome back.",
+      spamText: "Please, check your spam folder",
     },
     restoreAccount: {
       seoTitle: "Restore account",
@@ -487,7 +490,7 @@ export const landingEn = {
         genresAvoid: "Genres to avoid",
         genresAvoidHint: "We'll filter out selections from these buckets.",
         register: "Register",
-        continueToPlans: "Continue to plans",
+        continueToPlans: "Continue",
       },
       step3Alerts: {
         failedPrefix: "Registration failed:",

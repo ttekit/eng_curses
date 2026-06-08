@@ -251,6 +251,7 @@ export const appUk = {
     statusCancelled: "Скасовано",
     statusPastDue: "Прострочено",
     statusTrial: "Пробний період",
+    freeAcces: "Безкоштовний доступ у червні 2026!",
   },
 
   profileAchievements: {

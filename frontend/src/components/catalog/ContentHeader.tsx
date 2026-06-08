@@ -70,11 +70,14 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
     <>
       <header className="fixed top-0 z-999 flex h-18 w-full items-center justify-between border-b border-border bg-[--header-background] px-3 font-display backdrop-blur-md md:px-4">
         <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
-          <img
-            src="/Icon.svg"
-            alt=""
-            className="m-1 h-17 w-15 shrink-0 rounded-full p-1"
-          />
+          <Link to="/">
+            <img
+              src="/Icon.svg"
+              alt=""
+              className="m-1 h-17 w-15 shrink-0 rounded-full p-1 hover:cursor-pointer"
+            />
+          </Link>
+
           <p className="truncate text-2xl font-bold sm:text-3xl md:text-[35px]">
             Explys
           </p>
@@ -144,7 +147,9 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 to="/catalog"
                 className="rounded-[15px] bg-primary px-4 py-2.5 text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:px-6"
               >
-                {variant === "landing" ? landingI18n.catalog : appHeader.catalog}
+                {variant === "landing"
+                  ? landingI18n.catalog
+                  : appHeader.catalog}
               </Link>
             ) : (
               <>
@@ -153,7 +158,9 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     type="button"
                     className="rounded-[15px] px-4 py-2.5 text-sm font-medium text-foreground/70 transition-all hover:cursor-pointer hover:bg-muted-foreground/10 hover:text-white sm:px-6"
                   >
-                    {variant === "landing" ? landingI18n.logIn : appHeader.logIn}
+                    {variant === "landing"
+                      ? landingI18n.logIn
+                      : appHeader.logIn}
                   </button>
                 </Link>
                 <Link to="/registrationMain">
@@ -295,7 +302,9 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     onClick={closeMenu}
                     className="rounded-[15px] bg-primary px-4 py-3 text-center text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:bg-purple-hover hover:text-white"
                   >
-                    {variant === "landing" ? landingI18n.catalog : appHeader.catalog}
+                    {variant === "landing"
+                      ? landingI18n.catalog
+                      : appHeader.catalog}
                   </Link>
                 ) : (
                   <>
@@ -304,7 +313,9 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                         type="button"
                         className="w-full rounded-[15px] py-3 hover:cursor-pointer text-center text-sm font-medium text-foreground/70 transition-all hover:bg-muted-foreground/10 hover:text-white"
                       >
-                        {variant === "landing" ? landingI18n.logIn : appHeader.logIn}
+                        {variant === "landing"
+                          ? landingI18n.logIn
+                          : appHeader.logIn}
                       </button>
                     </Link>
                     <Link to="/registrationMain" onClick={closeMenu}>

@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Play, Sparkles } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import VideoPlayer from "../VideoPlayer";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
@@ -51,13 +52,17 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
-              <img
-                src="/Greeting.svg"
-                className="w-54 h-62 animate-float"
-                alt=""
-                fetchPriority="high"
-                loading="eager"
-              />
+              <p className="text-right text-3xl items-start mb-4">
+                {hero.videoMin}{" "}
+                <span className="text-primary">{hero.videoWatch}</span>
+              </p>
+              <div className="w-auto h-auto bg-primary/10 rounded-[15px]">
+                <VideoPlayer
+                  src={
+                    "https://kpi-eng-course.s3.us-east-1.amazonaws.com/uploads/Landing_video.MOV"
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
