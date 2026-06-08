@@ -490,6 +490,17 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
         try {
           window.parent && window.parent.postMessage({ type: completeEvent, summary: lastSummary, result: body || null }, pmTarget());
         } catch (e) {}
+
+
+        setTimeout(function() {
+          try {
+            window.top.location.href = "/catalog";
+          } catch (err) {
+            window.location.href = "/catalog";
+          }
+        }, 600);
+
+        
       }).catch(function (e) {
         try {
           if (typeof console !== "undefined" && console.error) {
