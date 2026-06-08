@@ -43,7 +43,6 @@ import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
-
 interface ContentVideo {
   id: number;
   videoName: string;
@@ -313,6 +312,7 @@ export default function VideoPage() {
     };
   }, [showPlacementTest, accessToken]);
 
+  // Load catalog video library.
   useEffect(() => {
     const fetchVideos = async () => {
       try {
@@ -447,10 +447,12 @@ export default function VideoPage() {
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
+      // Hide teacher-only uploads from the public catalog list.
       if (v.content?.category?.friendlyLink?.startsWith("t-")) {
         return false;
       }
 
+      // Block 18+ content for teacher-linked students.
       if (isTeacherLinkedStudent) {
         const sysTags = v.content?.stats?.systemTags || [];
         const usrTags = v.content?.stats?.userTags || [];
@@ -561,6 +563,7 @@ export default function VideoPage() {
     return recommendedCards.filter((card) => allowedIds.has(card.id));
   }, [recommendedCards, filteredVideos]);
 
+  // Pagination Logic
   const GRID_PAGE_SIZE = 24;
   const ROWS_PAGE_SIZE = 10;
 
@@ -792,6 +795,7 @@ export default function VideoPage() {
                 </>
               )}
 
+              {/* Pagination Controls */}
               {totalPages > 1 && !loading && (
                 <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
                   <button
