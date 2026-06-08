@@ -970,7 +970,7 @@ export class AuthService {
           return reject(
             new InternalServerErrorException(
               "'Could not end the session. Either the server is unreachable or the session is already invalid.'",
-            ),reg
+            )
           );
         }
         res.clearCookie(this.configService.getOrThrow<string>("SESSION_NAME"));
