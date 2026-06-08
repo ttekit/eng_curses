@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, CheckCircle, Clock, Lock } from "lucide-react";
+import { ArrowRight, Clock, Lock } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
@@ -57,7 +57,6 @@ export function VideoQuiz({
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [openDraft, setOpenDraft] = useState("");
-  const [isAnswered, setIsAnswered] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [answersById, setAnswersById] = useState<
     Record<string, number | string>
@@ -93,100 +92,77 @@ export function VideoQuiz({
     );
   }
 
-  function handleComplete() {
-    const wrongReview: QuizWrongReviewItem[] = [];
-    for (const q of questions) {
-      if (isOpenQuestion(q)) continue;
-      const picked = answersById[q.id];
-      if (typeof picked !== "number" || picked === q.correct) {
-        continue;
-      }
-      wrongReview.push({
-        question: q.question,
-        options: q.options,
-        selectedIndex: picked,
-        correctIndex: q.correct,
-        explanation: q.explanation,
-        category: q.category,
-      });
-    }
-
-    onComplete({
-      correctCount,
-      totalQuestions: questions.length,
-      answersById,
-      wrongReview,
-    });
-  }
-
   function handleSubmit() {
     if (!question) return;
     setErrorMsg(null);
 
-    if (isOpen) {
-      if (!isAnswered) {
-        const isSkip = openDraft.trim() === "";
-        if (!openAnswerIsValid(openDraft) && !isSkip) return;
-        setIsAnswered(true);
-        setAnswersById((prev) => ({
-          ...prev,
-          [question.id]: openDraft.trim(),
-          [`${question.id}_question`]: question.question,
-        }));
-        return;
-      }
-      if (currentQuestion < questions.length - 1) {
-        setCurrentQuestion((prev) => prev + 1);
-        setSelectedAnswer(null);
-        setIsAnswered(false);
-      } else {
-        handleComplete();
-      }
-      return;
-    }
+    let newAnswers = { ...answersById };
+    let newCorrectCount = correctCount;
 
-    if (!isAnswered) {
+    // 1. Сохраняем ответ
+    if (isOpen) {
+      const isSkip = openDraft.trim() === "";
+      if (!openAnswerIsValid(openDraft) && !isSkip) return;
+
+      newAnswers[question.id] = openDraft.trim();
+      newAnswers[`${question.id}_question`] = question.question;
+    } else {
       if (selectedAnswer === null) {
         setErrorMsg(L.selectOptionError);
         return;
       }
-      setIsAnswered(true);
-      const answerText = question.options[selectedAnswer];
 
-      setAnswersById((prev) => ({
-        ...prev,
-        [question.id]: selectedAnswer,
-        [`${question.id}_text`]: answerText,
-        [`${question.id}_question`]: question.question,
-        // Оборачиваем массив в JSON.stringify, чтобы превратить его в строку!
-        [`${question.id}_options`]: JSON.stringify(question.options),
-        [`${question.id}_correct`]: question.correct,
-      }));
+      const answerText = question.options[selectedAnswer];
+      newAnswers[question.id] = selectedAnswer;
+      newAnswers[`${question.id}_text`] = answerText;
+      newAnswers[`${question.id}_question`] = question.question;
+      newAnswers[`${question.id}_options`] = JSON.stringify(question.options);
+      newAnswers[`${question.id}_correct`] = question.correct;
 
       if (selectedAnswer === question.correct) {
-        setCorrectCount((prev) => prev + 1);
+        newCorrectCount += 1;
       }
-      return;
     }
 
+    setAnswersById(newAnswers);
+    setCorrectCount(newCorrectCount);
+
+    // 2. Мгновенно переходим к следующему вопросу ИЛИ завершаем тест
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
       setSelectedAnswer(null);
-      setIsAnswered(false);
     } else {
-      handleComplete();
+      const wrongReview: QuizWrongReviewItem[] = [];
+      for (const q of questions) {
+        if (isOpenQuestion(q)) continue;
+        const picked = newAnswers[q.id];
+        if (typeof picked !== "number" || picked === q.correct) {
+          continue;
+        }
+        wrongReview.push({
+          question: q.question,
+          options: q.options,
+          selectedIndex: picked,
+          correctIndex: q.correct,
+          explanation: q.explanation,
+          category: q.category,
+        });
+      }
+
+      onComplete({
+        correctCount: newCorrectCount,
+        totalQuestions: questions.length,
+        answersById: newAnswers,
+        wrongReview,
+      });
     }
   }
 
   const isSkip = isOpen && openDraft.trim() === "";
 
   const primaryDisabled = isOpen
-    ? !isAnswered
-      ? !(openAnswerIsValid(openDraft) || isSkip)
-      : false
-    : !isAnswered
-      ? selectedAnswer === null
-      : false;
+    ? !(openAnswerIsValid(openDraft) || isSkip)
+    : selectedAnswer === null;
 
   const categoryLabel =
     question?.category === "grammar"
@@ -240,65 +216,43 @@ export function VideoQuiz({
               setOpenDraft(e.target.value);
               if (errorMsg) setErrorMsg(null);
             }}
-            disabled={isAnswered}
             rows={5}
             placeholder={L.openPlaceholder}
-            className="focus:ring-primary/40 w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:outline-none disabled:opacity-80"
+            className="focus:ring-primary/40 w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:outline-none"
           />
-          {!isAnswered ? (
-            <p className="text-xs text-muted-foreground">
-              {formatMessage(L.openHint, { min: String(OPEN_MIN_CHARS) })}
-            </p>
-          ) : null}
+          <p className="text-xs text-muted-foreground">
+            {formatMessage(L.openHint, { min: String(OPEN_MIN_CHARS) })}
+          </p>
         </>
       ) : (
         <div className="space-y-2">
           {question?.options.map((option, index) => {
             const isSelected = selectedAnswer === index;
-            const lockedInThis = isAnswered && isSelected;
 
             return (
               <button
                 key={index}
                 type="button"
-                disabled={isAnswered}
                 onClick={() => {
-                  if (!isAnswered) {
-                    setSelectedAnswer(index);
-                    if (errorMsg) setErrorMsg(null);
-                  }
+                  setSelectedAnswer(index);
+                  if (errorMsg) setErrorMsg(null);
                 }}
                 className={cn(
                   "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg border-2 p-3 text-left transition-all",
-                  !isAnswered && isSelected && "border-primary bg-primary/10",
-                  !isAnswered &&
-                    !isSelected &&
-                    "border-border bg-card hover:border-primary/50",
-                  lockedInThis &&
-                    "border-primary/70 bg-primary/5 ring-1 ring-primary/25",
-                  isAnswered && !isSelected && "opacity-45",
+                  isSelected
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:border-primary/50",
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
-                    !isAnswered &&
-                      isSelected &&
-                      "bg-primary text-primary-foreground",
-                    !isAnswered &&
-                      !isSelected &&
-                      "bg-muted text-muted-foreground",
-                    lockedInThis && "bg-primary/80 text-primary-foreground",
-                    isAnswered &&
-                      !isSelected &&
-                      "bg-muted text-muted-foreground",
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors",
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {lockedInThis ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    String.fromCharCode(65 + index)
-                  )}
+                  {String.fromCharCode(65 + index)}
                 </span>
                 <span className="text-sm text-foreground">{option}</span>
               </button>
@@ -313,35 +267,21 @@ export function VideoQuiz({
         </div>
       ) : null}
 
-      {isAnswered ? (
-        <div
-          className={cn(
-            "rounded-lg p-3 text-sm",
-            isOpen
-              ? "bg-muted/80 text-foreground"
-              : "bg-muted/80 text-foreground",
-          )}
-        >
-          {isOpen
-            ? openDraft.trim() === ""
-              ? L.questionSkipped
-              : L.responseSaved
-            : L.answerSaved}
-        </div>
-      ) : null}
-
       <button
         type="button"
         onClick={handleSubmit}
+        disabled={primaryDisabled}
         className={cn(
-          "flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
+          "flex w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
+          primaryDisabled
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-purple-hover hover:text-white hover:cursor-pointer",
         )}
       >
-        {!isAnswered ? (
-          isSkip ? L.skipQuestion : L.checkAnswer
-        ) : currentQuestion < questions.length - 1 ? (
+        {currentQuestion < questions.length - 1 ? (
           <>
-            {L.nextQuestion} <ArrowRight className="h-4 w-4" />
+            {isSkip ? L.skipQuestion : L.nextQuestion}{" "}
+            <ArrowRight className="h-4 w-4 ml-1" />
           </>
         ) : (
           L.completeLesson
