@@ -879,6 +879,7 @@ export const appEn = {
     completeBannerTitle: "Lesson complete",
     completeBannerXp: "You earned {xp} XP",
     warning: "Warning! Age resctriction:",
+    xpInfo: "Earn 150xp after finishing this lesson to move to a new level!",
   },
 
   lessonSummaryPage: {

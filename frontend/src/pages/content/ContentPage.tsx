@@ -454,7 +454,10 @@ function ContentWatchHeader({
             </span>
           </div>
 
-          <div className="min-h-[1.25rem] justify-self-end text-right text-xs text-muted-foreground sm:text-sm">
+          <div
+            className="min-h-[1.25rem] justify-self-end text-right text-xs hover:cursor-pointer text-muted-foreground sm:text-sm"
+            title={L.xpInfo}
+          >
             {rightLabel?.trim() ? rightLabel : null}
           </div>
         </div>
