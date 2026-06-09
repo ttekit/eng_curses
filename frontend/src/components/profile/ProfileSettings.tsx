@@ -63,6 +63,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const navigate = useNavigate();
   const s = useAppMessages().profileSettings;
 
+  const isTeacherStudent =
+    user?.role?.toLowerCase() === "student" &&
+    Boolean((user as any).teacherId || (user as any).teacherName);
+
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
   const [dateOfBirth, setDateOfBirth] = useState(() => {
@@ -647,7 +651,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   setDateOfBirth("");
                 }
               }}
-              dateFormat="yyyy-MM-dd" // Формат, который понимает type="date"
+              dateFormat="yyyy-MM-dd"
               showYearDropdown
               scrollableYearDropdown
               yearDropdownItemNumber={100}
@@ -655,7 +659,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               maxDate={new Date()}
               wrapperClassName="w-full"
               portalId="calendar-portal"
-              preventOpenOnFocus={true} // Защита от случайного всплытия
+              preventOpenOnFocus={true}
               customInput={<CustomDateInput id="profile-dob" />}
             />
           </div>
@@ -843,151 +847,153 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         }
       >
         <div className="space-y-4">
-          <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/20 transition-colors">
-            <>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
-                <div>
-                  <p className="font-medium text-foreground text-left">
-                    Email address
-                  </p>
-                  <button
-                    onClick={() => setIsChangeEmailModalOpen(true)}
-                    className="text-sm text-muted-foreground text-left hover:underline transition-colors"
-                  >
-                    {maskEmail(user?.email)}
-                  </button>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleStartEmailChange}
-                className="shrink-0 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent transition-all duration-500 hover:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:cursor-pointer"
-              >
-                Change email
-              </button>
-
-              {isChangingEmail && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
-                  <div className="w-full max-w-2xl rounded-2xl border border-border bg-card text-foreground shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-                    <div className="flex items-start justify-between p-8 pb-6">
-                      <div>
-                        <h2 className="text-3xl font-bold">Update email</h2>
-                        <p className="text-base text-muted-foreground mt-2">
-                          {emailChangeStep === 1
-                            ? `We sent a code to ${maskEmail(user?.email)}. Enter it below.`
-                            : "Enter your new email address."}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setIsChangingEmail(false)}
-                        className="p-1 rounded-sm text-muted-foreground hover:cursor-pointer hover:bg-muted-foreground/10 transition-colors"
-                      >
-                        <svg
-                          className="w-6 h-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="p-8 pt-0 space-y-5">
-                      {error && (
-                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
-                          {error}
-                        </div>
-                      )}
-
-                      {emailChangeStep === 1 ? (
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                            Verification Code{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            maxLength={6}
-                            value={emailChangeCode}
-                            onChange={(e) =>
-                              setEmailChangeCode(
-                                e.target.value.replace(/\D/g, ""),
-                              )
-                            }
-                            placeholder="• • • • • •"
-                            autoFocus
-                            className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-2 text-2xl text-foreground text-center tracking-[0.5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-5">
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              New Email Address{" "}
-                              <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="email"
-                              value={newEmail}
-                              onChange={(e) => setNewEmail(e.target.value)}
-                              autoFocus
-                              className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              Confirm New Email{" "}
-                              <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="email"
-                              value={confirmNewEmail}
-                              onChange={(e) =>
-                                setConfirmNewEmail(e.target.value)
-                              }
-                              onPaste={(e) => e.preventDefault()}
-                              className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-6 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
-                      <button
-                        onClick={() => setIsChangingEmail(false)}
-                        className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleEmailUpdate}
-                        disabled={
-                          isLoading ||
-                          (emailChangeStep === 1 &&
-                            emailChangeCode.length !== 6)
-                        }
-                        className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                      >
-                        {isLoading
-                          ? "Processing..."
-                          : emailChangeStep === 1
-                            ? "Next"
-                            : "Done"}
-                      </button>
-                    </div>
+          {!isTeacherStudent && (
+            <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/20 transition-colors">
+              <>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+                  <div>
+                    <p className="font-medium text-foreground text-left">
+                      Email address
+                    </p>
+                    <button
+                      onClick={() => setIsChangeEmailModalOpen(true)}
+                      className="text-sm text-muted-foreground text-left hover:underline transition-colors"
+                    >
+                      {maskEmail(user?.email)}
+                    </button>
                   </div>
                 </div>
-              )}
-            </>
-          </div>
+                <button
+                  type="button"
+                  onClick={handleStartEmailChange}
+                  className="shrink-0 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent transition-all duration-500 hover:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:cursor-pointer"
+                >
+                  Change email
+                </button>
+
+                {isChangingEmail && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-2xl rounded-2xl border border-border bg-card text-foreground shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+                      <div className="flex items-start justify-between p-8 pb-6">
+                        <div>
+                          <h2 className="text-3xl font-bold">Update email</h2>
+                          <p className="text-base text-muted-foreground mt-2">
+                            {emailChangeStep === 1
+                              ? `We sent a code to ${maskEmail(user?.email)}. Enter it below.`
+                              : "Enter your new email address."}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setIsChangingEmail(false)}
+                          className="p-1 rounded-sm text-muted-foreground hover:cursor-pointer hover:bg-muted-foreground/10 transition-colors"
+                        >
+                          <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="p-8 pt-0 space-y-5">
+                        {error && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                            {error}
+                          </div>
+                        )}
+
+                        {emailChangeStep === 1 ? (
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              Verification Code{" "}
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={6}
+                              value={emailChangeCode}
+                              onChange={(e) =>
+                                setEmailChangeCode(
+                                  e.target.value.replace(/\D/g, ""),
+                                )
+                              }
+                              placeholder="• • • • • •"
+                              autoFocus
+                              className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-2 text-2xl text-foreground text-center tracking-[0.5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-5">
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                New Email Address{" "}
+                                <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="email"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                autoFocus
+                                className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                Confirm New Email{" "}
+                                <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="email"
+                                value={confirmNewEmail}
+                                onChange={(e) =>
+                                  setConfirmNewEmail(e.target.value)
+                                }
+                                onPaste={(e) => e.preventDefault()}
+                                className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-6 px-8 flex items-center justify-end gap-4 rounded-b-2xl bg-muted/30 border-t border-border">
+                        <button
+                          onClick={() => setIsChangingEmail(false)}
+                          className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleEmailUpdate}
+                          disabled={
+                            isLoading ||
+                            (emailChangeStep === 1 &&
+                              emailChangeCode.length !== 6)
+                          }
+                          className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                        >
+                          {isLoading
+                            ? "Processing..."
+                            : emailChangeStep === 1
+                              ? "Next"
+                              : "Done"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            </div>
+          )}
 
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/20 transition-colors">
             <>
@@ -1352,25 +1358,28 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               {s.resetProgressCta || "Reset Progress"}
             </button>
           </div>
-          <div className="flex flex-col gap-4 rounded-lg bg-destructive/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-medium text-foreground">
-                {s.deleteAccountTitle || "Delete Account"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {s.deleteAccountDesc || "Permanently delete your account."}
-              </p>
+
+          {!isTeacherStudent && (
+            <div className="flex flex-col gap-4 rounded-lg bg-destructive/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium text-foreground">
+                  {s.deleteAccountTitle || "Delete Account"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {s.deleteAccountDesc || "Permanently delete your account."}
+                </p>
+              </div>
+              <div className="flex justify-center sm:block">
+                <button
+                  type="button"
+                  className="rounded-[15px] w-full bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                  onClick={() => setDangerOpen("delete")}
+                >
+                  {s.deleteAccountCta || "Delete Account"}
+                </button>
+              </div>
             </div>
-            <div className="flex justify-center sm:block">
-              <button
-                type="button"
-                className="rounded-[15px] w-full bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                onClick={() => setDangerOpen("delete")}
-              >
-                {s.deleteAccountCta || "Delete Account"}
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </ProfileCard>
 
