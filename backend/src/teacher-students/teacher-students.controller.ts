@@ -186,4 +186,15 @@ export class TeacherStudentsController {
       await this.teacherStudentsService.exportStudentsExcel(teacherId);
     res.send(buffer);
   }
+
+  @Post("my-students/:id/reset-password")
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: "Reset a student's password" })
+  async resetStudentPassword(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherStudentsService.resetStudentPassword(teacherId, id);
+  }
 }

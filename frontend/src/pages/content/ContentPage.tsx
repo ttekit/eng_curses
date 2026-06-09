@@ -454,7 +454,10 @@ function ContentWatchHeader({
             </span>
           </div>
 
-          <div className="min-h-[1.25rem] justify-self-end text-right text-xs text-muted-foreground sm:text-sm">
+          <div
+            className="min-h-[1.25rem] justify-self-end text-right text-xs hover:cursor-pointer text-muted-foreground sm:text-sm"
+            title={L.xpInfo}
+          >
             {rightLabel?.trim() ? rightLabel : null}
           </div>
         </div>
@@ -1364,6 +1367,15 @@ export default function ContentPage() {
     "21+": "bg-primary/20 text-primary border border-primary/40",
   };
 
+  const videoLevel: Record<string, string> = {
+    A1: "bg-accent/20 text-accent border border-accent/40",
+    A2: "bg-accent/20 text-accent border border-accent/40",
+    B1: "bg-primary/20 text-primary border border-primary/40",
+    B2: "bg-primary/20 text-primary border border-primary/40",
+    C1: "bg-destructive/20 text-destructive border border-destructive/40",
+    C2: "bg-destructive/20 text-destructive border border-destructive/40",
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <SEO
@@ -1442,6 +1454,25 @@ export default function ContentPage() {
                       {videoData.ageRestriction}
                     </span>
                   )}
+
+                {videoData.content.stats?.systemTags?.find((t) =>
+                  /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+                ) &&
+                  (() => {
+                    const level = videoData.content.stats!.systemTags!.find(
+                      (t) => /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+                    )!;
+                    return (
+                      <span
+                        className={cn(
+                          "ml-1 inline-flex items-center rounded-[15px] px-2 py-0.5 text-xs font-semibold mb-3",
+                          videoLevel[level.toUpperCase()],
+                        )}
+                      >
+                        {level}
+                      </span>
+                    );
+                  })()}
 
                 <p className="leading-relaxed text-muted-foreground">
                   {descriptionBlurb}

@@ -13,6 +13,7 @@ export interface CatalogCardVideo {
   thumbnailUrl?: string;
   videoLink?: string;
   ageRestriction?: string;
+  level?: string;
 }
 
 const levelLike = /^(A1|A2|B1|B2|C1|C2)$/i;
@@ -21,12 +22,12 @@ const badgeClassForLabel = (label: string) => {
   const t = label.trim().toUpperCase();
   if (levelLike.test(t)) {
     const map: Record<string, string> = {
-      A1: "bg-accent text-accent-foreground",
-      A2: "bg-accent text-accent-foreground",
-      B1: "bg-primary/80 text-primary-foreground",
-      B2: "bg-primary text-primary-foreground",
-      C1: "bg-destructive/80 text-destructive-foreground",
-      C2: "bg-destructive text-destructive-foreground",
+      A1: "bg-accent text-foreground",
+      A2: "bg-accent text-foreground",
+      B1: "bg-primary/80 text-foreground",
+      B2: "bg-primary text-foreground",
+      C1: "bg-destructive/80 text-foreground",
+      C2: "bg-destructive text-foreground",
     };
     return map[t] ?? "bg-muted text-muted-foreground";
   }
@@ -81,15 +82,29 @@ export function CatalogVideoCard({
             </div>
           </div>
 
-          {video.ageRestriction ? (
-            <span
-              className={cn(
-                "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font- z-10",
-                ageRestrictionClass(video.ageRestriction),
-              )}
-            >
-              {video.ageRestriction}
-            </span>
+          {video.ageRestriction || video.level ? (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 z-10">
+              {video.ageRestriction ? (
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-xs font-medium",
+                    ageRestrictionClass(video.ageRestriction),
+                  )}
+                >
+                  {video.ageRestriction}
+                </span>
+              ) : null}
+              {video.level ? (
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-xs ",
+                    badgeClassForLabel(video.level),
+                  )}
+                >
+                  {video.level}
+                </span>
+              ) : null}
+            </div>
           ) : null}
 
           {video.durationLabel ? (

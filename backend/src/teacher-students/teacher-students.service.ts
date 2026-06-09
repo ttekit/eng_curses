@@ -322,6 +322,26 @@ export class TeacherStudentsService {
     return { student: created, tempPassword };
   }
 
+  async resetStudentPassword(teacherId: number, studentId: number) {
+    const student = await this.prisma.user.findFirst({
+      where: { id: studentId, teacherId },
+    });
+    if (!student) {
+      throw new ForbiddenException("Student not found or not assigned to you");
+    }
+
+    const tempPassword = generateSecurePassword(16);
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: studentId },
+      data: { password: hashedPassword },
+    });
+
+    return { success: true, tempPassword };
+  }
+
   async exportStudentsExcel(teacherId: number): Promise<Buffer> {
     const students = await this.prisma.user.findMany({
       where: { teacherId },

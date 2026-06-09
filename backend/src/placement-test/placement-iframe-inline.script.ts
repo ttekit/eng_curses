@@ -498,9 +498,9 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
           } catch (err) {
             window.location.href = "/catalog";
           }
-        }, 600);
+        }, 350);
 
-        
+
       }).catch(function (e) {
         try {
           if (typeof console !== "undefined" && console.error) {
