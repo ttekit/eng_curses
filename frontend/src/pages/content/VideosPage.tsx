@@ -40,13 +40,7 @@ import {
 } from "../../lib/contentRecommendations";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
-import {
-  Layers,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Lock,
-} from "lucide-react";
+import { Layers, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
 
@@ -145,11 +139,10 @@ export default function VideoPage() {
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
 
+  // Ссылки на контейнеры для горизонтальной прокрутки
   const levelScrollRef = useRef<HTMLDivElement>(null);
   const genreScrollRef = useRef<HTMLDivElement>(null);
-
-  const [isAgeDropdownOpen, setIsAgeDropdownOpen] = useState(false);
-  const ageDropdownRef = useRef<HTMLDivElement>(null);
+  const ageScrollRef = useRef<HTMLDivElement>(null);
 
   // Умная проверка возраста юзера
   const isAdultUser = useMemo(() => {
@@ -170,20 +163,6 @@ export default function VideoPage() {
     return false;
   }, [user]);
 
-  // Закрытие дропдауна при клике вне
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        ageDropdownRef.current &&
-        !ageDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsAgeDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleAgeSelect = (age: string) => {
     if ((age === "18+" || age === "21+") && !isAdultUser) {
       toast.error(
@@ -191,11 +170,9 @@ export default function VideoPage() {
           ? "Цей контент доступний лише для користувачів від 18 років."
           : "This content is restricted to users 18 and older.",
       );
-      setIsAgeDropdownOpen(false);
       return;
     }
     setSelectedAge(age);
-    setIsAgeDropdownOpen(false);
   };
 
   const scrollContainer = useCallback(
@@ -236,8 +213,8 @@ export default function VideoPage() {
     if (selectedGenre === "Recommended") return cb.filterRecommendedForYou;
     let title = cb.filterFilteredResults;
     if (selectedLevel !== "All") title += ` - ${selectedLevel}`;
-    if (selectedGenre !== "All") title += ` - ${filterLabel(selectedGenre)}`;
     if (selectedAge !== "All") title += ` - ${selectedAge}`;
+    if (selectedGenre !== "All") title += ` - ${filterLabel(selectedGenre)}`;
     return title;
   };
 
@@ -524,7 +501,6 @@ export default function VideoPage() {
 
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
-      // Hide teacher-only uploads from the public catalog list.
       if (v.content?.category?.friendlyLink?.startsWith("t-")) {
         return false;
       }
@@ -617,7 +593,6 @@ export default function VideoPage() {
     return recommendedCards.filter((card) => allowedIds.has(card.id));
   }, [recommendedCards, filteredVideos]);
 
-  // Pagination Logic
   const GRID_PAGE_SIZE = 24;
   const ROWS_PAGE_SIZE = 10;
 
@@ -687,26 +662,26 @@ export default function VideoPage() {
             <CatalogHero featured={featuredHero} />
 
             <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
-                {/* ФИЛЬТР УРОВНЯ */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6 overflow-hidden">
+                {/* 1. ФИЛЬТР УРОВНЯ */}
                 <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
                     <Layers className="size-3.5" /> {cb.filterLevel}
                   </span>
                   <div className="relative group/level flex w-full items-center">
-                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
 
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "left")}
-                      className="absolute hover:cursor-pointer  left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
 
                     <div
                       ref={levelScrollRef}
-                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full"
+                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
                       style={{
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
@@ -732,14 +707,65 @@ export default function VideoPage() {
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "right")}
-                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* ФИЛЬТР ЖАНРОВ */}
+                {/* 2. ФИЛЬТР ВОЗРАСТА */}
+                <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                    <Lock className="size-3.5 opacity-70" /> Age
+                  </span>
+                  <div className="relative group/age flex w-full items-center">
+                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
+
+                    <button
+                      type="button"
+                      onClick={() => scrollContainer(ageScrollRef, "left")}
+                      className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <div
+                      ref={ageScrollRef}
+                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
+                      style={{
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                      }}
+                    >
+                      {AGE_LIST.map((age) => (
+                        <button
+                          key={age}
+                          type="button"
+                          onClick={() => handleAgeSelect(age)}
+                          className={cn(
+                            "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                            selectedAge === age
+                              ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          )}
+                        >
+                          {age}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => scrollContainer(ageScrollRef, "right")}
+                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. ФИЛЬТР ЖАНРОВ */}
                 {genreNames.length > 0 && (
                   <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                     <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
@@ -751,19 +777,19 @@ export default function VideoPage() {
                       {cb.filterGenre}
                     </span>
                     <div className="relative group/genre flex w-full items-center">
-                      <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+                      <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
 
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "left")}
-                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
 
                       <div
                         ref={genreScrollRef}
-                        className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full"
+                        className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
                         style={{
                           scrollbarWidth: "none",
                           msOverflowStyle: "none",
@@ -789,62 +815,13 @@ export default function VideoPage() {
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "right")}
-                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                 )}
-
-                {/* ФИЛЬТР ВОЗРАСТА */}
-                <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto z-30">
-                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                    <Lock className="size-3.5 opacity-70" /> Age
-                  </span>
-                  <div
-                    className="relative group/age flex w-full items-center"
-                    ref={ageDropdownRef}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setIsAgeDropdownOpen(!isAgeDropdownOpen)}
-                      className={cn(
-                        "flex items-center justify-between gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer min-w-[80px]",
-                        selectedAge !== "All"
-                          ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                          : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
-                      )}
-                    >
-                      {selectedAge}
-                      <ChevronDown
-                        className={cn(
-                          "size-3.5 transition-transform",
-                          isAgeDropdownOpen && "rotate-180",
-                        )}
-                      />
-                    </button>
-
-                    {isAgeDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-32 bg-card border border-border rounded-xl shadow-xl overflow-hidden py-1 z-50 animate-in fade-in zoom-in-95">
-                        {AGE_LIST.map((age) => (
-                          <button
-                            key={age}
-                            onClick={() => handleAgeSelect(age)}
-                            className={cn(
-                              "w-full text-left px-4 py-2 text-xs font-semibold transition-colors hover:bg-muted",
-                              selectedAge === age
-                                ? "text-primary bg-primary/10"
-                                : "text-foreground",
-                            )}
-                          >
-                            {age}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
 
