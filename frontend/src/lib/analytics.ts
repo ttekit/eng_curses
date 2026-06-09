@@ -1,6 +1,15 @@
 import posthog from "posthog-js";
 
+const GA_MEASUREMENT_ID = "G-KSFKZHGKTC";
+
 let initialized = false;
+
+function captureGooglePageView(pathname: string): void {
+  if (typeof window.gtag !== "function") {
+    return;
+  }
+  window.gtag("config", GA_MEASUREMENT_ID, { page_path: pathname });
+}
 
 export function initPosthog(): void {
   if (initialized) {
@@ -24,6 +33,7 @@ export function initPosthog(): void {
 }
 
 export function capturePageView(pathname: string): void {
+  captureGooglePageView(pathname);
   const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
   if (typeof key !== "string" || !key.trim()) {
     return;
