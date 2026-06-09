@@ -77,6 +77,9 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
     thumbnailUrl: video.thumbnailUrl,
     videoLink: video.videoLink,
     ageRestriction: video.ageRestriction,
+    level: video.content.stats?.systemTags?.find((t) =>
+      /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+    ),
   };
 }
 
@@ -107,7 +110,8 @@ const LEVELS_LIST = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
 function getPaginationRange(current: number, total: number) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
-  if (current >= total - 3) return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  if (current >= total - 3)
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
   return [1, "...", current - 1, current, current + 1, "...", total];
 }
 
@@ -155,8 +159,11 @@ export default function VideoPage() {
 
   const scrollToCatalogTop = () => {
     if (catalogTopRef.current) {
-      const y = catalogTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+      const y =
+        catalogTopRef.current.getBoundingClientRect().top +
+        window.scrollY -
+        100;
+      window.scrollTo({ top: y, behavior: "smooth" });
     }
   };
 
@@ -253,7 +260,6 @@ export default function VideoPage() {
     }
 
     const onMessage = (ev: MessageEvent) => {
-
       if (
         !isTrustedIframeMessageOrigin(ev.origin) &&
         ev.origin !== "null" &&
@@ -275,12 +281,10 @@ export default function VideoPage() {
 
         void (async () => {
           try {
-
             await refreshProfile();
           } catch (error) {
             console.error("Failed to refresh profile:", error);
           } finally {
-
             navigate("/learning-plan", { replace: true });
           }
         })();
@@ -522,15 +526,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
@@ -592,11 +596,17 @@ export default function VideoPage() {
     : Math.ceil(catalogRows.length / ROWS_PAGE_SIZE);
 
   const paginatedVideos = hasFilters
-    ? filteredVideos.slice((currentPage - 1) * GRID_PAGE_SIZE, currentPage * GRID_PAGE_SIZE)
+    ? filteredVideos.slice(
+        (currentPage - 1) * GRID_PAGE_SIZE,
+        currentPage * GRID_PAGE_SIZE,
+      )
     : [];
 
   const paginatedRows = !hasFilters
-    ? catalogRows.slice((currentPage - 1) * ROWS_PAGE_SIZE, currentPage * ROWS_PAGE_SIZE)
+    ? catalogRows.slice(
+        (currentPage - 1) * ROWS_PAGE_SIZE,
+        currentPage * ROWS_PAGE_SIZE,
+      )
     : [];
 
   return (
@@ -820,38 +830,50 @@ export default function VideoPage() {
                 <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
                   <button
                     type="button"
-                    onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); scrollToCatalogTop(); }}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.max(1, p - 1));
+                      scrollToCatalogTop();
+                    }}
                     disabled={currentPage === 1}
                     className="flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl bg-card border border-border text-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
                   >
                     Prev
                   </button>
 
-                  {getPaginationRange(currentPage, totalPages).map((p, i) => (
+                  {getPaginationRange(currentPage, totalPages).map((p, i) =>
                     p === "..." ? (
-                      <span key={`ellipsis-${i}`} className="flex items-center justify-center px-2 py-2 min-h-[44px] text-muted-foreground font-bold">
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="flex items-center justify-center px-2 py-2 min-h-[44px] text-muted-foreground font-bold"
+                      >
                         ...
                       </span>
                     ) : (
                       <button
                         key={`page-${p}`}
                         type="button"
-                        onClick={() => { setCurrentPage(p as number); scrollToCatalogTop(); }}
+                        onClick={() => {
+                          setCurrentPage(p as number);
+                          scrollToCatalogTop();
+                        }}
                         className={cn(
                           "flex items-center justify-center min-w-[44px] px-3 py-2 min-h-[44px] rounded-xl font-bold transition-colors cursor-pointer",
                           currentPage === p
                             ? "bg-primary/20 text-primary border border-primary/30"
-                            : "bg-card border border-border text-foreground hover:bg-muted"
+                            : "bg-card border border-border text-foreground hover:bg-muted",
                         )}
                       >
                         {p}
                       </button>
-                    )
-                  ))}
+                    ),
+                  )}
 
                   <button
                     type="button"
-                    onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); scrollToCatalogTop(); }}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.min(totalPages, p + 1));
+                      scrollToCatalogTop();
+                    }}
                     disabled={currentPage === totalPages}
                     className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-hover transition-all cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                   >
@@ -896,7 +918,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
+                        "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

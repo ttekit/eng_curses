@@ -127,7 +127,7 @@ export function mapRecommendationsToCatalogCards(
   items: VideoRecommendationItem[],
   thumbnailById: ReadonlyMap<number, string | undefined>,
   limit = 12,
-  ageRestrictionById?: ReadonlyMap<number, string | undefined>
+  ageRestrictionById?: ReadonlyMap<number, string | undefined>,
 ): CatalogCardVideo[] {
   const out: CatalogCardVideo[] = [];
   for (const item of items) {
@@ -139,7 +139,12 @@ export function mapRecommendationsToCatalogCards(
       categoryLabel: item.content.name,
       videoLink: item.contentVideo.videoLink,
       thumbnailUrl: thumbnailById.get(id),
-      ageRestriction: ageRestrictionById?.has(id) ? ageRestrictionById.get(id) : item.contentVideo.ageRestriction,
+      ageRestriction: ageRestrictionById?.has(id)
+        ? ageRestrictionById.get(id)
+        : item.contentVideo.ageRestriction,
+      level: item.stats?.systemTags?.find((t) =>
+        /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+      ),
     });
   }
   return out;
@@ -211,5 +216,8 @@ export function buildClientRecommendedVideos(
     thumbnailUrl: v.thumbnailUrl,
     videoLink: v.videoLink,
     ageRestriction: v.ageRestriction,
+    level: v.content.stats?.systemTags?.find((t) =>
+      /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+    ),
   }));
 }

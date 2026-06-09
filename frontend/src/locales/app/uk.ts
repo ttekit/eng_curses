@@ -890,6 +890,8 @@ export const appUk = {
     completeBannerTitle: "Урок завершено",
     completeBannerXp: "Ви отримали {xp} XP",
     warning: "Увага! Вікове обмеження: ",
+    xpInfo:
+      "Заробіть 150xp після завершення цього уроку, щоб перейти на новий рівень!",
   },
 
   lessonSummaryPage: {
