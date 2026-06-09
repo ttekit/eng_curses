@@ -14,6 +14,7 @@ import {
   ChevronRight,
   FileText,
   HelpCircle,
+  Lock,
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { cn } from "../../lib/utils";
@@ -44,10 +45,8 @@ import { AssignHomeworkButton } from "../../components/AssignHomeworkButton";
 
 const LESSON_XP = 150;
 const LESSON_SUMMARY_STORAGE = "lessonSummary:";
-/** Playback ratio at or above which the lesson counts as watched (quiz + backend watch-complete). */
 const WATCHED_COMPLETED_RATIO = 0.75;
 
-/** GET /content-video/:id/tests (Gemini generates tests + keyVocabulary + gradingToken). */
 type LessonSideBundle = {
   gradingToken?: string;
   keyVocabulary?: { word?: string; definition?: string; example?: string }[];
@@ -119,7 +118,6 @@ function mapApiTestsToQuiz(
   });
 }
 
-/** Pluck vocabulary array from API JSON (camelCase, snake_case, or nested). */
 function rawKeyVocabularyFromTestsPayload(payload: unknown): unknown[] {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return [];
@@ -182,7 +180,6 @@ const TRANSCRIPT_VOCAB_STOP = new Set(
   ),
 );
 
-/** When the tests API omits keyVocabulary or the request fails — mirror backend token pick. */
 function buildVocabularyFromTranscript(
   lines: TranscriptLine[],
 ): VocabularyItem[] {
@@ -207,7 +204,6 @@ function buildVocabularyFromTranscript(
   }));
 }
 
-/** Words submitted with comprehension results — persisted for the learner (see POST .../tests/submit `keyVocabularyTerms`). */
 function extractQuizKeyVocabTerms(
   vocabulary: VocabularyItem[] | undefined,
 ): string[] {
@@ -226,7 +222,6 @@ function extractQuizKeyVocabTerms(
   return out;
 }
 
-/** Glosses submitted with comprehension results — persisted on UserVocabulary. */
 function extractQuizKeyVocabDetails(
   vocabulary: VocabularyItem[] | undefined,
   enriched: VocabularyItem[],
@@ -283,7 +278,6 @@ function applyVocabularyHints(
   });
 }
 
-/** Prefer matched open-question id; otherwise the longest string in answers (MCQ values are numbers). */
 function extractOpenWrittenAnswer(
   answers: Record<string, number | string>,
   questions: QuizQuestion[],
@@ -305,7 +299,6 @@ function extractOpenWrittenAnswer(
   return best.length >= 12 ? best : undefined;
 }
 
-/** Reads coach text from submit JSON (handles alternate key shapes). */
 function readOpenEndedFeedbackFromSubmit(
   data: unknown,
 ): string | null | undefined {
@@ -323,7 +316,6 @@ function readOpenEndedFeedbackFromSubmit(
   return undefined;
 }
 
-/** 1–10 written-summary score when present on submit response. */
 function readWrittenSummaryScoreFromSubmit(
   data: unknown,
 ): number | null | undefined {
@@ -397,12 +389,12 @@ function splitLongTranscriptLines(
       const timeLabel = `${m}:${s.toString().padStart(2, "0")}`;
 
       out.push({
+        ...line,
         time: timeLabel,
         startSec: currentStart,
         endSec: chunkEnd,
         text: chunk,
       });
-      currentStart = chunkEnd;
     }
   }
   return out;
@@ -710,9 +702,27 @@ export default function ContentPage() {
 
   const isLgUp = useIsLgUp();
 
-  /** True once playback reaches threshold for this lesson (quiz + backend watch-complete). */
+  const isAdultUser = useMemo(() => {
+    if (!user) return false;
+    if (user.role === "adult") return true;
+    if (user.dateOfBirth) {
+      const dob = new Date(user.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      if (
+        today.getMonth() < dob.getMonth() ||
+        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+      ) {
+        age--;
+      }
+      return age >= 18;
+    }
+    return false;
+  }, [user]);
+
+  const isLocked = videoData?.ageRestriction === "18+" && !isAdultUser;
+
   const progressedToWatchedRef = useRef(false);
-  /** POST /watch-complete fire-once guard (survey + analytics). */
   const watchCompletePostedRef = useRef(false);
   const playbackStartedForPersonalizeRef = useRef(false);
   const vocabPersonalizeDoneRef = useRef(false);
@@ -729,7 +739,7 @@ export default function ContentPage() {
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
-    if (watchCompletePostedRef.current || !id) return;
+    if (watchCompletePostedRef.current || !id || isLocked) return;
     watchCompletePostedRef.current = true;
 
     const vid = Number.parseInt(String(id), 10);
@@ -748,7 +758,8 @@ export default function ContentPage() {
       watchCompletePostedRef.current = false;
       console.error("Failed to mark watch complete:", error);
     }
-  }, [id]);
+  }, [id, isLocked]);
+
   const ensureLessonWatched = useCallback(() => {
     if (progressedToWatchedRef.current) return;
     progressedToWatchedRef.current = true;
@@ -850,7 +861,7 @@ export default function ContentPage() {
   }, [videoData, id]);
 
   useEffect(() => {
-    if (!id || !videoData) return;
+    if (!id || !videoData || isLocked) return;
     const vid = Number.parseInt(String(id), 10);
     if (!Number.isFinite(vid) || vid <= 0) return;
     let cancelled = false;
@@ -893,10 +904,10 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, videoData, user?.id]);
+  }, [id, videoData, user?.id, isLocked]);
 
   useEffect(() => {
-    if (!id || !videoData) return;
+    if (!id || !videoData || isLocked) return;
     const vid = Number.parseInt(String(id), 10);
     if (!Number.isFinite(vid) || vid <= 0) return;
     let cancelled = false;
@@ -922,7 +933,7 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, videoData]);
+  }, [id, videoData, isLocked]);
 
   useEffect(() => {
     setIsVideoComplete(false);
@@ -945,6 +956,8 @@ export default function ContentPage() {
     if (heartbeatIntervalRef.current)
       clearInterval(heartbeatIntervalRef.current);
 
+    if (isLocked) return;
+
     heartbeatIntervalRef.current = setInterval(async () => {
       if (document.hidden || !videoElRef.current || videoElRef.current.paused)
         return;
@@ -966,7 +979,7 @@ export default function ContentPage() {
       if (heartbeatIntervalRef.current)
         clearInterval(heartbeatIntervalRef.current);
     };
-  }, [id]);
+  }, [id, isLocked]);
 
   const headerRight = isVideoComplete
     ? L.quizUnlocked
@@ -990,7 +1003,7 @@ export default function ContentPage() {
   );
 
   const tryPersonalizeVocabulary = useCallback(async () => {
-    if (user?.id == null || !id) return;
+    if (user?.id == null || !id || isLocked) return;
     if (vocabPersonalizeDoneRef.current) return;
     if (sideBundleLoading) return;
     const vid = Number.parseInt(String(id), 10);
@@ -1023,7 +1036,7 @@ export default function ContentPage() {
     } catch {
       vocabPersonalizeDoneRef.current = false;
     }
-  }, [user?.id, id, sideBundleLoading]);
+  }, [user?.id, id, sideBundleLoading, isLocked]);
 
   const handleVideoPlay = useCallback(() => {
     playbackStartedForPersonalizeRef.current = true;
@@ -1036,7 +1049,7 @@ export default function ContentPage() {
   }, [sideBundleLoading, tryPersonalizeVocabulary]);
 
   useEffect(() => {
-    if (user?.id == null) return;
+    if (user?.id == null || isLocked) return;
 
     if (displayVocabulary.length === 0) {
       setVocabularyHintMap({});
@@ -1072,7 +1085,7 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [vocabularyWordKey, user?.id]);
+  }, [vocabularyWordKey, user?.id, isLocked]);
 
   const enrichedDisplayVocabulary = useMemo(
     () => applyVocabularyHints(displayVocabulary, vocabularyHintMap),
@@ -1117,7 +1130,7 @@ export default function ContentPage() {
 
   const handleQuizComplete = useCallback(
     async (summary: VideoQuizCompleteSummary) => {
-      if (!id || !videoData) return;
+      if (!id || !videoData || isLocked) return;
       const vid = Number.parseInt(String(id), 10);
       let correctCount = summary.correctCount;
       let totalQuestions = summary.totalQuestions;
@@ -1251,6 +1264,7 @@ export default function ContentPage() {
       waitForLessonSideBundleWithToken,
       refreshProfile,
       L,
+      isLocked,
     ],
   );
 
@@ -1387,18 +1401,33 @@ export default function ContentPage() {
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
               <div className="overflow-hidden rounded-xl mt-5 border border-border bg-muted ring-1 ring-border/40">
-                <VideoPlayer
-                  src={videoData.videoLink}
-                  transcript={transcriptLines}
-                  onEnded={handleVideoEnded}
-                  onPlay={handleVideoPlay}
-                  onPlaybackTime={(t) => setPlaybackSec(t)}
-                  onPlaybackFraction={handlePlaybackFraction}
-                  onVideoMount={(el) => {
-                    videoElRef.current = el;
-                  }}
-                  className="rounded-none border-0"
-                />
+                {isLocked ? (
+                  <div className="aspect-video flex flex-col items-center justify-center bg-card/80 text-center p-6">
+                    <div className="bg-destructive/20 p-4 rounded-full mb-4">
+                      <Lock className="w-10 h-10 text-destructive" />
+                    </div>
+                    <h2 className="text-foreground font-bold text-2xl mb-2">
+                      18+ Only
+                    </h2>
+                    <p className="text-muted-foreground text-sm max-w-md">
+                      This content is restricted to adults (18+) and is not
+                      available to your profile.
+                    </p>
+                  </div>
+                ) : (
+                  <VideoPlayer
+                    src={videoData.videoLink}
+                    transcript={transcriptLines}
+                    onEnded={handleVideoEnded}
+                    onPlay={handleVideoPlay}
+                    onPlaybackTime={(t) => setPlaybackSec(t)}
+                    onPlaybackFraction={handlePlaybackFraction}
+                    onVideoMount={(el) => {
+                      videoElRef.current = el;
+                    }}
+                    className="rounded-none border-0"
+                  />
+                )}
               </div>
 
               <div>
@@ -1406,15 +1435,18 @@ export default function ContentPage() {
                   <span className="rounded bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
                     {videoData.content.category.name}
                   </span>
-                  {isVideoComplete ? (
-                    <span className="text-sm text-accent">{L.watched}</span>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      {formatMessage(L.watchToUnlock, {
-                        pct: String(Math.round(WATCHED_COMPLETED_RATIO * 100)),
-                      })}
-                    </span>
-                  )}
+                  {!isLocked &&
+                    (isVideoComplete ? (
+                      <span className="text-sm text-accent">{L.watched}</span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {formatMessage(L.watchToUnlock, {
+                          pct: String(
+                            Math.round(WATCHED_COMPLETED_RATIO * 100),
+                          ),
+                        })}
+                      </span>
+                    ))}
 
                   {(user?.role?.toLowerCase() === "teacher" ||
                     user?.role?.toLowerCase() === "admin") && (
@@ -1448,79 +1480,83 @@ export default function ContentPage() {
                 </p>
               </div>
 
-              <div className="lg:hidden">
-                {!isLgUp ? (
+              {!isLocked && (
+                <div className="lg:hidden">
+                  {!isLgUp ? (
+                    <>
+                      <TabBar
+                        L={L}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                      />
+                      <TabPanels
+                        L={L}
+                        activeTab={activeTab}
+                        vocabulary={enrichedDisplayVocabulary}
+                        sideLoading={sideBundleLoading}
+                        transcriptLines={transcriptLines}
+                        transcriptLoading={transcriptLoading}
+                        playbackSec={playbackSec}
+                        onSeekTranscript={seekToCue}
+                        quizPanel={quizPanel}
+                      />
+                    </>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            {!isLocked && (
+              <div className="hidden lg:block">
+                {isLgUp ? (
                   <>
                     <TabBar
                       L={L}
                       activeTab={activeTab}
                       onTabChange={setActiveTab}
                     />
-                    <TabPanels
-                      L={L}
-                      activeTab={activeTab}
-                      vocabulary={enrichedDisplayVocabulary}
-                      sideLoading={sideBundleLoading}
-                      transcriptLines={transcriptLines}
-                      transcriptLoading={transcriptLoading}
-                      playbackSec={playbackSec}
-                      onSeekTranscript={seekToCue}
-                      quizPanel={quizPanel}
-                    />
+                    <div className="mt-0 max-h-[min(600px,70vh)] overflow-y-auto rounded-xl border border-border bg-card p-4">
+                      <div
+                        className={
+                          activeTab === "vocabulary" ? "block" : "hidden"
+                        }
+                        aria-hidden={activeTab !== "vocabulary"}
+                      >
+                        {sideBundleLoading ? (
+                          <p className="text-center text-sm text-muted-foreground">
+                            {L.preparingVocabulary}
+                          </p>
+                        ) : (
+                          <VideoVocabulary
+                            vocabulary={enrichedDisplayVocabulary}
+                          />
+                        )}
+                      </div>
+                      <div
+                        className={
+                          activeTab === "transcript" ? "block" : "hidden"
+                        }
+                        aria-hidden={activeTab !== "transcript"}
+                      >
+                        <VideoTranscript
+                          transcript={transcriptLines}
+                          loading={transcriptLoading}
+                          playbackSec={playbackSec}
+                          onSeek={seekToCue}
+                          vocabulary={enrichedDisplayVocabulary}
+                        />
+                      </div>
+                      <div
+                        className={activeTab === "quiz" ? "block" : "hidden"}
+                        aria-hidden={activeTab !== "quiz"}
+                      >
+                        {quizPanel}
+                      </div>
+                    </div>
                   </>
                 ) : null}
               </div>
-            </div>
-
-            <div className="hidden lg:block">
-              {isLgUp ? (
-                <>
-                  <TabBar
-                    L={L}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                  />
-                  <div className="mt-0 max-h-[min(600px,70vh)] overflow-y-auto rounded-xl border border-border bg-card p-4">
-                    <div
-                      className={
-                        activeTab === "vocabulary" ? "block" : "hidden"
-                      }
-                      aria-hidden={activeTab !== "vocabulary"}
-                    >
-                      {sideBundleLoading ? (
-                        <p className="text-center text-sm text-muted-foreground">
-                          {L.preparingVocabulary}
-                        </p>
-                      ) : (
-                        <VideoVocabulary
-                          vocabulary={enrichedDisplayVocabulary}
-                        />
-                      )}
-                    </div>
-                    <div
-                      className={
-                        activeTab === "transcript" ? "block" : "hidden"
-                      }
-                      aria-hidden={activeTab !== "transcript"}
-                    >
-                      <VideoTranscript
-                        transcript={transcriptLines}
-                        loading={transcriptLoading}
-                        playbackSec={playbackSec}
-                        onSeek={seekToCue}
-                        vocabulary={enrichedDisplayVocabulary}
-                      />
-                    </div>
-                    <div
-                      className={activeTab === "quiz" ? "block" : "hidden"}
-                      aria-hidden={activeTab !== "quiz"}
-                    >
-                      {quizPanel}
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
+            )}
           </div>
         </div>
       </main>

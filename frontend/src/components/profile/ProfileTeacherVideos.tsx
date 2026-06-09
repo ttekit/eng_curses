@@ -52,7 +52,7 @@ export type TeacherSeriesItem = {
 };
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
-  const { onClick, onFocus, value, onChange, onKeyDown, id } = props;
+  const { onClick, value, onChange, onKeyDown, id } = props;
 
   return (
     <div className="relative w-full">
@@ -95,21 +95,6 @@ const ExplysDatePicker = ({ selected, onChange, id, onKeyDown }: any) => (
     customInput={<CustomDateTimeInput id={id} onKeyDown={onKeyDown} />}
   />
 );
-
-function formatDateTimeLocal(dateStr?: string | null) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "";
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
-}
-
-function isValidYear(dateString: string) {
-  if (!dateString) return true;
-  const year = dateString.split("-")[0];
-  return year.length <= 4;
-}
 
 function CustomSelect({
   value,
@@ -2155,173 +2140,227 @@ export function ProfileTeacherVideos() {
             </div>
           </ProfileCard>
         ) : (
-          <div className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm overflow-hidden">
-            <div style={{ overflowX: "auto", width: "100%" }}>
-              <table className="text-left text-sm w-full whitespace-nowrap min-w-[800px]">
-                <thead>
-                  <tr className="border-border bg-muted/30 border-b text-muted-foreground">
-                    <th className="p-4 font-semibold text-sm">Lesson Name</th>
-                    <th className="p-4 font-semibold text-sm">Assigned To</th>
-                    <th className="p-4 font-semibold text-sm text-right">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAssignedSeries.map((s) => {
-                    const now = new Date(currentTime);
-                    return (
-                      <tr
-                        key={s.contentId}
-                        className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
-                      >
-                        <td className="p-4 align-top">
-                          <div className="text-foreground text-base font-bold truncate max-w-[250px]">
-                            {s.name}
-                          </div>
-                        </td>
+          <div className="w-full max-w-full overflow-auto rounded-xl border border-border/50 bg-card/50 max-h-[65vh] relative shadow-sm">
+            <table className="w-full min-w-[1000px] text-left text-sm whitespace-nowrap">
+              <thead className="sticky top-0 z-20 bg-card shadow-sm outline outline-1 outline-border/50">
+                <tr className="text-muted-foreground">
+                  <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
+                  <th className="p-4 font-semibold text-sm">Assignments</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
+                  <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
+                  <th className="p-4 font-semibold text-sm text-right">
+                    {t.colActions}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSeries.map((s) => {
+                  const busy = visibilityBusyId === s.contentId;
+                  const vis = s.visibility.trim().toLowerCase();
+                  const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
+                  const now = new Date(currentTime);
+                  let computedVis = vis;
 
-                        {/* НОВАЯ КОЛОНКА ДЛЯ КЛАССОВ И ДЕДЛАЙНОВ */}
-                        <td className="p-4 align-top">
-                          {s.classAccesses && s.classAccesses.length > 0 ? (
-                            <details className="group">
-                              <summary className="cursor-pointer text-xs font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
-                                {s.classAccesses.length === 1
-                                  ? "1 CLASS ASSIGNED"
-                                  : `${s.classAccesses.length} CLASSES ASSIGNED`}
-                                <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
-                              </summary>
-                              <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-accent/30">
-                                {s.classAccesses.map((ca) => (
-                                  <div
-                                    key={ca.classId}
-                                    className="flex flex-col gap-1"
-                                  >
-                                    <span className="text-xs font-bold uppercase text-foreground tracking-wide">
-                                      {ca.className}
-                                    </span>
-                                    <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
-                                      {ca.availableFrom ? (
-                                        <span>
-                                          Opens:{" "}
-                                          {new Date(
-                                            ca.availableFrom,
-                                          ).toLocaleString("en-GB", {
+                  return (
+                    <tr
+                      key={s.contentId}
+                      className="border-border/60 hover:bg-muted/10 border-b last:border-0 transition-colors"
+                    >
+                      <td className="p-4 align-top">
+                        <div className="text-foreground text-base font-bold truncate max-w-[200px]">
+                          {s.name}
+                        </div>
+                        {s.processingComplexity ? (
+                          <div className="text-muted-foreground mt-2 text-xs truncate max-w-[200px]">
+                            {t.processingPrefix} {s.processingComplexity}
+                          </div>
+                        ) : null}
+                        {tags.length > 0 ? (
+                          <div className="text-muted-foreground mt-1.5 text-xs truncate max-w-[200px]">
+                            {tags.join(" · ")}
+                          </div>
+                        ) : null}
+                      </td>
+
+                      <td className="p-4 align-top">
+                        {s.classAccesses && s.classAccesses.length > 0 ? (
+                          <details className="group">
+                            <summary className="cursor-pointer text-xs font-bold tracking-wider text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
+                              {s.classAccesses.length === 1
+                                ? "1 CLASS ASSIGNED"
+                                : `${s.classAccesses.length} CLASSES ASSIGNED`}
+                              <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+                            </summary>
+                            <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-primary/30">
+                              {s.classAccesses.map((ca) => (
+                                <div
+                                  key={ca.classId}
+                                  className="flex flex-col gap-1"
+                                >
+                                  <span className="text-xs font-bold uppercase text-foreground tracking-wide">
+                                    {ca.className}
+                                  </span>
+                                  <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
+                                    {ca.availableFrom ? (
+                                      <span>
+                                        Opens:{" "}
+                                        {new Date(
+                                          ca.availableFrom,
+                                        ).toLocaleString("en-GB", {
+                                          dateStyle: "short",
+                                          timeStyle: "short",
+                                        })}
+                                      </span>
+                                    ) : (
+                                      <span>Opens: Now</span>
+                                    )}
+                                    {ca.deadline ? (
+                                      <span
+                                        className={
+                                          new Date(ca.deadline) < now
+                                            ? "text-destructive font-medium"
+                                            : "text-amber-500 font-medium"
+                                        }
+                                      >
+                                        Closes:{" "}
+                                        {new Date(ca.deadline).toLocaleString(
+                                          "en-GB",
+                                          {
                                             dateStyle: "short",
                                             timeStyle: "short",
-                                          })}
-                                        </span>
-                                      ) : (
-                                        <span>Opens: Now</span>
-                                      )}
-                                      {ca.deadline ? (
-                                        <span
-                                          className={
-                                            new Date(ca.deadline) < now
-                                              ? "text-destructive font-medium"
-                                              : "text-amber-500 font-medium"
-                                          }
-                                        >
-                                          Closes:{" "}
-                                          {new Date(ca.deadline).toLocaleString(
-                                            "en-GB",
-                                            {
-                                              dateStyle: "short",
-                                              timeStyle: "short",
-                                            },
-                                          )}
-                                        </span>
-                                      ) : (
-                                        <span>Closes: Never</span>
-                                      )}
-                                    </div>
+                                          },
+                                        )}
+                                      </span>
+                                    ) : (
+                                      <span>Closes: Never</span>
+                                    )}
                                   </div>
-                                ))}
-                              </div>
-                            </details>
-                          ) : (
-                            <div className="flex flex-col gap-1.5 text-sm font-medium text-muted-foreground">
-                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
-                                Global Catalog
-                              </span>
-                              {s.availableFrom ? (
-                                <span>
-                                  Opens:{" "}
-                                  {new Date(s.availableFrom).toLocaleString(
-                                    "en-GB",
-                                    {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    },
-                                  )}
-                                </span>
-                              ) : (
-                                <span>Opens: Now</span>
-                              )}
-                              {s.deadline ? (
-                                <span
-                                  className={
-                                    new Date(s.deadline) < now
-                                      ? "text-destructive font-medium"
-                                      : "text-amber-500 font-medium"
-                                  }
-                                >
-                                  Closes:{" "}
-                                  {new Date(s.deadline).toLocaleString(
-                                    "en-GB",
-                                    {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    },
-                                  )}
-                                </span>
-                              ) : (
-                                <span>Closes: Never</span>
-                              )}
+                                </div>
+                              ))}
                             </div>
-                          )}
-                        </td>
-
-                        <td className="p-4 align-top text-right">
-                          <div className="flex items-center justify-end gap-1 sm:gap-2">
-                            {s.contentVideoId != null && (
-                              <Link
-                                to={`/content/${s.contentVideoId}`}
-                                className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
-                                title="Open Lesson"
-                              >
-                                <Video className="size-4.5" />
-                              </Link>
+                          </details>
+                        ) : (
+                          <div className="flex flex-col gap-1.5 text-sm font-medium text-muted-foreground">
+                            <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
+                              Global Catalog
+                            </span>
+                            {s.availableFrom ? (
+                              <span>
+                                Opens:{" "}
+                                {new Date(s.availableFrom).toLocaleString(
+                                  "en-GB",
+                                  { dateStyle: "short", timeStyle: "short" },
+                                )}
+                              </span>
+                            ) : (
+                              <span>Opens: Now</span>
                             )}
-                            <button
-                              onClick={() => openResultsModal(s.contentId)}
-                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
-                              title="View Tests"
-                            >
-                              <FileText className="size-4.5" />
-                            </button>
-                            <button
-                              onClick={() => openEditDeadlineModal(s)}
-                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
-                              title="Edit Deadlines"
-                            >
-                              <Clock className="size-4.5" />
-                            </button>
-                            <button
-                              onClick={() => openRevokeModal(s.contentId)}
-                              className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
-                              title="Remove Assignment"
-                            >
-                              <Trash2 className="size-4.5" />
-                            </button>
+                            {s.deadline ? (
+                              <span
+                                className={
+                                  new Date(s.deadline) < now
+                                    ? "text-destructive font-medium"
+                                    : "text-amber-500 font-medium"
+                                }
+                              >
+                                Closes:{" "}
+                                {new Date(s.deadline).toLocaleString("en-GB", {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })}
+                              </span>
+                            ) : (
+                              <span>Closes: Never</span>
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </td>
+
+                      <td className="p-4 align-top">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-md px-2.5 py-1 text-xs font-semibold tracking-wide border",
+                            s.captionsReady
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-muted/50 text-muted-foreground border-border/50",
+                          )}
+                        >
+                          {s.captionsReady
+                            ? t.captionsReady
+                            : t.captionsPending}
+                        </span>
+                      </td>
+
+                      <td className="p-4 align-top">
+                        <div className="flex flex-col items-start gap-1.5 w-[130px]">
+                          <CustomSelect
+                            value={computedVis}
+                            disabled={
+                              busy || Boolean(s.availableFrom || s.deadline)
+                            }
+                            onChange={(val) => {
+                              if (val !== "public" && val !== "unlisted")
+                                return;
+                              if (val === s.visibility) return;
+                              void updateVisibility(
+                                s.contentId,
+                                val as "public" | "unlisted",
+                              );
+                            }}
+                            options={[
+                              { value: "public", label: t.visibilityPublic },
+                              { value: "unlisted", label: t.visibilityPrivate },
+                            ]}
+                            className="py-1.5 font-semibold"
+                          />
+                          {busy ? (
+                            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+                              <Loader2 className="size-3.5 animate-spin shrink-0" />
+                              {t.visibilitySaving}
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+
+                      <td className="p-4 align-top text-right">
+                        <div className="inline-flex items-center justify-end gap-0.5 rounded-lg border border-border/50 bg-muted/20 p-1">
+                          {s.contentVideoId != null ? (
+                            <Link
+                              to={`/content/${s.contentVideoId}`}
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
+                              title={t.watchLesson}
+                            >
+                              <Video className="size-4" />
+                            </Link>
+                          ) : null}
+                          <button
+                            onClick={() => openResultsModal(s.contentId)}
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
+                            title="View Tests"
+                          >
+                            <FileText className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditDeadlineModal(s)}
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
+                            title="Edit Deadlines"
+                          >
+                            <Clock className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(s.contentId)}
+                            className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:shadow-sm transition-all inline-flex"
+                            title={t.deleteVideoAria}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ))}
     </div>

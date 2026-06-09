@@ -818,12 +818,12 @@ export function ProfileTeacherStudents() {
           </div>
         </ProfileCard>
       ) : (
-        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-border/50 bg-card/50">
+        <div className="w-full max-w-full overflow-auto rounded-xl border border-border/50 bg-card/50 max-h-[65vh] relative shadow-sm">
           <table className="w-full min-w-[1000px] text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr className="border-border bg-muted/30 border-b text-muted-foreground">
+            <thead className="sticky top-0 z-20 bg-card shadow-sm outline outline-1 outline-border/50">
+              <tr className="text-muted-foreground">
                 <th className="p-4 font-medium w-[280px]">{t.colStudent}</th>
-                <th className="p-4 font-medium w-[180px]">Class / Класс</th>
+                <th className="p-4 font-medium w-[180px]">Class</th>
                 <th className="p-4 font-medium w-[120px]">{t.colLevel}</th>
                 <th className="p-4 text-center font-medium w-[120px]">
                   {t.colVideosDone}
@@ -860,29 +860,51 @@ export function ProfileTeacherStudents() {
                           {s.className}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
+                        <span className="text-muted-foreground font-medium text-xs bg-muted/50 px-2.5 py-1 rounded-md border border-border/50">
+                          No class
+                        </span>
                       )}
                     </td>
-                    <td className="text-foreground p-4 align-middle">
-                      {s.englishLevel?.trim() || "—"}
+                    <td className="text-foreground p-4 align-middle font-medium">
+                      {s.englishLevel?.trim() || (
+                        <span className="text-muted-foreground text-xs">
+                          Not started
+                        </span>
+                      )}
                     </td>
-                    <td className="p-4 text-center tabular-nums align-middle">
+                    <td className="p-4 text-center tabular-nums align-middle font-medium">
                       {s.videosCompleted}
                     </td>
-                    <td className="p-4 text-center tabular-nums align-middle">
+                    <td className="p-4 text-center tabular-nums align-middle font-medium">
                       {s.quizAttempts}
                     </td>
-                    <td className="p-4 text-center tabular-nums align-middle">
-                      {s.avgQuizScorePct != null
-                        ? `${s.avgQuizScorePct}%`
-                        : "—"}
+                    <td className="p-4 text-center tabular-nums align-middle font-bold">
+                      {s.avgQuizScorePct != null ? (
+                        <span
+                          className={cn(
+                            "px-2.5 py-1 rounded-md inline-flex items-center justify-center min-w-[3rem]",
+                            s.avgQuizScorePct >= 80
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : s.avgQuizScorePct >= 50
+                                ? "bg-amber-500/10 text-amber-500"
+                                : "bg-destructive/10 text-destructive",
+                          )}
+                        >
+                          {s.avgQuizScorePct}%
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground font-normal">
+                          —
+                        </span>
+                      )}
                     </td>
+
                     <td className="p-4 text-right align-middle">
-                      <div className="flex items-center justify-end gap-1 sm:gap-2">
+                      <div className="inline-flex items-center justify-end gap-0.5 rounded-lg border border-border/50 bg-muted/20 p-1">
                         <button
                           onClick={() => handleResetPassword(s)}
                           disabled={resettingId === s.id}
-                          className="rounded-md p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all disabled:opacity-50"
                           title="Generate New Password"
                         >
                           {resettingId === s.id ? (
@@ -893,14 +915,14 @@ export function ProfileTeacherStudents() {
                         </button>
                         <button
                           onClick={() => openEditModal(s)}
-                          className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all"
                           title={t.editStudentAria}
                         >
                           <Edit className="size-4" />
                         </button>
                         <button
                           onClick={() => openDeleteModal(s.id)}
-                          className="rounded-md p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:shadow-sm transition-all"
                           title={t.removeStudentAria}
                         >
                           <Trash2 className="size-4" />
