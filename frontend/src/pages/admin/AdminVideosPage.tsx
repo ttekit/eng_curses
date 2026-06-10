@@ -6,6 +6,7 @@ import {
   ArrowUp,
   BarChart3,
   Captions,
+  ChevronDown,
   Eye,
   ExternalLink,
   Layers,
@@ -58,6 +59,79 @@ import {
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
 import { unzipSync } from "fflate";
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <div className={cn("relative w-full text-sm", className)} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-md border bg-[#161622] px-3 py-2 text-left text-foreground focus:outline-none transition-colors cursor-pointer",
+          isOpen
+            ? "border-primary ring-1 ring-primary"
+            : "border-border hover:border-primary/50",
+        )}
+      >
+        <span className="truncate">{selectedOption?.label || value}</span>
+        <ChevronDown
+          className={cn(
+            "ml-2 size-4 shrink-0 transition-transform opacity-70",
+            isOpen && "rotate-180 text-primary",
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-[#161622] py-1 shadow-xl animate-in fade-in zoom-in-95">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center px-3 py-1.5 text-left transition-colors hover:bg-muted/50 cursor-pointer",
+                value === opt.value
+                  ? "text-primary font-medium bg-primary/10"
+                  : "text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function generateVideoThumbnailBlob(
   fileOrUrl: File | Blob | string,
@@ -380,7 +454,7 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      const resData = await apiFetch(`/content-video/${editing.id}`, {
+      const resData = await apiFetch(`/contents/episode/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -398,10 +472,13 @@ export default function AdminVideosPage() {
         const fd = new FormData();
         fd.append("thumbnailFile", editThumb);
 
-        const res = await apiFetch(`/content-video/${editing.id}/thumbnail`, {
-          method: "PATCH",
-          body: fd,
-        });
+        const res = await apiFetch(
+          `/contents/episode/${editing.id}/thumbnail`,
+          {
+            method: "PATCH",
+            body: fd,
+          },
+        );
         if (!res.ok) throw new Error("Thumbnail update failed");
       }
 
@@ -963,18 +1040,18 @@ export default function AdminVideosPage() {
             <label className="text-sm font-medium">
               Age Restriction / Возрастное ограничение
             </label>
-            <select
+            <CustomSelect
               value={uploadAge}
-              onChange={(e) => setUploadAge(e.target.value)}
-              className="w-full appearance-none rounded-xl border border-border bg-[#161622] px-4 py-3 text-[15px] font-medium text-foreground outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="0+">0+</option>
-              <option value="6+">6+</option>
-              <option value="12+">12+</option>
-              <option value="16+">16+</option>
-              <option value="18+">18+</option>
-              <option value="21+">21+</option>
-            </select>
+              onChange={setUploadAge}
+              options={[
+                { value: "0+", label: "0+" },
+                { value: "6+", label: "6+" },
+                { value: "12+", label: "12+" },
+                { value: "16+", label: "16+" },
+                { value: "18+", label: "18+" },
+                { value: "21+", label: "21+" },
+              ]}
+            />
           </div>
 
           <div className="space-y-2">
@@ -1136,18 +1213,18 @@ export default function AdminVideosPage() {
             <label className="text-sm font-medium">
               Age Restriction / Возрастное ограничение
             </label>
-            <select
+            <CustomSelect
               value={addEpisodeAge}
-              onChange={(e) => setAddEpisodeAge(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-            >
-              <option value="0+">0+</option>
-              <option value="6+">6+</option>
-              <option value="12+">12+</option>
-              <option value="16+">16+</option>
-              <option value="18+">18+</option>
-              <option value="21+">21+</option>
-            </select>
+              onChange={setAddEpisodeAge}
+              options={[
+                { value: "0+", label: "0+" },
+                { value: "6+", label: "6+" },
+                { value: "12+", label: "12+" },
+                { value: "16+", label: "16+" },
+                { value: "18+", label: "18+" },
+                { value: "21+", label: "21+" },
+              ]}
+            />
           </div>
 
           <div className="space-y-2">
@@ -1207,18 +1284,18 @@ export default function AdminVideosPage() {
             <label className="text-sm font-medium">
               Age Restriction / Возрастное ограничение
             </label>
-            <select
+            <CustomSelect
               value={editAge}
-              onChange={(e) => setEditAge(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-            >
-              <option value="0+">0+</option>
-              <option value="6+">6+</option>
-              <option value="12+">12+</option>
-              <option value="16+">16+</option>
-              <option value="18+">18+</option>
-              <option value="21+">21+</option>
-            </select>
+              onChange={setEditAge}
+              options={[
+                { value: "0+", label: "0+" },
+                { value: "6+", label: "6+" },
+                { value: "12+", label: "12+" },
+                { value: "16+", label: "16+" },
+                { value: "18+", label: "18+" },
+                { value: "21+", label: "21+" },
+              ]}
+            />
           </div>
 
           <div className="space-y-2">
@@ -1480,7 +1557,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                    null
+                      null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
