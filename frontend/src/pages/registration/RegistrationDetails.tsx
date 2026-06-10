@@ -146,7 +146,7 @@ export default function RegistrationDetails() {
     selected: MultiValue<LearningTopicOption>,
   ) => {
     updateFormData({
-      teacherTopics: Array.from(selected ?? []).map((o) => o.value),
+      teacherTopics: Array.from(selected ?? []).map((o) => o.label),
     } as Partial<FormData>);
   };
 

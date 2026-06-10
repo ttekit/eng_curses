@@ -27,9 +27,7 @@ import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminVideosPage from "./pages/admin/AdminVideosPage";
-import AdminTestsPage from "./pages/admin/AdminTestsPage";
 import AdminTeachersPage from "./pages/admin/AdminTeachersPage";
-import AdminTopicsPage from "./pages/admin/AdminTopicsPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AnalyticsLayout from "./components/AnalyticsLayout";
@@ -48,7 +46,6 @@ import FeedbackPage from "./pages/legal/FeedbackPage";
 import GoogleDobPrompt from "./components/profile/GoogleDobPrompt";
 import OAuthSuccess from "./pages/login/OAuthSuccess";
 import { Error404Page } from "./pages/Error404Page";
-
 
 const router = createBrowserRouter([
   {
@@ -86,9 +83,7 @@ const router = createBrowserRouter([
                   { index: true, element: <AdminDashboardPage /> },
                   { path: "users", element: <AdminUsersPage /> },
                   { path: "videos", element: <AdminVideosPage /> },
-                  { path: "tests", element: <AdminTestsPage /> },
                   { path: "teachers", element: <AdminTeachersPage /> },
-                  { path: "topics", element: <AdminTopicsPage /> },
                   { path: "analytics", element: <AdminAnalyticsPage /> },
                   { path: "avatars", element: <AdminAvatarsPage /> },
                   { path: "settings", element: <AdminSettingsPage /> },

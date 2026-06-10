@@ -41,7 +41,10 @@ export type TestsSummaryDto = {
   passRatePct: number | null;
 };
 
-function parseRange(fromRaw?: string, toRaw?: string): { from: Date; to: Date } {
+function parseRange(
+  fromRaw?: string,
+  toRaw?: string,
+): { from: Date; to: Date } {
   const to = toRaw ? new Date(toRaw) : new Date();
   if (Number.isNaN(to.getTime())) {
     throw new BadRequestException("Invalid `to` date");
@@ -181,9 +184,7 @@ export class AdminAnalyticsService {
     });
   }
 
-  async getRecentActivity(
-    limitRaw?: string,
-  ): Promise<RecentActivityItemDto[]> {
+  async getRecentActivity(limitRaw?: string): Promise<RecentActivityItemDto[]> {
     const limit = Math.min(
       50,
       Math.max(1, Number.parseInt(limitRaw ?? "20", 10) || 20),
@@ -299,8 +300,7 @@ export class AdminAnalyticsService {
     });
 
     const attempts = agg._count.id;
-    const passRatePct =
-      attempts > 0 ? (100 * passed) / attempts : null;
+    const passRatePct = attempts > 0 ? (100 * passed) / attempts : null;
 
     return {
       from: from.toISOString(),
@@ -313,5 +313,73 @@ export class AdminAnalyticsService {
       passRatePct:
         passRatePct != null ? Math.round(passRatePct * 10) / 10 : null,
     };
+  }
+
+  async getTeachers() {
+    const teachers = await this.prisma.user.findMany({
+      where: {
+        role: "TEACHER",
+      },
+      include: {
+        _count: {
+          select: {
+            teacherOwnedContents: true,
+            teacherClasses: true,
+          },
+        },
+        students: {
+          select: { id: true },
+        },
+        teacherClasses: {
+          select: {
+            students: {
+              select: { id: true },
+            },
+          },
+        },
+        additionalUserData: {
+          select: {
+            teacherGrades: true,
+            teacherTopics: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return teachers.map((t) => {
+      let parsedGrades: string[] = [];
+      if (t.additionalUserData?.teacherGrades) {
+        parsedGrades = t.additionalUserData.teacherGrades
+          .split(",")
+          .map((g) => g.trim())
+          .filter(Boolean);
+      }
+
+      const uniqueStudentIds = new Set<number>();
+      t.students.forEach((s) => uniqueStudentIds.add(s.id));
+      t.teacherClasses.forEach((cls) => {
+        cls.students.forEach((s) => uniqueStudentIds.add(s.id));
+      });
+
+      return {
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        status: t.isSuspended
+          ? "inactive"
+          : t.isVerified
+            ? "active"
+            : "pending",
+        grades: parsedGrades,
+        topics: t.additionalUserData?.teacherTopics || [], 
+        studentsCount: uniqueStudentIds.size,
+        lessonsCount: t._count.teacherOwnedContents,
+        classesCount: t._count.teacherClasses,
+        joinedDate: t.createdAt.toISOString(),
+      };
+    });
   }
 }
