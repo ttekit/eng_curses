@@ -85,6 +85,8 @@ export function ProfileTeacherStudents() {
   } | null>(null);
 
   const [resettingId, setResettingId] = useState<number | null>(null);
+  const [resetCandidate, setResetCandidate] =
+    useState<TeacherStudentResult | null>(null);
 
   function CustomSelect({
     value,
@@ -245,6 +247,8 @@ export function ProfileTeacherStudents() {
         if (isModalOpen && !isSaving) setIsModalOpen(false);
         if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
         if (classModalOpen && !isSavingClass) setClassModalOpen(false);
+        if (resetCandidate && !resettingId) setResetCandidate(null);
+        if (newStudentCreds) setNewStudentCreds(null);
       }
     };
     window.addEventListener("keydown", handleEsc);
@@ -256,6 +260,9 @@ export function ProfileTeacherStudents() {
     isDeleting,
     classModalOpen,
     isSavingClass,
+    resetCandidate,
+    resettingId,
+    newStudentCreds,
   ]);
 
   const handleExport = async () => {
@@ -322,18 +329,13 @@ export function ProfileTeacherStudents() {
     setIsModalOpen(true);
   };
 
-  const handleResetPassword = async (student: TeacherStudentResult) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to generate a new password for ${student.name}?`,
-      )
-    )
-      return;
+  const confirmResetPassword = async () => {
+    if (!resetCandidate) return;
 
-    setResettingId(student.id);
+    setResettingId(resetCandidate.id);
     try {
       const res = await apiFetch(
-        `/teacher/my-students/${student.id}/reset-password`,
+        `/teacher/my-students/${resetCandidate.id}/reset-password`,
         {
           method: "POST",
         },
@@ -341,9 +343,10 @@ export function ProfileTeacherStudents() {
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
       const data = await res.json();
 
-      // Открываем модалку с новыми данными
+      setResetCandidate(null);
+
       setNewStudentCreds({
-        email: student.email,
+        email: resetCandidate.email,
         password: data.tempPassword,
         isReset: true,
       });
@@ -657,6 +660,42 @@ export function ProfileTeacherStudents() {
       </AdminModal>
 
       <AdminModal
+        open={!!resetCandidate}
+        onClose={() => !resettingId && setResetCandidate(null)}
+        title="Generate New Password"
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => setResetCandidate(null)}
+              disabled={!!resettingId}
+              className="w-full sm:w-auto"
+            >
+              {t.cancel}
+            </AdminButton>
+            <AdminButton
+              disabled={!!resettingId}
+              onClick={() => void confirmResetPassword()}
+              className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+            >
+              {resettingId ? "Generating..." : "Generate Password"}
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground">
+            Are you sure you want to generate a new password for{" "}
+            <strong className="font-bold">{resetCandidate?.name}</strong>?
+          </p>
+          <p className="text-sm text-muted-foreground">
+            The old password will stop working immediately. You will be shown
+            the new password on the next screen.
+          </p>
+        </div>
+      </AdminModal>
+
+      <AdminModal
         open={!!newStudentCreds}
         onClose={() => setNewStudentCreds(null)}
         title={
@@ -902,7 +941,7 @@ export function ProfileTeacherStudents() {
                     <td className="p-4 text-right align-middle">
                       <div className="inline-flex items-center justify-end gap-0.5 rounded-lg border border-border/50 bg-muted/20 p-1">
                         <button
-                          onClick={() => handleResetPassword(s)}
+                          onClick={() => setResetCandidate(s)}
                           disabled={resettingId === s.id}
                           className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all disabled:opacity-50"
                           title="Generate New Password"

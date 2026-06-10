@@ -35,10 +35,17 @@ export function LandingFooter() {
     },
     {
       title: footer.categories.account,
-      links: [
-        { label: footer.links.logIn, to: "/loginForm" },
-        { label: footer.links.register, to: "/registrationMain" },
-      ],
+      links: user
+        ? [
+            {
+              label: "My Account",
+              to: "/catalog",
+            },
+          ]
+        : [
+            { label: footer.links.logIn, to: "/loginForm" },
+            { label: footer.links.register, to: "/registrationMain" },
+          ],
     },
   ];
 
@@ -98,6 +105,16 @@ export function LandingFooter() {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-border border-t pt-8 sm:flex-row">
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} Explys. {footer.copyright}
+            <span className="mx-2 hidden sm:inline text-border">|</span>
+            <span className="block sm:inline mt-1 sm:mt-0">
+              Support:{" "}
+              <a
+                href="mailto:support@explys.com"
+                className="transition-colors hover:text-primary font-medium underline underline-offset-4 decoration-muted-foreground/30"
+              >
+                support@explys.com
+              </a>
+            </span>
           </p>
           <div className="flex items-center gap-6">
             <a

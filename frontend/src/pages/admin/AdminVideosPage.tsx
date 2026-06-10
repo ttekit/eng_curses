@@ -36,7 +36,6 @@ import {
   AdminInput,
   AdminModal,
   AdminProgress,
-  AdminSelectNative,
   AdminTextarea,
 } from "../../components/admin/adminUi";
 import { cn } from "../../lib/utils";
@@ -59,6 +58,29 @@ import {
   videoLevelBadge,
 } from "../../lib/adminVideosApi";
 import { unzipSync } from "fflate";
+
+const genres = [
+  { name: "Action" },
+  { name: "Adventure" },
+  { name: "Animation" },
+  { name: "Comedy" },
+  { name: "Crime" },
+  { name: "Documentary" },
+  { name: "Drama" },
+  { name: "Family" },
+  { name: "Fantasy" },
+  { name: "History" },
+  { name: "Horror" },
+  { name: "Musical" },
+  { name: "Mystery" },
+  { name: "Noir" },
+  { name: "Romance" },
+  { name: "Sci-Fi" },
+  { name: "Sports" },
+  { name: "Thriller" },
+  { name: "War" },
+  { name: "Western" },
+];
 
 function CustomSelect({
   value,
@@ -254,7 +276,8 @@ export default function AdminVideosPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [seriesFilter, setSeriesFilter] = useState("all");
+  const [ageFilter, setAgeFilter] = useState("all");
+  const [genreFilter, setGenreFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const listTopRef = useRef<HTMLDivElement>(null);
@@ -343,7 +366,7 @@ export default function AdminVideosPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, seriesFilter, levelFilter]);
+  }, [searchQuery, ageFilter, genreFilter, levelFilter]);
 
   useEffect(() => {
     setSubtitleText(null);
@@ -385,12 +408,19 @@ export default function AdminVideosPage() {
         v.videoName.toLowerCase().includes(q) ||
         (v.videoDescription ?? "").toLowerCase().includes(q) ||
         v.content.category.name.toLowerCase().includes(q);
-      const matchSeries =
-        seriesFilter === "all" || v.content.category.name === seriesFilter;
+
+      const videoAge = (v as any).ageRestriction || "0+";
+      const matchAge = ageFilter === "all" || videoAge === ageFilter;
+
+      const videoGenres = v.content.stats?.userTags ?? [];
+      const matchGenre =
+        genreFilter === "all" || videoGenres.includes(genreFilter);
+
       const matchLevel = matchesVideoLevelFilter(v, levelFilter);
-      return matchSearch && matchSeries && matchLevel;
+
+      return matchSearch && matchAge && matchGenre && matchLevel;
     });
-  }, [videos, searchQuery, seriesFilter, levelFilter]);
+  }, [videos, searchQuery, ageFilter, genreFilter, levelFilter]);
 
   const groupedSeries = useMemo((): AdminVideoSeriesGroup[] => {
     const m = new Map<number, AdminCatalogVideoRow[]>();
@@ -1557,7 +1587,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                      null
+                    null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
@@ -1715,31 +1745,47 @@ export default function AdminVideosPage() {
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap gap-3">
-              <AdminSelectNative
-                value={seriesFilter}
-                onChange={(e) => setSeriesFilter(e.target.value)}
-              >
-                <option value="all">All series</option>
-                {seriesNames.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </AdminSelectNative>
 
-              <AdminSelectNative
+            {/* КРАСИВЫЕ ОБНОВЛЕННЫЕ СЕЛЕКТЫ */}
+            <div className="flex flex-wrap gap-3">
+              <CustomSelect
+                value={ageFilter}
+                onChange={setAgeFilter}
+                className="w-[140px]"
+                options={[
+                  { value: "all", label: "All ages" },
+                  { value: "0+", label: "0+" },
+                  { value: "6+", label: "6+" },
+                  { value: "12+", label: "12+" },
+                  { value: "16+", label: "16+" },
+                  { value: "18+", label: "18+" },
+                  { value: "21+", label: "21+" },
+                ]}
+              />
+
+              <CustomSelect
+                value={genreFilter}
+                onChange={setGenreFilter}
+                className="w-[160px]"
+                options={[
+                  { value: "all", label: "All genres" },
+                  ...genres.map((g) => ({ value: g.name, label: g.name })),
+                ]}
+              />
+
+              <CustomSelect
                 value={levelFilter}
-                onChange={(e) => setLevelFilter(e.target.value)}
-              >
-                <option value="all">All levels</option>
-                {(["A1", "A2", "B1", "B2", "C1", "C2"] as const).map((l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
-                <option value="__misc">Other / no CEFR tag</option>
-              </AdminSelectNative>
+                onChange={setLevelFilter}
+                className="w-[160px]"
+                options={[
+                  { value: "all", label: "All levels" },
+                  ...["A1", "A2", "B1", "B2", "C1", "C2"].map((l) => ({
+                    value: l,
+                    label: l,
+                  })),
+                  { value: "__misc", label: "Other / no CEFR tag" },
+                ]}
+              />
             </div>
           </div>
         </AdminCardHeader>
@@ -1862,61 +1908,63 @@ export default function AdminVideosPage() {
                                     video.content.category.description}
                                 </p>
                               </div>
-                              <AdminRowMenu>
-                                <AdminRowMenuItem
-                                  onClick={() => {
-                                    window.open(
-                                      `/content/${video.id}`,
-                                      "_blank",
-                                      "noopener,noreferrer",
-                                    );
-                                  }}
-                                >
-                                  <Play className="h-4 w-4" /> Preview
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() =>
-                                    setInspectMeta({ video, tab: "themes" })
-                                  }
-                                >
-                                  <Tags className="h-4 w-4" /> Genres
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() =>
-                                    setInspectMeta({ video, tab: "levels" })
-                                  }
-                                >
-                                  <Layers className="h-4 w-4" /> CEFR level
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() =>
-                                    setInspectMeta({ video, tab: "subs" })
-                                  }
-                                >
-                                  <Captions className="h-4 w-4" /> Subtitles
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() => openEdit(video)}
-                                >
-                                  <Edit className="h-4 w-4" /> Edit
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  onClick={() => navigate("/admin/analytics")}
-                                >
-                                  <BarChart3 className="h-4 w-4" /> Analytics
-                                </AdminRowMenuItem>
-                                <AdminRowMenuItem
-                                  danger
-                                  onClick={() =>
-                                    setDeleteCandidate({
-                                      video,
-                                      mode: "series",
-                                    })
-                                  }
-                                >
-                                  <Trash2 className="h-4 w-4" /> Delete series
-                                </AdminRowMenuItem>
-                              </AdminRowMenu>
+                              <AdminCardHeader className="p-0 border-0 flex bg-transparent">
+                                <AdminRowMenu>
+                                  <AdminRowMenuItem
+                                    onClick={() => {
+                                      window.open(
+                                        `/content/${video.id}`,
+                                        "_blank",
+                                        "noopener,noreferrer",
+                                      );
+                                    }}
+                                  >
+                                    <Play className="h-4 w-4" /> Preview
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "themes" })
+                                    }
+                                  >
+                                    <Tags className="h-4 w-4" /> Genres
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "levels" })
+                                    }
+                                  >
+                                    <Layers className="h-4 w-4" /> CEFR level
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "subs" })
+                                    }
+                                  >
+                                    <Captions className="h-4 w-4" /> Subtitles
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() => openEdit(video)}
+                                  >
+                                    <Edit className="h-4 w-4" /> Edit
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() => navigate("/admin/analytics")}
+                                  >
+                                    <BarChart3 className="h-4 w-4" /> Analytics
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    danger
+                                    onClick={() =>
+                                      setDeleteCandidate({
+                                        video,
+                                        mode: "series",
+                                      })
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" /> Delete series
+                                  </AdminRowMenuItem>
+                                </AdminRowMenu>
+                              </AdminCardHeader>
                             </div>
                             {group.rows.length > 1 ? (
                               <div className="mt-2 flex gap-2">

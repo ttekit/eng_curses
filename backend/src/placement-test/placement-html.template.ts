@@ -548,7 +548,7 @@ export function renderPlacementHtml(
           <span>Exit Test</span>
         </button>
         <div class="hdr-brand">
-          ${MASCOT_SVG_HEADER}
+          <img src="/Icon.svg" class="hdr-mascot" alt="" />
           <span class="brand-name">Explys</span>
         </div>
         <span class="step-count" id="stepLabel">— / —</span>
@@ -573,7 +573,7 @@ export function renderPlacementHtml(
     <footer class="quiz-footer">
       <div class="quiz-footer-inner">
         <div class="quiz-footer-brand">
-          ${MASCOT_SVG_HEADER.replace("hdr-mascot", "quiz-footer-logo")}
+          <img src="/Icon.svg" class="quiz-footer-logo" alt="" />
           <span class="quiz-footer-title">Explys</span>
         </div>
         <p class="quiz-footer-tagline">

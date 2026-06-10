@@ -11,8 +11,6 @@ import {
   Menu,
   X,
   GraduationCap,
-  BookOpen,
-  FileQuestion,
   BarChart3,
   Smile,
 } from "lucide-react";
@@ -24,9 +22,7 @@ const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/admin", end: true },
   { icon: Users, label: "Users", to: "/admin/users" },
   { icon: Video, label: "Videos", to: "/admin/videos" },
-  { icon: FileQuestion, label: "Tests", to: "/admin/tests" },
   { icon: GraduationCap, label: "Teachers", to: "/admin/teachers" },
-  { icon: BookOpen, label: "Topics", to: "/admin/topics" },
   { icon: BarChart3, label: "Analytics", to: "/admin/analytics" },
   { icon: Smile, label: "Avatars", to: "/admin/avatars" },
   { icon: Settings, label: "Settings", to: "/admin/settings" },

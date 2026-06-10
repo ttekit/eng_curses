@@ -12,10 +12,7 @@ export class AdminAnalyticsController {
 
   @Get("overview")
   @ApiOperation({ summary: "KPI snapshot for admin dashboards" })
-  overview(
-    @Query("from") from?: string,
-    @Query("to") to?: string,
-  ) {
+  overview(@Query("from") from?: string, @Query("to") to?: string) {
     return this.adminAnalytics.getOverview(from, to);
   }
 
@@ -28,8 +25,7 @@ export class AdminAnalyticsController {
     @Query("to") to?: string,
     @Query("granularity") granularity?: "day" | "month",
   ) {
-    const g =
-      granularity === "month" ? "month" : ("day" as "day" | "month");
+    const g = granularity === "month" ? "month" : ("day" as "day" | "month");
     return this.adminAnalytics.getUserGrowth(from, to, g);
   }
 
@@ -43,5 +39,9 @@ export class AdminAnalyticsController {
   @ApiOperation({ summary: "Comprehension test volume and score stats" })
   testsSummary(@Query("from") from?: string, @Query("to") to?: string) {
     return this.adminAnalytics.getTestsSummary(from, to);
+  }
+  @Get("teachers")
+  async getTeachersList() {
+    return this.adminAnalytics.getTeachers();
   }
 }
