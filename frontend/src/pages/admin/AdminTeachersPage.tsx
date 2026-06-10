@@ -100,17 +100,17 @@ export default function AdminTeachersPage() {
             Управление преподавательским составом и аудит учебных групп.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <AdminButton
             variant="outline"
-            className="gap-2 rounded-[15px] px-4 hover:cursor-pointer"
+            className="flex-1 sm:flex-none gap-2 rounded-[15px] px-4 hover:cursor-pointer justify-center"
             disabled={loading}
             onClick={() => void loadTeachers()}
           >
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           </AdminButton>
           <AdminButton
-            className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="flex-1 sm:flex-none gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
             onClick={() => setInviteOpen(true)}
           >
             <Plus className="h-4 w-4" />
@@ -125,14 +125,14 @@ export default function AdminTeachersPage() {
         onClose={() => setInviteOpen(false)}
         title="Invite teacher"
         footer={
-          <>
-            <AdminButton variant="outline" onClick={() => setInviteOpen(false)}>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
+            <AdminButton className="w-full sm:w-auto" variant="outline" onClick={() => setInviteOpen(false)}>
               Cancel
             </AdminButton>
-            <AdminButton onClick={() => setInviteOpen(false)}>
+            <AdminButton className="w-full sm:w-auto" onClick={() => setInviteOpen(false)}>
               Send invite
             </AdminButton>
-          </>
+          </div>
         }
       >
         <div className="space-y-4">
@@ -153,71 +153,71 @@ export default function AdminTeachersPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex shrink-0 h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <GraduationCap className="h-6 w-6 text-primary" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-2xl font-bold truncate">
                 {loading ? "..." : stats.total}
               </p>
-              <p className="text-sm text-muted-foreground">Teachers</p>
+              <p className="text-sm text-muted-foreground truncate">Teachers</p>
             </div>
           </AdminCardContent>
         </AdminCard>
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+            <div className="flex shrink-0 h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
               <CheckCircle className="h-6 w-6 text-accent" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-2xl font-bold truncate">
                 {loading ? "..." : stats.active}
               </p>
-              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-sm text-muted-foreground truncate">Active</p>
             </div>
           </AdminCardContent>
         </AdminCard>
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
+            <div className="flex shrink-0 h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10">
               <Users className="h-6 w-6 text-blue-400" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-2xl font-bold truncate">
                 {loading ? "..." : stats.students.toLocaleString()}
               </p>
-              <p className="text-sm text-muted-foreground">Total Students</p>
+              <p className="text-sm text-muted-foreground truncate">Total Students</p>
             </div>
           </AdminCardContent>
         </AdminCard>
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
+            <div className="flex shrink-0 h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
               <Layers className="h-6 w-6 text-purple-400" />
             </div>
-            <div>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-2xl font-bold truncate">
                 {loading ? "..." : stats.classes}
               </p>
-              <p className="text-sm text-muted-foreground">Total Classes</p>
+              <p className="text-sm text-muted-foreground truncate">Total Classes</p>
             </div>
           </AdminCardContent>
         </AdminCard>
       </div>
 
       {/* Фильтры поиска */}
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-4 sm:flex-row w-full">
+        <div className="relative flex-1 w-full">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <AdminInput
-            className="pl-9"
+            className="pl-9 w-full"
             placeholder="Search teachers…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
         <select
-          className="rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none"
+          className="w-full sm:w-auto rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
@@ -237,18 +237,18 @@ export default function AdminTeachersPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((teacher) => (
             <AdminCard key={teacher.id}>
-              <AdminCardContent className="p-6">
+              <AdminCardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary shrink-0">
+                  <div className="flex items-center gap-3 w-full min-w-0">
+                    <div className="flex shrink-0 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary/10 text-base sm:text-lg font-semibold text-primary">
                       {teacher.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{teacher.name}</p>
-                      <p className="text-sm text-muted-foreground truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate text-sm sm:text-base">{teacher.name}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {teacher.email}
                       </p>
                     </div>
@@ -268,7 +268,7 @@ export default function AdminTeachersPage() {
 
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {teacher.grades.map((g) => (
-                    <AdminBadge key={g} variant="secondary">
+                    <AdminBadge key={g} variant="secondary" className="text-[10px] sm:text-xs">
                       {g}
                     </AdminBadge>
                   ))}
@@ -276,40 +276,41 @@ export default function AdminTeachersPage() {
 
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {teacher.topics.slice(0, 3).map((t) => (
-                    <AdminBadge key={t} variant="outline">
+                    <AdminBadge key={t} variant="outline" className="text-[10px] sm:text-xs">
                       {t}
                     </AdminBadge>
                   ))}
                   {teacher.topics.length > 3 ? (
-                    <AdminBadge variant="outline">
+                    <AdminBadge variant="outline" className="text-[10px] sm:text-xs">
                       +{teacher.topics.length - 3}
                     </AdminBadge>
                   ) : null}
                 </div>
 
                 {/* Блок Метрик (Ученики / Уроки / Классы) */}
-                <div className="mt-6 grid grid-cols-3 gap-4 border-border border-t pt-4 text-center">
-                  <div>
-                    <p className="text-lg font-bold">{teacher.studentsCount}</p>
-                    <p className="text-xs text-muted-foreground">Students</p>
+                <div className="mt-5 sm:mt-6 grid grid-cols-3 gap-2 sm:gap-4 border-border border-t pt-4 text-center">
+                  <div className="min-w-0">
+                    <p className="text-base sm:text-lg font-bold truncate">{teacher.studentsCount}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Students</p>
                   </div>
-                  <div>
-                    <p className="text-lg font-bold">{teacher.lessonsCount}</p>
-                    <p className="text-xs text-muted-foreground">Lessons</p>
+                  <div className="min-w-0">
+                    <p className="text-base sm:text-lg font-bold truncate">{teacher.lessonsCount}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Lessons</p>
                   </div>
 
-                  {/* Заменили рейтинг на КЛАССЫ */}
-                  <div>
-                    <p className="flex items-center justify-center gap-1 text-lg font-bold text-purple-400">
-                      <Layers className="h-4 w-4 text-purple-400 opacity-80" />
+                  {/* КЛАССЫ */}
+                  <div className="min-w-0">
+                    <p className="flex items-center justify-center gap-1 text-base sm:text-lg font-bold text-purple-400 truncate">
+                      <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-400 opacity-80 shrink-0" />
                       {teacher.classesCount}
                     </p>
-                    <p className="text-xs text-muted-foreground">Classes</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Classes</p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between border-border border-t pt-4">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-border border-t pt-4">
                   <AdminBadge
+                    className="text-[10px] sm:text-xs"
                     variant={
                       teacher.status === "active"
                         ? "accent"
@@ -320,7 +321,7 @@ export default function AdminTeachersPage() {
                   >
                     {teacher.status}
                   </AdminBadge>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[50%] sm:max-w-none text-right">
                     Joined {new Date(teacher.joinedDate).toLocaleDateString()}
                   </span>
                 </div>
@@ -334,7 +335,7 @@ export default function AdminTeachersPage() {
       {!loading && filtered.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           <GraduationCap className="mx-auto mb-2 h-10 w-10" />
-          No teachers match your filters
+          <p className="text-sm sm:text-base">No teachers match your filters</p>
         </div>
       ) : null}
     </div>
