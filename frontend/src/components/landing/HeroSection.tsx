@@ -37,7 +37,7 @@ export function HeroSection() {
             <div className="flex flex-col gap-4 sm:flex-row">
               <Link
                 to={user ? "/profile" : "/registrationMain"}
-                className="rounded-[15px] bg-primary px-6 py-5.5 text-lg items-center justify-center font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                className="rounded-[15px] bg-primary px-6 py-5.5 text-lg text-center sm:text-left items-center justify-center font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
               >
                 {hero.ctaPrimary}
               </Link>
@@ -54,7 +54,7 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
-              <p className="text-right text-3xl items-start mb-4">
+              <p className=" text-center sm:text-right text-3xl items-start mb-4">
                 {hero.videoMin}{" "}
                 <span className="text-primary">{hero.videoWatch}</span>
               </p>

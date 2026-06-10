@@ -11,7 +11,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       DATABASE_URL: ${DATABASE_URL}
     ports:
-      - "${POSTGRES_HOST_PORT}:5432"
+      # Bind to loopback only — backend on the same host connects via 127.0.0.1.
+      # Exposing 0.0.0.0:5432 invites internet-wide brute-force (see prod incident 2026-06).
+      - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

@@ -42,7 +42,6 @@ import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import toast from "react-hot-toast";
-import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
 
 interface ContentVideo {
   id: number;
@@ -77,16 +76,20 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
     thumbnailUrl: video.thumbnailUrl,
     videoLink: video.videoLink,
     ageRestriction: video.ageRestriction,
+    level: video.content.stats?.systemTags?.find((t) =>
+      /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+    ),
   };
 }
 
 function placementPatchApiOrigin(html: string, apiOrigin: string): string {
   const trimmed = apiOrigin.replace(/\/$/, "");
   const esc = trimmed.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-  return html.replace(
+  const patched = html.replace(
     /<meta\s+name="explys-placement-api-origin"\s+content="[^"]*"\s*\/?\s*>/i,
     `<meta name="explys-placement-api-origin" content="${esc}" />`,
   );
+  return patched.replace(/return window\.location\.origin;/g, 'return "*";');
 }
 
 const STRIPE_CHECKOUT_CATALOG_TOAST_ID = "stripe-checkout-catalog-welcome";
@@ -289,7 +292,6 @@ export default function VideoPage() {
       placementCompleteHandled.current = false;
       return;
     }
-
     const onMessage = (ev: MessageEvent) => {
       if (
         !isTrustedIframeMessageOrigin(ev.origin) &&
@@ -298,18 +300,15 @@ export default function VideoPage() {
       ) {
         return;
       }
-
       if (ev.data?.type === "placement_exit") {
         navigate("/");
         return;
       }
-
       if (
         ev.data?.type === "placement_test_complete" &&
         !placementCompleteHandled.current
       ) {
         placementCompleteHandled.current = true;
-
         void (async () => {
           try {
             await refreshProfile();
@@ -321,7 +320,6 @@ export default function VideoPage() {
         })();
       }
     };
-
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [needsPlacement, navigate, refreshProfile]);
@@ -505,10 +503,40 @@ export default function VideoPage() {
         return false;
       }
 
-      const matchLevel =
-        selectedLevel === "All" ||
-        (v.content.stats?.systemTags &&
-          v.content.stats.systemTags.includes(selectedLevel));
+      if (isTeacherLinkedStudent) {
+        const sysTags = v.content?.stats?.systemTags || [];
+        const usrTags = v.content?.stats?.userTags || [];
+        const catName = v.content?.category?.name?.toLowerCase() || "";
+
+        const has18Plus =
+          sysTags.some(
+            (t: string) =>
+              t && (t.includes("18+") || t.toLowerCase().includes("adult")),
+          ) ||
+          usrTags.some(
+            (t: string) =>
+              t && (t.includes("18+") || t.toLowerCase().includes("adult")),
+          ) ||
+          catName.includes("18+") ||
+          catName.includes("adult");
+
+        if (has18Plus) return false;
+      }
+
+      let matchLevel = true;
+      if (selectedLevel !== "All") {
+        const tags = v.content.stats?.systemTags || [];
+        const cefrs = ["A1", "A2", "B1", "B2", "C1", "C2"];
+        let primaryLevel = "";
+        for (const tag of tags) {
+          const t = tag.trim().toUpperCase();
+          if (cefrs.includes(t)) {
+            primaryLevel = t;
+            break;
+          }
+        }
+        matchLevel = primaryLevel === selectedLevel;
+      }
 
       let matchGenre = true;
       if (selectedGenre === "Recommended") {
@@ -602,9 +630,9 @@ export default function VideoPage() {
 
   const paginatedVideos = hasFilters
     ? filteredVideos.slice(
-        (currentPage - 1) * GRID_PAGE_SIZE,
-        currentPage * GRID_PAGE_SIZE,
-      )
+      (currentPage - 1) * GRID_PAGE_SIZE,
+      currentPage * GRID_PAGE_SIZE,
+    )
     : [];
 
   const paginatedRows = !hasFilters
@@ -914,7 +942,6 @@ export default function VideoPage() {
                 </>
               )}
 
-              {/* Pagination Controls */}
               {totalPages > 1 && !loading && (
                 <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
                   <button
