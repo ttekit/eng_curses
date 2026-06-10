@@ -22,7 +22,7 @@ import {
   X,
   Link as LinkIcon,
   FileArchive,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import {
@@ -59,14 +59,19 @@ import {
 } from "../../lib/adminVideosApi";
 import { unzipSync } from "fflate";
 
-function generateVideoThumbnailBlob(fileOrUrl: File | Blob | string): Promise<Blob> {
+function generateVideoThumbnailBlob(
+  fileOrUrl: File | Blob | string,
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "auto";
     video.playsInline = true;
     video.muted = true;
 
-    video.src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+    video.src =
+      typeof fileOrUrl === "string"
+        ? fileOrUrl
+        : URL.createObjectURL(fileOrUrl);
 
     video.onloadeddata = () => {
       video.currentTime = 0.5;
@@ -80,7 +85,7 @@ function generateVideoThumbnailBlob(fileOrUrl: File | Blob | string): Promise<Bl
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
         (blob) => {
-          if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(video.src);
+          if (typeof fileOrUrl !== "string") URL.revokeObjectURL(video.src);
           if (blob) resolve(blob);
           else reject(new Error("Canvas blob generation failed"));
         },
@@ -90,7 +95,7 @@ function generateVideoThumbnailBlob(fileOrUrl: File | Blob | string): Promise<Bl
     };
 
     video.onerror = (e) => {
-      if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(video.src);
+      if (typeof fileOrUrl !== "string") URL.revokeObjectURL(video.src);
       reject(e);
     };
   });
@@ -164,7 +169,8 @@ function ChipList(props: { tags: string[]; emptyLabel: string }) {
 function getPaginationRange(current: number, total: number) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
-  if (current >= total - 3) return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  if (current >= total - 3)
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
   return [1, "...", current - 1, current, current + 1, "...", total];
 }
 
@@ -199,7 +205,8 @@ export default function AdminVideosPage() {
     false | "tags" | "cefr" | "captions"
   >(false);
 
-  const [editSeriesGroup, setEditSeriesGroup] = useState<AdminVideoSeriesGroup | null>(null);
+  const [editSeriesGroup, setEditSeriesGroup] =
+    useState<AdminVideoSeriesGroup | null>(null);
   const [editSeriesName, setEditSeriesName] = useState("");
   const [editSeriesSaving, setEditSeriesSaving] = useState(false);
 
@@ -211,7 +218,9 @@ export default function AdminVideosPage() {
 
   const [reorderBusy, setReorderBusy] = useState(false);
   const [addEpisodeOpen, setAddEpisodeOpen] = useState(false);
-  const [addEpisodeMode, setAddEpisodeMode] = useState<"file" | "link" | "zip">("file");
+  const [addEpisodeMode, setAddEpisodeMode] = useState<"file" | "link" | "zip">(
+    "file",
+  );
   const [addEpisodeLink, setAddEpisodeLink] = useState("");
   const [addEpisodeSeries, setAddEpisodeSeries] =
     useState<AdminVideoSeriesGroup | null>(null);
@@ -513,13 +522,18 @@ export default function AdminVideosPage() {
     }
   };
 
-  const extractAndGenerateThumbnailFromZip = async (zipFile: File): Promise<Blob | null> => {
+  const extractAndGenerateThumbnailFromZip = async (
+    zipFile: File,
+  ): Promise<Blob | null> => {
     try {
       const arrayBuffer = await zipFile.arrayBuffer();
       const unzipped = unzipSync(new Uint8Array(arrayBuffer));
 
       let tsFileName = Object.keys(unzipped).find(
-        (name) => name.endsWith(".ts") && !name.includes("__MACOSX") && !name.startsWith("._")
+        (name) =>
+          name.endsWith(".ts") &&
+          !name.includes("__MACOSX") &&
+          !name.startsWith("._"),
       );
 
       if (!tsFileName) return null;
@@ -738,7 +752,8 @@ export default function AdminVideosPage() {
         const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
         fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
       } else if (addEpisodeMode === "zip" && addEpisodeFile) {
-        const thumbBlob = await extractAndGenerateThumbnailFromZip(addEpisodeFile);
+        const thumbBlob =
+          await extractAndGenerateThumbnailFromZip(addEpisodeFile);
         if (thumbBlob) {
           fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
         }
@@ -770,14 +785,18 @@ export default function AdminVideosPage() {
 
   const scrollToListTop = () => {
     if (listTopRef.current) {
-      const y = listTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+      const y =
+        listTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: y, behavior: "smooth" });
     }
   };
 
   const ADMIN_PAGE_SIZE = 10;
   const totalPages = Math.ceil(groupedSeries.length / ADMIN_PAGE_SIZE);
-  const paginatedSeries = groupedSeries.slice((currentPage - 1) * ADMIN_PAGE_SIZE, currentPage * ADMIN_PAGE_SIZE);
+  const paginatedSeries = groupedSeries.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
 
   return (
     <div className="space-y-6">
@@ -827,20 +846,20 @@ export default function AdminVideosPage() {
         <div className="space-y-4">
           <div className="flex gap-2 p-1 bg-muted rounded-lg">
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setUploadMode('file')}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === "file" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setUploadMode("file")}
             >
               MP4 File
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setUploadMode('zip')}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === "zip" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setUploadMode("zip")}
             >
               ZIP (HLS)
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setUploadMode('link')}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${uploadMode === "link" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setUploadMode("link")}
             >
               M3U8 Link
             </button>
@@ -877,13 +896,16 @@ export default function AdminVideosPage() {
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Browse for ZIP archive</p>
               <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
-                {uploadFile ? uploadFile.name : "Select a .zip containing your .m3u8 and .ts files."}
+                {uploadFile
+                  ? uploadFile.name
+                  : "Select a .zip containing your .m3u8 and .ts files."}
               </p>
             </label>
           ) : (
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
-                <LinkIcon className="w-4 h-4 text-muted-foreground" /> HLS Playlist URL (.m3u8)
+                <LinkIcon className="w-4 h-4 text-muted-foreground" /> HLS
+                Playlist URL (.m3u8)
               </label>
               <AdminInput
                 placeholder="https://cdn.explys.com/video/playlist.m3u8"
@@ -894,7 +916,9 @@ export default function AdminVideosPage() {
           )}
 
           <div className="space-y-2 mt-4 border-t border-border pt-4">
-            <label className="text-sm font-medium">Custom Thumbnail (Cover)</label>
+            <label className="text-sm font-medium">
+              Custom Thumbnail (Cover)
+            </label>
             <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
@@ -906,13 +930,18 @@ export default function AdminVideosPage() {
                 }}
               />
               {uploadThumb ? (
-                <p className="text-sm font-medium text-primary">{uploadThumb.name}</p>
+                <p className="text-sm font-medium text-primary">
+                  {uploadThumb.name}
+                </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
+                <p className="text-sm text-muted-foreground">
+                  Click to upload cover image (.jpg, .png)
+                </p>
               )}
             </label>
             <p className="text-[11px] text-muted-foreground">
-              Optional. If not provided, it auto-generates directly from the MP4 or ZIP contents.
+              Optional. If not provided, it auto-generates directly from the MP4
+              or ZIP contents.
             </p>
           </div>
 
@@ -931,11 +960,13 @@ export default function AdminVideosPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <label className="text-sm font-medium">
+              Age Restriction / Возрастное ограничение
+            </label>
             <select
               value={uploadAge}
               onChange={(e) => setUploadAge(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+              className="w-full appearance-none rounded-xl border border-border bg-[#161622] px-4 py-3 text-[15px] font-medium text-foreground outline-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
             >
               <option value="0+">0+</option>
               <option value="6+">6+</option>
@@ -994,20 +1025,20 @@ export default function AdminVideosPage() {
         <div className="space-y-4">
           <div className="flex gap-2 p-1 bg-muted rounded-lg">
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'file' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setAddEpisodeMode('file')}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === "file" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setAddEpisodeMode("file")}
             >
               MP4 File
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'zip' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setAddEpisodeMode('zip')}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === "zip" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setAddEpisodeMode("zip")}
             >
               ZIP (HLS)
             </button>
             <button
-              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === 'link' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              onClick={() => setAddEpisodeMode('link')}
+              className={`flex-1 py-2 text-xs font-medium rounded-md transition-colors ${addEpisodeMode === "link" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              onClick={() => setAddEpisodeMode("link")}
             >
               M3U8 Link
             </button>
@@ -1044,13 +1075,16 @@ export default function AdminVideosPage() {
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">ZIP Archive</p>
               <p className="mt-1 text-xs text-muted-foreground max-w-[250px] mx-auto">
-                {addEpisodeFile ? addEpisodeFile.name : "Select a .zip containing your HLS files."}
+                {addEpisodeFile
+                  ? addEpisodeFile.name
+                  : "Select a .zip containing your HLS files."}
               </p>
             </label>
           ) : (
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
-                <LinkIcon className="w-4 h-4 text-muted-foreground" /> HLS Playlist URL (.m3u8)
+                <LinkIcon className="w-4 h-4 text-muted-foreground" /> HLS
+                Playlist URL (.m3u8)
               </label>
               <AdminInput
                 placeholder="https://cdn.explys.com/video/playlist.m3u8"
@@ -1061,7 +1095,9 @@ export default function AdminVideosPage() {
           )}
 
           <div className="space-y-2 mt-4 border-t border-border pt-4">
-            <label className="text-sm font-medium">Custom Thumbnail (Cover)</label>
+            <label className="text-sm font-medium">
+              Custom Thumbnail (Cover)
+            </label>
             <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
@@ -1073,9 +1109,13 @@ export default function AdminVideosPage() {
                 }}
               />
               {addEpisodeThumb ? (
-                <p className="text-sm font-medium text-primary">{addEpisodeThumb.name}</p>
+                <p className="text-sm font-medium text-primary">
+                  {addEpisodeThumb.name}
+                </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Click to upload cover image (.jpg, .png)</p>
+                <p className="text-sm text-muted-foreground">
+                  Click to upload cover image (.jpg, .png)
+                </p>
               )}
             </label>
           </div>
@@ -1093,7 +1133,9 @@ export default function AdminVideosPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <label className="text-sm font-medium">
+              Age Restriction / Возрастное ограничение
+            </label>
             <select
               value={addEpisodeAge}
               onChange={(e) => setAddEpisodeAge(e.target.value)}
@@ -1162,7 +1204,9 @@ export default function AdminVideosPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Age Restriction / Возрастное ограничение</label>
+            <label className="text-sm font-medium">
+              Age Restriction / Возрастное ограничение
+            </label>
             <select
               value={editAge}
               onChange={(e) => setEditAge(e.target.value)}
@@ -1194,7 +1238,8 @@ export default function AdminVideosPage() {
 
           <div className="space-y-2 border-border border-t pt-4">
             <label className="text-sm font-medium flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Change Thumbnail / Cover Image
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Change
+              Thumbnail / Cover Image
             </label>
             <label className="block cursor-pointer rounded-lg border border-border p-3 text-center bg-muted/40 transition-colors hover:border-primary/50">
               <input
@@ -1207,9 +1252,13 @@ export default function AdminVideosPage() {
                 }}
               />
               {editThumb ? (
-                <p className="text-sm font-medium text-primary truncate">{editThumb.name}</p>
+                <p className="text-sm font-medium text-primary truncate">
+                  {editThumb.name}
+                </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Click to upload a new cover image (.jpg, .png)</p>
+                <p className="text-sm text-muted-foreground">
+                  Click to upload a new cover image (.jpg, .png)
+                </p>
               )}
             </label>
           </div>
@@ -1222,9 +1271,10 @@ export default function AdminVideosPage() {
               <code className="text-[11px]">nova-3</code>;{" "}
               <code className="text-[11px]">DEEPGRAM_TRANSCRIBE_MODEL</code>)
               needs <code className="text-[11px]">DEEPGRAM_API_KEY</code> plus
-              an audible soundtrack in the video. <strong>Catalog genres</strong>{" "}
-              and <strong>CEFR bands</strong> use WebVTT + Gemini afterward
-              (genres must exist in the genres table).
+              an audible soundtrack in the video.{" "}
+              <strong>Catalog genres</strong> and <strong>CEFR bands</strong>{" "}
+              use WebVTT + Gemini afterward (genres must exist in the genres
+              table).
             </p>
             <div className="flex flex-wrap gap-2">
               <AdminButton
@@ -1296,7 +1346,10 @@ export default function AdminVideosPage() {
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="admin-edit-series-name">
+            <label
+              className="text-sm font-medium"
+              htmlFor="admin-edit-series-name"
+            >
               Playlist (Series) Name
             </label>
             <AdminInput
@@ -1427,7 +1480,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                      null
+                    null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
@@ -1871,38 +1924,50 @@ export default function AdminVideosPage() {
                 <div className="flex items-center justify-center gap-2 mt-12 mb-4">
                   <button
                     type="button"
-                    onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); scrollToListTop(); }}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.max(1, p - 1));
+                      scrollToListTop();
+                    }}
                     disabled={currentPage === 1}
                     className="flex items-center justify-center px-4 py-2 min-h-[40px] rounded-lg bg-card border border-border text-foreground font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
                   >
                     Prev
                   </button>
 
-                  {getPaginationRange(currentPage, totalPages).map((p, i) => (
+                  {getPaginationRange(currentPage, totalPages).map((p, i) =>
                     p === "..." ? (
-                      <span key={`ellipsis-${i}`} className="flex items-center justify-center px-2 py-2 min-h-[40px] text-muted-foreground font-medium">
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="flex items-center justify-center px-2 py-2 min-h-[40px] text-muted-foreground font-medium"
+                      >
                         ...
                       </span>
                     ) : (
                       <button
                         key={`page-${p}`}
                         type="button"
-                        onClick={() => { setCurrentPage(p as number); scrollToListTop(); }}
+                        onClick={() => {
+                          setCurrentPage(p as number);
+                          scrollToListTop();
+                        }}
                         className={cn(
                           "flex items-center justify-center min-w-[40px] px-3 py-2 min-h-[40px] rounded-lg font-medium text-sm transition-colors cursor-pointer",
                           currentPage === p
                             ? "bg-primary/20 text-primary border border-primary/30"
-                            : "bg-card border border-border text-foreground hover:bg-muted"
+                            : "bg-card border border-border text-foreground hover:bg-muted",
                         )}
                       >
                         {p}
                       </button>
-                    )
-                  ))}
+                    ),
+                  )}
 
                   <button
                     type="button"
-                    onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); scrollToListTop(); }}
+                    onClick={() => {
+                      setCurrentPage((p) => Math.min(totalPages, p + 1));
+                      scrollToListTop();
+                    }}
                     disabled={currentPage === totalPages}
                     className="flex items-center justify-center px-4 py-2 min-h-[40px] rounded-lg bg-primary text-primary-foreground font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-hover transition-all cursor-pointer shadow-md"
                   >
@@ -1914,7 +1979,10 @@ export default function AdminVideosPage() {
           )}
           {!loading ? (
             <p className="mt-6 text-center text-sm text-muted-foreground border-t border-border pt-6">
-              Showing series {(currentPage - 1) * ADMIN_PAGE_SIZE + 1} - {Math.min(currentPage * ADMIN_PAGE_SIZE, groupedSeries.length)} of {groupedSeries.length} (filtered, {filtered.length} total episodes)
+              Showing series {(currentPage - 1) * ADMIN_PAGE_SIZE + 1} -{" "}
+              {Math.min(currentPage * ADMIN_PAGE_SIZE, groupedSeries.length)} of{" "}
+              {groupedSeries.length} (filtered, {filtered.length} total
+              episodes)
             </p>
           ) : null}
         </AdminCardContent>

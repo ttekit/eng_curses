@@ -7,10 +7,11 @@ import { formatMessage } from "../../lib/formatMessage";
 
 export default function CatalogPage() {
   const t = useAppMessages().legacyCatalogPage;
+  const navigate = useNavigate();
+
   const [videos, setVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -54,23 +55,25 @@ export default function CatalogPage() {
               videos.map((video) => (
                 <div
                   key={video.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col group"
+                  className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col group relative"
                 >
-                  <div className="aspect-video bg-zinc-800 flex items-center justify-center">
-                    <span className="text-zinc-600 text-xs uppercase font-bold">
+                  <div className="aspect-video bg-zinc-800 flex items-center justify-center relative">
+                    <span className="text-zinc-600 text-xs uppercase font-bold px-4 text-center">
                       {video.content?.category?.name || t.videoFallback}
                     </span>
                   </div>
-                  <div className="p-4 grow">
-                    <h3 className="font-bold mb-2 line-clamp-1">
+                  <div className="p-4 grow flex flex-col">
+                    <h3 className="font-bold mb-4 line-clamp-1">
                       {video.videoName}
                     </h3>
-                    <button
-                      onClick={() => navigate(`/content/${video.id}`)}
-                      className="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-colors"
-                    >
-                      {t.watchNow}
-                    </button>
+                    <div className="mt-auto">
+                      <button
+                        onClick={() => navigate(`/content/${video.id}`)}
+                        className="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-colors"
+                      >
+                        {t.watchNow}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))

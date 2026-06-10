@@ -40,7 +40,7 @@ import {
 } from "../../lib/contentRecommendations";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
-import { Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { Layers, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface ContentVideo {
@@ -106,6 +106,7 @@ function stripCheckoutSuccessSearch(): { pathname: string; search: string } {
 }
 
 const LEVELS_LIST = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
+const AGE_LIST = ["All", "0+", "6+", "12+", "16+", "18+", "21+"] as const;
 
 function getPaginationRange(current: number, total: number) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -120,6 +121,7 @@ export default function VideoPage() {
   const [loading, setLoading] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState("All");
   const [selectedGenre, setSelectedGenre] = useState("All");
+  const [selectedAge, setSelectedAge] = useState("All");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [placementDocHtml, setPlacementDocHtml] = useState<string | null>(null);
   const [placementDocError, setPlacementDocError] = useState<string | null>(
@@ -136,14 +138,45 @@ export default function VideoPage() {
   const catalogTopRef = useRef<HTMLDivElement>(null);
 
   const { user, isLoading: userLoading, refreshProfile } = useUser();
-  const isTeacherLinkedStudent =
-    user?.role === "student" && user?.teacherId != null;
   const { messages, locale } = useLandingLocale();
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
 
+  // Ссылки на контейнеры для горизонтальной прокрутки
   const levelScrollRef = useRef<HTMLDivElement>(null);
   const genreScrollRef = useRef<HTMLDivElement>(null);
+  const ageScrollRef = useRef<HTMLDivElement>(null);
+
+  // Умная проверка возраста юзера
+  const isAdultUser = useMemo(() => {
+    if (!user) return false;
+    if (user.role === "adult") return true;
+    if (user.dateOfBirth) {
+      const dob = new Date(user.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      if (
+        today.getMonth() < dob.getMonth() ||
+        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+      ) {
+        age--;
+      }
+      return age >= 18;
+    }
+    return false;
+  }, [user]);
+
+  const handleAgeSelect = (age: string) => {
+    if ((age === "18+" || age === "21+") && !isAdultUser) {
+      toast.error(
+        locale === "uk"
+          ? "Цей контент доступний лише для користувачів від 18 років."
+          : "This content is restricted to users 18 and older.",
+      );
+      return;
+    }
+    setSelectedAge(age);
+  };
 
   const scrollContainer = useCallback(
     (ref: React.RefObject<HTMLDivElement | null>, dir: "left" | "right") => {
@@ -169,7 +202,7 @@ export default function VideoPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedLevel, selectedGenre]);
+  }, [selectedLevel, selectedGenre, selectedAge]);
 
   const cb = locale === "uk" ? appUk.catalogBrowse : appEn.catalogBrowse;
 
@@ -183,6 +216,7 @@ export default function VideoPage() {
     if (selectedGenre === "Recommended") return cb.filterRecommendedForYou;
     let title = cb.filterFilteredResults;
     if (selectedLevel !== "All") title += ` - ${selectedLevel}`;
+    if (selectedAge !== "All") title += ` - ${selectedAge}`;
     if (selectedGenre !== "All") title += ` - ${filterLabel(selectedGenre)}`;
     return title;
   };
@@ -514,33 +548,31 @@ export default function VideoPage() {
         );
       }
 
-      return matchLevel && matchGenre;
+      const vidAge = v.ageRestriction || "0+";
+      const matchAge = selectedAge === "All" || vidAge === selectedAge;
+
+      return matchLevel && matchGenre && matchAge;
     });
-  }, [
-    videos,
-    selectedLevel,
-    selectedGenre,
-    recommendedVideoIds,
-    isTeacherLinkedStudent,
-  ]);
+  }, [videos, selectedLevel, selectedGenre, selectedAge, recommendedVideoIds]);
 
   const featured = filteredVideos[0] ?? null;
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
-  const hasFilters = selectedLevel !== "All" || selectedGenre !== "All";
+  const hasFilters =
+    selectedLevel !== "All" || selectedGenre !== "All" || selectedAge !== "All";
 
   const catalogRows = useMemo(() => {
     if (filteredVideos.length === 0) return [];
@@ -605,9 +637,9 @@ export default function VideoPage() {
 
   const paginatedRows = !hasFilters
     ? catalogRows.slice(
-      (currentPage - 1) * ROWS_PAGE_SIZE,
-      currentPage * ROWS_PAGE_SIZE,
-    )
+        (currentPage - 1) * ROWS_PAGE_SIZE,
+        currentPage * ROWS_PAGE_SIZE,
+      )
     : [];
 
   return (
@@ -658,25 +690,26 @@ export default function VideoPage() {
             <CatalogHero featured={featuredHero} />
 
             <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6 overflow-hidden">
+                {/* 1. ФИЛЬТР УРОВНЯ */}
                 <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                   <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
                     <Layers className="size-3.5" /> {cb.filterLevel}
                   </span>
                   <div className="relative group/level flex w-full items-center">
-                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
 
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "left")}
-                      className="absolute hover:cursor-pointer  left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
 
                     <div
                       ref={levelScrollRef}
-                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full"
+                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
                       style={{
                         scrollbarWidth: "none",
                         msOverflowStyle: "none",
@@ -702,13 +735,65 @@ export default function VideoPage() {
                     <button
                       type="button"
                       onClick={() => scrollContainer(levelScrollRef, "right")}
-                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/level:flex hover:bg-muted"
+                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
+                {/* 2. ФИЛЬТР ВОЗРАСТА */}
+                <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
+                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                    <Lock className="size-3.5 opacity-70" /> Age
+                  </span>
+                  <div className="relative group/age flex w-full items-center">
+                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
+
+                    <button
+                      type="button"
+                      onClick={() => scrollContainer(ageScrollRef, "left")}
+                      className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    <div
+                      ref={ageScrollRef}
+                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
+                      style={{
+                        scrollbarWidth: "none",
+                        msOverflowStyle: "none",
+                      }}
+                    >
+                      {AGE_LIST.map((age) => (
+                        <button
+                          key={age}
+                          type="button"
+                          onClick={() => handleAgeSelect(age)}
+                          className={cn(
+                            "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                            selectedAge === age
+                              ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                          )}
+                        >
+                          {age}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => scrollContainer(ageScrollRef, "right")}
+                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. ФИЛЬТР ЖАНРОВ */}
                 {genreNames.length > 0 && (
                   <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                     <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
@@ -720,19 +805,19 @@ export default function VideoPage() {
                       {cb.filterGenre}
                     </span>
                     <div className="relative group/genre flex w-full items-center">
-                      <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-background to-transparent z-10" />
+                      <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
 
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "left")}
-                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-5 w-5 -translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
 
                       <div
                         ref={genreScrollRef}
-                        className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full"
+                        className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
                         style={{
                           scrollbarWidth: "none",
                           msOverflowStyle: "none",
@@ -758,7 +843,7 @@ export default function VideoPage() {
                       <button
                         type="button"
                         onClick={() => scrollContainer(genreScrollRef, "right")}
-                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-5 w-5 translate-x-1 items-center justify-center rounded-full bg-background/40 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
@@ -796,12 +881,43 @@ export default function VideoPage() {
                     {buildFilteredTitle()}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {paginatedVideos.map((video) => (
-                      <CatalogVideoCard
-                        key={video.id}
-                        video={toCardVideo(video)}
-                      />
-                    ))}
+                    {paginatedVideos.map((video) => {
+                      const vidAge = video.ageRestriction || "0+";
+                      const is18Plus = vidAge === "18+" || vidAge === "21+";
+                      const isLocked = is18Plus && !isAdultUser;
+
+                      return (
+                        <div
+                          key={video.id}
+                          className="relative group rounded-2xl overflow-hidden"
+                        >
+                          <div
+                            className={cn(
+                              "transition-all h-full",
+                              isLocked &&
+                                "blur-md brightness-50 pointer-events-none select-none",
+                            )}
+                          >
+                            <CatalogVideoCard video={toCardVideo(video)} />
+                          </div>
+                          {isLocked && (
+                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 p-4 text-center">
+                              <div className="bg-destructive/20 p-3 rounded-full mb-3 backdrop-blur-md shadow-lg border border-destructive/30">
+                                <Lock className="w-8 h-8 text-destructive" />
+                              </div>
+                              <h3 className="text-white font-bold text-lg mb-1 drop-shadow-md">
+                                18+ Only
+                              </h3>
+                              <p className="text-zinc-200 text-xs leading-relaxed font-medium drop-shadow-md">
+                                {locale === "uk"
+                                  ? "Контент недоступний для вашого віку"
+                                  : "Content unavailable for your age"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
@@ -918,7 +1034,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
+                        "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

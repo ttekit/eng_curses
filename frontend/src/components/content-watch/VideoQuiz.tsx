@@ -184,9 +184,10 @@ export function VideoQuiz({
             total: String(questions.length),
           })}
         </span>
-        <span className="flex items-center gap-1 text-muted-foreground">
+      {/* иконки */}
+        {/* <span className="flex items-center gap-1 text-muted-foreground">
           <Clock className="h-3 w-3" />≈ {question?.timestamp}
-        </span>
+        </span> */}
       </div>
 
       <div className="h-1 overflow-hidden rounded-full bg-muted">
