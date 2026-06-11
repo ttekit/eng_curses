@@ -3,6 +3,9 @@ import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useUser } from "../../context/UserContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 import { Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sun } from "lucide-react";
+import { Moon } from "lucide-react";
 
 export function LandingFooter() {
   const { messages } = useLandingLocale();
@@ -10,6 +13,19 @@ export function LandingFooter() {
   const { user, logout } = useUser();
   const navigate = useNavigate();
   const showPaywallLogout = Boolean(user && !userMayUseLearnerApp(user));
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setIsDarkMode(isDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDarkMode;
+    setIsDarkMode(nextDark);
+    document.documentElement.classList.toggle("dark", nextDark);
+    localStorage.setItem("theme", nextDark ? "dark" : "light");
+  };
 
   const footerSections: {
     title: string;
@@ -117,6 +133,17 @@ export function LandingFooter() {
             </span>
           </p>
           <div className="flex items-center gap-6">
+            <button
+              onClick={toggleTheme}
+              className="text-muted-foreground transition-colors hover:text-primary cursor-pointer"
+              aria-label="Toggle theme"
+            >
+              {isDarkMode ? (
+                <Sun className="w-5 h-5" />
+              ) : (
+                <Moon className="w-5 h-5" />
+              )}
+            </button>
             <a
               href="https://t.me/ExplysEng"
               className="text-muted-foreground transition-colors hover:text-primary"
