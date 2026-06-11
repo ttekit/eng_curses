@@ -309,14 +309,14 @@ export default function AdminUsersPage() {
         <div className="flex flex-wrap gap-3">
           <AdminButton
             variant="outline"
-            className="gap-2 flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center hover:cursor-pointer rounded-xlpx-8 py-3 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
+            className="gap-2 flex text-foreground rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm hover:bg-secondary"
             onClick={exportCsv}
           >
             <Download className="h-4 w-4" />
             Export
           </AdminButton>
           <AdminButton
-            className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="gap-2 flex rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
             onClick={() => setAddOpen(true)}
           >
             <UserPlus className="h-4 w-4" />

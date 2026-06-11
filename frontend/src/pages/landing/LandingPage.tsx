@@ -11,19 +11,29 @@ import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 const FeaturesSection = React.lazy(() =>
-  import("../../components/landing/FeaturesSection").then(m => ({ default: m.FeaturesSection }))
+  import("../../components/landing/FeaturesSection").then((m) => ({
+    default: m.FeaturesSection,
+  })),
 );
 const HowItWorksSection = React.lazy(() =>
-  import("../../components/landing/HowItWorksSection").then(m => ({ default: m.HowItWorksSection }))
+  import("../../components/landing/HowItWorksSection").then((m) => ({
+    default: m.HowItWorksSection,
+  })),
 );
 const LandingPricingSection = React.lazy(() =>
-  import("../../components/landing/LandingPricingSection").then(m => ({ default: m.LandingPricingSection }))
+  import("../../components/landing/LandingPricingSection").then((m) => ({
+    default: m.LandingPricingSection,
+  })),
 );
 const CtaSection = React.lazy(() =>
-  import("../../components/landing/CtaSection").then(m => ({ default: m.CtaSection }))
+  import("../../components/landing/CtaSection").then((m) => ({
+    default: m.CtaSection,
+  })),
 );
 const LandingFooter = React.lazy(() =>
-  import("../../components/landing/LandingFooter").then(m => ({ default: m.LandingFooter }))
+  import("../../components/landing/LandingFooter").then((m) => ({
+    default: m.LandingFooter,
+  })),
 );
 
 export default function LandingPage() {
@@ -31,11 +41,9 @@ export default function LandingPage() {
   const { seo } = messages;
   const location = useLocation();
 
-  // Цей ефект ловить зміну хешу в URL і плавно скролить до елемента,
-  // навіть якщо він був завантажений через React.lazy
   useEffect(() => {
     if (location.hash) {
-      const targetId = location.hash.substring(1); // Прибираємо '#'
+      const targetId = location.hash.substring(1);
 
       const scrollToElement = () => {
         const element = document.getElementById(targetId);
@@ -44,7 +52,6 @@ export default function LandingPage() {
         }
       };
 
-      // Робимо невелику затримку, щоб Suspense встиг відрендерити компоненти
       const timeoutId = setTimeout(scrollToElement, 150);
       return () => clearTimeout(timeoutId);
     }
@@ -52,7 +59,7 @@ export default function LandingPage() {
 
   return (
     <main
-      className="min-h-screen"
+      className=" min-h-screen bg-background text-foreground selection:bg-primary/30"
       lang={locale === "uk" ? "uk" : "en"}
     >
       <SEO
@@ -69,7 +76,6 @@ export default function LandingPage() {
       <HeroSection />
 
       <Suspense fallback={<div className="min-h-screen" />}>
-        {/* Прибрали зайві div-обгортки. Компоненти використовують свої власні ID */}
         <FeaturesSection />
         <HowItWorksSection />
         <LandingPricingSection />

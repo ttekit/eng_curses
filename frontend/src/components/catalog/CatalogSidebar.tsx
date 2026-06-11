@@ -14,6 +14,7 @@ import {
 import { useUser } from "../../context/UserContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
+import { ThemeToggle } from "../ThemeToggle";
 
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
@@ -121,34 +122,56 @@ export function CatalogSidebar({
             <ChevronLeft className="h-3 w-3" />
           )}
         </button>
+
         <div
           className={cn(
-            "mx-3 my-3 flex shrink-0 items-center gap-3 rounded-3xl border border-border p-1",
-            collapsed && "justify-center",
+            "mx-3 my-3 flex shrink-0 flex-col overflow-hidden rounded-[24px] border border-border transition-all",
+            collapsed ? "p-1 items-center" : "pb-2",
           )}
         >
-          <Link to="/profileMain">
-            <img
-              src={avatarUrl || "/LandingProfile.svg"}
-              className="w-8 h-8 m-2 hover:cursor-pointer shrink-0 rounded-full object-cover"
-            />
-          </Link>
+          {/* Верхняя часть: Аватарка и Имя */}
+          <div className={cn("flex items-center gap-3", !collapsed && "p-1")}>
+            <Link to="/profileMain" className="shrink-0">
+              <img
+                src={avatarUrl || "/LandingProfile.svg"}
+                className={cn(
+                  "hover:cursor-pointer rounded-full object-cover",
+                  collapsed ? "m-2 h-8 w-8" : "ml-2 mt-2 mb-1 h-9 w-9",
+                )}
+                alt=""
+              />
+            </Link>
+
+            {!collapsed && (
+              <div className="min-w-0 flex-1 pr-3 pt-1">
+                <p className="truncate text-[13px] text-foreground/70">
+                  {welcomeName?.trim()
+                    ? formatMessage(shell.greetingHi, { name: welcomeName })
+                    : shell.welcomeBackExclaim}
+                </p>
+                <p className="text-sm font-semibold text-accent">
+                  {englishLevel?.trim()
+                    ? formatMessage(shell.levelWithDot, {
+                        prefix: common.levelPrefix,
+                        level: englishLevel,
+                      })
+                    : shell.brandsFallback}
+                </p>
+              </div>
+            )}
+          </div>
 
           {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-foreground/70">
-                {welcomeName?.trim()
-                  ? formatMessage(shell.greetingHi, { name: welcomeName })
-                  : shell.welcomeBackExclaim}
-              </p>
-              <p className="text-sm font-semibold text-accent">
-                {englishLevel?.trim()
-                  ? formatMessage(shell.levelWithDot, {
-                      prefix: common.levelPrefix,
-                      level: englishLevel,
-                    })
-                  : shell.brandsFallback}
-              </p>
+            <div className="mt-1 flex flex-col gap-2">
+              <div className="mx-3 h-px bg-border/60" />
+              <div className="flex items-center justify-between px-4 pb-1">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Theme
+                </span>
+                <div className="scale-90 origin-right">
+                  <ThemeToggle />
+                </div>
+              </div>
             </div>
           )}
         </div>

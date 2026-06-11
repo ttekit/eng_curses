@@ -384,13 +384,13 @@ export default function RegistrationDetails() {
                   <button
                     type="button"
                     onClick={addPupil}
-                    className="rounded-[15px] bg-primary px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                    className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
                   >
                     {step2.addPupil}
                   </button>
                 </div>
 
-                <div className="bg-input border-border max-h-60 overflow-y-auto rounded-xl border p-3">
+                <div className="bg-background border-border max-h-60 overflow-y-auto rounded-xl border p-3 shadow-sm">
                   <table className="w-full table-fixed text-left text-sm">
                     <thead>
                       <tr className="text-muted-foreground border-border border-b">
@@ -456,18 +456,18 @@ export default function RegistrationDetails() {
           {emptyError && <ValidateError>{errors.selectRole}</ValidateError>}
           {formError && <ValidateError>{formError}</ValidateError>}
 
-          <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-stretch">
+          <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-start">
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+              className="w-full sm:w-auto rounded-xl bg-primary px-8 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {formData.role === "teacher" ? step2.register : step2.next}
             </Button>
             <Button
               type="button"
               onClick={() => navigate("/registrationMain")}
-              className="text-sm font-medium bg-transparent text-foreground/70 hover:text-white py-2.5 px-6 transition-all rounded-[15px] hover:bg-muted-foreground/10 hover:cursor-pointer"
+              className="w-full sm:w-auto rounded-xl bg-transparent px-6 py-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground cursor-pointer"
             >
               {step2.previous}
             </Button>

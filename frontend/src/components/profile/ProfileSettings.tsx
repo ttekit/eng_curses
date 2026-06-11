@@ -42,8 +42,9 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
         onClick={(e) => e.stopPropagation()}
         onFocus={(e) => e.stopPropagation()}
         autoComplete="off"
-        className="flex h-12 w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+        className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
       />
+
       <button
         type="button"
         onClick={onClick}
@@ -451,6 +452,22 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     [],
   );
 
+  const handleCancelProfile = useCallback(() => {
+    if (!user) return;
+    setName(user.name || "");
+    setDateOfBirth(
+      user.dateOfBirth
+        ? new Date(user.dateOfBirth).toISOString().split("T")[0]
+        : "",
+    );
+    setJob(user.workField || "");
+    setEducation(user.education || "");
+    setHobbies(user.hobbies ?? []);
+    setFavoriteGenreIds(user.favoriteGenres ?? []);
+    setHatedGenreIds(user.hatedGenres ?? []);
+    setNewHobby("");
+  }, [user]);
+
   const saveProfile = useCallback(async () => {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -775,16 +792,24 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
-          <Button
+        <div className="mt-6 flex justify-end gap-3 border-t border-border pt-6">
+          <button
             type="button"
-            className="flex w-fit rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors cursor-pointer disabled:opacity-50"
+            disabled={saving}
+            onClick={handleCancelProfile}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="flex w-fit rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
             disabled={saving}
             onClick={() => void saveProfile()}
           >
-            <Save className="size-4" />
+            <Save className="size-4 mr-2" />
             {saving ? s.saving || "Saving..." : s.saveChanges || "Save Changes"}
-          </Button>
+          </button>
         </div>
       </ProfileCard>
 
@@ -1336,7 +1361,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             <div className="w-full flex justify-center sm:block sm:w-auto">
               <button
                 type="button"
-                className="flex flex-row w-full sm:w-auto justify-center items-center text-sm font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
+                className="flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl bg-destructive/10 px-6 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 cursor-pointer"
                 onClick={async () => {
                   try {
                     await apiFetch("/auth/logout", { method: "POST" });
@@ -1365,7 +1390,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             </div>
             <button
               type="button"
-              className="text-sm font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
+              className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive/10 px-6 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 cursor-pointer"
               onClick={() => setDangerOpen("reset")}
             >
               {s.resetProgressCta || "Reset Progress"}
@@ -1385,7 +1410,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               <div className="flex justify-center sm:block">
                 <button
                   type="button"
-                  className="rounded-[15px] w-full bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                  className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive px-6 py-2.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 cursor-pointer shadow-sm"
                   onClick={() => setDangerOpen("delete")}
                 >
                   {s.deleteAccountCta || "Delete Account"}

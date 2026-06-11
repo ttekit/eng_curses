@@ -56,90 +56,27 @@ export default function RegisterSuccessPage() {
             {hasStudents ? success.withStudents : success.solo}
           </p>
 
-          {hasStudents && (
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={() => setShowStudents(!showStudents)}
-                className="flex w-full hover:cursor-pointer items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm font-semibold text-foreground transition-all hover:bg-muted/80 mb-3"
-              >
-                <div className="flex items-center gap-2">
-                  {showStudents ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span>
-                    {formatMessage(success.studentAccounts, {
-                      COUNT: String(students.length),
-                    })}
-                  </span>
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">
-                  {showStudents ? success.hide : success.show}
-                </span>
-              </button>
+          <Button
+            type="button"
+            className="!mt-6 w-full"
+            onClick={() =>
+              void downloadStudentAccountsExcel(students, "student-accounts")
+            }
+          >
+            {success.downloadExcel}
+          </Button>
 
-              {showStudents && (
-                <div className="border-border bg-muted/60 max-h-48 overflow-auto rounded-xl border text-sm animate-in fade-in slide-in-from-top-2">
-                  <table className="w-full text-left">
-                    <thead className="bg-muted sticky top-0 text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">
-                          {success.colName}
-                        </th>
-                        <th className="px-3 py-2 font-medium">
-                          {success.colEmail}
-                        </th>
-                        <th className="px-3 py-2 font-medium">
-                          {success.colPassword}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {students.map((s) => (
-                        <tr
-                          key={s.email}
-                          className="border-border border-t text-foreground"
-                        >
-                          <td className="px-3 py-2">{s.name}</td>
-                          <td className="px-3 py-2 break-all">{s.email}</td>
-                          <td className="px-3 py-2 font-mono text-xs">
-                            {s.password}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              <Button
-                type="button"
-                className="!mt-6 w-full"
-                onClick={() =>
-                  void downloadStudentAccountsExcel(
-                    students,
-                    "student-accounts",
-                  )
-                }
-              >
-                {success.downloadExcel}
-              </Button>
-            </div>
-          )}
-
-          <div className="mt-8 flex flex-col gap-2">
+          <div className="mt-8 flex flex-col gap-3">
             <Button
               type="button"
-              className=" flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+              className="flex w-full items-center justify-center rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
               onClick={() => navigate("/loginForm")}
             >
               {success.goSignIn}
             </Button>
             <a
               href="/catalog"
-              className="hover:text-primary/90 mt-2 w-full block text-center text-sm font-semibold text-primary hover:underline"
+              className="mt-2 block w-full text-center text-sm font-semibold text-primary transition-colors hover:underline hover:text-primary/90"
             >
               {success.continueToSite}
             </a>

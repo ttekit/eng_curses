@@ -225,7 +225,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
             type="button"
             onClick={() => void saveGoalAndHorizon()}
             disabled={savingGoalHorizon || goalHorizonUnchanged}
-            className="flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {savingGoalHorizon ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -281,7 +281,7 @@ export function ProfileStudyingPlan({ user }: { user: UserData }) {
 
       <Link
         to="/catalog"
-        className="flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
       >
         {lp.continueInCatalog || "Continue in Catalog"}
         <ArrowRight className="size-4" />

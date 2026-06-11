@@ -31,7 +31,7 @@ const ADULT_PLACEMENT_CEFR_SET: ReadonlySet<string> = new Set(
 );
 
 const selectFieldClass =
-  "w-full rounded-lg border border-border bg-input px-3 py-2.5 text-base text-foreground shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
 function parseAdultProfileCefrTarget(
   level: string | undefined,
@@ -44,7 +44,9 @@ function parseAdultProfileCefrTarget(
   if (lowered === "choose") {
     return "";
   }
-  const embedded = trimmed.match(/\b(A1|A2|B1|B2|C1|C2)\b/i)?.[1]?.toUpperCase();
+  const embedded = trimmed
+    .match(/\b(A1|A2|B1|B2|C1|C2)\b/i)?.[1]
+    ?.toUpperCase();
   if (embedded && ADULT_PLACEMENT_CEFR_SET.has(embedded)) {
     return embedded as AdultPlacementCefrLevel;
   }
@@ -109,18 +111,29 @@ function normalizeHobbySelection(sel: MultiValue<HobbyOption>): string[] {
   return out;
 }
 
-const selectDark = {
-  control: (base: Record<string, unknown>) => ({
+const customSelectStyles = {
+  control: (base: Record<string, unknown>, state: any) => ({
     ...base,
-    backgroundColor: "oklch(0.22 0.03 285)",
-    borderColor: "oklch(0.28 0.04 285)",
+    backgroundColor: "var(--background)",
+    borderColor: state.isFocused ? "var(--primary)" : "var(--input)",
     borderRadius: 12,
-    minHeight: 42,
+    minHeight: 46,
+    boxShadow: state.isFocused
+      ? "0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent)"
+      : "0 1px 2px 0 rgb(0 0 0 / 0.05)", // shadow-sm
+    "&:hover": {
+      borderColor: state.isFocused ? "var(--primary)" : "var(--input)",
+    },
+    cursor: "text",
   }),
   menu: (base: Record<string, unknown>) => ({
     ...base,
-    backgroundColor: "oklch(0.18 0.03 285)",
-    border: "1px solid oklch(0.28 0.04 285)",
+    backgroundColor: "var(--card)",
+    border: "1px solid var(--border)",
+    borderRadius: 12,
+    overflow: "hidden",
+    boxShadow:
+      "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", // shadow-xl
   }),
   option: (
     base: Record<string, unknown>,
@@ -128,43 +141,58 @@ const selectDark = {
   ) => ({
     ...base,
     backgroundColor: state.isSelected
-      ? "oklch(0.65 0.25 295)"
+      ? "color-mix(in srgb, var(--primary) 10%, transparent)"
       : state.isFocused
-        ? "color-mix(in oklch, oklch(0.65 0.25 295) 14%, transparent)"
+        ? "var(--muted)"
         : "transparent",
-    color: "#fafafa",
+    color: state.isSelected ? "var(--primary)" : "var(--foreground)",
+    cursor: "pointer",
+    "&:active": {
+      backgroundColor: "color-mix(in srgb, var(--primary) 20%, transparent)",
+    },
   }),
   multiValue: (base: Record<string, unknown>) => ({
     ...base,
-    backgroundColor: "#3f3f46",
+    backgroundColor: "var(--secondary)",
+    borderRadius: 6,
   }),
   multiValueLabel: (base: Record<string, unknown>) => ({
     ...base,
-    color: "#fafafa",
+    color: "var(--secondary-foreground)",
   }),
-  input: (base: Record<string, unknown>) => ({ ...base, color: "#fafafa" }),
+  input: (base: Record<string, unknown>) => ({
+    ...base,
+    color: "var(--foreground)",
+  }),
   placeholder: (base: Record<string, unknown>) => ({
     ...base,
-    color: "#71717a",
+    color: "var(--muted-foreground)",
   }),
   multiValueRemove: (base: Record<string, unknown>) => ({
     ...base,
-    color: "#a1a1aa",
-    ":hover": { backgroundColor: "#52525b", color: "#fafafa" },
+    color: "var(--muted-foreground)",
+    cursor: "pointer",
+    ":hover": {
+      backgroundColor: "var(--destructive)",
+      color: "var(--destructive-foreground)",
+      borderRadius: "0 6px 6px 0",
+    },
   }),
   clearIndicator: (base: Record<string, unknown>) => ({
     ...base,
-    color: "#a1a1aa",
-    ":hover": { color: "#fafafa" },
+    color: "var(--muted-foreground)",
+    ":hover": { color: "var(--foreground)" },
+    cursor: "pointer",
   }),
   dropdownIndicator: (base: Record<string, unknown>) => ({
     ...base,
-    color: "#a1a1aa",
-    ":hover": { color: "#fafafa" },
+    color: "var(--muted-foreground)",
+    ":hover": { color: "var(--foreground)" },
+    cursor: "pointer",
   }),
   singleValue: (base: Record<string, unknown>) => ({
     ...base,
-    color: "#fafafa",
+    color: "var(--foreground)",
   }),
 };
 
@@ -266,20 +294,20 @@ export default function PlacementPreTestStep({
         body: JSON.stringify(
           skipTest
             ? {
-              workField: j,
-              education: ed,
-              hobbies: hobbiesPayload,
-              nativeLanguage: nl,
-              englishLevel: "A1",
-              hasCompletedPlacement: true,
-            }
+                workField: j,
+                education: ed,
+                hobbies: hobbiesPayload,
+                nativeLanguage: nl,
+                englishLevel: "A1",
+                hasCompletedPlacement: true,
+              }
             : {
-              workField: j,
-              education: ed,
-              hobbies: hobbiesPayload,
-              nativeLanguage: nl,
-              englishLevel: englishLevelChoice,
-            },
+                workField: j,
+                education: ed,
+                hobbies: hobbiesPayload,
+                nativeLanguage: nl,
+                englishLevel: englishLevelChoice,
+              },
         ),
       });
       if (!res.ok) {
@@ -358,7 +386,7 @@ export default function PlacementPreTestStep({
               return t ? formatMessage(a.addChipNamed, { name: t }) : a.addChip;
             }}
             noOptionsMessage={() => a.hobbyNoOptions}
-            styles={selectDark}
+            styles={customSelectStyles}
           />
         </div>
       </section>
@@ -379,7 +407,9 @@ export default function PlacementPreTestStep({
             <option value="" disabled>
               {a.englishLevelSelectPlaceholder}
             </option>
-            <option value={ADULT_SKIP_PLACEMENT_TEST}>{a.englishLevelNone}</option>
+            <option value={ADULT_SKIP_PLACEMENT_TEST}>
+              {a.englishLevelNone}
+            </option>
             {ADULT_PLACEMENT_CEFR_LEVELS.map((code) => (
               <option key={code} value={code}>
                 {code}
@@ -404,7 +434,7 @@ export default function PlacementPreTestStep({
       <Button
         type="submit"
         disabled={saving}
-        className="rounded-[15px] bg-primary px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+        className="w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         {saving
           ? a.saving

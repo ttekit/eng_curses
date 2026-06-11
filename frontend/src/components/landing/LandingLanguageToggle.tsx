@@ -13,7 +13,7 @@ export function LandingLanguageToggle({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center rounded-full border border-border bg-muted/30 p-0.5",
+        "flex shrink-0 items-center rounded-full border border-border bg-muted/30 p-1",
         className,
       )}
       role="group"
@@ -23,10 +23,10 @@ export function LandingLanguageToggle({
         type="button"
         onClick={() => setLocale("en")}
         className={cn(
-          "rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:text-sm",
+          "flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:text-sm cursor-pointer",
           locale === "en"
-            ? "bg-primary font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-            : "text-foreground/70 hover:text-white items-center justify-center hover:cursor-pointer gap-2 rounded-xlpx-8 font-semibold transition-colors hover:bg-muted-foreground/10",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
         )}
       >
         EN
@@ -35,13 +35,13 @@ export function LandingLanguageToggle({
         type="button"
         onClick={() => setLocale("uk")}
         className={cn(
-          "rounded-full flex px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 sm:text-sm",
+          "flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:text-sm cursor-pointer",
           locale === "uk"
-            ? "bg-primary font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-            : "text-foreground/70 hover:text-white hover:cursor-pointer items-center justify-center gap-2 rounded-xlpx-8 font-semibold transition-colors hover:bg-muted-foreground/10",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
         )}
       >
-        UA
+        UK
       </button>
     </div>
   );

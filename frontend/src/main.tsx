@@ -46,6 +46,7 @@ import FeedbackPage from "./pages/legal/FeedbackPage";
 import GoogleDobPrompt from "./components/profile/GoogleDobPrompt";
 import OAuthSuccess from "./pages/login/OAuthSuccess";
 import { Error404Page } from "./pages/Error404Page";
+import { ThemeProvider } from "./context/ThemeContext";
 
 const router = createBrowserRouter([
   {
@@ -135,20 +136,23 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <HelmetProvider>
-      <LandingLocaleProvider>
-        <UserProvider>
-          <RegistrationProvider>
-            <RouterProvider router={router} />
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                className: "bg-zinc-900 text-zinc-100 border border-zinc-700",
-                style: { boxShadow: "0 8px 30px rgba(0,0,0,0.4)" },
-              }}
-            />
-          </RegistrationProvider>
-        </UserProvider>
-      </LandingLocaleProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="explys-ui-theme">
+        {" "}
+        <LandingLocaleProvider>
+          <UserProvider>
+            <RegistrationProvider>
+              <RouterProvider router={router} />
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  className: "bg-zinc-900 text-zinc-100 border border-zinc-700",
+                  style: { boxShadow: "0 8px 30px rgba(0,0,0,0.4)" },
+                }}
+              />
+            </RegistrationProvider>
+          </UserProvider>
+        </LandingLocaleProvider>
+      </ThemeProvider>{" "}
     </HelmetProvider>
   </StrictMode>,
 );

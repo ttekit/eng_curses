@@ -58,7 +58,7 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
     <div className="relative w-full">
       <input
         id={id}
-        type="datetime-local"
+        type="date"
         ref={ref}
         value={value || ""}
         onChange={onChange}
@@ -66,7 +66,7 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
         onClick={(e) => e.stopPropagation()}
         onFocus={(e) => e.stopPropagation()}
         autoComplete="off"
-        className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+        className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
       />
       <button
         type="button"
@@ -128,28 +128,26 @@ function CustomSelect({
     <div className="relative w-full text-sm font-medium" ref={ref}>
       <button
         type="button"
-        disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-left text-foreground focus:outline-none transition-colors",
+          "flex w-full items-center justify-between rounded-xl border bg-background px-3 py-2.5 text-left text-foreground focus:outline-none transition-colors cursor-pointer shadow-sm",
           isOpen
-            ? "border-primary ring-1 ring-primary"
-            : "border-border hover:border-primary/50",
-          disabled && "opacity-50 cursor-not-allowed",
-          className,
+            ? "border-primary ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
+            : "border-input hover:border-primary/50",
         )}
       >
-        <span className="truncate">{selectedOption?.label}</span>
+        {/* Код внутри кнопки оставляем как есть */}
+        <span className="truncate">{selectedOption?.label || value}</span>
         <ChevronDown
           className={cn(
-            "ml-2 size-4 shrink-0 transition-transform opacity-50",
-            isOpen && "rotate-180",
+            "ml-2 size-4 shrink-0 transition-transform opacity-70",
+            isOpen && "rotate-180 text-primary",
           )}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-primary bg-background py-1 shadow-xl">
+        <div className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl animate-in fade-in zoom-in-95">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -771,7 +769,7 @@ export function ProfileTeacherVideos() {
         </div>
 
         <AdminButton
-          className="gap-2 flex w-full sm:w-auto rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] shrink-0"
+          className="flex rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
           onClick={() => setUploadOpen(true)}
         >
           <Plus className="h-4 w-4 shrink-0" />

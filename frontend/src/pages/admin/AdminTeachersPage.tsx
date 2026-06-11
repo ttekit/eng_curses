@@ -68,15 +68,13 @@ function CustomSelect({
   const selectedOption = options.find((o) => o.value === value);
 
   return (
-    <div className={cn("relative text-sm", className)} ref={ref}>
+    <div className={cn("relative w-full text-sm", className)} ref={ref}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex w-full items-center justify-between rounded-xl border bg-background px-4 py-2.5 text-left text-foreground focus:outline-none transition-colors cursor-pointer font-medium",
-          isOpen
-            ? "border-primary ring-1 ring-primary"
-            : "border-border hover:border-primary/50",
+          "flex w-full items-center justify-between rounded-xl border border-input bg-background px-3 py-2.5 text-left text-foreground focus:outline-none transition-colors cursor-pointer shadow-sm focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background",
+          isOpen ? "border-primary" : "border-input hover:border-primary/50",
         )}
       >
         <span className="truncate">{selectedOption?.label || value}</span>
@@ -99,9 +97,9 @@ function CustomSelect({
                 setIsOpen(false);
               }}
               className={cn(
-                "flex w-full items-center px-4 py-2 text-left transition-colors hover:bg-muted/50 cursor-pointer font-medium",
+                "flex w-full items-center px-3 py-2 text-left transition-colors hover:bg-muted cursor-pointer",
                 value === opt.value
-                  ? "text-primary bg-primary/10"
+                  ? "text-primary font-medium bg-primary/10"
                   : "text-foreground",
               )}
             >
@@ -113,7 +111,6 @@ function CustomSelect({
     </div>
   );
 }
-
 export default function AdminTeachersPage() {
   const [teachers, setTeachers] = useState<TeacherData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,7 +183,7 @@ export default function AdminTeachersPage() {
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           </AdminButton>
           <AdminButton
-            className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="gap-2 flex rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
             onClick={() => setInviteOpen(true)}
           >
             <Plus className="h-4 w-4" />

@@ -36,15 +36,15 @@ export function CtaSection() {
           <Link to={primaryTo}>
             <button
               type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-[15px] bg-primary px-5 py-5 text-lg font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer sm:w-auto"
             >
               {primaryLabel}
-              <ArrowRight className="h-7 w-7 shrink-0 p-0.5" />
+              <ArrowRight className="h-6 w-6 shrink-0" />
             </button>
           </Link>
           <Link
             to={{ pathname: "/", hash: "#how-explys-works" }}
-            className="flex text-foreground/70 hover:text-white rounded-[15px] px-5 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-5 text-lg font-semibold transition-colors hover:bg-muted-foreground/10"
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer sm:w-auto"
           >
             {cta.howItWorks}
           </Link>

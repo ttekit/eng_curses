@@ -169,14 +169,18 @@ export default function AdminDashboardPage() {
             (past 30 days by default).
           </p>
         </div>
+
         <div className="hidden gap-3 md:flex">
           <AdminButton
             variant="outline"
-            className="flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-3 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
+            className="flex rounded-xl px-4 py-3 text-sm font-semibold items-center justify-center gap-2 transition-colors hover:bg-secondary cursor-pointer shadow-sm"
           >
             Export report
           </AdminButton>
-          <AdminButton className=" flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]">
+          <AdminButton
+            className="flex rounded-xl bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
+            onClick={() => {}}
+          >
             Add video
           </AdminButton>
         </div>
