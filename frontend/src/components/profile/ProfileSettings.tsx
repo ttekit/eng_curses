@@ -355,11 +355,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       if (e.key === "Escape") {
         setIsChangingPassword(false);
         setIsChangingEmail(false);
+        setIsToggling2FA(false);
         setError("");
       }
     };
 
-    if (isChangingPassword || isChangingEmail) {
+    if (isChangingPassword || isChangingEmail || isToggling2FA) {
+      // <-- Добавили
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleKeyDown);
     } else {
@@ -370,7 +372,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       document.body.style.overflow = "unset";
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isChangingPassword, isChangingEmail]);
+  }, [isChangingPassword, isChangingEmail, isToggling2FA]);
+
   useEffect(() => {
     setName(user.name);
     setJob(user.workField);
@@ -1067,12 +1070,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             </label>
                             <input
                               type="password"
-                              autoComplete="new-password"
+                              autoComplete="current-password"
+                              placeholder="Enter your current password"
                               value={currentPassword}
                               onChange={(e) =>
                                 setCurrentPassword(e.target.value)
                               }
-                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+                              className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                           <div className="space-y-3">
@@ -1083,9 +1087,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             <input
                               type="password"
                               autoComplete="new-password"
+                              placeholder="Enter your new password"
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
-                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+                              className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                           <div className="space-y-3">
@@ -1096,11 +1101,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             <input
                               type="password"
                               autoComplete="new-password"
+                              placeholder="Confirm your new password"
                               value={confirmPassword}
                               onChange={(e) =>
                                 setConfirmPassword(e.target.value)
                               }
-                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+                              className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                         </div>
@@ -1113,7 +1119,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               setError("");
                             }}
                             disabled={isLoading}
-                            className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
+                            className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                           >
                             Cancel
                           </button>
@@ -1193,7 +1199,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         setIsToggling2FA(false);
                         setError("");
                       }}
-                      className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mt-1"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
                     >
                       <svg
                         className="w-6 h-6"
@@ -1219,14 +1225,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     )}
 
                     <div className="space-y-3">
-                      <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                      <label className="mb-4 block text-sm font-bold text-muted-foreground uppercase tracking-wider">
                         Current Password <span className="text-red-500">*</span>
                       </label>
 
                       <input
                         type="password"
                         autoComplete="current-password"
-                        style={{ display: "none" }}
+                        className="hidden"
                       />
 
                       <input
@@ -1241,6 +1247,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           if (e.key === "Escape") {
                             setIsToggling2FA(false);
                             setError("");
+                          } else if (
+                            e.key === "Enter" &&
+                            twoFactorPassword &&
+                            !isLoading
+                          ) {
+                            e.preventDefault();
+                            void handleConfirm2FAToggle();
                           }
                         }}
                       />
@@ -1255,7 +1268,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         setError("");
                       }}
                       disabled={isLoading}
-                      className="px-5 py-3 text-base font-medium text-foreground hover:underline disabled:opacity-50"
+                      className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
                     >
                       Cancel
                     </button>

@@ -337,10 +337,10 @@ export const appEn = {
     logoutDesc: "Sign out on this device. You can sign in again anytime.",
     logoutCta: "Log out",
     resetProgressTitle: "Reset progress",
-    resetProgressDesc: "Clear learning progress (not available yet)",
+    resetProgressDesc: "Clear learning progress",
     resetProgressCta: "Reset",
     deleteAccountTitle: "Delete account",
-    deleteAccountDesc: "Permanently remove your account (not available yet)",
+    deleteAccountDesc: "Permanently remove your account",
     deleteAccountCta: "Delete account",
     modalUnavailableResetLead:
       "This action isn’t available in the app yet. Contact support if you need help.",
