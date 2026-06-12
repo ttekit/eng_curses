@@ -117,10 +117,8 @@ export default function RegistrationPreferences() {
 
       if (response.ok) {
         await refreshProfile();
-
-        setTimeout(() => {
-          navigate("/catalog", { replace: true });
-        }, 100);
+        // navigate("/subscribe", { replace: true });
+        navigate("/catalog", { replace: true });
       } else {
         const errorData = await response.json();
         alert(
