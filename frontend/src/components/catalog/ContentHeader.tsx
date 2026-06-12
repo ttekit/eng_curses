@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { LandingLanguageToggle } from "../landing/LandingLanguageToggle";
-import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
+import { ThemeToggle } from "../ThemeToggle";
 
 export type ContentHeaderVariant = "app" | "landing";
 
@@ -14,9 +14,10 @@ type ContentHeaderProps = {
 };
 
 const linkLanding =
-  "whitespace-nowrap rounded-full px-2.5 py-2 text-xs transition-all sm:px-4 sm:text-sm lg:px-5 lg:text-base";
+  "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer";
 
-const linkApp = "rounded-full px-6 py-2 text-md transition-all";
+const linkApp =
+  "whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors cursor-pointer";
 
 export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
   const { messages } = useLandingLocale();
@@ -78,15 +79,16 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
             />
           </Link>
 
-          <p className="truncate text-2xl font-bold sm:text-3xl md:text-[35px]">
+          <p className="truncate text-2xl font-bold sm:text-3xl md:text-[35px] text-foreground">
             Explys
           </p>
         </div>
 
+        {/* Обновленный центральный бар навигации */}
         <nav
           className={cn(
-            "absolute left-1/2 hidden lg:flex max-w-[min(100vw-12rem,52rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-full bg-slate-900/50 px-2 py-1 backdrop-blur-3xl sm:max-w-none sm:flex-nowrap sm:gap-2 sm:px-3",
-            variant === "landing" && "md:gap-1 lg:gap-2",
+            "absolute left-1/2 hidden lg:flex max-w-[min(100vw-12rem,52rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-full border border-border bg-background/50 px-2 py-1.5 shadow-sm backdrop-blur-md sm:max-w-none sm:flex-nowrap sm:gap-2 sm:px-3",
+            variant === "landing" && "md:gap-1 lg:gap-1.5",
           )}
         >
           {variant === "landing" ? (
@@ -100,8 +102,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     className={cn(
                       linkLanding,
                       active
-                        ? "text-accent hover:text-(--accent-hover)"
-                        : "text-foreground/70 hover:text-white",
+                        ? "bg-secondary text-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                     )}
                   >
                     {link.label}
@@ -113,8 +115,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 className={cn(
                   linkLanding,
                   pathname === "/pricing"
-                    ? "text-accent hover:text-(--accent-hover)"
-                    : "text-foreground/70 hover:text-white",
+                    ? "bg-secondary text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                 )}
               >
                 {landingI18n.pricing}
@@ -128,8 +130,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 className={cn(
                   linkApp,
                   pathname === link.to
-                    ? "text-accent hover:text-(--accent-hover)"
-                    : "text-foreground/70 hover:text-white",
+                    ? "bg-secondary text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                 )}
               >
                 {link.label}
@@ -139,13 +141,18 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          {variant === "landing" ? <LandingLanguageToggle /> : null}
+          {/* Блок с переключателями темы и языка */}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {variant === "landing" ? <LandingLanguageToggle /> : null}
+          </div>
 
-          <div className="hidden items-center gap-2 sm:gap-4 lg:flex">
+          {/* Обновленные кнопки в шапке */}
+          <div className="hidden items-center gap-2 sm:gap-3 lg:flex">
             {isFullyRegistered ? (
               <Link
                 to="/catalog"
-                className="rounded-[15px] bg-primary px-4 py-2.5 text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:px-6"
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer sm:px-6"
               >
                 {variant === "landing"
                   ? landingI18n.catalog
@@ -156,7 +163,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 <Link to="/loginForm">
                   <button
                     type="button"
-                    className="rounded-[15px] px-4 py-2.5 text-sm font-medium text-foreground/70 transition-all hover:cursor-pointer hover:bg-muted-foreground/10 hover:text-white sm:px-6"
+                    className="rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer sm:px-5"
                   >
                     {variant === "landing"
                       ? landingI18n.logIn
@@ -166,7 +173,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 <Link to="/registrationMain">
                   <button
                     type="button"
-                    className="rounded-[15px] bg-primary px-4 py-2.5 text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:cursor-pointer hover:bg-purple-hover hover:text-white sm:px-6"
+                    className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer sm:px-6"
                   >
                     {variant === "landing"
                       ? landingI18n.getStarted
@@ -230,6 +237,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
         </div>
       </header>
 
+      {/* Обновленное мобильное меню */}
       {menuOpen ? (
         <>
           <button
@@ -254,10 +262,10 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                         to={{ pathname: "/", hash: link.hash }}
                         onClick={closeMenu}
                         className={cn(
-                          "rounded-xl px-4 py-3 text-base transition-all",
+                          "rounded-xl px-4 py-3 text-base font-medium transition-colors",
                           active
-                            ? "text-accent"
-                            : "text-foreground/70 hover:bg-muted/50 hover:text-white",
+                            ? "bg-secondary text-foreground"
+                            : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                         )}
                       >
                         {link.label}
@@ -268,10 +276,10 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     to="/pricing"
                     onClick={closeMenu}
                     className={cn(
-                      "rounded-xl px-4 py-3 text-base transition-all",
+                      "rounded-xl px-4 py-3 text-base font-medium transition-colors",
                       pathname === "/pricing"
-                        ? "text-accent"
-                        : "text-foreground/70 hover:bg-muted/50 hover:text-white",
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                     )}
                   >
                     {landingI18n.pricing}
@@ -284,10 +292,10 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     to={link.to}
                     onClick={closeMenu}
                     className={cn(
-                      "rounded-xl px-4 py-3 text-base transition-all",
+                      "rounded-xl px-4 py-3 text-base font-medium transition-colors",
                       pathname === link.to
-                        ? "text-accent"
-                        : "text-foreground/70 hover:bg-muted/50 hover:text-white",
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                     )}
                   >
                     {link.label}
@@ -295,12 +303,12 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 ))
               )}
 
-              <div className="mt-3 flex flex-col gap-2 border-border border-t pt-4">
+              <div className="mt-3 flex flex-col gap-3 border-border border-t pt-5">
                 {isFullyRegistered ? (
                   <Link
                     to="/catalog"
                     onClick={closeMenu}
-                    className="rounded-[15px] bg-primary px-4 py-3 text-center text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:bg-purple-hover hover:text-white"
+                    className="w-full rounded-xl bg-primary px-4 py-3.5 text-center text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                   >
                     {variant === "landing"
                       ? landingI18n.catalog
@@ -311,7 +319,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     <Link to="/loginForm" onClick={closeMenu}>
                       <button
                         type="button"
-                        className="w-full rounded-[15px] py-3 hover:cursor-pointer text-center text-sm font-medium text-foreground/70 transition-all hover:bg-muted-foreground/10 hover:text-white"
+                        className="w-full rounded-xl px-4 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer border border-border"
                       >
                         {variant === "landing"
                           ? landingI18n.logIn
@@ -321,7 +329,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     <Link to="/registrationMain" onClick={closeMenu}>
                       <button
                         type="button"
-                        className="w-full rounded-[15px] bg-primary py-3 text-center hover:cursor-pointer text-sm font-semibold text-foreground/70 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] transition-all hover:bg-purple-hover hover:text-white"
+                        className="w-full rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
                       >
                         {variant === "landing"
                           ? landingI18n.getStarted

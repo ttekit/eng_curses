@@ -42,8 +42,9 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
         onClick={(e) => e.stopPropagation()}
         onFocus={(e) => e.stopPropagation()}
         autoComplete="off"
-        className="flex h-12 w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+        className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
       />
+
       <button
         type="button"
         onClick={onClick}
@@ -355,11 +356,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       if (e.key === "Escape") {
         setIsChangingPassword(false);
         setIsChangingEmail(false);
+        setIsToggling2FA(false);
         setError("");
       }
     };
 
-    if (isChangingPassword || isChangingEmail) {
+    if (isChangingPassword || isChangingEmail || isToggling2FA) {
+      // <-- Добавили
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleKeyDown);
     } else {
@@ -370,7 +373,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       document.body.style.overflow = "unset";
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isChangingPassword, isChangingEmail]);
+  }, [isChangingPassword, isChangingEmail, isToggling2FA]);
+
   useEffect(() => {
     setName(user.name);
     setJob(user.workField);
@@ -447,6 +451,22 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     },
     [],
   );
+
+  const handleCancelProfile = useCallback(() => {
+    if (!user) return;
+    setName(user.name || "");
+    setDateOfBirth(
+      user.dateOfBirth
+        ? new Date(user.dateOfBirth).toISOString().split("T")[0]
+        : "",
+    );
+    setJob(user.workField || "");
+    setEducation(user.education || "");
+    setHobbies(user.hobbies ?? []);
+    setFavoriteGenreIds(user.favoriteGenres ?? []);
+    setHatedGenreIds(user.hatedGenres ?? []);
+    setNewHobby("");
+  }, [user]);
 
   const saveProfile = useCallback(async () => {
     const trimmed = name.trim();
@@ -772,16 +792,24 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
-          <Button
+        <div className="mt-6 flex justify-end gap-3 border-t border-border pt-6">
+          <button
             type="button"
-            className="flex w-fit rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors cursor-pointer disabled:opacity-50"
+            disabled={saving}
+            onClick={handleCancelProfile}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="flex w-fit rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
             disabled={saving}
             onClick={() => void saveProfile()}
           >
-            <Save className="size-4" />
+            <Save className="size-4 mr-2" />
             {saving ? s.saving || "Saving..." : s.saveChanges || "Save Changes"}
-          </Button>
+          </button>
         </div>
       </ProfileCard>
 
@@ -1067,12 +1095,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             </label>
                             <input
                               type="password"
-                              autoComplete="new-password"
+                              autoComplete="current-password"
+                              placeholder="Enter your current password"
                               value={currentPassword}
                               onChange={(e) =>
                                 setCurrentPassword(e.target.value)
                               }
-                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+                              className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                           <div className="space-y-3">
@@ -1083,9 +1112,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             <input
                               type="password"
                               autoComplete="new-password"
+                              placeholder="Enter your new password"
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
-                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+                              className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                           <div className="space-y-3">
@@ -1096,11 +1126,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             <input
                               type="password"
                               autoComplete="new-password"
+                              placeholder="Confirm your new password"
                               value={confirmPassword}
                               onChange={(e) =>
                                 setConfirmPassword(e.target.value)
                               }
-                              className="flex h-10 w-full mt-3 rounded-[15px] border border-input bg-background px-4 py-3 text-md ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
+                              className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
                             />
                           </div>
                         </div>
@@ -1113,7 +1144,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                               setError("");
                             }}
                             disabled={isLoading}
-                            className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
+                            className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                           >
                             Cancel
                           </button>
@@ -1193,7 +1224,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         setIsToggling2FA(false);
                         setError("");
                       }}
-                      className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mt-1"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
                     >
                       <svg
                         className="w-6 h-6"
@@ -1219,14 +1250,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     )}
 
                     <div className="space-y-3">
-                      <label className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                      <label className="mb-4 block text-sm font-bold text-muted-foreground uppercase tracking-wider">
                         Current Password <span className="text-red-500">*</span>
                       </label>
 
                       <input
                         type="password"
                         autoComplete="current-password"
-                        style={{ display: "none" }}
+                        className="hidden"
                       />
 
                       <input
@@ -1241,6 +1272,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           if (e.key === "Escape") {
                             setIsToggling2FA(false);
                             setError("");
+                          } else if (
+                            e.key === "Enter" &&
+                            twoFactorPassword &&
+                            !isLoading
+                          ) {
+                            e.preventDefault();
+                            void handleConfirm2FAToggle();
                           }
                         }}
                       />
@@ -1255,7 +1293,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         setError("");
                       }}
                       disabled={isLoading}
-                      className="px-5 py-3 text-base font-medium text-foreground hover:underline disabled:opacity-50"
+                      className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -1323,7 +1361,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             <div className="w-full flex justify-center sm:block sm:w-auto">
               <button
                 type="button"
-                className="flex flex-row w-full sm:w-auto justify-center items-center text-sm font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
+                className="flex w-full sm:w-auto justify-center items-center gap-2 rounded-xl bg-destructive/10 px-6 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 cursor-pointer"
                 onClick={async () => {
                   try {
                     await apiFetch("/auth/logout", { method: "POST" });
@@ -1352,7 +1390,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             </div>
             <button
               type="button"
-              className="text-sm font-medium text-destructive py-2.5 px-6 transition-all rounded-[15px] hover:bg-destructive/10 hover:cursor-pointer"
+              className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive/10 px-6 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 cursor-pointer"
               onClick={() => setDangerOpen("reset")}
             >
               {s.resetProgressCta || "Reset Progress"}
@@ -1372,7 +1410,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               <div className="flex justify-center sm:block">
                 <button
                   type="button"
-                  className="rounded-[15px] w-full bg-destructive px-6 py-2.5 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                  className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive px-6 py-2.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 cursor-pointer shadow-sm"
                   onClick={() => setDangerOpen("delete")}
                 >
                   {s.deleteAccountCta || "Delete Account"}

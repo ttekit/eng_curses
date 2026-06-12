@@ -1,22 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client';
-import { PrismaService } from 'src/prisma.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { Prisma } from "../generated/prisma/client";
+import { PrismaService } from "src/prisma.service";
 import {
   aggregateSkillScore,
   clamp,
-} from 'src/alcorythm/alcorythm-scoring.util';
+} from "src/alcorythm/alcorythm-scoring.util";
 import {
   PostWatchSurveyGeminiClient,
   PostWatchSurveyQuestion,
   fallbackQuestions,
-} from './post-watch-survey-gemini.client';
+} from "./post-watch-survey-gemini.client";
 
 @Injectable()
 export class PostWatchSurveyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: PostWatchSurveyGeminiClient,
-  ) { }
+  ) {}
 
   private async incrementUsersWatched(contentMediaId: number): Promise<void> {
     await this.prisma.contentStats.upsert({
@@ -65,7 +69,12 @@ export class PostWatchSurveyService {
     });
   }
 
-  async recordWatchAndGenerateSurvey(videoId: number, userId: number, secondsWatched?: number, isCompleted?: boolean) {
+  async recordWatchAndGenerateSurvey(
+    videoId: number,
+    userId: number,
+    secondsWatched?: number,
+    isCompleted?: boolean,
+  ) {
     const duration = secondsWatched || 0;
 
     const session = await this.prisma.watchSession.upsert({
@@ -93,7 +102,9 @@ export class PostWatchSurveyService {
     await this.updateUserStreak(userId);
 
     if (isCompleted) {
-      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
+      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => {});
+
+      await this.awardXpAndCheckAchievements(userId, 0);
     }
 
     return session;
@@ -113,8 +124,7 @@ export class PostWatchSurveyService {
         },
       },
     });
-    const topicIds =
-      video?.content?.stats?.topics.map((t) => t.id) ?? [];
+    const topicIds = video?.content?.stats?.topics.map((t) => t.id) ?? [];
     if (!topicIds.length) {
       return;
     }
@@ -145,7 +155,7 @@ export class PostWatchSurveyService {
   async submitSurvey(
     surveyId: number,
     answers: Record<string, unknown>,
-  ): Promise<{ ok: true; surveyId: number, user: any }> {
+  ): Promise<{ ok: true; surveyId: number; user: any }> {
     const s = await this.prisma.postWatchSurvey.findUnique({
       where: { id: surveyId },
     });
@@ -153,13 +163,15 @@ export class PostWatchSurveyService {
       throw new NotFoundException(`Survey ${surveyId} not found`);
     }
     if (s.submittedAt != null) {
-      throw new BadRequestException('Survey already submitted');
+      throw new BadRequestException("Survey already submitted");
     }
 
     await this.prisma.postWatchSurvey.update({
       where: { id: surveyId },
       data: {
-        answersJson: JSON.parse(JSON.stringify(answers)) as Prisma.InputJsonValue,
+        answersJson: JSON.parse(
+          JSON.stringify(answers),
+        ) as Prisma.InputJsonValue,
         submittedAt: new Date(),
       },
     });
@@ -167,9 +179,9 @@ export class PostWatchSurveyService {
     if (s.userId) {
       let earnedXp = 50;
 
-      if (answers && typeof answers === 'object') {
+      if (answers && typeof answers === "object") {
         for (const val of Object.values(answers)) {
-          if (typeof val === 'string' && val.trim().length >= 10) {
+          if (typeof val === "string" && val.trim().length >= 10) {
             earnedXp += 50;
             break;
           }
@@ -205,10 +217,14 @@ export class PostWatchSurveyService {
       return {
         ok: true,
         surveyId,
-        user: updatedUser ? {
-          ...updatedUser,
-          achievements: updatedUser.achievements.map((a: any) => a.achievementId),
-        } : null,
+        user: updatedUser
+          ? {
+              ...updatedUser,
+              achievements: updatedUser.achievements.map(
+                (a: any) => a.achievementId,
+              ),
+            }
+          : null,
       };
     }
 
@@ -231,7 +247,9 @@ export class PostWatchSurveyService {
     if (!user.lastActivityDate) {
       newStreak = newStreak > 0 ? newStreak + 1 : 1;
     } else {
-      const lastActivityStr = new Date(user.lastActivityDate).toISOString().split("T")[0];
+      const lastActivityStr = new Date(user.lastActivityDate)
+        .toISOString()
+        .split("T")[0];
 
       if (todayStr === lastActivityStr) {
         if (newStreak === 0) {
@@ -265,7 +283,10 @@ export class PostWatchSurveyService {
     });
   }
 
-  public async awardXpAndCheckAchievements(userId: number, amount: number = 125) {
+  public async awardXpAndCheckAchievements(
+    userId: number,
+    amount: number = 125,
+  ) {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { xp: { increment: amount } },
@@ -283,17 +304,25 @@ export class PostWatchSurveyService {
 
     const achievementsToUnlock: string[] = [];
 
-    const sessionsCount = await this.prisma.watchSession.count({ where: { userId } });
+    const sessionsCount = await this.prisma.watchSession.count({
+      where: {
+        userId,
+        completed: true,
+      },
+    });
+
     if (sessionsCount >= 1) {
       await this.prisma.userAchievement.upsert({
-        where: { userId_achievementId: { userId, achievementId: 'first-video' } },
-        create: { userId, achievementId: 'first-video' },
+        where: {
+          userId_achievementId: { userId, achievementId: "first-video" },
+        },
+        create: { userId, achievementId: "first-video" },
         update: {},
       });
     }
 
-    if (updatedUser.currentStreak >= 7) achievementsToUnlock.push('streak-7');
-    if (updatedUser.currentStreak >= 30) achievementsToUnlock.push('streak-30');
+    if (updatedUser.currentStreak >= 7) achievementsToUnlock.push("streak-7");
+    if (updatedUser.currentStreak >= 30) achievementsToUnlock.push("streak-30");
 
     for (const achievementId of achievementsToUnlock) {
       await this.prisma.userAchievement.upsert({

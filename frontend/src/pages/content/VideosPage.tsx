@@ -531,15 +531,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
@@ -602,16 +602,16 @@ export default function VideoPage() {
 
   const paginatedVideos = hasFilters
     ? filteredVideos.slice(
-      (currentPage - 1) * GRID_PAGE_SIZE,
-      currentPage * GRID_PAGE_SIZE,
-    )
+        (currentPage - 1) * GRID_PAGE_SIZE,
+        currentPage * GRID_PAGE_SIZE,
+      )
     : [];
 
   const paginatedRows = !hasFilters
     ? catalogRows.slice(
-      (currentPage - 1) * ROWS_PAGE_SIZE,
-      currentPage * ROWS_PAGE_SIZE,
-    )
+        (currentPage - 1) * ROWS_PAGE_SIZE,
+        currentPage * ROWS_PAGE_SIZE,
+      )
     : [];
 
   return (
@@ -695,8 +695,8 @@ export default function VideoPage() {
                           className={cn(
                             "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
                             selectedLevel === lvl
-                              ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
                           )}
                         >
                           {filterLabel(lvl)}
@@ -746,8 +746,8 @@ export default function VideoPage() {
                           className={cn(
                             "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
                             selectedAge === age
-                              ? "bg-primary text-primary-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                              : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground",
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
                           )}
                         >
                           {age}
@@ -803,8 +803,8 @@ export default function VideoPage() {
                             className={cn(
                               "ml-0.5 rounded-full px-4 shrink-0 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
                               selectedGenre === gen
-                                ? "bg-accent text-accent-foreground scale-105 shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
-                                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground ",
+                                ? "bg-accent text-accent-foreground shadow-md"
+                                : "bg-secondary text-secondary-foreground hover:bg-accent/10 hover:text-accent",
                             )}
                           >
                             {filterLabel(gen)}
@@ -867,7 +867,7 @@ export default function VideoPage() {
                             className={cn(
                               "transition-all h-full",
                               isLocked &&
-                              "blur-md brightness-50 pointer-events-none select-none",
+                                "blur-md brightness-50 pointer-events-none select-none",
                             )}
                           >
                             <CatalogVideoCard video={toCardVideo(video)} />
@@ -964,7 +964,7 @@ export default function VideoPage() {
                       scrollToCatalogTop();
                     }}
                     disabled={currentPage === totalPages}
-                    className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-hover transition-all cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                    className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
                   >
                     Next
                   </button>
@@ -1007,7 +1007,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
+                        "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

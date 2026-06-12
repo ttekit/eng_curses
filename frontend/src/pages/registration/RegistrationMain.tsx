@@ -26,7 +26,6 @@ import { registerUser } from "../../lib/registerUser";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getApiBase } from "../../lib/api";
-
 const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
   const { onClick } = props;
   const context = useContext(RegistrationContext);
@@ -46,12 +45,12 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
         }}
         min="1900-01-01"
         max={new Date().toISOString().split("T")[0]}
-        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
+        className="w-full rounded-xl border border-input bg-background pl-4 pr-12 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
       />
       <button
         type="button"
         onClick={onClick}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors flex items-center justify-center"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
       >
         <CalendarIcon className="size-5" />
       </button>
@@ -271,7 +270,6 @@ export default function RegistrationMain() {
     });
   };
 
-  const pass = formData.password || "";
   return (
     <>
       <AuthPageSeo
@@ -455,9 +453,9 @@ export default function RegistrationMain() {
           </div>
 
           <Button
-            type="submit"
             disabled={!captchaToken}
-            className="rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            type="submit"
           >
             {step1.continue}
             <ArrowRight className="size-4" />
@@ -474,7 +472,7 @@ export default function RegistrationMain() {
           <button
             type="button"
             onClick={handleGoogleRegister}
-            className="w-full flex items-center justify-center gap-3 rounded-[15px] bg-white px-6 py-4 text-sm font-semibold text-black hover:bg-gray-200 transition-all shadow-md"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-6 py-4 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary cursor-pointer"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path

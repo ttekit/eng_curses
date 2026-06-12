@@ -82,7 +82,7 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
             type="button"
             disabled={!featured}
             onClick={() => featured && navigate(`/content/${featured.id}`)}
-            className=" flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <Play className="h-5 w-5 fill-current pr-2" />
             Start Watching
@@ -94,7 +94,7 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
                 behavior: "smooth",
               });
             }}
-            className="flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10"
+            className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-sm font-bold text-secondary-foreground shadow-sm hover:bg-secondary/80 transition-colors cursor-pointer"
           >
             <Info className="h-5 w-5" />
             Browse library

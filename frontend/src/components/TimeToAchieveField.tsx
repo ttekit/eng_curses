@@ -1,8 +1,9 @@
 /**
  * Numeric amount + day/month/year selector; emits canonical English `timeToAchieve` strings.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "../lib/utils";
+import { ChevronDown } from "lucide-react";
 import {
   parseTimeToAchieveString,
   serializeTimeToAchieve,
@@ -10,7 +11,7 @@ import {
 } from "../lib/timeToAchieve";
 
 const fieldClass =
-  "rounded-lg border border-border bg-input px-3 py-2.5 text-base text-foreground shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
+  "rounded-xl border border-input bg-background px-4 py-3.5 text-sm text-foreground shadow-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/40";
 
 export type TimeToAchieveUnitLabels = {
   day: string;
@@ -30,11 +31,6 @@ type Props = {
   className?: string;
 };
 
-/**
- * @param value - Current stored horizon phrase (may be empty when `allowEmpty`)
- * @param onChange - English phrases such as `"6 months"`, or `""` when unset
- * @param unitLabels - Localized option labels + aria for the unit control
- */
 export function TimeToAchieveField({
   id,
   value,
@@ -45,6 +41,22 @@ export function TimeToAchieveField({
 }: Props) {
   const [amountStr, setAmountStr] = useState("");
   const [unit, setUnit] = useState<TimeToAchieveUnit>("month");
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Закрытие при клике вне элемента
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const trimmed = value.trim();
@@ -66,8 +78,31 @@ export function TimeToAchieveField({
     return raw.replace(/\D/g, "").slice(0, 3);
   }
 
+  const handleUnitChange = (nextUnit: TimeToAchieveUnit) => {
+    setUnit(nextUnit);
+    setIsOpen(false);
+
+    if (allowEmpty && amountStr === "") {
+      onChange("");
+      return;
+    }
+    let n = parseInt(amountStr, 10);
+    if (Number.isNaN(n) || n < 1) {
+      if (allowEmpty) {
+        onChange("");
+        return;
+      }
+      n = 1;
+      setAmountStr("1");
+    }
+    emit(Math.min(999, n), nextUnit);
+  };
+
+  const units: TimeToAchieveUnit[] = ["day", "month", "year"];
+
   return (
     <div className={cn("flex flex-wrap gap-2 sm:flex-nowrap", className)}>
+      {/* Поле ввода цифр */}
       <input
         id={id}
         type="text"
@@ -104,33 +139,46 @@ export function TimeToAchieveField({
         }}
         className={cn(fieldClass, "min-w-[5rem] flex-1 font-tabular-nums")}
       />
-      <select
-        value={unit}
-        aria-label={unitLabels.unitSelectAria}
-        onChange={(e) => {
-          const nextUnit = e.target.value as TimeToAchieveUnit;
-          setUnit(nextUnit);
-          if (allowEmpty && amountStr === "") {
-            onChange("");
-            return;
-          }
-          let n = parseInt(amountStr, 10);
-          if (Number.isNaN(n) || n < 1) {
-            if (allowEmpty) {
-              onChange("");
-              return;
-            }
-            n = 1;
-            setAmountStr("1");
-          }
-          emit(Math.min(999, n), nextUnit);
-        }}
-        className={cn(fieldClass, "min-w-[7.5rem] shrink-0 cursor-pointer")}
-      >
-        <option value="day">{unitLabels.day}</option>
-        <option value="month">{unitLabels.month}</option>
-        <option value="year">{unitLabels.year}</option>
-      </select>
+
+      {/* Кастомный выпадающий список вместо нативного select */}
+      <div className="relative min-w-[7.5rem] shrink-0" ref={dropdownRef}>
+        <button
+          type="button"
+          aria-label={unitLabels.unitSelectAria}
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            fieldClass,
+            "flex w-full items-center justify-between cursor-pointer",
+            isOpen && "border-primary ring-2 ring-primary/40",
+          )}
+        >
+          <span className="truncate">{unitLabels[unit]}</span>
+          <ChevronDown
+            className={cn(
+              "ml-2 size-4 shrink-0 transition-transform text-muted-foreground",
+              isOpen && "rotate-180 text-primary",
+            )}
+          />
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl animate-in fade-in zoom-in-95">
+            {units.map((u) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => handleUnitChange(u)}
+                className={cn(
+                  "flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/50 cursor-pointer font-medium",
+                  unit === u ? "text-primary bg-primary/10" : "text-foreground",
+                )}
+              >
+                {unitLabels[u]}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

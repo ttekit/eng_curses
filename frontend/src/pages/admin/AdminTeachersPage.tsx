@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Edit,
   GraduationCap,
@@ -26,6 +26,7 @@ import {
 import { apiFetch } from "../../lib/api";
 import toast from "react-hot-toast";
 import { cn } from "../../lib/utils";
+import { ChevronDown } from "lucide-react";
 
 interface TeacherData {
   id: number;
@@ -40,6 +41,76 @@ interface TeacherData {
   joinedDate: string;
 }
 
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <div className={cn("relative w-full text-sm", className)} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-xl border border-input bg-background px-3 py-2.5 text-left text-foreground focus:outline-none transition-colors cursor-pointer shadow-sm focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background",
+          isOpen ? "border-primary" : "border-input hover:border-primary/50",
+        )}
+      >
+        <span className="truncate">{selectedOption?.label || value}</span>
+        <ChevronDown
+          className={cn(
+            "ml-2 size-4 shrink-0 transition-transform opacity-70",
+            isOpen && "rotate-180 text-primary",
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl animate-in fade-in zoom-in-95">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center px-3 py-2 text-left transition-colors hover:bg-muted cursor-pointer",
+                value === opt.value
+                  ? "text-primary font-medium bg-primary/10"
+                  : "text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 export default function AdminTeachersPage() {
   const [teachers, setTeachers] = useState<TeacherData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +121,9 @@ export default function AdminTeachersPage() {
   const loadTeachers = async () => {
     try {
       setLoading(true);
-      const response = await apiFetch("/admin/analytics/teachers", { method: "GET" });
+      const response = await apiFetch("/admin/analytics/teachers", {
+        method: "GET",
+      });
       if (response.ok) {
         const data = await response.json();
         setTeachers(data);
@@ -110,7 +183,7 @@ export default function AdminTeachersPage() {
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           </AdminButton>
           <AdminButton
-            className="flex-1 sm:flex-none gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+            className="gap-2 flex rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
             onClick={() => setInviteOpen(true)}
           >
             <Plus className="h-4 w-4" />
@@ -216,16 +289,18 @@ export default function AdminTeachersPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <select
-          className="w-full sm:w-auto rounded-lg border border-border bg-muted px-3 py-2 text-sm focus:outline-none"
+
+        <CustomSelect
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="inactive">Inactive</option>
-        </select>
+          onChange={setStatus}
+          className="w-full sm:w-[160px] shrink-0"
+          options={[
+            { value: "all", label: "All status" },
+            { value: "active", label: "Active" },
+            { value: "pending", label: "Pending" },
+            { value: "inactive", label: "Inactive" },
+          ]}
+        />
       </div>
 
       {/* Список карточек учителей */}
@@ -253,17 +328,6 @@ export default function AdminTeachersPage() {
                       </p>
                     </div>
                   </div>
-                  <AdminRowMenu>
-                    <AdminRowMenuItem>
-                      <Edit className="h-4 w-4" /> Edit
-                    </AdminRowMenuItem>
-                    <AdminRowMenuItem>
-                      <Mail className="h-4 w-4" /> Email
-                    </AdminRowMenuItem>
-                    <AdminRowMenuItem danger>
-                      <Trash2 className="h-4 w-4" /> Remove
-                    </AdminRowMenuItem>
-                  </AdminRowMenu>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-1.5">

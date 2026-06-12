@@ -36,3 +36,7 @@ backend/pnpm-lock.yaml
 frontend/.env
 
 Explys Code Review.md
+
+
+.env
+frontend/.env

@@ -34,16 +34,16 @@ export function HeroSection() {
               {hero.lead}
             </p>
 
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">
               <Link
                 to={user ? "/profile" : "/registrationMain"}
-                className="rounded-[15px] bg-primary px-6 py-5.5 text-lg text-center sm:text-left items-center justify-center font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 {hero.ctaPrimary}
               </Link>
               <Link
                 to="/catalog"
-                className="inline-flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 rounded-xlpx-8 py-6 text-lg font-semibold transition-colors hover:bg-muted-foreground/10"
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer"
               >
                 <Play className="h-5 w-5" />
                 {hero.ctaSecondary}

@@ -22,6 +22,8 @@ import {
   AdminTextarea,
   AdminSelectNative,
 } from "../../components/admin/adminUi";
+import { useTheme } from "../../context/ThemeContext";
+import { ToggleSwitch } from "../../components/profile/ToggleSwitch";
 
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState("general");
@@ -29,10 +31,15 @@ export default function AdminSettingsPage() {
   const [weekly, setWeekly] = useState(true);
   const [maintenance, setMaintenance] = useState(false);
 
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">Settings</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          Settings
+        </h1>
         <p className="text-muted-foreground">
           Platform knobs — UI only until backend endpoints land.
         </p>
@@ -92,7 +99,9 @@ export default function AdminSettingsPage() {
             <AdminCardContent className="space-y-4 p-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Name</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Name
+                  </label>
                   <AdminInput defaultValue="Explys" />
                 </div>
                 <div className="space-y-2">
@@ -103,7 +112,9 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Description</label>
+                <label className="text-sm font-medium text-foreground">
+                  Description
+                </label>
                 <AdminTextarea
                   className="min-h-[104px]"
                   defaultValue="Video-first adaptive English labs for schools and creators."
@@ -111,14 +122,18 @@ export default function AdminSettingsPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Locale</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Locale
+                  </label>
                   <AdminSelectNative defaultValue="en">
                     <option value="en">English</option>
                     <option value="uk">Українська</option>
                   </AdminSelectNative>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Timezone</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Timezone
+                  </label>
                   <AdminSelectNative defaultValue="utc">
                     <option value="utc">UTC</option>
                     <option value="est">America/New_York</option>
@@ -134,12 +149,26 @@ export default function AdminSettingsPage() {
                 <Users className="h-5 w-5 text-primary" />
                 Access gates
               </AdminCardTitle>
-              <AdminCardDescription>High-level safeguards for rollout.</AdminCardDescription>
+              <AdminCardDescription>
+                High-level safeguards for rollout.
+              </AdminCardDescription>
             </AdminCardHeader>
             <AdminCardContent className="space-y-4 p-6">
-              <ToggleRow label="Maintenance mode (read-only learner app)" checked={maintenance} onChange={setMaintenance} />
-              <ToggleRow label="Allow new registrations" checked readOnly disabled />
-              <AdminButton variant="outline" className="gap-2 border-dashed text-primary">
+              <ToggleRow
+                label="Maintenance mode (read-only learner app)"
+                checked={maintenance}
+                onChange={setMaintenance}
+              />
+              <ToggleRow
+                label="Allow new registrations"
+                checked
+                readOnly
+                disabled
+              />
+              <AdminButton
+                variant="outline"
+                className="gap-2 border-dashed text-primary"
+              >
                 <Save className="h-4 w-4" />
                 Save drafts locally
               </AdminButton>
@@ -156,8 +185,16 @@ export default function AdminSettingsPage() {
             </AdminCardTitle>
           </AdminCardHeader>
           <AdminCardContent className="space-y-4 p-6">
-            <ToggleRow label="Email digests for admins" checked={emailOn} onChange={setEmailOn} />
-            <ToggleRow label="Weekly health report" checked={weekly} onChange={setWeekly} />
+            <ToggleRow
+              label="Email digests for admins"
+              checked={emailOn}
+              onChange={setEmailOn}
+            />
+            <ToggleRow
+              label="Weekly health report"
+              checked={weekly}
+              onChange={setWeekly}
+            />
           </AdminCardContent>
         </AdminCard>
       ) : null}
@@ -171,14 +208,26 @@ export default function AdminSettingsPage() {
           </AdminCardHeader>
           <AdminCardContent className="space-y-6 p-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">API token fingerprint</label>
-              <AdminInput readOnly placeholder="············" className="font-mono" />
+              <label className="text-sm font-medium">
+                API token fingerprint
+              </label>
+              <AdminInput
+                readOnly
+                placeholder="············"
+                className="font-mono"
+              />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Session lifetime (hours)</label>
+              <label className="text-sm font-medium">
+                Session lifetime (hours)
+              </label>
               <AdminInput type="number" defaultValue="12" />
             </div>
-            <ToggleRow label="Require 2FA for admin accounts (future)" checked={false} readOnly />
+            <ToggleRow
+              label="Require 2FA for admin accounts (future)"
+              checked={false}
+              readOnly
+            />
           </AdminCardContent>
         </AdminCard>
       ) : null}
@@ -190,7 +239,23 @@ export default function AdminSettingsPage() {
               <Palette className="h-5 w-5 text-primary" /> Visual system
             </AdminCardTitle>
           </AdminCardHeader>
-          <AdminCardContent className="grid gap-4 p-6 sm:grid-cols-2">
+          <AdminCardContent className="space-y-6 p-6">
+            {/* Переключатель темы */}
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Dark Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  Toggle between light and dark themes
+                </p>
+              </div>
+              <ToggleSwitch
+                checked={isDark}
+                onCheckedChange={(checked) =>
+                  setTheme(checked ? "dark" : "light")
+                }
+              />
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Sidebar density</label>
               <AdminSelectNative defaultValue="comfortable">

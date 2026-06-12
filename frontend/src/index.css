@@ -1,8 +1,44 @@
 @import "tailwindcss";
 
-/* Design tokens aligned with `/ui-example` (Explys reference) */
-
+/* === СВЕТЛАЯ ТЕМА (По умолчанию) === */
 :root {
+  --background: oklch(0.98 0.01 285);
+  --foreground: oklch(0.15 0.03 285);
+  --card: oklch(1 0 0); /* Белый */
+  --card-foreground: oklch(0.15 0.03 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.03 285);
+  --primary: rgba(129, 61, 236, 1); /* Фиолетовый остается */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.93 0.02 285);
+  --secondary-foreground: oklch(0.15 0.03 285);
+  --muted: oklch(0.94 0.02 285);
+  --muted-foreground: oklch(0.45 0.03 285);
+  --accent: rgba(45, 161, 125, 1);
+  --accent-hover: rgba(35, 131, 100, 1);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: rgba(220, 38, 38, 1);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.9 0.02 285);
+  --input: oklch(0.9 0.02 285);
+  --ring: oklch(0.65 0.25 295);
+  --header-background: oklch(1 0 0);
+
+  --yellow: rgba(180, 180, 37, 1);
+  --orange: rgba(168, 100, 27, 1);
+  --light-blue: rgba(39, 115, 169, 1);
+
+  --purple-default: oklch(0.65 0.25 295);
+  --purple-hover: oklch(0.55 0.25 295);
+  --gray-background: oklch(0.96 0.01 285);
+  --white-background: oklch(1 0 0);
+
+  --error-bright: rgba(220, 38, 38, 1);
+  --error-transparent: rgba(220, 38, 38, 0.15);
+}
+
+/* === ТЕМНАЯ ТЕМА (Твои старые цвета) === */
+.dark {
   --background: oklch(0.12 0.02 285);
   --foreground: oklch(0.98 0 0);
   --card: rgba(10, 13, 24, 1);
@@ -25,11 +61,6 @@
   --ring: oklch(0.65 0.25 295);
   --header-background: rgba(7, 9, 15, 1);
 
-  --yellow: rgba(180, 180, 37, 1);
-  --orange: rgba(168, 100, 27, 1);
-  --light-blue: rgba(39, 115, 169, 1);
-
-  /* Legacy app tokens mapped to theme */
   --purple-default: oklch(0.65 0.25 295);
   --purple-hover: oklch(0.72 0.22 295);
   --gray-background: oklch(0.18 0.03 285);
@@ -72,10 +103,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply min-h-dvh bg-background font-sans text-foreground antialiased;
+    @apply min-h-dvh bg-background font-sans text-foreground antialiased transition-colors duration-300;
   }
 }
 
+/* === Анимации оставляем без изменений === */
 @keyframes bounce-slow {
   0%,
   100% {
@@ -85,7 +117,6 @@
     transform: translateY(-10px);
   }
 }
-
 @keyframes wave-keyframes {
   0%,
   100% {
@@ -98,7 +129,6 @@
     transform: rotate(20deg);
   }
 }
-
 @keyframes float {
   0%,
   100% {
@@ -108,7 +138,6 @@
     transform: translateY(-20px) rotate(2deg);
   }
 }
-
 @keyframes glow {
   0%,
   100% {
@@ -122,16 +151,13 @@
 .animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;
 }
-
 .animate-wave {
   animation: wave-keyframes 0.5s ease-in-out infinite;
   transform-origin: 45px 145px;
 }
-
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
-
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
 }
@@ -143,107 +169,92 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
-
 ::-webkit-scrollbar {
-  width: 6px; /* Робимо його дуже вузьким */
+  width: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: transparent; /* Трак (доріжка) буде прозорим */
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.3); /* Твій фіолетовий, але дуже прозорий */
-  border-radius: 10px; /* Закруглюємо */
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 10px;
   transition: background 0.3s;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 58, 237, 0.5); /* При наведенні стає яскравішим */
+  background: rgba(124, 58, 237, 0.5);
 }
-
-/* Налаштування для Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(124, 58, 237, 0.3) transparent;
 }
+
 /* ==========================================================================
-   Кастомизация React Datepicker (Explys Theme - Компактный размер)
+   Кастомизация React Datepicker (АДАПТИВНАЯ К ТЕМАМ)
    ========================================================================== */
 
-/* --- 1. Главный контейнер --- */
 .react-datepicker {
-  background-color: #1a1b26 !important;
-  border: 1px solid #2d2e3d !important;
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 12px !important;
   font-family: inherit !important;
-  color: #fff !important;
-  font-size: 0.85rem !important; /* Компактный шрифт для всего календаря */
+  color: var(--foreground) !important;
+  font-size: 0.85rem !important;
 }
 
-/* Принудительно выносим календарь поверх всех модалок экрана */
 .react-datepicker-popper {
   z-index: 999999 !important;
 }
-
-/* Прячем дефолтный треугольник сверху */
 .react-datepicker__triangle {
   display: none !important;
 }
 
-/* --- 2. Шапка календаря --- */
 .react-datepicker__header {
-  background-color: #1a1b26 !important;
-  border-bottom: 1px solid #2d2e3d !important;
+  background-color: var(--card) !important;
+  border-bottom: 1px solid var(--border) !important;
   border-top-left-radius: 12px !important;
   border-top-right-radius: 12px !important;
   padding-top: 10px !important;
 }
 
-/* Заголовки: Месяц, Год, Время */
 .react-datepicker__current-month,
 .react-datepicker-time__header,
 .react-datepicker-year-header {
-  color: #a1a1aa !important;
-  font-size: 0.95rem !important; /* Уменьшенный заголовок */
+  color: var(--foreground) !important;
+  font-size: 0.95rem !important;
   margin-bottom: 8px !important;
   font-weight: 600 !important;
 }
 
-/* Селекты в шапке (если используются) */
 .react-datepicker__header select {
-  background-color: #1a1b26 !important;
-  color: #fff !important;
-  border: 1px solid #2d2e3d !important;
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 6px !important;
   padding: 2px 4px !important;
   outline: none !important;
 }
 
-/* Стрелки переключения месяцев */
 .react-datepicker__navigation-icon::before {
-  border-color: #a1a1aa !important;
+  border-color: var(--muted-foreground) !important;
 }
 .react-datepicker__navigation:hover *::before {
-  border-color: #fff !important;
+  border-color: var(--foreground) !important;
 }
 
-/* --- 3. Сетка дней --- */
 .react-datepicker__day-name,
 .react-datepicker__day,
 .react-datepicker__time-name {
-  width: 1.8rem !important; /* Компактные квадратики */
+  width: 1.8rem !important;
   line-height: 1.8rem !important;
   margin: 0.15rem !important;
   font-size: 0.85rem !important;
 }
 
 .react-datepicker__day-name {
-  color: #a1a1aa !important;
+  color: var(--muted-foreground) !important;
 }
-
 .react-datepicker__day {
-  color: #fff !important;
+  color: var(--foreground) !important;
 }
 
 .react-datepicker__day:hover {
@@ -251,25 +262,23 @@
   border-radius: 8px !important;
 }
 
-/* Выбранный день */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-  background-color: #7c3aed !important;
+  background-color: var(--primary) !important;
   color: white !important;
   border-radius: 8px !important;
   font-weight: bold !important;
 }
 
-/* --- 4. Колонка со временем --- */
 .react-datepicker__time-container {
-  width: 90px !important; /* Сужаем колонку времени */
-  border-left: 1px solid #2d2e3d !important;
+  width: 90px !important;
+  border-left: 1px solid var(--border) !important;
 }
 
-.react-datepicker__time {
-  background-color: #1a1b26 !important;
-  color: #fff !important;
-  border-bottom-right-radius: 12px !important;
+.react-datepicker__time,
+.react-datepicker__time-list {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
 }
 
 .react-datepicker__time-box {
@@ -277,12 +286,11 @@
   border-bottom-right-radius: 12px !important;
 }
 
-/* Кнопки времени */
 .react-datepicker__time-list-item {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 32px !important; /* Делаем элементы времени компактнее */
+  height: 32px !important;
   font-size: 0.85rem !important;
   padding: 0 !important;
 }
@@ -290,24 +298,21 @@
 .react-datepicker__time-list-item:hover {
   background-color: rgba(124, 58, 237, 0.2) !important;
 }
-
 .react-datepicker__time-list-item--selected {
-  background-color: #7c3aed !important;
+  background-color: var(--primary) !important;
   color: white !important;
   font-weight: bold !important;
 }
 
-/* Фиксим белый скролл в колонке времени */
 .react-datepicker__time-list {
-  background-color: #1a1b26 !important;
   scrollbar-width: thin;
-  scrollbar-color: rgba(124, 58, 237, 0.5) #1a1b26;
+  scrollbar-color: rgba(124, 58, 237, 0.5) var(--card);
 }
 .react-datepicker__time-list::-webkit-scrollbar {
   width: 6px;
 }
 .react-datepicker__time-list::-webkit-scrollbar-track {
-  background: #1a1b26;
+  background: var(--card);
 }
 .react-datepicker__time-list::-webkit-scrollbar-thumb {
   background: rgba(124, 58, 237, 0.5);

@@ -40,6 +40,7 @@ import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 const LEARNER_TAB_DEFS = [
   { id: "overview" as const, icon: BarChart3 },
@@ -74,6 +75,21 @@ export default function ProfileMain() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains("dark"));
+
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   const [joinMeta, setJoinMeta] = useState<{
     userId: string;
@@ -377,7 +393,7 @@ export default function ProfileMain() {
               )}
 
             <div
-              className="mt-8 flex flex-wrap gap-1 rounded-xl bg-secondary/50 p-1"
+              className="mt-8 flex flex-wrap items-center gap-1 rounded-xl bg-secondary/50 p-1"
               role="tablist"
               aria-label={profile.tabListAria}
             >
@@ -403,6 +419,19 @@ export default function ProfileMain() {
                   </button>
                 );
               })}
+
+              <div className="ml-auto flex items-center gap-3 pl-2 pr-1">
+                <span className="hidden text-sm font-medium text-muted-foreground sm:block">
+                  {isDarkMode
+                    ? locale === "uk"
+                      ? "Темна тема"
+                      : "Dark theme"
+                    : locale === "uk"
+                      ? "Світла тема"
+                      : "Light theme"}
+                </span>
+                <ThemeToggle />
+              </div>
             </div>
 
             <div className="mt-6">

@@ -3,6 +3,9 @@ import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useUser } from "../../context/UserContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 import { Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sun } from "lucide-react";
+import { Moon } from "lucide-react";
 
 export function LandingFooter() {
   const { messages } = useLandingLocale();
@@ -10,6 +13,19 @@ export function LandingFooter() {
   const { user, logout } = useUser();
   const navigate = useNavigate();
   const showPaywallLogout = Boolean(user && !userMayUseLearnerApp(user));
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setIsDarkMode(isDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDarkMode;
+    setIsDarkMode(nextDark);
+    document.documentElement.classList.toggle("dark", nextDark);
+    localStorage.setItem("theme", nextDark ? "dark" : "light");
+  };
 
   const footerSections: {
     title: string;

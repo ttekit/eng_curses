@@ -114,10 +114,8 @@ function CustomSelect({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex w-full items-center justify-between rounded-md border bg-[#161622] px-3 py-2 text-left text-foreground focus:outline-none transition-colors cursor-pointer",
-          isOpen
-            ? "border-primary ring-1 ring-primary"
-            : "border-border hover:border-primary/50",
+          "flex w-full items-center justify-between rounded-xl border border-input bg-background px-3 py-2.5 text-left text-foreground focus:outline-none transition-colors cursor-pointer shadow-sm focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background",
+          isOpen ? "border-primary" : "border-input hover:border-primary/50",
         )}
       >
         <span className="truncate">{selectedOption?.label || value}</span>
@@ -130,7 +128,7 @@ function CustomSelect({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-[#161622] py-1 shadow-xl animate-in fade-in zoom-in-95">
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl animate-in fade-in zoom-in-95">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -140,7 +138,7 @@ function CustomSelect({
                 setIsOpen(false);
               }}
               className={cn(
-                "flex w-full items-center px-3 py-1.5 text-left transition-colors hover:bg-muted/50 cursor-pointer",
+                "flex w-full items-center px-3 py-2 text-left transition-colors hover:bg-muted cursor-pointer",
                 value === opt.value
                   ? "text-primary font-medium bg-primary/10"
                   : "text-foreground",
@@ -920,7 +918,7 @@ export default function AdminVideosPage() {
           </p>
         </div>
         <AdminButton
-          className="gap-2 flex rounded-[15px] bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          className="gap-2 flex rounded-xl bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
           onClick={() => setUploadOpen(true)}
         >
           <Plus className="h-4 w-4" />
