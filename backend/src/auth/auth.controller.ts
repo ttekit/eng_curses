@@ -322,7 +322,7 @@ export class AuthController {
     @Param("provider") provider: string,
   ) {
     if (!code) {
-      throw new BadRequestException("No code provided from Google");
+      return res.redirect(`${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm`);
     }
 
     try {

@@ -885,8 +885,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-                body.tests as NonNullable<LessonSideBundle["tests"]>,
-              )
+              body.tests as NonNullable<LessonSideBundle["tests"]>,
+            )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -1182,7 +1182,7 @@ export default function ContentPage() {
           });
 
           if (r.ok) {
-            await refreshProfile().catch(() => {});
+            await refreshProfile().catch(() => { });
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1462,13 +1462,13 @@ export default function ContentPage() {
 
                   {(user?.role?.toLowerCase() === "teacher" ||
                     user?.role?.toLowerCase() === "admin") && (
-                    <div className="ml-2 z-50">
-                      <AssignHomeworkButton
-                        contentId={Number(id)}
-                        contentName={videoData.videoName}
-                      />
-                    </div>
-                  )}
+                      <div className="ml-2 z-50">
+                        <AssignHomeworkButton
+                          contentId={Number(id)}
+                          contentName={videoData.videoName}
+                        />
+                      </div>
+                    )}
                 </div>
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
                   {videoData.videoName}

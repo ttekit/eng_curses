@@ -1,12 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useUser } from "../context/UserContext";
 
-/**
- * Renders child routes only when `UserContext` has finished loading and the user is logged in.
- * Otherwise redirects to login (or home while loading is optional — we use a minimal spinner).
- */
 export default function RequireAuth() {
-  const { isLoggedIn, isLoading } = useUser();
+  const { isLoggedIn, isLoading, user } = useUser();
   const location = useLocation();
 
   if (isLoading) {
@@ -25,6 +21,15 @@ export default function RequireAuth() {
         state={{ from: `${location.pathname}${location.search}` }}
       />
     );
+  }
+
+  if (user && !user.role) {
+    return <Navigate to="/registrationMain" replace />;
+  }
+
+  const isTeacher = user?.role?.toLowerCase() === "teacher" || user?.role?.toLowerCase() === "admin";
+  if (user && !isTeacher && !user.dateOfBirth) {
+    return <Navigate to="/registrationDetails" replace />;
   }
 
   return <Outlet />;

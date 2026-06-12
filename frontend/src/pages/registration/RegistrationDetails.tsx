@@ -64,7 +64,7 @@ export default function RegistrationDetails() {
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("exply_access_token");
+    const token = localStorage.getItem("exply_access_token") || localStorage.getItem("explys_access_token");
     if (!token) return;
 
     let cancelled = false;
@@ -176,6 +176,12 @@ export default function RegistrationDetails() {
     e.preventDefault();
     setFormError(null);
 
+    // БЛОКИРУЕМ ПЕРЕХОД ДАЛЬШЕ ЕСЛИ НЕТ ДАТЫ РОЖДЕНИЯ (ДЛЯ ГУГЛ ЮЗЕРОВ)
+    if (!formData.dateOfBirth) {
+      setFormError("Date of birth is required to personalize your experience.");
+      return;
+    }
+
     if (formData.role === "choose" || !formData.role) {
       setEmptyError(true);
       return;
@@ -218,11 +224,11 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-        formData.teacherTopics.length > 0
+          formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-              const num = parseInt(t.replace("topic:", ""), 10);
-              return isNaN(num) ? t : num;
-            })
+            const num = parseInt(t.replace("topic:", ""), 10);
+            return isNaN(num) ? t : num;
+          })
           : undefined;
 
       const userEmail = formData.email || localStorage.getItem("temp_email");
@@ -244,7 +250,7 @@ export default function RegistrationDetails() {
         Object.entries(registrationPayload).filter(([, v]) => v !== undefined),
       );
 
-      const accessToken = localStorage.getItem("exply_access_token");
+      const accessToken = localStorage.getItem("exply_access_token") || localStorage.getItem("explys_access_token");
 
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
@@ -264,7 +270,7 @@ export default function RegistrationDetails() {
         const students = result.generatedStudents || result.students || [];
 
         if (result.access_token) {
-          localStorage.setItem("exply_access_token", result.access_token);
+          localStorage.setItem("explys_access_token", result.access_token);
         }
 
         if (userRole === "teacher") {
@@ -318,6 +324,31 @@ export default function RegistrationDetails() {
               onChange={handleRoleSelect}
             />
           </section>
+
+
+          {/*  ДАТА */}
+          <section className="space-y-4 border-border border-t pt-8">
+            <div>
+              <h2 className="font-display text-xl font-semibold">
+                When were you born?
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                We need this to personalize your experience.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth || ""}
+                onChange={handleChange}
+                min="1900-01-01"
+                max={new Date().toISOString().split("T")[0]}
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              />
+            </div>
+          </section>
+
 
           {formData.role === "teacher" && (
             <section className="space-y-4 border-border border-t pt-8">

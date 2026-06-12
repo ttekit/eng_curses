@@ -32,6 +32,9 @@ src/generated
 frontend/pnpm-lock.yaml
 backend/pnpm-lock.yaml
 
+.env
+frontend/.env
+
 Explys Code Review.md
 
 

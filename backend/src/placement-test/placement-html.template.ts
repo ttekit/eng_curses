@@ -103,6 +103,25 @@ export function renderPlacementHtml(
       --deep: oklch(0.12 0.02 285);
       --primary-soft: color-mix(in oklch, var(--primary) 70%, transparent);
     }
+
+    :root.light {
+      --background: oklch(0.98 0.01 285);
+      --foreground: oklch(0.15 0.02 285);
+      --card: oklch(0.95 0.01 285);
+      --border: oklch(0.85 0.02 285);
+      --primary: oklch(0.6 0.15 300);
+      --primary-fg: oklch(0.98 0 0);
+      --accent: oklch(0.65 0.1 200);
+      --accent-dim: color-mix(in oklch, var(--accent) 60%, transparent);
+      --muted: oklch(0.9 0.02 285);
+      --muted-fg: oklch(0.4 0.02 285);
+      --ring: oklch(0.6 0.15 300);
+      --danger: oklch(0.577 0.245 27.325);
+      --deep: oklch(0.98 0.01 285);
+      --primary-soft: color-mix(in oklch, var(--primary) 70%, transparent);
+    }
+
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -538,6 +557,17 @@ export function renderPlacementHtml(
     #view-result .msg-foot.err { color: var(--danger); }
     #view-quiz.is-off { display: none; }
   </style>
+
+  <script>
+    try {
+      var t = window.localStorage.getItem('explys-ui-theme');
+      if (t === 'light' || (t === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('light');
+      }
+    } catch(e) {}
+  </script>
+
+  
 </head>
 <body>
   <div id="view-quiz">

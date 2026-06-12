@@ -9,7 +9,6 @@ import {
   useState,
   useEffect,
   ChangeEvent,
-  useMemo,
 } from "react";
 import {
   RegistrationContext,
@@ -109,6 +108,8 @@ export default function RegistrationPreferences() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          role: formData.role,
+          dateOfBirth: formData.dateOfBirth,
           favoriteGenres: formData.favoriteGenres,
           hatedGenres: formData.hatedGenres,
           learningGoal: formData.learningGoal,
@@ -118,8 +119,10 @@ export default function RegistrationPreferences() {
 
       if (response.ok) {
         await refreshProfile();
-        // navigate("/subscribe", { replace: true });
-        navigate("/catalog", { replace: true });
+
+        setTimeout(() => {
+          navigate("/catalog", { replace: true });
+        }, 150);
       } else {
         const errorData = await response.json();
         alert(
