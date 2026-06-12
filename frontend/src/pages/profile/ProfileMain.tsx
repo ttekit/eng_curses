@@ -76,6 +76,21 @@ export default function ProfileMain() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains("dark"));
+
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
   const [joinMeta, setJoinMeta] = useState<{
     userId: string;
     label: string;
@@ -405,7 +420,16 @@ export default function ProfileMain() {
                 );
               })}
 
-              <div className="ml-auto pl-2 pr-1">
+              <div className="ml-auto flex items-center gap-3 pl-2 pr-1">
+                <span className="hidden text-sm font-medium text-muted-foreground sm:block">
+                  {isDarkMode
+                    ? locale === "uk"
+                      ? "Темна тема"
+                      : "Dark theme"
+                    : locale === "uk"
+                      ? "Світла тема"
+                      : "Light theme"}
+                </span>
                 <ThemeToggle />
               </div>
             </div>

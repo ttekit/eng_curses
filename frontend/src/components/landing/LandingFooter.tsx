@@ -133,17 +133,6 @@ export function LandingFooter() {
             </span>
           </p>
           <div className="flex items-center gap-6">
-            <button
-              onClick={toggleTheme}
-              className="text-muted-foreground transition-colors hover:text-primary cursor-pointer"
-              aria-label="Toggle theme"
-            >
-              {isDarkMode ? (
-                <Sun className="w-5 h-5" />
-              ) : (
-                <Moon className="w-5 h-5" />
-              )}
-            </button>
             <a
               href="https://t.me/ExplysEng"
               className="text-muted-foreground transition-colors hover:text-primary"

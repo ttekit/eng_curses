@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { LandingLanguageToggle } from "../landing/LandingLanguageToggle";
+import { ThemeToggle } from "../ThemeToggle";
 
 export type ContentHeaderVariant = "app" | "landing";
 
@@ -140,7 +141,11 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          {variant === "landing" ? <LandingLanguageToggle /> : null}
+          {/* Блок с переключателями темы и языка */}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {variant === "landing" ? <LandingLanguageToggle /> : null}
+          </div>
 
           {/* Обновленные кнопки в шапке */}
           <div className="hidden items-center gap-2 sm:gap-3 lg:flex">
