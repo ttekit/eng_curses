@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import {
   Award,
   BookOpen,
@@ -9,12 +8,8 @@ import {
   X,
   Play,
 } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router";
-=======
 import { useEffect, useState } from "react";
-import { Award, BookOpen, Crown, Flame, Lock, Star } from "lucide-react";
->>>>>>> acb8fc26d59286259a9b10c0b81cb461f1287cdd
+import { Link } from "react-router";
 import { ProfileCard } from "./ProfileCard";
 import { useUser } from "../../context/UserContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
@@ -52,12 +47,10 @@ export function ProfileAchievements() {
   const { user } = useUser();
   const p = useAppMessages().profileAchievements;
 
-<<<<<<< HEAD
   // Добавляем стейт для выбранного видео
   const [selectedFirstVideo, setSelectedFirstVideo] = useState<any>(null);
 
   const firstWatchedVideo = (user as any).firstWatchedVideo;
-=======
   const [learnedWords, setLearnedWords] = useState(0);
 
   useEffect(() => {
@@ -65,7 +58,9 @@ export function ProfileAchievements() {
     let cancelled = false;
     void (async () => {
       try {
-        const r = await apiFetch("/auth/profile/progress-details", { method: "GET" });
+        const r = await apiFetch("/auth/profile/progress-details", {
+          method: "GET",
+        });
         if (!r.ok || cancelled) return;
         const data = await r.json();
         if (data?.vocabularyProgress?.learned != null && !cancelled) {
@@ -79,7 +74,6 @@ export function ProfileAchievements() {
       cancelled = true;
     };
   }, [user?.id]);
->>>>>>> acb8fc26d59286259a9b10c0b81cb461f1287cdd
 
   const baseAchievements = [
     {
@@ -208,7 +202,8 @@ export function ProfileAchievements() {
           const rarity = achievement.rarity;
 
           let currentProgressValue = 0;
-          if (achievement.type === "streak") currentProgressValue = currentStreak;
+          if (achievement.type === "streak")
+            currentProgressValue = currentStreak;
           if (achievement.type === "vocab") currentProgressValue = learnedWords;
 
           const isUnlocked =
@@ -231,7 +226,6 @@ export function ProfileAchievements() {
           return (
             <div
               key={achievement.id}
-<<<<<<< HEAD
               onClick={() =>
                 isClickable && setSelectedFirstVideo(firstWatchedVideo)
               }
@@ -240,12 +234,6 @@ export function ProfileAchievements() {
                   ? rarityColors[rarity]
                   : "border-border/30 bg-card/30 opacity-70"
               } ${isClickable ? "cursor-pointer hover:border-primary/50 hover:shadow-md group" : ""}`}
-=======
-              className={`relative overflow-hidden rounded-xl border transition-all ${isUnlocked
-                ? rarityColors[rarity]
-                : "border-border/30 bg-card/30 opacity-70"
-                } `}
->>>>>>> acb8fc26d59286259a9b10c0b81cb461f1287cdd
             >
               {isClickable && (
                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -258,14 +246,15 @@ export function ProfileAchievements() {
               <div className="p-4">
                 <div className="flex items-start gap-3">
                   <div
-                    className={`rounded-xl shrink-0 p-2.5 ${isUnlocked
-                      ? rarity === "legendary"
-                        ? "bg-accent/20"
-                        : rarity === "rare"
-                          ? "bg-primary/20"
-                          : "bg-secondary"
-                      : "bg-secondary/50"
-                      }`}
+                    className={`rounded-xl shrink-0 p-2.5 ${
+                      isUnlocked
+                        ? rarity === "legendary"
+                          ? "bg-accent/20"
+                          : rarity === "rare"
+                            ? "bg-primary/20"
+                            : "bg-secondary"
+                        : "bg-secondary/50"
+                    }`}
                   >
                     {isUnlocked ? (
                       <Icon
