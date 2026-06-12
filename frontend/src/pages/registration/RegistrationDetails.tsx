@@ -3,6 +3,7 @@ import LabelRegister from "../../components/LabelRegister";
 import ValidateError from "../../components/ValidateError";
 import { Link, useNavigate } from "react-router";
 import SelectRegister from "../../components/SelectRegister";
+
 import {
   useState,
   useContext,
@@ -21,7 +22,7 @@ import {
   type LearningTopicOption,
 } from "../../lib/learningTopicsApi";
 import type { GroupBase, MultiValue } from "react-select";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
@@ -31,6 +32,7 @@ import {
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
 import { apiFetch } from "../../lib/api";
+import DatePicker from "react-datepicker";
 
 interface SelectOption {
   value: string;
@@ -41,6 +43,39 @@ interface Pupil {
   name: string;
   surname: string;
 }
+
+const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+  const { onClick } = props;
+  const context = useContext(RegistrationContext);
+
+  return (
+    <div className="relative w-full">
+      <input
+        type="date"
+        ref={ref}
+        name="dateOfBirth"
+        value={context?.formData.dateOfBirth || ""}
+        onChange={(e) => {
+          context?.updateFormData({ dateOfBirth: e.target.value } as Record<
+            string,
+            string
+          >);
+        }}
+        min="1900-01-01"
+        max={new Date().toISOString().split("T")[0]}
+        className="w-full rounded-xl border border-input bg-background pl-4 pr-12 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
+      />
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
+      >
+        <CalendarIcon className="size-5" />
+      </button>
+    </div>
+  );
+});
+CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationDetails() {
   const context = useContext(RegistrationContext);
@@ -291,6 +326,8 @@ export default function RegistrationDetails() {
     }
   };
 
+
+
   return (
     <>
       <AuthPageSeo
@@ -325,6 +362,8 @@ export default function RegistrationDetails() {
             />
           </section>
 
+
+          {/*  ДАТА */}
           <section className="space-y-4 border-border border-t pt-8">
             <div>
               <h2 className="font-display text-xl font-semibold">
@@ -335,14 +374,21 @@ export default function RegistrationDetails() {
               </p>
             </div>
             <div className="space-y-2">
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth || ""}
-                onChange={handleChange}
-                min="1900-01-01"
-                max={new Date().toISOString().split("T")[0]}
-                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+// В RegistrationDetails.tsx добавь это:
+              <DatePicker
+                selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    const formatted = date.toISOString().split("T")[0]; // yyyy-mm-dd
+                    updateFormData({ dateOfBirth: formatted } as Partial<FormData>);
+                  }
+                }}
+                dateFormat="dd/MM/yyyy"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                wrapperClassName="w-full"
+                customInput={<CustomDateInput />}
               />
             </div>
           </section>
