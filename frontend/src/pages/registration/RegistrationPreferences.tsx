@@ -9,7 +9,6 @@ import {
   useState,
   useEffect,
   ChangeEvent,
-  useMemo,
 } from "react";
 import {
   RegistrationContext,
@@ -118,8 +117,10 @@ export default function RegistrationPreferences() {
 
       if (response.ok) {
         await refreshProfile();
-        // navigate("/subscribe", { replace: true });
-        navigate("/catalog", { replace: true });
+
+        setTimeout(() => {
+          navigate("/catalog", { replace: true });
+        }, 100);
       } else {
         const errorData = await response.json();
         alert(
