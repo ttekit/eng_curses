@@ -14,6 +14,8 @@ export interface CatalogCardVideo {
   thumbnailUrl?: string;
   videoLink?: string;
   ageRestriction?: string;
+  friendlyLink?: string;
+  level?: string;
 }
 
 const levelLike = /^(A1|A2|B1|B2|C1|C2)$/i;
@@ -81,7 +83,10 @@ export function CatalogVideoCard({
   const isLocked = is18Plus && !isAdultUser;
 
   const CardWrapper = isLocked ? "div" : Link;
-  const wrapperProps = isLocked ? {} : { to: `/content/${video.id}` };
+
+  const targetUrl = `/content/${video.friendlyLink || video.id}`;
+
+  const wrapperProps = isLocked ? {} : { to: targetUrl };
 
   return (
     <div className="group relative flex w-64 shrink-0 flex-col gap-3 sm:w-80">
@@ -115,6 +120,7 @@ export function CatalogVideoCard({
               <div className="absolute inset-0 bg-background/10 transition-colors group-hover:bg-transparent" />
             )}
 
+            {/* МЕТКА ВОЗРАСТА */}
             {video.ageRestriction ? (
               <span
                 className={cn(
@@ -126,6 +132,17 @@ export function CatalogVideoCard({
               </span>
             ) : null}
 
+            {/* ВОЗВРАЩЕННАЯ МЕТКА УРОВНЯ / КАТЕГОРИИ */}
+            <span
+              className={cn(
+                "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-semibold z-10 backdrop-blur-md shadow-sm",
+                badgeClassForLabel(video.level || video.categoryLabel),
+              )}
+            >
+              {video.level || video.categoryLabel}
+            </span>
+
+            {/* МЕТКА ДЛИТЕЛЬНОСТИ */}
             {video.durationLabel ? (
               <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
                 <Clock className="h-3 w-3" />
