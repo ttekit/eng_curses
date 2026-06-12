@@ -44,38 +44,38 @@ interface Pupil {
   surname: string;
 }
 
-const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
-  const { onClick } = props;
-  const context = useContext(RegistrationContext);
+// const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+//   const { onClick } = props;
+//   const context = useContext(RegistrationContext);
 
-  return (
-    <div className="relative w-full">
-      <input
-        type="date"
-        ref={ref}
-        name="dateOfBirth"
-        value={context?.formData.dateOfBirth || ""}
-        onChange={(e) => {
-          context?.updateFormData({ dateOfBirth: e.target.value } as Record<
-            string,
-            string
-          >);
-        }}
-        min="1900-01-01"
-        max={new Date().toISOString().split("T")[0]}
-        className="w-full rounded-xl border border-input bg-background pl-4 pr-12 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
-      />
-      <button
-        type="button"
-        onClick={onClick}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
-      >
-        <CalendarIcon className="size-5" />
-      </button>
-    </div>
-  );
-});
-CustomDateInput.displayName = "CustomDateInput";
+//   return (
+//     <div className="relative w-full">
+//       <input
+//         type="date"
+//         ref={ref}
+//         name="dateOfBirth"
+//         value={context?.formData.dateOfBirth || ""}
+//         onChange={(e) => {
+//           context?.updateFormData({ dateOfBirth: e.target.value } as Record<
+//             string,
+//             string
+//           >);
+//         }}
+//         min="1900-01-01"
+//         max={new Date().toISOString().split("T")[0]}
+//         className="w-full rounded-xl border border-input bg-background pl-4 pr-12 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
+//       />
+//       <button
+//         type="button"
+//         onClick={onClick}
+//         className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
+//       >
+//         <CalendarIcon className="size-5" />
+//       </button>
+//     </div>
+//   );
+// });
+// CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationDetails() {
   const context = useContext(RegistrationContext);
