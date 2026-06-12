@@ -1,12 +1,8 @@
 import { useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
-import { setStoredAccessToken } from "../../lib/api";
-import { useUser } from "../../context/UserContext";
+import { useSearchParams } from "react-router";
 
 export default function OAuthSuccess() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { refreshProfile } = useUser();
   const hasProcessed = useRef(false);
 
   useEffect(() => {
@@ -17,26 +13,26 @@ export default function OAuthSuccess() {
     const isNewUser = searchParams.get("isNewUser") === "true";
 
     if (token) {
-      setStoredAccessToken(token);
+      // Сохраняем токен (сразу оба варианта ключа, чтобы исключить опечатки в разных частях приложения)
+      localStorage.setItem("explys_access_token", token);
+      localStorage.setItem("exply_access_token", token);
 
-      refreshProfile().then(() => {
-        if (isNewUser) {
-          navigate("/registrationMain", { replace: true });
-        } else {
-          navigate("/catalog", { replace: true });
-        }
-      }).catch((err) => {
-        console.error(err);
-        navigate("/loginForm", { replace: true });
-      });
+      // Жесткая перезагрузка страницы решает проблему гонки React-контекстов.
+      // Приложение запустится заново уже будучи уверенным, что токен есть.
+      const targetUrl = isNewUser ? "/registrationDetails" : "/catalog";
+      window.location.href = targetUrl;
     } else {
-      navigate("/loginForm", { replace: true });
+      console.warn("Токен не найден в URL!");
+      window.location.href = "/loginForm";
     }
-  }, [navigate, searchParams, refreshProfile]);
+  }, [searchParams]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <p className="text-muted-foreground text-sm font-medium">Authenticating...</p>
+      </div>
     </div>
   );
 }
