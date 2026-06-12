@@ -14,13 +14,19 @@ export default function OAuthSuccess() {
     hasProcessed.current = true;
 
     const token = searchParams.get("token");
+    const isNewUser = searchParams.get("isNewUser") === "true";
 
     if (token) {
       setStoredAccessToken(token);
 
       refreshProfile().then(() => {
-        navigate("/catalog", { replace: true });
+        if (isNewUser) {
+          navigate("/registrationMain", { replace: true });
+        } else {
+          navigate("/catalog", { replace: true });
+        }
       }).catch((err) => {
+        console.error(err);
         navigate("/loginForm", { replace: true });
       });
     } else {
