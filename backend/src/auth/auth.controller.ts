@@ -53,7 +53,7 @@ export class AuthController {
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) { }
+  ) {}
 
   @Public()
   @Post("register")
@@ -360,11 +360,25 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
+  @Post("send-danger-zone-code")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Send OTP for danger zone actions" })
+  async sendDangerZoneCode(
+    @Req() req: any,
+    @Body("action") action: "delete" | "reset",
+  ) {
+    if (action !== "delete" && action !== "reset") {
+      throw new BadRequestException("Invalid action type");
+    }
+    return await this.authService.sendDangerZoneCode(req.user.sub, action);
+  }
+
+  @UseGuards(AuthGuard)
   @Delete("delete-account")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Delete user account" })
-  async deleteAccount(@Req() req: any, @Body() dto: DeleteAccountDto) {
-    return await this.authService.deleteAccount(req.user.sub, dto);
+  @ApiOperation({ summary: "Delete user account using OTP" })
+  async deleteAccount(@Req() req: any, @Body() body: { code: string }) {
+    return await this.authService.deleteAccount(req.user.sub, body.code);
   }
 
   @Public()

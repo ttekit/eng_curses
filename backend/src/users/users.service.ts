@@ -47,7 +47,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   private readonly userSelect = {
     id: true,
@@ -164,14 +164,14 @@ export class UsersService {
       favoriteGenres:
         favoriteGenres && favoriteGenres.length > 0
           ? {
-            connect: favoriteGenres.map((id) => ({ id })),
-          }
+              connect: favoriteGenres.map((id) => ({ id })),
+            }
           : undefined,
       hatedGenres:
         hatedGenres && hatedGenres.length > 0
           ? {
-            connect: hatedGenres.map((id) => ({ id })),
-          }
+              connect: hatedGenres.map((id) => ({ id })),
+            }
           : undefined,
     };
 
@@ -274,7 +274,9 @@ export class UsersService {
   }
 
   async findById(id: number) {
-    const user = await this.prisma.user.findUnique({
+    const prisma = this.prisma as any;
+
+    const user = await prisma.user.findUnique({
       where: { id },
       select: this.userSelect,
     });
@@ -283,10 +285,34 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
+    const firstWatchSession = await prisma.watchSession.findFirst({
+      where: { userId: id },
+      orderBy: { id: "asc" },
+      include: {
+        contentVideo: {
+          select: {
+            id: true,
+            videoName: true,
+            thumbnailUrl: true,
+          },
+        },
+      },
+    });
+
+    const firstWatchedVideo = firstWatchSession?.contentVideo
+      ? {
+          id: firstWatchSession.contentVideo.id,
+          videoName: firstWatchSession.contentVideo.videoName,
+          thumbnailUrl: firstWatchSession.contentVideo.thumbnailUrl,
+          url: `/content/${firstWatchSession.contentVideo.id}`,
+        }
+      : null;
+
     return {
       ...user,
-      className: (user as any).class?.name ?? null,
-      teacherName: (user as any).teacher?.name ?? null,
+      className: user.class?.name ?? null,
+      teacherName: user.teacher?.name ?? null,
+      firstWatchedVideo,
     };
   }
 
@@ -384,31 +410,31 @@ export class UsersService {
 
     const settingsUpsert = hasSettingsRowUpdate
       ? {
-        settings: {
-          upsert: {
-            create: {
-              playbackSpeed:
-                playbackSpeed === undefined ? null : Number(playbackSpeed),
-              currentResolution:
-                currentResolution === undefined
-                  ? null
-                  : String(currentResolution),
-            },
-            update: {
-              ...(playbackSpeed !== undefined
-                ? {
-                  playbackSpeed: Number(playbackSpeed),
-                }
-                : {}),
-              ...(currentResolution !== undefined
-                ? {
-                  currentResolution: String(currentResolution),
-                }
-                : {}),
+          settings: {
+            upsert: {
+              create: {
+                playbackSpeed:
+                  playbackSpeed === undefined ? null : Number(playbackSpeed),
+                currentResolution:
+                  currentResolution === undefined
+                    ? null
+                    : String(currentResolution),
+              },
+              update: {
+                ...(playbackSpeed !== undefined
+                  ? {
+                      playbackSpeed: Number(playbackSpeed),
+                    }
+                  : {}),
+                ...(currentResolution !== undefined
+                  ? {
+                      currentResolution: String(currentResolution),
+                    }
+                  : {}),
+              },
             },
           },
-        },
-      }
+        }
       : {};
 
     let updatedUser: any;
@@ -420,61 +446,61 @@ export class UsersService {
           ...settingsUpsert,
           ...(hasProfileUpdate
             ? {
-              additionalUserData: {
-                upsert: {
-                  create: {
-                    englishLevel,
-                    nativeLanguage,
-                    knownLanguages: knownLanguages || [],
-                    knownLanguageLevels,
-                    hobbies: hobbies || [],
-                    education,
-                    workField,
-                    learningGoal,
-                    timeToAchieve,
-                    favoriteGenres: favoriteGenres
-                      ? {
-                        connect: favoriteGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                    hatedGenres: hatedGenres
-                      ? {
-                        connect: hatedGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                  },
-                  update: {
-                    englishLevel,
-                    nativeLanguage,
-                    knownLanguages,
-                    knownLanguageLevels,
-                    hobbies,
-                    education,
-                    workField,
-                    learningGoal,
-                    timeToAchieve,
-                    favoriteGenres: favoriteGenres
-                      ? {
-                        set: favoriteGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
-                    hatedGenres: hatedGenres
-                      ? {
-                        set: hatedGenres.map((genreId: number) => ({
-                          id: genreId,
-                        })),
-                      }
-                      : undefined,
+                additionalUserData: {
+                  upsert: {
+                    create: {
+                      englishLevel,
+                      nativeLanguage,
+                      knownLanguages: knownLanguages || [],
+                      knownLanguageLevels,
+                      hobbies: hobbies || [],
+                      education,
+                      workField,
+                      learningGoal,
+                      timeToAchieve,
+                      favoriteGenres: favoriteGenres
+                        ? {
+                            connect: favoriteGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                      hatedGenres: hatedGenres
+                        ? {
+                            connect: hatedGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                    },
+                    update: {
+                      englishLevel,
+                      nativeLanguage,
+                      knownLanguages,
+                      knownLanguageLevels,
+                      hobbies,
+                      education,
+                      workField,
+                      learningGoal,
+                      timeToAchieve,
+                      favoriteGenres: favoriteGenres
+                        ? {
+                            set: favoriteGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                      hatedGenres: hatedGenres
+                        ? {
+                            set: hatedGenres.map((genreId: number) => ({
+                              id: genreId,
+                            })),
+                          }
+                        : undefined,
+                    },
                   },
                 },
-              },
-            }
+              }
             : {}),
         },
         select: this.userSelect,
@@ -521,7 +547,7 @@ export class UsersService {
     await this.findById(id);
 
     await this.prisma.account.deleteMany({
-      where: { userId: id }
+      where: { userId: id },
     });
 
     return this.prisma.user.delete({
@@ -586,21 +612,30 @@ export class UsersService {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        verificationCode: true,
+        verificationCodeExpires: true,
+      },
     });
 
     if (!user) {
       throw new NotFoundException(`The user with ID ${userId} was not found.`);
     }
 
-    if (!user.password) {
+    if (!user.verificationCode || user.verificationCode !== dto.code) {
       throw new BadRequestException(
-        "For accounts created through third-party services, password reset is not available.",
+        "Invalid verification code. Action canceled.",
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) {
-      throw new BadRequestException("Incorrect password. Action canceled.");
+    if (
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      throw new BadRequestException(
+        "Verification code has expired. Please request a new one.",
+      );
     }
 
     return prisma.$transaction([
@@ -631,6 +666,8 @@ export class UsersService {
           monthlyReviewCompletedMonth: null,
           monthlyReviewLastScorePct: null,
           mistakesPracticeCompletedAt: null,
+          verificationCode: null,
+          verificationCodeExpires: null,
         },
       }),
     ]);

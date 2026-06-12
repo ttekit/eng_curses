@@ -92,10 +92,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  //Reset Progress
-  const [resetPassword, setResetPassword] = useState("");
+  const [dangerCode, setDangerCode] = useState("");
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [dangerError, setDangerError] = useState("");
+
   const [isResetting, setIsResetting] = useState(false);
-  const [resetError, setResetError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const [deleteError, setDeleteError] = useState("");
 
   const [hobbies, setHobbies] = useState<string[]>(user?.hobbies ?? []);
   const [favoriteGenreIds, setFavoriteGenreIds] = useState<number[]>(
@@ -115,10 +119,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [twoFactorPassword, setTwoFactorPassword] = useState("");
 
   const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
-
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deletePassword, setDeletePassword] = useState("");
-  const [deleteError, setDeleteError] = useState("");
 
   const [notifications, setNotifications] = useState(
     () => loadProfileUiPrefs(String(user?.id ?? 0)).notifications,
@@ -321,18 +321,72 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       setIsLoading(false);
     }
   };
-  const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      return setDeleteError("Please enter your password to confirm.");
+
+  const handleOpenDangerZone = async (action: "reset" | "delete") => {
+    setIsSendingCode(true);
+    try {
+      const response = await apiFetch("/auth/send-danger-zone-code", {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send code");
+
+      setDangerOpen(action);
+      setDangerCode("");
+      setDangerError("");
+      toast.success("A 6-digit code has been sent to your email.");
+    } catch (error) {
+      toast.error("Could not send verification code.");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+  const handleResetProgress = async () => {
+    if (dangerCode.length !== 6) {
+      return setDangerError("Please enter the 6-digit code.");
     }
 
     setIsLoading(true);
-    setDeleteError("");
+    setIsResetting(true);
+    setDangerError("");
+
+    try {
+      const response = await apiFetch("/users/profile/progress/reset", {
+        method: "POST",
+        body: JSON.stringify({ code: dangerCode }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to reset progress");
+      }
+
+      toast.success("Progress reset successfully.");
+      setDangerOpen(null);
+      setDangerCode("");
+      await refreshProfile();
+    } catch (err: any) {
+      setDangerError(err.message);
+    } finally {
+      setIsResetting(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (dangerCode.length !== 6) {
+      return setDangerError("Please enter the 6-digit code.");
+    }
+
+    setIsLoading(true);
+    setIsDeleting(true);
+    setDangerError("");
 
     try {
       const response = await apiFetch("/auth/delete-account", {
         method: "DELETE",
-        body: JSON.stringify({ password: deletePassword }),
+        body: JSON.stringify({ code: dangerCode }),
       });
 
       if (!response.ok) {
@@ -341,12 +395,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       }
 
       toast.success("Your account has been deleted.");
-
       logout();
       void navigate("/loginForm", { replace: true });
     } catch (err: any) {
-      setDeleteError(err.message);
+      setDangerError(err.message);
     } finally {
+      setIsDeleting(false);
       setIsLoading(false);
     }
   };
@@ -566,40 +620,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     s.prefsSavedToast,
     s.prefsErrorToast,
   ]);
-
-  const handleResetProgress = async () => {
-    if (!resetPassword) {
-      return setResetError("Please enter your password to confirm.");
-    }
-
-    setIsLoading(true);
-    setIsResetting(true);
-    setResetError("");
-
-    try {
-      const response = await apiFetch("/users/profile/progress/reset", {
-        method: "POST",
-        body: JSON.stringify({ password: resetPassword }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to reset progress");
-      }
-
-      toast.success("Progress reset successfully.");
-
-      setResetPassword("");
-      setDangerOpen(null);
-
-      await refreshProfile();
-    } catch (err: any) {
-      setResetError(err.message);
-    } finally {
-      setIsResetting(false);
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -1390,10 +1410,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             </div>
             <button
               type="button"
-              className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive/10 px-6 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 cursor-pointer"
-              onClick={() => setDangerOpen("reset")}
+              className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive/10 px-6 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 cursor-pointer disabled:opacity-50"
+              onClick={() => handleOpenDangerZone("reset")}
+              disabled={isSendingCode}
             >
-              {s.resetProgressCta || "Reset Progress"}
+              {isSendingCode && dangerOpen !== "reset"
+                ? "Sending..."
+                : s.resetProgressCta || "Reset Progress"}
             </button>
           </div>
 
@@ -1410,10 +1433,13 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               <div className="flex justify-center sm:block">
                 <button
                   type="button"
-                  className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive px-6 py-2.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 cursor-pointer shadow-sm"
-                  onClick={() => setDangerOpen("delete")}
+                  className="flex w-full sm:w-auto justify-center items-center rounded-xl bg-destructive px-6 py-2.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 cursor-pointer shadow-sm disabled:opacity-50"
+                  onClick={() => handleOpenDangerZone("delete")}
+                  disabled={isSendingCode}
                 >
-                  {s.deleteAccountCta || "Delete Account"}
+                  {isSendingCode && dangerOpen !== "delete"
+                    ? "Sending..."
+                    : s.deleteAccountCta || "Delete Account"}
                 </button>
               </div>
             </div>
@@ -1427,11 +1453,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           role="presentation"
           onClick={() => {
             setDangerOpen(null);
-            setDeletePassword("");
-            setDeleteError("");
-
-            setResetPassword("");
-            setResetError("");
+            setDangerCode("");
+            setDangerError("");
           }}
         >
           <div
@@ -1448,136 +1471,86 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 : s.dangerDelete || "Delete Account"}
             </h4>
 
-            {dangerOpen === "reset" ? (
-              <>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  This action cannot be undone. All your saved words, video
-                  viewing history, XP, and test results will be permanently
-                  deleted. To confirm, enter your current password.
-                </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {dangerOpen === "reset"
+                ? "This action cannot be undone. All your saved words, video viewing history, XP, and test results will be permanently deleted."
+                : "This action cannot be undone. Your account will be scheduled for permanent deletion."}
+              <br />
+              <br />
+              We sent a 6-digit code to{" "}
+              <strong>{maskEmail(user?.email)}</strong>. Enter it below to
+              confirm.
+            </p>
 
-                {resetError && (
-                  <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
-                    {resetError}
-                  </div>
-                )}
-
-                <div className="mt-4 space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    style={{ display: "none" }}
-                  />
-
-                  <input
-                    type="password"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder="••••••••"
-                    autoFocus
-                    className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        setDangerOpen(null);
-                        setResetPassword("");
-                        setResetError("");
-                      }
-                    }}
-                  />
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
-                    onClick={() => {
-                      setDangerOpen(null);
-                      setResetPassword("");
-                      setResetError("");
-                    }}
-                  >
-                    cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleResetProgress}
-                    disabled={isResetting || !resetPassword}
-                    className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
-                  >
-                    {isResetting ? "Reset..." : "Reset progress"}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  This action cannot be undone. Please enter your password to
-                  permanently delete your account.
-                </p>
-
-                {deleteError && (
-                  <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
-                    {deleteError}
-                  </div>
-                )}
-
-                <div className="mt-4 space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    style={{ display: "none" }}
-                  />
-
-                  <input
-                    type="password"
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder="••••••••"
-                    autoFocus
-                    className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        setDangerOpen(null);
-                        setDeletePassword("");
-                        setDeleteError("");
-                      }
-                    }}
-                  />
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
-                    onClick={() => {
-                      setDangerOpen(null);
-                      setDeletePassword("");
-                      setDeleteError("");
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeleteAccount}
-                    disabled={isDeleting || !deletePassword}
-                    className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {isDeleting ? "Deleting..." : "Permanently Delete"}
-                  </button>
-                </div>
-              </>
+            {dangerError && (
+              <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium">
+                {dangerError}
+              </div>
             )}
+
+            <div className="mt-4 space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                Verification Code <span className="text-red-500">*</span>
+              </label>
+
+              <input
+                type="text"
+                maxLength={6}
+                value={dangerCode}
+                onChange={(e) =>
+                  setDangerCode(e.target.value.replace(/\D/g, ""))
+                }
+                placeholder="• • • • • •"
+                autoFocus
+                className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-2 text-2xl text-foreground text-center tracking-[0.5em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setDangerOpen(null);
+                    setDangerCode("");
+                    setDangerError("");
+                  } else if (e.key === "Enter" && dangerCode.length === 6) {
+                    dangerOpen === "reset"
+                      ? handleResetProgress()
+                      : handleDeleteAccount();
+                  }
+                }}
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                onClick={() => {
+                  setDangerOpen(null);
+                  setDangerCode("");
+                  setDangerError("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={
+                  dangerOpen === "reset"
+                    ? handleResetProgress
+                    : handleDeleteAccount
+                }
+                disabled={
+                  (dangerOpen === "reset" ? isResetting : isDeleting) ||
+                  dangerCode.length !== 6
+                }
+                className="rounded-lg bg-red-600 px-5 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {dangerOpen === "reset"
+                  ? isResetting
+                    ? "Resetting..."
+                    : "Reset progress"
+                  : isDeleting
+                    ? "Deleting..."
+                    : "Permanently Delete"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

@@ -17,25 +17,44 @@ export default function OAuthSuccess() {
     const token = searchParams.get("token");
     const isNewUser = searchParams.get("isNewUser") === "true";
 
-    console.log("OAuth Debug:", { token: !!token, isNewUser }); // Додаємо лог для перевірки
+    console.log("OAuth Debug:", { token: !!token, isNewUser }); // Лог для перевірки
 
     if (token) {
       // Зберігаємо токен
       setStoredAccessToken(token);
 
-      // Завантажуємо профіль
-      refreshProfile().then(() => {
-        if (isNewUser) {
-          // Якщо новий юзер -> на вибір ролі (Teacher/Student/Adult)
-          navigate("/registrationDetails", { replace: true });
-        } else {
-          // Якщо старий юзер -> в каталог
+      // Завантажуємо профіль та перевіряємо його дані
+      refreshProfile()
+        .then((profile) => {
+          if (!profile) {
+            navigate("/loginForm", { replace: true });
+            return;
+          }
+
+          // 1. Если нет даты рождения (после Google регистрации) -> отправляем на экран ввода DOB
+          if (!profile.dateOfBirth) {
+            navigate("/onboarding/dob", { replace: true });
+            return;
+          }
+
+          // 2. Если дата рождения есть, но юзер новый или не выбрал роль -> на детали регистрации
+          if (
+            isNewUser ||
+            !profile.role ||
+            profile.role === "choose" ||
+            profile.role === "regular"
+          ) {
+            navigate("/registrationDetails", { replace: true });
+            return;
+          }
+
+          // 3. Если старый юзер и всё заполнено -> в каталог
           navigate("/catalog", { replace: true });
-        }
-      }).catch((err) => {
-        console.error("Помилка завантаження профілю:", err);
-        navigate("/loginForm", { replace: true });
-      });
+        })
+        .catch((err) => {
+          console.error("Помилка завантаження профілю:", err);
+          navigate("/loginForm", { replace: true });
+        });
     } else {
       // Якщо токена в URL немає
       console.warn("Токен не знайдено в URL!");

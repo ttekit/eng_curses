@@ -21,6 +21,8 @@ import AccountDeletedTemplate from "./templates/account-deleted";
 import { promises as dns } from "dns";
 import { Resolver } from "dns/promises";
 import { TwoFactorAuthTemplate } from "./templates/two-factor-auth.template";
+import DeleteAccountCodeTemplate from "./templates/delete-account-code.template";
+import ResetProgressCodeTemplate from "./templates/reset-progress-code.template";
 
 @Injectable()
 export class MailService implements OnModuleInit {
@@ -246,5 +248,43 @@ export class MailService implements OnModuleInit {
 
     const html = await render(template);
     return this.sendMail(to, subject, html);
+  }
+
+  async sendDangerZoneCode(
+    email: string,
+    code: string,
+    action: "delete" | "reset",
+  ) {
+    if (isOutboundMailDisabled(this.configService)) {
+      this.logger.warn(
+        `Outbound mail disabled; skipping danger zone code to ${email}`,
+      );
+      return;
+    }
+
+    try {
+      const Template =
+        action === "delete"
+          ? DeleteAccountCodeTemplate
+          : ResetProgressCodeTemplate;
+      const subject =
+        action === "delete"
+          ? "Action Required: Confirm Account Deletion"
+          : "Action Required: Confirm Progress Reset";
+
+      const htmlContent = await render(React.createElement(Template, { code }));
+
+      await this.mailerService.sendMail({
+        from: '"Explys Support" <noreply@explys.com>',
+        to: email,
+        subject,
+        html: htmlContent,
+      });
+    } catch (error) {
+      this.logger.error(`Danger zone mail failed for ${email}`, error as Error);
+      throw new InternalServerErrorException(
+        "The email containing the code could not be sent",
+      );
+    }
   }
 }

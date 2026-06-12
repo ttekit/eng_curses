@@ -60,7 +60,7 @@ export class AuthService {
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) { }
+  ) {}
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -347,18 +347,31 @@ export class AuthService {
     };
   }
 
-  async deleteAccount(userId: number, dto: DeleteAccountDto) {
+  async deleteAccount(userId: number, code: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
     if (!user) throw new UnauthorizedException("User not found");
-    if (!user.password)
-      throw new BadRequestException("The account was registered via Google.");
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) throw new BadRequestException("Incorrect password.");
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException("Invalid verification code.");
+    }
+    if (
+      !user.verificationCodeExpires ||
+      user.verificationCodeExpires < new Date()
+    ) {
+      throw new BadRequestException("Verification code has expired.");
+    }
 
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletionScheduledAt: deletionDate,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
+    });
 
     await this.prisma.token.deleteMany({ where: { email: user.email } });
 
@@ -372,12 +385,7 @@ export class AuthService {
       },
     });
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { deletionScheduledAt: deletionDate },
-    });
-
-    const restoreLink = `http://localhost:5173/restore-account?token=${restoreToken}`;
+    const restoreLink = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/restore-account?token=${restoreToken}`;
     await this.mailService.sendAccountDeletedEmail(
       user.email,
       user.name,
@@ -530,11 +538,11 @@ export class AuthService {
 
         additionalUserData: hasAdditionalData
           ? {
-            upsert: {
-              create: createData,
-              update: updateData,
-            },
-          }
+              upsert: {
+                create: createData,
+                update: updateData,
+              },
+            }
           : undefined,
       },
     });
@@ -970,7 +978,7 @@ export class AuthService {
           return reject(
             new InternalServerErrorException(
               "'Could not end the session. Either the server is unreachable or the session is already invalid.'",
-            )
+            ),
           );
         }
         res.clearCookie(this.configService.getOrThrow<string>("SESSION_NAME"));
@@ -1459,5 +1467,22 @@ export class AuthService {
       recentVideos,
       learningPaths,
     };
+  }
+
+  async sendDangerZoneCode(userId: number, action: "delete" | "reset") {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException("User not found");
+
+    const otpCode = randomInt(100000, 1000000).toString();
+    const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { verificationCode: otpCode, verificationCodeExpires: otpExpires },
+    });
+
+    await this.mailService.sendDangerZoneCode(user.email, otpCode, action);
+
+    return { success: true, message: "Verification code sent to your email." };
   }
 }
