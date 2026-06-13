@@ -50,12 +50,13 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
   return (
     <div className="relative w-full">
       <input
-        type="date"
+        type="text"
         ref={ref}
         value={value}
         onChange={onChange}
-        max={new Date().toISOString().split("T")[0]}
-        className="w-full bg-background border border-input rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer shadow-sm"
+        placeholder="dd/mm/yyyy"
+        className="w-full bg-background border border-input rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors cursor-pointer shadow-sm"
+        onClick={onClick}
       />
       <button
         type="button"
@@ -223,7 +224,6 @@ export default function RegistrationDetails() {
       }
 
       const currentPupils = (formData.studentNames as Pupil[]) || [];
-
       const nameRegex = /^[A-Za-z]+$/;
 
       for (let i = 0; i < currentPupils.length; i++) {
@@ -353,27 +353,6 @@ export default function RegistrationDetails() {
               value={formData.role}
               onChange={handleRoleSelect}
             />
-          </section>
-
-          {/*  ДАТА */}
-          <section className="space-y-4 border-border border-t pt-8">
-            <div>
-              <h2 className="font-display text-xl font-semibold">
-                {step2.whenBorn}
-              </h2>
-              <p className="text-sm text-muted-foreground">{step2.whyNeed}</p>
-            </div>
-            <div className="space-y-2">
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth || ""}
-                onChange={handleChange}
-                min="1900-01-01"
-                max={new Date().toISOString().split("T")[0]}
-                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
-              />
-            </div>
           </section>
 
           {formData.role === "teacher" && (
@@ -543,7 +522,7 @@ export default function RegistrationDetails() {
                     updateFormData({ dateOfBirth: "" } as Partial<FormData>);
                   }
                 }}
-                dateFormat="yyyy-MM-dd"
+                dateFormat="dd/MM/yyyy"
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"
