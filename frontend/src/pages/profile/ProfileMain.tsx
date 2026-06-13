@@ -313,6 +313,7 @@ export default function ProfileMain() {
 
   return (
     <div className="min-h-dvh bg-background font-display antialiased">
+      {" "}
       <SEO
         title={profile.seoTitle}
         description={profile.seoDescription}
