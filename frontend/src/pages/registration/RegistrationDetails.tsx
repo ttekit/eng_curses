@@ -252,11 +252,11 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-        formData.teacherTopics.length > 0
+          formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-              const num = parseInt(t.replace("topic:", ""), 10);
-              return isNaN(num) ? t : num;
-            })
+            const num = parseInt(t.replace("topic:", ""), 10);
+            return isNaN(num) ? t : num;
+          })
           : undefined;
 
       const userEmail = formData.email || localStorage.getItem("temp_email");
@@ -514,7 +514,7 @@ export default function RegistrationDetails() {
             </section>
           )}
 
-          <section className="space-y-4 border-border border-t pt-8">
+          {/* <section className="space-y-4 border-border border-t pt-8">
             <div>
               <h2 className="font-display text-xl font-semibold">
                 When were you born?
@@ -527,7 +527,7 @@ export default function RegistrationDetails() {
               <DatePicker
                 selected={
                   formData.dateOfBirth &&
-                  !isNaN(new Date(formData.dateOfBirth).getTime())
+                    !isNaN(new Date(formData.dateOfBirth).getTime())
                     ? new Date(formData.dateOfBirth)
                     : null
                 }
@@ -553,7 +553,7 @@ export default function RegistrationDetails() {
                 customInput={<CustomDateInput />}
               />
             </div>
-          </section>
+          </section> */}
 
           {emptyError && <ValidateError>{errors.selectRole}</ValidateError>}
           {formError && <ValidateError>{formError}</ValidateError>}
