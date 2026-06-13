@@ -514,7 +514,7 @@ export default function RegistrationDetails() {
             </section>
           )}
 
-          {/* <section className="space-y-4 border-border border-t pt-8">
+          <section className="space-y-4 border-border border-t pt-8">
             <div>
               <h2 className="font-display text-xl font-semibold">
                 When were you born?
@@ -553,7 +553,7 @@ export default function RegistrationDetails() {
                 customInput={<CustomDateInput />}
               />
             </div>
-          </section> */}
+          </section>
 
           {emptyError && <ValidateError>{errors.selectRole}</ValidateError>}
           {formError && <ValidateError>{formError}</ValidateError>}
