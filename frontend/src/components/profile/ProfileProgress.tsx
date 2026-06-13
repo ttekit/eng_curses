@@ -143,9 +143,7 @@ export function ProfileProgress() {
       const raw: unknown = await r.json();
       setTagRows(parseKnowledgeTagsPayload(raw));
     } catch (err) {
-      setTagsError(
-        err instanceof Error ? err.message : p.tagsError,
-      );
+      setTagsError(err instanceof Error ? err.message : p.tagsError);
     } finally {
       setIsRefreshingTags(false);
     }
@@ -167,27 +165,32 @@ export function ProfileProgress() {
     };
   }, [user?.id]);
 
-  const visibleTags = tagRows ? (isTagsExpanded ? tagRows : tagRows.slice(0, 4)) : [];
+  const visibleTags = tagRows
+    ? isTagsExpanded
+      ? tagRows
+      : tagRows.slice(0, 4)
+    : [];
 
   return (
     <div className="space-y-6">
-
       <ProfileCard
         title={p.knowledgeByTag}
         action={
-          showDevRefresh ?
+          showDevRefresh ? (
             <button
               type="button"
               onClick={() => void refreshKnowledgeTags()}
               disabled={isRefreshingTags || tagRows === null}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/30 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary/60 disabled:pointer-events-none disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/30 p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary/60 disabled:pointer-events-none disabled:opacity-50"
             >
-              {isRefreshingTags ?
+              {isRefreshingTags ? (
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />
-              : <RefreshCw className="size-3.5" aria-hidden />}
-              Refresh
+              ) : (
+                <RefreshCw className="size-3.5" aria-hidden />
+              )}
+              <span className="hidden sm:inline">Refresh</span>
             </button>
-          : undefined
+          ) : undefined
         }
       >
         {tagRows === null ? (
@@ -195,11 +198,11 @@ export function ProfileProgress() {
         ) : tagsError ? (
           <p className="text-sm text-destructive">{tagsError}</p>
         ) : tagRows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground break-words whitespace-normal">
             {p.noTagsBodyBeforeLink}{" "}
             <Link
               to="/catalog"
-              className="text-primary underline-offset-4 hover:underline"
+              className="text-primary underline-offset-4 hover:underline break-words"
               aria-label={p.catalogLinkAria}
             >
               {p.noTagsCatalogLink}
@@ -208,16 +211,21 @@ export function ProfileProgress() {
           </p>
         ) : (
           <div className="space-y-4">
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-1">
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {visibleTags.map((row) => (
                 <li
                   key={row.name}
                   className="rounded-xl border border-border/40 bg-secondary/25 p-4"
                 >
                   <div className="mb-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground">{row.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="font-medium text-foreground line-clamp-2 break-words"
+                        title={row.name}
+                      >
+                        {row.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground line-clamp-1 break-words">
                         {p.averagedOver} {row.topicCount}{" "}
                         {row.topicCount === 1 ? p.topicsOne : p.topicsMany}
                       </p>
@@ -275,13 +283,12 @@ export function ProfileProgress() {
         )}
       </ProfileCard>
 
-
       <ProfileCard
         title={p.recentVideos}
         action={
           <Link
             to="/catalog"
-            className="text-sm font-medium text-primary hover:underline"
+            className="text-sm font-medium text-primary hover:underline shrink-0 ml-2"
           >
             {p.viewAll}
           </Link>
@@ -291,7 +298,7 @@ export function ProfileProgress() {
           {(details?.recentVideos || []).map((video) => (
             <div
               key={video.id}
-              className="flex items-center gap-4 rounded-lg p-3 transition-colors hover:bg-secondary/30"
+              className="flex items-center gap-3 sm:gap-4 rounded-lg p-2 sm:p-3 transition-colors hover:bg-secondary/30"
             >
               <div
                 className={cn(
@@ -312,10 +319,13 @@ export function ProfileProgress() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground">
+                <p
+                  className="font-medium text-foreground line-clamp-1 break-words"
+                  title={video.title}
+                >
                   {video.title}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground line-clamp-1 break-words">
                   {video.category}
                 </p>
               </div>
@@ -342,39 +352,51 @@ export function ProfileProgress() {
       <ProfileCard title={p.vocabularyProgress}>
         {details?.vocabularyProgress && (
           <>
-            <div className="mb-6 grid grid-cols-2 gap-4">
-              <div className="rounded-xl bg-secondary/30 p-4 text-center">
-                <p className="text-3xl font-bold text-foreground">
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="flex flex-col items-center justify-center rounded-xl bg-secondary/30 p-3 text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
                   {details.vocabularyProgress.total}
                 </p>
-                <p className="text-sm text-muted-foreground">{p.vocabTotalWords}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words whitespace-normal leading-tight">
+                  {p.vocabTotalWords}
+                </p>
               </div>
-              <div className="rounded-xl bg-primary/10 p-4 text-center">
-                <p className="text-3xl font-bold text-primary">
+              <div className="flex flex-col items-center justify-center rounded-xl bg-primary/10 p-3 text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-primary">
                   {details.vocabularyProgress.learned}
                 </p>
-                <p className="text-sm text-muted-foreground">{p.vocabLearned}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words whitespace-normal leading-tight">
+                  {p.vocabLearned}
+                </p>
               </div>
-              <div className="rounded-xl bg-accent/10 p-4 text-center">
-                <p className="text-3xl font-bold text-accent">
+              <div className="flex flex-col items-center justify-center rounded-xl bg-accent/10 p-3 text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-accent">
                   {details.vocabularyProgress.mastered}
                 </p>
-                <p className="text-sm text-muted-foreground">{p.vocabMastered}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words whitespace-normal leading-tight">
+                  {p.vocabMastered}
+                </p>
               </div>
-              <div className="rounded-xl bg-muted/50 p-4 text-center">
-                <p className="text-3xl font-bold text-foreground">
+              <div className="flex flex-col items-center justify-center rounded-xl bg-muted/50 p-3 text-center">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">
                   {details.vocabularyProgress.reviewing}
                 </p>
-                <p className="text-sm text-muted-foreground">{p.vocabReviewing}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words whitespace-normal leading-tight">
+                  {p.vocabReviewing}
+                </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{p.overallProgressLabel}</span>
-                <span className="font-medium text-foreground">
+              <div className="flex justify-between items-center text-sm gap-2">
+                <span className="text-muted-foreground break-words whitespace-normal leading-tight">
+                  {p.overallProgressLabel}
+                </span>
+                <span className="font-medium text-foreground shrink-0">
                   {Math.round(
-                    (details.vocabularyProgress.learned / Math.max(details.vocabularyProgress.total, 1)) * 100,
+                    (details.vocabularyProgress.learned /
+                      Math.max(details.vocabularyProgress.total, 1)) *
+                      100,
                   )}
                   %
                 </span>
@@ -393,15 +415,18 @@ export function ProfileProgress() {
                   }}
                 />
               </div>
-              <div className="flex gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-accent" /> {p.legendMastered}
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground mt-4">
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <span className="size-2 shrink-0 rounded-full bg-accent" />{" "}
+                  {p.legendMastered}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-primary" /> {p.legendLearning}
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <span className="size-2 shrink-0 rounded-full bg-primary" />{" "}
+                  {p.legendLearning}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-secondary" /> {p.legendRemaining}
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <span className="size-2 shrink-0 rounded-full bg-secondary" />{" "}
+                  {p.legendRemaining}
                 </span>
               </div>
             </div>

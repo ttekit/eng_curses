@@ -40,7 +40,6 @@ import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
-import { ThemeToggle } from "../../components/ThemeToggle";
 
 const LEARNER_TAB_DEFS = [
   { id: "overview" as const, icon: BarChart3 },
@@ -75,21 +74,6 @@ export default function ProfileMain() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    setIsDarkMode(document.documentElement.classList.contains("dark"));
-
-    const observer = new MutationObserver(() => {
-      setIsDarkMode(document.documentElement.classList.contains("dark"));
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
-  }, []);
 
   const [joinMeta, setJoinMeta] = useState<{
     userId: string;
@@ -329,6 +313,7 @@ export default function ProfileMain() {
 
   return (
     <div className="min-h-dvh bg-background font-display antialiased">
+      {" "}
       <SEO
         title={profile.seoTitle}
         description={profile.seoDescription}
@@ -419,19 +404,6 @@ export default function ProfileMain() {
                   </button>
                 );
               })}
-
-              <div className="ml-auto flex items-center gap-3 pl-2 pr-1">
-                <span className="hidden text-sm font-medium text-muted-foreground sm:block">
-                  {isDarkMode
-                    ? locale === "uk"
-                      ? "Темна тема"
-                      : "Dark theme"
-                    : locale === "uk"
-                      ? "Світла тема"
-                      : "Light theme"}
-                </span>
-                <ThemeToggle />
-              </div>
             </div>
 
             <div className="mt-6">

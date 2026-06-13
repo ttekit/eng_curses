@@ -9,12 +9,10 @@ import {
 import { useUser } from "../../context/UserContext";
 import { useNavigate } from "react-router";
 import InputText from "../InputText";
-import Button from "../Button";
 import { ProfileCard } from "./ProfileCard";
 import { ToggleSwitch } from "./ToggleSwitch";
 import {
   loadProfileUiPrefs,
-  NotificationPrefs,
   saveProfileUiPrefs,
 } from "../../lib/profileUiPrefs";
 import { Lock } from "lucide-react";
@@ -25,11 +23,14 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon } from "lucide-react";
 import { forwardRef } from "react";
+import { ThemeToggle } from "../ThemeToggle";
+import { Monitor } from "lucide-react";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 type GenreOption = { id: number; name: string };
 
 const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
-  const { onClick, value, onChange, onKeyDown, id } = props;
+  const { onClick, value, onChange, onKeyDown, id, isError } = props;
   return (
     <div className="relative w-full">
       <input
@@ -42,14 +43,22 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
         onClick={(e) => e.stopPropagation()}
         onFocus={(e) => e.stopPropagation()}
         autoComplete="off"
-        className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+        className={`flex h-12 w-full bg-background border ${
+          isError
+            ? "border-destructive focus:ring-destructive/40 hover:border-destructive/80"
+            : "border-input hover:border-primary/50 focus:ring-primary/40"
+        } rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0`}
       />
 
       <button
         type="button"
         onClick={onClick}
         tabIndex={-1}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+        className={`absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors ${
+          isError
+            ? "text-destructive"
+            : "text-muted-foreground hover:text-primary"
+        }`}
       >
         <CalendarIcon className="size-5" />
       </button>
@@ -60,6 +69,21 @@ CustomDateInput.displayName = "CustomDateInput";
 
 export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const { user, refreshProfile, logout } = useUser();
+  const { locale, setLocale } = useLandingLocale();
+
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Проверяем текущую тему при загрузке
+  useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  // Функция для применения темы
+  const applyTheme = (dark: boolean) => {
+    setIsDarkMode(dark);
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+  };
 
   const navigate = useNavigate();
   const s = useAppMessages().profileSettings;
@@ -98,8 +122,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
   const [isResetting, setIsResetting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const [deleteError, setDeleteError] = useState("");
 
   const [hobbies, setHobbies] = useState<string[]>(user?.hobbies ?? []);
   const [favoriteGenreIds, setFavoriteGenreIds] = useState<number[]>(
@@ -678,9 +700,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               />
             </label>
           </div>
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground">
-              Date of Birth
+              Date of Birth <span className="text-destructive">*</span>
             </label>
             <DatePicker
               selected={dateOfBirth ? new Date(dateOfBirth) : null}
@@ -700,8 +723,15 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               wrapperClassName="w-full"
               portalId="calendar-portal"
               preventOpenOnFocus={true}
-              customInput={<CustomDateInput id="profile-dob" />}
+              customInput={
+                <CustomDateInput id="profile-dob" isError={!dateOfBirth} />
+              }
             />
+            {!dateOfBirth && (
+              <p className="text-[13px] font-medium text-destructive mt-1">
+                Date of birth is required
+              </p>
+            )}
           </div>
 
           <div>
@@ -836,53 +866,83 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       <ProfileCard
         title={
           <span className="flex items-center gap-2">
-            <Bell className="size-5 text-primary" />
-            {s.cardNotifications || "Notifications"}
+            <Monitor className="size-5 text-primary" />
+            Display & Language
           </span>
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          {s.cardNotificationsLead || "Manage your alert preferences."}
+          Customize your app experience.
         </p>
-        <div className="divide-y divide-border/50">
-          {[
-            {
-              key: "dailyReminder" as const,
-              label: s.reminderDaily || "Daily Reminder",
-              description:
-                s.reminderDailyDesc || "Receive a daily reminder to study.",
-            },
-            {
-              key: "weeklyReport" as const,
-              label: s.reportWeekly || "Weekly Report",
-              description:
-                s.reportWeeklyDesc ||
-                "Receive a weekly summary of your progress.",
-            },
-          ].map((item) => (
-            <div
-              key={item.key}
-              className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="font-medium text-foreground">{item.label}</p>
-                <p className="text-sm text-muted-foreground">
-                  {item.description}
-                </p>
-              </div>
-              <ToggleSwitch
-                checked={notifications[item.key as keyof NotificationPrefs]}
-                onCheckedChange={async (checked) => {
-                  const newNotifications = {
-                    ...notifications,
-                    [item.key as keyof NotificationPrefs]: checked,
-                  };
-                  setNotifications(newNotifications);
-                  await saveLearnerPreferences();
-                }}
-              />
+
+        <div className="grid gap-4 sm:grid-cols-2 py-2">
+          {/* Выбор темы (Слева) */}
+          <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 hover:bg-muted/20 transition-colors">
+            <div>
+              <p className="font-medium text-foreground">Theme</p>
+              <p className="text-sm text-muted-foreground">
+                Light or dark mode
+              </p>
             </div>
-          ))}
+            <div className="mt-auto flex w-fit bg-secondary/50 rounded-lg p-1 border border-border/50">
+              <button
+                type="button"
+                onClick={() => applyTheme(false)}
+                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                  !isDarkMode
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => applyTheme(true)}
+                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                  isDarkMode
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Dark
+              </button>
+            </div>
+          </div>
+
+          {/* Выбор языка (Справа) */}
+          <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 hover:bg-muted/20 transition-colors">
+            <div>
+              <p className="font-medium text-foreground">Language</p>
+              <p className="text-sm text-muted-foreground">
+                Interface language
+              </p>
+            </div>
+            <div className="mt-auto flex w-fit bg-secondary/50 rounded-lg p-1 border border-border/50">
+              <button
+                type="button"
+                onClick={() => setLocale?.("en")}
+                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                  locale === "en"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale?.("uk")}
+                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                  locale === "uk"
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                UA
+              </button>
+            </div>
+          </div>
         </div>
       </ProfileCard>
 
@@ -914,7 +974,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 <button
                   type="button"
                   onClick={handleStartEmailChange}
-                  className="shrink-0 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent transition-all duration-500 hover:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:cursor-pointer"
+                  className="shrink-0 rounded-xl px-5 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
                 >
                   Change email
                 </button>
@@ -1060,7 +1120,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <button
                       type="button"
                       onClick={() => setIsChangingPassword(true)}
-                      className="shrink-0 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent  transition-all duration-500 hover:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:cursor-pointer"
+                      className="shrink-0 rounded-xl px-5 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
                     >
                       Change password
                     </button>
