@@ -91,7 +91,9 @@ export default function RegistrationDetails() {
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("explys_access_token");
+    const token =
+      localStorage.getItem("exply_access_token") ||
+      localStorage.getItem("explys_access_token");
     if (!token) return;
 
     let cancelled = false;
@@ -276,7 +278,9 @@ export default function RegistrationDetails() {
         Object.entries(registrationPayload).filter(([, v]) => v !== undefined),
       );
 
-      const accessToken = localStorage.getItem("explys_access_token");
+      const accessToken =
+        localStorage.getItem("exply_access_token") ||
+        localStorage.getItem("explys_access_token");
 
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
@@ -349,6 +353,27 @@ export default function RegistrationDetails() {
               value={formData.role}
               onChange={handleRoleSelect}
             />
+          </section>
+
+          {/*  ДАТА */}
+          <section className="space-y-4 border-border border-t pt-8">
+            <div>
+              <h2 className="font-display text-xl font-semibold">
+                {step2.whenBorn}
+              </h2>
+              <p className="text-sm text-muted-foreground">{step2.whyNeed}</p>
+            </div>
+            <div className="space-y-2">
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth || ""}
+                onChange={handleChange}
+                min="1900-01-01"
+                max={new Date().toISOString().split("T")[0]}
+                className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+              />
+            </div>
           </section>
 
           {formData.role === "teacher" && (

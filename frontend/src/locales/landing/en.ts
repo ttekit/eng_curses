@@ -180,6 +180,29 @@ export const landingEn = {
     pricingSubtitle: "Plans, billing, and upgrades.",
   },
 
+  marketingQuestions: {
+    whatisExplys: {
+      question: "What is Explys?",
+      answer:
+        "Explys is a personalized English learning platform with adaptive video lessons, subtitles, interactive quizzes, and AI-assisted practice matched to your level and interests.",
+    },
+    freeToStart: {
+      question: "Is Explys free to start?",
+      answer:
+        "Yes. Currently, using Explys is completely free so you can try our approach to language learning.",
+    },
+    personalize: {
+      question: "How does Explys personalize my lessons?",
+      answer:
+        "After sign-up, learners complete a short placement questionnaire. Explys uses your level, interests, and goals to recommend video lessons and build a student learning plan with phases and weekly habits.",
+    },
+    videoLessons: {
+      question: "How do video lessons and quizzes work?",
+      answer:
+        "Select a lesson in the catalog, watch with subtitles, answer questions for understanding during or after the clip, and track progress on your profile. After that, you can continue to follow your learning plan.",
+    },
+  },
+
   cta: {
     titleBefore: "Ready to start your",
     titleAccent: "English journey",
@@ -189,7 +212,7 @@ export const landingEn = {
     catalog: "Catalog",
     getStartedFree: "Get started free",
     howItWorks: "How it works",
-    footnote: "No credit card required. Start learning in under 2 minutes.",
+    footnote: "Free access in June 2026!",
   },
 
   pricingCards: {
@@ -375,6 +398,8 @@ export const landingEn = {
         haveAccount: "Already have an account?",
         logIn: "Log in",
         dateOfBirth: "Date of Birth",
+        orContinueWith: "Or continue with",
+        google: "Continue with Google",
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",
@@ -437,6 +462,8 @@ export const landingEn = {
         register: "Register",
         next: "Next",
         previous: "Previous step",
+        whenBorn: "When were you born?",
+        whyNeed: "We need this to personalize your experience.",
       },
       grades: {
         choose: "Choose grade",
