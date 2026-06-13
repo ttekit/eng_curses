@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { cn } from "../../lib/utils";
 import type { MarketingFaqItem } from "../../lib/marketingSeoContent";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 type MarketingFaqSectionProps = {
   id?: string;
@@ -20,12 +21,20 @@ export function MarketingFaqSection({
   items,
   className,
 }: MarketingFaqSectionProps) {
+  const { messages } = useLandingLocale();
   const headingId = useId();
+
+  const faqItems = messages.marketingQuestions
+    ? Object.values(messages.marketingQuestions)
+    : [];
 
   return (
     <section
       id={id}
-      className={cn("border-border border-t bg-background py-16 sm:py-20", className)}
+      className={cn(
+        "border-border border-t bg-background py-16 sm:py-20",
+        className,
+      )}
       aria-labelledby={headingId}
     >
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
@@ -39,7 +48,7 @@ export function MarketingFaqSection({
           <p className="mt-3 text-center text-muted-foreground">{subtitle}</p>
         ) : null}
         <dl className="mt-10 space-y-4">
-          {items.map((item) => (
+          {faqItems.map((item) => (
             <div
               key={item.question}
               className="rounded-xl border border-border bg-card/50 p-5"
