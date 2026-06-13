@@ -125,11 +125,14 @@ export class UsersController {
   @Post("profile/progress/reset")
   @UseGuards(ApiTokenOrJwtAuthGuard)
   @ApiBearerAuth("JWT-auth")
-  @ApiOperation({ summary: "Reset learning progress with password verification." })
-  @ApiResponse({ status: 200, description: "Progress has been successfully reset." })
+  @ApiOperation({ summary: "Reset learning progress with OTP verification." })
+  @ApiResponse({
+    status: 200,
+    description: "Progress has been successfully reset.",
+  })
   @ApiResponse({
     status: 400,
-    description: "Incorrect password or request error.",
+    description: "Invalid or expired verification code.",
   })
   async resetProfileProgress(@Req() req: any, @Body() dto: ResetProgressDto) {
     const userId = req.user?.id || req.user?.sub;

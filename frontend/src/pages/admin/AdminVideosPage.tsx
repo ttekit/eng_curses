@@ -904,21 +904,30 @@ export default function AdminVideosPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden min-w-0 pb-10">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-bold text-foreground">
             Videos
           </h1>
-          <p className="text-muted-foreground">
-            Catalog from <code className="text-xs">GET /content-video</code>;
-            upload <code className="text-xs">POST /contents/create</code>;
-            series order{" "}
-            <code className="text-xs">PATCH /contents/:id/playlist</code>.
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground break-words whitespace-normal">
+            Catalog from{" "}
+            <code className="text-[11px] whitespace-normal break-all rounded bg-muted/50 px-1 py-0.5">
+              GET /content-video
+            </code>
+            ; upload{" "}
+            <code className="text-[11px] whitespace-normal break-all rounded bg-muted/50 px-1 py-0.5">
+              POST /contents/create
+            </code>
+            ; series order{" "}
+            <code className="text-[11px] whitespace-normal break-all rounded bg-muted/50 px-1 py-0.5">
+              PATCH /contents/:id/playlist
+            </code>
+            .
           </p>
         </div>
         <AdminButton
-          className="gap-2 flex rounded-xl bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
+          className="gap-2 flex shrink-0 rounded-xl bg-primary px-6 py-3 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
           onClick={() => setUploadOpen(true)}
         >
           <Plus className="h-4 w-4" />
@@ -927,6 +936,8 @@ export default function AdminVideosPage() {
       </div>
 
       <AdminModal
+        // ... дальше идет твой код без изменений (AdminModal и т.д.)
+
         open={uploadOpen}
         onClose={() => !uploadSaving && setUploadOpen(false)}
         title="Upload new video"
@@ -1608,7 +1619,7 @@ export default function AdminVideosPage() {
                       href={inspectMeta.video.videoCaption.subtitlesFileLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block text-sm text-primary underline-offset-4 hover:underline"
+                      className="inline-block text-sm text-primary underline-offset-4 hover:underline break-all"
                     >
                       Open raw file on storage
                     </a>
@@ -1744,7 +1755,6 @@ export default function AdminVideosPage() {
               )}
             </div>
 
-            {/* КРАСИВЫЕ ОБНОВЛЕННЫЕ СЕЛЕКТЫ */}
             <div className="flex flex-wrap gap-3">
               <CustomSelect
                 value={ageFilter}
@@ -2043,8 +2053,9 @@ export default function AdminVideosPage() {
                 </div>
               ))}
 
+              {/* БЛОК С ПАГИНАЦИЕЙ — ТЕПЕРЬ ОН С ПЕРЕНОСОМ */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-12 mb-4">
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-12 mb-4">
                   <button
                     type="button"
                     onClick={() => {

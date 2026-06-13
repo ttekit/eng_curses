@@ -16,16 +16,13 @@ export function useCloseRowMenu() {
   return useContext(RowMenuCloseContext);
 }
 
-export function AdminRowMenu({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function AdminRowMenu({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
 
+  // Закрытие по клику вне меню
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -34,6 +31,25 @@ export function AdminRowMenu({
     };
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  // НОВОЕ: Слушаем глобальное событие, чтобы закрыть другие меню
+  useEffect(() => {
+    const handleCloseMenu = (e: CustomEvent) => {
+      // Если открылось ДРУГОЕ меню (не наше), то закрываем это
+      if (e.detail !== ref.current) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener(
+      "close-admin-menus",
+      handleCloseMenu as EventListener,
+    );
+    return () =>
+      window.removeEventListener(
+        "close-admin-menus",
+        handleCloseMenu as EventListener,
+      );
   }, []);
 
   return (
@@ -46,7 +62,15 @@ export function AdminRowMenu({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setOpen((o) => !o);
+            const willOpen = !open;
+            setOpen(willOpen);
+
+            // НОВОЕ: Если мы открываем это меню, посылаем сигнал закрыть остальные
+            if (willOpen) {
+              window.dispatchEvent(
+                new CustomEvent("close-admin-menus", { detail: ref.current }),
+              );
+            }
           }}
         >
           <MoreVertical className="h-4 w-4" />
@@ -81,7 +105,11 @@ export function AdminRowMenuItem({
     <button
       type="button"
       role="menuitem"
-      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${danger ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-muted"}`}
+      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+        danger
+          ? "text-destructive hover:bg-destructive/10"
+          : "text-foreground hover:bg-muted"
+      }`}
       onClick={() => {
         void Promise.resolve(onClick?.()).finally(() => closeParent?.());
       }}

@@ -621,7 +621,9 @@ export function renderPlacementHtml(
     <div class="result-inner">
       <div class="glow">
         <div class="glow-blob" aria-hidden="true"></div>
-        <div style="position:relative">${MASCOT_SVG_RESULT}</div>
+        <div style="position:relative">
+          <img src="/Icon.svg" class="res-mascot" alt="Result mascot" />
+        </div>
       </div>
       <h1 class="res-title font-display">Test complete!</h1>
       <p class="res-sub">Great job — here&apos;s how you did.</p>

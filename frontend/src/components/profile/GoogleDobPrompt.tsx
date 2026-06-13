@@ -18,18 +18,18 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
   return (
     <div className="relative w-full">
       <input
-        type="text"
+        type="date"
         ref={ref}
         value={dobValue || ""}
         onChange={(e) => onDobChange(e.target.value)}
         min="1900-01-01"
         max={new Date().toISOString().split("T")[0]}
-        className="w-full bg-[#161622] border border-[#2a2b36] rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
+        className="w-full rounded-xl border border-input bg-background pl-4 pr-12 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
       />
       <button
         type="button"
         onClick={onClick}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors flex items-center justify-center"
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
       >
         <CalendarIcon className="size-5" />
       </button>
@@ -166,7 +166,7 @@ export default function GoogleDobPrompt() {
           <Button
             type="submit"
             disabled={loading || !dateOfBirth}
-            className="rounded-[15px] bg-primary px-6 py-4 mt-6 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6)] w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 mt-6"
           >
             {loading ? "Saving..." : "Continue"}
             <ArrowRight className="size-4" />
