@@ -42,6 +42,7 @@ import { formatMessage } from "../../lib/formatMessage";
 import { useIsLgUp } from "../../hooks/useMediaQuery";
 import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
 import { AssignHomeworkButton } from "../../components/AssignHomeworkButton";
+import { Calendar } from "lucide-react";
 
 const LESSON_XP = 150;
 const LESSON_SUMMARY_STORAGE = "lessonSummary:";
@@ -885,8 +886,8 @@ export default function ContentPage() {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -1182,7 +1183,7 @@ export default function ContentPage() {
           });
 
           if (r.ok) {
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
 
             const d = (await r.json()) as unknown;
             const fb = readOpenEndedFeedbackFromSubmit(d);
@@ -1270,6 +1271,39 @@ export default function ContentPage() {
       isLocked,
     ],
   );
+
+  const missingDob = user && !user.dateOfBirth;
+
+  if (missingDob) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center antialiased">
+        <SEO
+          title="Date of Birth Required"
+          description="Please enter your date of birth to continue."
+          canonicalUrl={resolveCanonicalUrl("/catalog")}
+          noindex
+        />
+        <div className="bg-card border border-border p-8 rounded-3xl shadow-lg max-w-md w-full flex flex-col items-center animate-in zoom-in-95 duration-300">
+          <div className="bg-destructive/20 p-4 rounded-full mb-5">
+            <Calendar className="w-10 h-10 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-bold font-display text-foreground mb-3">
+            Date of Birth Required
+          </h1>
+          <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
+            To watch videos, please specify your date of birth in your profile
+            settings.
+          </p>
+          <button
+            onClick={() => navigate("/profileMain?tab=settings")}
+            className="flex w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-sm"
+          >
+            Go to Settings
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -1462,13 +1496,13 @@ export default function ContentPage() {
 
                   {(user?.role?.toLowerCase() === "teacher" ||
                     user?.role?.toLowerCase() === "admin") && (
-                      <div className="ml-2 z-50">
-                        <AssignHomeworkButton
-                          contentId={Number(id)}
-                          contentName={videoData.videoName}
-                        />
-                      </div>
-                    )}
+                    <div className="ml-2 z-50">
+                      <AssignHomeworkButton
+                        contentId={Number(id)}
+                        contentName={videoData.videoName}
+                      />
+                    </div>
+                  )}
                 </div>
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
                   {videoData.videoName}

@@ -43,6 +43,7 @@ import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
+import { Calendar } from "lucide-react";
 
 interface ContentVideo {
   id: number;
@@ -614,6 +615,9 @@ export default function VideoPage() {
       )
     : [];
 
+  // Определяем, нужна ли блокировка
+  const missingDob = !userLoading && user && !user.dateOfBirth;
+
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex-col">
       {activatingSubscriptionOverlay ? (
@@ -638,6 +642,7 @@ export default function VideoPage() {
       />
       <div>
         <div className="flex w-full">
+          {/* Сайдбар остается нетронутым */}
           <CatalogSidebar
             selectedLevel={selectedLevel}
             onSelectLevel={setSelectedLevel}
@@ -653,323 +658,360 @@ export default function VideoPage() {
 
           <main
             className={cn(
-              "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8",
+              "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8 relative", // <-- ДОБАВИЛ relative
               sidebarCollapsed
                 ? "lg:ml-20 lg:max-w-[calc(100vw-5rem)]"
                 : "lg:ml-64 lg:max-w-[calc(100vw-16rem)]",
             )}
           >
-            <CatalogHero featured={featuredHero} />
-
-            <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6 overflow-hidden">
-                {/* 1. ФИЛЬТР УРОВНЯ */}
-                <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
-                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                    <Layers className="size-3.5" /> {cb.filterLevel}
-                  </span>
-                  <div className="relative group/level flex w-full items-center">
-                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
-
-                    <button
-                      type="button"
-                      onClick={() => scrollContainer(levelScrollRef, "left")}
-                      className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-
-                    <div
-                      ref={levelScrollRef}
-                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
-                      style={{
-                        scrollbarWidth: "none",
-                        msOverflowStyle: "none",
-                      }}
-                    >
-                      {LEVELS_LIST.map((lvl) => (
-                        <button
-                          key={lvl}
-                          type="button"
-                          onClick={() => setSelectedLevel(lvl)}
-                          className={cn(
-                            "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
-                            selectedLevel === lvl
-                              ? "bg-primary text-primary-foreground shadow-md"
-                              : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
-                          )}
-                        >
-                          {filterLabel(lvl)}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => scrollContainer(levelScrollRef, "right")}
-                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
+            {missingDob && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/30 backdrop-blur-xl p-4">
+                {" "}
+                <div className="bg-card border border-border p-8 rounded-3xl shadow-2xl max-w-md w-full flex flex-col items-center animate-in zoom-in-95 duration-300">
+                  <div className="bg-destructive/20 p-4 rounded-full mb-5">
+                    <Calendar className="w-10 h-10 text-destructive" />
                   </div>
+                  <h1 className="text-2xl font-bold font-display text-foreground mb-3 text-center">
+                    Date of Birth Required
+                  </h1>
+                  <p className="text-muted-foreground mb-8 text-sm leading-relaxed text-center">
+                    To view the catalog and watch videos, please specify your
+                    date of birth in your profile settings.
+                  </p>
+                  <button
+                    onClick={() => navigate("/profileMain?tab=settings")}
+                    className="flex w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-sm"
+                  >
+                    Go to Settings
+                  </button>
                 </div>
+              </div>
+            )}
 
-                {/* 2. ФИЛЬТР ВОЗРАСТА */}
-                <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
-                  <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                    <Lock className="size-3.5 opacity-70" /> Age
-                  </span>
-                  <div className="relative group/age flex w-full items-center">
-                    <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
+            {/* КОНТЕНТ КАТАЛОГА (Замыливается, если нет ДР) */}
+            <div
+              className={cn(
+                missingDob &&
+                  "pointer-events-none select-none blur-lg opacity-40 overflow-hidden h-[100vh]",
+              )}
+            >
+              <CatalogHero featured={featuredHero} />
 
-                    <button
-                      type="button"
-                      onClick={() => scrollContainer(ageScrollRef, "left")}
-                      className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-
-                    <div
-                      ref={ageScrollRef}
-                      className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
-                      style={{
-                        scrollbarWidth: "none",
-                        msOverflowStyle: "none",
-                      }}
-                    >
-                      {AGE_LIST.map((age) => (
-                        <button
-                          key={age}
-                          type="button"
-                          onClick={() => handleAgeSelect(age)}
-                          className={cn(
-                            "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
-                            selectedAge === age
-                              ? "bg-primary text-primary-foreground shadow-md"
-                              : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
-                          )}
-                        >
-                          {age}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => scrollContainer(ageScrollRef, "right")}
-                      className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. ФИЛЬТР ЖАНРОВ */}
-                {genreNames.length > 0 && (
+              <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6 overflow-hidden">
                   <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                     <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                      <img
-                        src="/Icon.svg"
-                        className="size-3.5 grayscale opacity-70"
-                        alt=""
-                      />{" "}
-                      {cb.filterGenre}
+                      <Layers className="size-3.5" /> {cb.filterLevel}
                     </span>
-                    <div className="relative group/genre flex w-full items-center">
+                    <div className="relative group/level flex w-full items-center">
                       <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
 
                       <button
                         type="button"
-                        onClick={() => scrollContainer(genreScrollRef, "left")}
-                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        onClick={() => scrollContainer(levelScrollRef, "left")}
+                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
 
                       <div
-                        ref={genreScrollRef}
+                        ref={levelScrollRef}
                         className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
                         style={{
                           scrollbarWidth: "none",
                           msOverflowStyle: "none",
                         }}
                       >
-                        {sortedGenres.map((gen) => (
+                        {LEVELS_LIST.map((lvl) => (
                           <button
-                            key={gen}
+                            key={lvl}
                             type="button"
-                            onClick={() => setSelectedGenre(gen)}
+                            onClick={() => setSelectedLevel(lvl)}
                             className={cn(
-                              "ml-0.5 rounded-full px-4 shrink-0 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
-                              selectedGenre === gen
-                                ? "bg-accent text-accent-foreground shadow-md"
-                                : "bg-secondary text-secondary-foreground hover:bg-accent/10 hover:text-accent",
+                              "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                              selectedLevel === lvl
+                                ? "bg-primary text-primary-foreground shadow-md"
+                                : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
                             )}
                           >
-                            {filterLabel(gen)}
+                            {filterLabel(lvl)}
                           </button>
                         ))}
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => scrollContainer(genreScrollRef, "right")}
-                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        onClick={() => scrollContainer(levelScrollRef, "right")}
+                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/level:flex hover:bg-muted"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div
-              id="catalog-library"
-              ref={catalogTopRef}
-              className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2 scroll-mt-24"
-            >
-              {loading ? (
-                <div className="flex h-60 bg-card/30 flex-col items-center rounded-[30px] justify-center space-y-4">
-                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
-                  <p className="animate-pulse text-muted-foreground text-sm">
-                    {cb.loadingCatalog}
-                  </p>
-                </div>
-              ) : filteredVideos.length === 0 ? (
-                <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
-                  <img src="/SadIcon.svg" className="w-25 h-30 mb-3" alt="" />
-                  <h2 className="font-display text-2xl font-bold">
-                    {cb.emptyTitle}
-                  </h2>
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    {videos.length === 0 ? cb.emptyNoVideos : cb.emptyFiltered}
-                  </p>
-                </div>
-              ) : hasFilters ? (
-                <div className="space-y-6">
-                  <h2 className="font-display text-xl font-bold text-foreground">
-                    {buildFilteredTitle()}
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {paginatedVideos.map((video) => {
-                      const vidAge = video.ageRestriction || "0+";
-                      const is18Plus = vidAge === "18+" || vidAge === "21+";
-                      const isLocked = is18Plus && !isAdultUser;
+                  {/* 2. ФИЛЬТР ВОЗРАСТА */}
+                  <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
+                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                      <Lock className="size-3.5 opacity-70" /> Age
+                    </span>
+                    <div className="relative group/age flex w-full items-center">
+                      <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
 
-                      return (
-                        <div
-                          key={video.id}
-                          className="relative group rounded-2xl overflow-hidden"
-                        >
-                          <div
+                      <button
+                        type="button"
+                        onClick={() => scrollContainer(ageScrollRef, "left")}
+                        className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      <div
+                        ref={ageScrollRef}
+                        className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
+                        style={{
+                          scrollbarWidth: "none",
+                          msOverflowStyle: "none",
+                        }}
+                      >
+                        {AGE_LIST.map((age) => (
+                          <button
+                            key={age}
+                            type="button"
+                            onClick={() => handleAgeSelect(age)}
                             className={cn(
-                              "transition-all h-full",
-                              isLocked &&
-                                "blur-md brightness-50 pointer-events-none select-none",
+                              "ml-0.5 rounded-full shrink-0 px-4 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                              selectedAge === age
+                                ? "bg-primary text-primary-foreground shadow-md"
+                                : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
                             )}
                           >
-                            <CatalogVideoCard video={toCardVideo(video)} />
-                          </div>
-                          {isLocked && (
-                            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 p-4 text-center">
-                              <div className="bg-destructive/20 p-3 rounded-full mb-3 backdrop-blur-md shadow-lg border border-destructive/30">
-                                <Lock className="w-8 h-8 text-destructive" />
-                              </div>
-                              <h3 className="text-white font-bold text-lg mb-1 drop-shadow-md">
-                                18+ Only
-                              </h3>
-                              <p className="text-zinc-200 text-xs leading-relaxed font-medium drop-shadow-md">
-                                {locale === "uk"
-                                  ? "Контент недоступний для вашого віку"
-                                  : "Content unavailable for your age"}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {currentPage === 1 && visibleRecommended.length > 0 ? (
-                    <CatalogVideoRow
-                      title={cb.recommendedTitle}
-                      description={cb.recommendedDescription}
-                      videos={visibleRecommended}
-                    />
-                  ) : null}
+                            {age}
+                          </button>
+                        ))}
+                      </div>
 
-                  {paginatedRows.map((row) => (
-                    <CatalogVideoRow
-                      key={row.title}
-                      title={row.title}
-                      description={row.description}
-                      seriesFriendlyLink={row.seriesFriendlyLink}
-                      videos={row.videos}
-                    />
-                  ))}
-                </>
-              )}
-
-              {/* Pagination Controls */}
-              {totalPages > 1 && !loading && (
-                <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentPage((p) => Math.max(1, p - 1));
-                      scrollToCatalogTop();
-                    }}
-                    disabled={currentPage === 1}
-                    className="flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl bg-card border border-border text-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
-                  >
-                    Prev
-                  </button>
-
-                  {getPaginationRange(currentPage, totalPages).map((p, i) =>
-                    p === "..." ? (
-                      <span
-                        key={`ellipsis-${i}`}
-                        className="flex items-center justify-center px-2 py-2 min-h-[44px] text-muted-foreground font-bold"
-                      >
-                        ...
-                      </span>
-                    ) : (
                       <button
-                        key={`page-${p}`}
                         type="button"
-                        onClick={() => {
-                          setCurrentPage(p as number);
-                          scrollToCatalogTop();
-                        }}
-                        className={cn(
-                          "flex items-center justify-center min-w-[44px] px-3 py-2 min-h-[44px] rounded-xl font-bold transition-colors cursor-pointer",
-                          currentPage === p
-                            ? "bg-primary/20 text-primary border border-primary/30"
-                            : "bg-card border border-border text-foreground hover:bg-muted",
-                        )}
+                        onClick={() => scrollContainer(ageScrollRef, "right")}
+                        className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/age:flex hover:bg-muted"
                       >
-                        {p}
+                        <ChevronRight className="h-4 w-4" />
                       </button>
-                    ),
-                  )}
+                    </div>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentPage((p) => Math.min(totalPages, p + 1));
-                      scrollToCatalogTop();
-                    }}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
-                  >
-                    Next
-                  </button>
+                  {/* 3. ФИЛЬТР ЖАНРОВ */}
+                  {genreNames.length > 0 && (
+                    <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
+                      <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                        <img
+                          src="/Icon.svg"
+                          className="size-3.5 grayscale opacity-70"
+                          alt=""
+                        />{" "}
+                        {cb.filterGenre}
+                      </span>
+                      <div className="relative group/genre flex w-full items-center">
+                        <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            scrollContainer(genreScrollRef, "left")
+                          }
+                          className="absolute hover:cursor-pointer left-0 z-20 hidden h-6 w-6 -translate-x-2 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        <div
+                          ref={genreScrollRef}
+                          className="flex gap-1.5 overflow-x-auto pb-1 scroll-smooth w-full pr-12"
+                          style={{
+                            scrollbarWidth: "none",
+                            msOverflowStyle: "none",
+                          }}
+                        >
+                          {sortedGenres.map((gen) => (
+                            <button
+                              key={gen}
+                              type="button"
+                              onClick={() => setSelectedGenre(gen)}
+                              className={cn(
+                                "ml-0.5 rounded-full px-4 shrink-0 py-1.5 text-xs font-semibold transition-all hover:cursor-pointer",
+                                selectedGenre === gen
+                                  ? "bg-accent text-accent-foreground shadow-md"
+                                  : "bg-secondary text-secondary-foreground hover:bg-accent/10 hover:text-accent",
+                              )}
+                            >
+                              {filterLabel(gen)}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            scrollContainer(genreScrollRef, "right")
+                          }
+                          className="absolute hover:cursor-pointer right-0 z-20 hidden h-6 w-6 translate-x-1 items-center justify-center rounded-full bg-background/80 shadow-md md:group-hover/genre:flex hover:bg-muted"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
+
+              <div
+                id="catalog-library"
+                ref={catalogTopRef}
+                className="space-y-10 px-4 sm:px-6 lg:px-8 pt-2 scroll-mt-24"
+              >
+                {loading ? (
+                  <div className="flex h-60 bg-card/30 flex-col items-center rounded-[30px] justify-center space-y-4">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent border-b-transparent" />
+                    <p className="animate-pulse text-muted-foreground text-sm">
+                      {cb.loadingCatalog}
+                    </p>
+                  </div>
+                ) : filteredVideos.length === 0 ? (
+                  <div className=" flex flex-col rounded-[30px] bg-card/30 py-15 text-center justify-center items-center">
+                    <img src="/SadIcon.svg" className="w-25 h-30 mb-3" alt="" />
+                    <h2 className="font-display text-2xl font-bold">
+                      {cb.emptyTitle}
+                    </h2>
+                    <p className="mt-2 text-muted-foreground text-sm">
+                      {videos.length === 0
+                        ? cb.emptyNoVideos
+                        : cb.emptyFiltered}
+                    </p>
+                  </div>
+                ) : hasFilters ? (
+                  <div className="space-y-6">
+                    <h2 className="font-display text-xl font-bold text-foreground">
+                      {buildFilteredTitle()}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                      {paginatedVideos.map((video) => {
+                        const vidAge = video.ageRestriction || "0+";
+                        const is18Plus = vidAge === "18+" || vidAge === "21+";
+                        const isLocked = is18Plus && !isAdultUser;
+
+                        return (
+                          <div
+                            key={video.id}
+                            className="relative group rounded-2xl overflow-hidden"
+                          >
+                            <div
+                              className={cn(
+                                "transition-all h-full",
+                                isLocked &&
+                                  "blur-md brightness-50 pointer-events-none select-none",
+                              )}
+                            >
+                              <CatalogVideoCard video={toCardVideo(video)} />
+                            </div>
+                            {isLocked && (
+                              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 p-4 text-center">
+                                <div className="bg-destructive/20 p-3 rounded-full mb-3 backdrop-blur-md shadow-lg border border-destructive/30">
+                                  <Lock className="w-8 h-8 text-destructive" />
+                                </div>
+                                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-md">
+                                  18+ Only
+                                </h3>
+                                <p className="text-zinc-200 text-xs leading-relaxed font-medium drop-shadow-md">
+                                  {locale === "uk"
+                                    ? "Контент недоступний для вашого віку"
+                                    : "Content unavailable for your age"}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {currentPage === 1 && visibleRecommended.length > 0 ? (
+                      <CatalogVideoRow
+                        title={cb.recommendedTitle}
+                        description={cb.recommendedDescription}
+                        videos={visibleRecommended}
+                      />
+                    ) : null}
+
+                    {paginatedRows.map((row) => (
+                      <CatalogVideoRow
+                        key={row.title}
+                        title={row.title}
+                        description={row.description}
+                        seriesFriendlyLink={row.seriesFriendlyLink}
+                        videos={row.videos}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && !loading && (
+                  <div className="flex items-center justify-center gap-2 mt-12 mb-8 font-display">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage((p) => Math.max(1, p - 1));
+                        scrollToCatalogTop();
+                      }}
+                      disabled={currentPage === 1}
+                      className="flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl bg-card border border-border text-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      Prev
+                    </button>
+
+                    {getPaginationRange(currentPage, totalPages).map((p, i) =>
+                      p === "..." ? (
+                        <span
+                          key={`ellipsis-${i}`}
+                          className="flex items-center justify-center px-2 py-2 min-h-[44px] text-muted-foreground font-bold"
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={`page-${p}`}
+                          type="button"
+                          onClick={() => {
+                            setCurrentPage(p as number);
+                            scrollToCatalogTop();
+                          }}
+                          className={cn(
+                            "flex items-center justify-center min-w-[44px] px-3 py-2 min-h-[44px] rounded-xl font-bold transition-colors cursor-pointer",
+                            currentPage === p
+                              ? "bg-primary/20 text-primary border border-primary/30"
+                              : "bg-card border border-border text-foreground hover:bg-muted",
+                          )}
+                        >
+                          {p}
+                        </button>
+                      ),
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage((p) => Math.min(totalPages, p + 1));
+                        scrollToCatalogTop();
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </main>
         </div>
