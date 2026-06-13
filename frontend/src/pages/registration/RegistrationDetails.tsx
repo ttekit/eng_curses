@@ -64,7 +64,9 @@ export default function RegistrationDetails() {
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("exply_access_token") || localStorage.getItem("explys_access_token");
+    const token =
+      localStorage.getItem("exply_access_token") ||
+      localStorage.getItem("explys_access_token");
     if (!token) return;
 
     let cancelled = false;
@@ -224,11 +226,11 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-          formData.teacherTopics.length > 0
+        formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-            const num = parseInt(t.replace("topic:", ""), 10);
-            return isNaN(num) ? t : num;
-          })
+              const num = parseInt(t.replace("topic:", ""), 10);
+              return isNaN(num) ? t : num;
+            })
           : undefined;
 
       const userEmail = formData.email || localStorage.getItem("temp_email");
@@ -250,7 +252,9 @@ export default function RegistrationDetails() {
         Object.entries(registrationPayload).filter(([, v]) => v !== undefined),
       );
 
-      const accessToken = localStorage.getItem("exply_access_token") || localStorage.getItem("explys_access_token");
+      const accessToken =
+        localStorage.getItem("exply_access_token") ||
+        localStorage.getItem("explys_access_token");
 
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
@@ -325,16 +329,13 @@ export default function RegistrationDetails() {
             />
           </section>
 
-
           {/*  ДАТА */}
           <section className="space-y-4 border-border border-t pt-8">
             <div>
               <h2 className="font-display text-xl font-semibold">
-                When were you born?
+                {step2.whenBorn}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                We need this to personalize your experience.
-              </p>
+              <p className="text-sm text-muted-foreground">{step2.whyNeed}</p>
             </div>
             <div className="space-y-2">
               <input
@@ -348,7 +349,6 @@ export default function RegistrationDetails() {
               />
             </div>
           </section>
-
 
           {formData.role === "teacher" && (
             <section className="space-y-4 border-border border-t pt-8">

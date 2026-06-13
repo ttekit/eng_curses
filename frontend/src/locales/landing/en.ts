@@ -398,6 +398,8 @@ export const landingEn = {
         haveAccount: "Already have an account?",
         logIn: "Log in",
         dateOfBirth: "Date of Birth",
+        orContinueWith: "Or continue with",
+        google: "Continue with Google",
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",
@@ -460,6 +462,8 @@ export const landingEn = {
         register: "Register",
         next: "Next",
         previous: "Previous step",
+        whenBorn: "When were you born?",
+        whyNeed: "We need this to personalize your experience.",
       },
       grades: {
         choose: "Choose grade",

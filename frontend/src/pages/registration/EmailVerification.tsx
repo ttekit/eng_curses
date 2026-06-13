@@ -190,7 +190,7 @@ export const EmailVerification: React.FC = () => {
           <span className="font-medium text-primary">{maskEmail(email)}</span>
         </p>
 
-        <p className="mb-8 text-sm">Please, check your spam folder</p>
+        <p className="mb-8 text-sm">{verify.spamText}</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {errorText && (
