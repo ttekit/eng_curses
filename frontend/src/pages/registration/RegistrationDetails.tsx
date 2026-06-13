@@ -10,6 +10,7 @@ import {
   useMemo,
   ChangeEvent,
   FormEvent,
+  forwardRef,
 } from "react";
 import {
   RegistrationContext,
@@ -21,7 +22,9 @@ import {
   type LearningTopicOption,
 } from "../../lib/learningTopicsApi";
 import type { GroupBase, MultiValue } from "react-select";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
@@ -41,6 +44,30 @@ interface Pupil {
   name: string;
   surname: string;
 }
+
+const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+  const { onClick, value, onChange } = props;
+  return (
+    <div className="relative w-full">
+      <input
+        type="date"
+        ref={ref}
+        value={value}
+        onChange={onChange}
+        max={new Date().toISOString().split("T")[0]}
+        className="w-full bg-background border border-input rounded-xl pl-4 pr-12 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-colors [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer shadow-sm"
+      />
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
+      >
+        <CalendarIcon className="size-5" />
+      </button>
+    </div>
+  );
+});
+CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationDetails() {
   const context = useContext(RegistrationContext);
@@ -178,7 +205,6 @@ export default function RegistrationDetails() {
     e.preventDefault();
     setFormError(null);
 
-    // БЛОКИРУЕМ ПЕРЕХОД ДАЛЬШЕ ЕСЛИ НЕТ ДАТЫ РОЖДЕНИЯ (ДЛЯ ГУГЛ ЮЗЕРОВ)
     if (!formData.dateOfBirth) {
       setFormError("Date of birth is required to personalize your experience.");
       return;
@@ -353,7 +379,11 @@ export default function RegistrationDetails() {
           {formData.role === "teacher" && (
             <section className="space-y-4 border-border border-t pt-8">
               <div className="flex items-start gap-3">
-                <img src="TeacherIcon.svg" className="w-12 h-15" />
+                <img
+                  src="TeacherIcon.svg"
+                  className="w-12 h-15"
+                  alt="Teacher"
+                />
                 <div>
                   <h2 className="font-display text-xl font-semibold">
                     {step2.teacherTitle}
@@ -483,6 +513,47 @@ export default function RegistrationDetails() {
               </div>
             </section>
           )}
+
+          <section className="space-y-4 border-border border-t pt-8">
+            <div>
+              <h2 className="font-display text-xl font-semibold">
+                When were you born?
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                We need this to personalize your experience.
+              </p>
+            </div>
+            <div className="relative">
+              <DatePicker
+                selected={
+                  formData.dateOfBirth &&
+                  !isNaN(new Date(formData.dateOfBirth).getTime())
+                    ? new Date(formData.dateOfBirth)
+                    : null
+                }
+                onChange={(date: Date | null) => {
+                  if (date && !isNaN(date.getTime())) {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, "0");
+                    const d = String(date.getDate()).padStart(2, "0");
+                    updateFormData({
+                      dateOfBirth: `${y}-${m}-${d}`,
+                    } as Partial<FormData>);
+                  } else {
+                    updateFormData({ dateOfBirth: "" } as Partial<FormData>);
+                  }
+                }}
+                dateFormat="yyyy-MM-dd"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                maxDate={new Date()}
+                minDate={new Date("1900-01-01")}
+                wrapperClassName="w-full"
+                customInput={<CustomDateInput />}
+              />
+            </div>
+          </section>
 
           {emptyError && <ValidateError>{errors.selectRole}</ValidateError>}
           {formError && <ValidateError>{formError}</ValidateError>}

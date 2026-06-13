@@ -14,18 +14,38 @@ export default function OAuthSuccess() {
     hasProcessed.current = true;
 
     const token = searchParams.get("token");
+    const isNewUser = searchParams.get("isNewUser") === "true";
+
 
     if (token) {
       setStoredAccessToken(token);
 
-      // Просто обновляем профиль и кидаем в каталог. 
-      // Если юзер новый, RequireAuth сам его перехватит и отправит на регистрацию.
-      refreshProfile().then(() => {
-        navigate("/catalog", { replace: true });
-      }).catch((err) => {
-        console.error("Auth error:", err);
-        navigate("/loginForm", { replace: true });
-      });
+      // Завантажуємо профіль та перевіряємо його дані
+      refreshProfile()
+        .then((profile) => {
+          if (!profile) {
+            navigate("/loginForm", { replace: true });
+            return;
+          }
+
+          // 2. Если дата рождения есть, но юзер новый или не выбрал роль -> на детали регистрации
+          if (
+            isNewUser ||
+            !profile.role ||
+            profile.role === "choose" ||
+            profile.role === "regular"
+          ) {
+            navigate("/registrationDetails", { replace: true });
+            return;
+          }
+
+          // 3. Если старый юзер и всё заполнено -> в каталог
+          navigate("/catalog", { replace: true });
+        })
+        .catch((err) => {
+          console.error("Помилка завантаження профілю:", err);
+          navigate("/loginForm", { replace: true });
+        });
     } else {
       navigate("/loginForm", { replace: true });
     }

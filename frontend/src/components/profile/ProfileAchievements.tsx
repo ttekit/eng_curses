@@ -1,5 +1,15 @@
+import {
+  Award,
+  BookOpen,
+  Crown,
+  Flame,
+  Lock,
+  Star,
+  X,
+  Play,
+} from "lucide-react";
 import { useEffect, useState } from "react";
-import { Award, BookOpen, Crown, Flame, Lock, Star } from "lucide-react";
+import { Link } from "react-router";
 import { ProfileCard } from "./ProfileCard";
 import { useUser } from "../../context/UserContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
@@ -37,6 +47,10 @@ export function ProfileAchievements() {
   const { user } = useUser();
   const p = useAppMessages().profileAchievements;
 
+  // Добавляем стейт для выбранного видео
+  const [selectedFirstVideo, setSelectedFirstVideo] = useState<any>(null);
+
+  const firstWatchedVideo = (user as any).firstWatchedVideo;
   const [learnedWords, setLearnedWords] = useState(0);
 
   useEffect(() => {
@@ -44,7 +58,9 @@ export function ProfileAchievements() {
     let cancelled = false;
     void (async () => {
       try {
-        const r = await apiFetch("/auth/profile/progress-details", { method: "GET" });
+        const r = await apiFetch("/auth/profile/progress-details", {
+          method: "GET",
+        });
         if (!r.ok || cancelled) return;
         const data = await r.json();
         if (data?.vocabularyProgress?.learned != null && !cancelled) {
@@ -130,7 +146,8 @@ export function ProfileAchievements() {
       .filter(Boolean),
   );
 
-  const currentStreak = (user as { currentStreak?: number })?.currentStreak || 0;
+  const currentStreak =
+    (user as { currentStreak?: number })?.currentStreak || 0;
 
   const unlockedCount = baseAchievements.filter((a) => {
     const fromDb = userAchievements.has(a.id);
@@ -160,7 +177,9 @@ export function ProfileAchievements() {
               </p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{p.progressLabel}</span>
+                  <span className="text-muted-foreground">
+                    {p.progressLabel}
+                  </span>
                   <span className="font-medium text-foreground">
                     {Math.round((unlockedCount / totalCount) * 100)}%
                   </span>
@@ -183,7 +202,8 @@ export function ProfileAchievements() {
           const rarity = achievement.rarity;
 
           let currentProgressValue = 0;
-          if (achievement.type === "streak") currentProgressValue = currentStreak;
+          if (achievement.type === "streak")
+            currentProgressValue = currentStreak;
           if (achievement.type === "vocab") currentProgressValue = learnedWords;
 
           const isUnlocked =
@@ -198,25 +218,43 @@ export function ProfileAchievements() {
             (displayProgress / achievement.requirement) * 100,
           );
 
+          // Проверяем, можно ли кликнуть по этой карточке (если это ачивка первого видео, она разблокирована и есть данные)
+          const isFirstVideoAchievement = achievement.id === "first-video";
+          const isClickable =
+            isUnlocked && isFirstVideoAchievement && firstWatchedVideo;
+
           return (
             <div
               key={achievement.id}
-              className={`relative overflow-hidden rounded-xl border transition-all ${isUnlocked
-                ? rarityColors[rarity]
-                : "border-border/30 bg-card/30 opacity-70"
-                } `}
+              onClick={() =>
+                isClickable && setSelectedFirstVideo(firstWatchedVideo)
+              }
+              className={`relative overflow-hidden rounded-xl border transition-all ${
+                isUnlocked
+                  ? rarityColors[rarity]
+                  : "border-border/30 bg-card/30 opacity-70"
+              } ${isClickable ? "cursor-pointer hover:border-primary/50 hover:shadow-md group" : ""}`}
             >
+              {isClickable && (
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <span className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                    <Play className="size-3" /> View
+                  </span>
+                </div>
+              )}
+
               <div className="p-4">
                 <div className="flex items-start gap-3">
                   <div
-                    className={`rounded-xl shrink-0 p-2.5 ${isUnlocked
-                      ? rarity === "legendary"
-                        ? "bg-accent/20"
-                        : rarity === "rare"
-                          ? "bg-primary/20"
-                          : "bg-secondary"
-                      : "bg-secondary/50"
-                      }`}
+                    className={`rounded-xl shrink-0 p-2.5 ${
+                      isUnlocked
+                        ? rarity === "legendary"
+                          ? "bg-accent/20"
+                          : rarity === "rare"
+                            ? "bg-primary/20"
+                            : "bg-secondary"
+                        : "bg-secondary/50"
+                    }`}
                   >
                     {isUnlocked ? (
                       <Icon
@@ -263,6 +301,69 @@ export function ProfileAchievements() {
           );
         })}
       </div>
+
+      {/* Модальное окно первого видео */}
+      {selectedFirstVideo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedFirstVideo(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Flame className="size-5 text-orange-500" />
+                Where It All Began
+              </h3>
+              <button
+                onClick={() => setSelectedFirstVideo(null)}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+              This was the very first video you watched on Explys. Look how far
+              you've come since then!
+            </p>
+
+            <div className="group relative overflow-hidden rounded-xl bg-muted aspect-video mb-6 border border-border/50 shadow-inner">
+              {selectedFirstVideo.thumbnailUrl ? (
+                <img
+                  src={selectedFirstVideo.thumbnailUrl}
+                  alt={selectedFirstVideo.videoName}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-secondary">
+                  <PlayCircleIcon className="size-12 text-muted-foreground opacity-50" />
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                <div className="rounded-full bg-primary/90 p-4 text-white shadow-lg backdrop-blur-md">
+                  <Play className="size-6 fill-current ml-1" />
+                </div>
+              </div>
+            </div>
+
+            <h4 className="font-bold text-foreground text-center mb-6 line-clamp-2">
+              {selectedFirstVideo.videoName}
+            </h4>
+
+            <Link
+              to={selectedFirstVideo.url}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 cursor-pointer hover:shadow-primary/20 hover:shadow-lg"
+            >
+              Watch it again
+              <Play className="size-4" />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
