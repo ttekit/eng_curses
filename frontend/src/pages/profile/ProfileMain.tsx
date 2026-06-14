@@ -324,11 +324,6 @@ export default function ProfileMain() {
         <CatalogSidebar
           onSelectLevel={() => {}}
           reserveTopNavSpace={false}
-          welcomeName={
-            user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
-          }
-          englishLevel={user?.englishLevel || undefined}
-          avatarUrl={user?.avatarUrl}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
         />

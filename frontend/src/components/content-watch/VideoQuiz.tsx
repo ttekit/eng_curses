@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Clock, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
@@ -53,7 +53,6 @@ export function VideoQuiz({
   onComplete,
 }: VideoQuizProps) {
   const L = useAppMessages().lesson;
-  const summary = useAppMessages().lessonSummaryPage;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [openDraft, setOpenDraft] = useState("");

@@ -100,8 +100,8 @@ function CustomSelect({
   value,
   onChange,
   options,
-  disabled,
-  className,
+  disabled: _disabled,
+  className: _className,
 }: {
   value: string;
   onChange: (val: string) => void;
@@ -546,11 +546,6 @@ export function ProfileTeacherVideos() {
       setIsDeleting(false);
       setDeletingId(null);
     }
-  };
-
-  const openRevokeModal = (id: number) => {
-    setRevokingId(id);
-    setRevokeModalOpen(true);
   };
 
   const confirmRevokeVideo = async () => {

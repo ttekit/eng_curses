@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { CalendarDays, CalendarRange, Loader2, Target } from "lucide-react";
 import { apiFetch } from "../../lib/api";
-import { useUser } from "../../context/UserContext";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import {
   CatalogVideoCard,
@@ -136,7 +135,6 @@ function RecapActionCard(props: {
 }
 
 export default function WatchedLessonsPage() {
-  const { user } = useUser();
   const { locale } = useLandingLocale();
   const M = locale === "uk" ? appUk.myLessonsPage : appEn.myLessonsPage;
   const browseCatalog =
@@ -232,10 +230,6 @@ export default function WatchedLessonsPage() {
         <CatalogSidebar
           onSelectLevel={() => {}}
           reserveTopNavSpace={false}
-          welcomeName={
-            user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
-          }
-          englishLevel={user?.englishLevel || undefined}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
         />

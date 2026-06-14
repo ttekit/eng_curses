@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Edit,
   GraduationCap,
-  Mail,
   Plus,
   Search,
   Layers,
-  Trash2,
   Users,
   CheckCircle,
   RefreshCw,
@@ -19,10 +16,6 @@ import {
   AdminInput,
   AdminModal,
 } from "../../components/admin/adminUi";
-import {
-  AdminRowMenu,
-  AdminRowMenuItem,
-} from "../../components/admin/AdminRowMenu";
 import { apiFetch } from "../../lib/api";
 import toast from "react-hot-toast";
 import { cn } from "../../lib/utils";

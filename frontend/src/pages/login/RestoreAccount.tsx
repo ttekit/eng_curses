@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";

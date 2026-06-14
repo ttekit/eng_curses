@@ -268,18 +268,12 @@ function RecapLayout(props: {
 }) {
   return (
     <div className="flex">
-      <CatalogSidebar
-        onSelectLevel={() => {}}
-        reserveTopNavSpace={false}
-        welcomeName={
-          props.user?.name?.trim()
-            ? props.user.name.trim().split(/\s+/)[0]
-            : undefined
-        }
-        englishLevel={props.user?.englishLevel || undefined}
-        collapsed={props.collapsed}
-        onCollapsedChange={props.onCollapsedChange}
-      />
+        <CatalogSidebar
+          onSelectLevel={() => {}}
+          reserveTopNavSpace={false}
+          collapsed={props.collapsed}
+          onCollapsedChange={props.onCollapsedChange}
+        />
       <main
         className={cn(
           "ml-0 flex-1 pb-28 lg:pb-12",

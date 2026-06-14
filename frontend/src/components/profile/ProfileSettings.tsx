@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Bell, LogOut, Plus, Save, Shield, User, X } from "lucide-react";
+import { LogOut, Plus, Save, Shield, User, X } from "lucide-react";
 import {
   apiFetch,
   getResponseErrorMessage,
@@ -11,10 +11,6 @@ import { useNavigate } from "react-router";
 import InputText from "../InputText";
 import { ProfileCard } from "./ProfileCard";
 import { ToggleSwitch } from "./ToggleSwitch";
-import {
-  loadProfileUiPrefs,
-  saveProfileUiPrefs,
-} from "../../lib/profileUiPrefs";
 import { Lock } from "lucide-react";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
@@ -23,7 +19,6 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon } from "lucide-react";
 import { forwardRef } from "react";
-import { ThemeToggle } from "../ThemeToggle";
 import { Monitor } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
@@ -133,28 +128,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [newHobby, setNewHobby] = useState("");
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
   const [saving, setSaving] = useState(false);
-  const [savingPrefs, setSavingPrefs] = useState(false);
   const [dangerOpen, setDangerOpen] = useState<"reset" | "delete" | null>(null);
 
   const [isToggling2FA, setIsToggling2FA] = useState(false);
   const [target2FAState, setTarget2FAState] = useState(false);
   const [twoFactorPassword, setTwoFactorPassword] = useState("");
 
-  const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
+  const [, setIsChangeEmailModalOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState(
-    () => loadProfileUiPrefs(String(user?.id ?? 0)).notifications,
-  );
-
-  const [preferences, setPreferences] = useState(() => {
-    const ui = loadProfileUiPrefs(String(user?.id ?? 0));
-    return {
-      autoplayNext: ui.autoplayNext,
-      showSubtitles: ui.showSubtitles,
-      playbackSpeed: user?.playbackSpeed ? String(user.playbackSpeed) : "1",
-      videoQuality: user?.videoQuality?.trim() || "auto",
-    };
-  });
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -461,21 +442,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   }, [user]);
 
   useEffect(() => {
-    const ui = loadProfileUiPrefs(user.id);
-    setNotifications(ui.notifications);
-    setPreferences((prev) => ({
-      autoplayNext: ui.autoplayNext,
-      showSubtitles: ui.showSubtitles,
-      playbackSpeed:
-        user.playbackSpeed != null &&
-        Number.isFinite(Number(user.playbackSpeed))
-          ? String(user.playbackSpeed)
-          : prev.playbackSpeed || "1",
-      videoQuality: user.videoQuality?.trim() || prev.videoQuality || "auto",
-    }));
-  }, [user.id, user.playbackSpeed, user.videoQuality]);
-
-  useEffect(() => {
     void (async () => {
       try {
         const res = await apiFetch("/genres", { method: "GET" });
@@ -591,56 +557,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     s.nameRequiredToast,
     s.profileSavedToast,
     s.saveProfileError,
-  ]);
-
-  const saveLearnerPreferences = useCallback(async () => {
-    const speed = Number.parseFloat(preferences.playbackSpeed);
-    if (!Number.isFinite(speed) || speed <= 0) {
-      toast.error(s.playbackSpeedToast);
-      return;
-    }
-
-    setSavingPrefs(true);
-    try {
-      saveProfileUiPrefs(user.id, {
-        notifications,
-        autoplayNext: preferences.autoplayNext,
-        showSubtitles: preferences.showSubtitles,
-      });
-
-      const res = await apiFetch(`/users/${Number(user.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playbackSpeed: speed,
-          currentResolution: preferences.videoQuality?.trim() || "auto",
-
-          dailyReminderEnabled: notifications.dailyReminder,
-          weeklyReportEnabled: notifications.weeklyReport,
-        }),
-      });
-
-      if (!res.ok) {
-        toast.error(await getResponseErrorMessage(res));
-        return;
-      }
-
-      toast.success(s.prefsSavedToast);
-      await onSaved();
-    } catch (e) {
-      console.error(e);
-      toast.error(s.prefsErrorToast);
-    } finally {
-      setSavingPrefs(false);
-    }
-  }, [
-    notifications,
-    preferences,
-    user.id,
-    onSaved,
-    s.playbackSpeedToast,
-    s.prefsSavedToast,
-    s.prefsErrorToast,
   ]);
 
   return (

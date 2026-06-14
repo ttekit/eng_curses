@@ -358,14 +358,24 @@ export default function VideoPlayer({
     if (!document.fullscreenElement) {
       try {
         await containerRef.current.requestFullscreen();
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape").catch(() => { });
+        if (screen.orientation && "lock" in screen.orientation) {
+          await (
+            screen.orientation as ScreenOrientation & {
+              lock: (orientation: string) => Promise<void>;
+            }
+          )
+            .lock("landscape")
+            .catch(() => {});
         }
-      } catch (err) { }
+      } catch {
+        /* ignore fullscreen errors */
+      }
     } else {
       try {
         await document.exitFullscreen();
-      } catch (err) { }
+      } catch {
+        /* ignore exit fullscreen errors */
+      }
     }
   };
 

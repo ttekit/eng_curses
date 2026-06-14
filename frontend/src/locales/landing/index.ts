@@ -19,7 +19,7 @@ void _landingBundleShape;
 
 export const LANDING_LOCALES: Record<LandingLocaleId, typeof landingEn> = {
   en: landingEn,
-  uk: landingUk,
+  uk: landingUk as unknown as typeof landingEn,
 };
 
 const APP_LEARNING: Record<LandingLocaleId, AppLearningMessages> = {
@@ -30,7 +30,7 @@ const APP_LEARNING: Record<LandingLocaleId, AppLearningMessages> = {
   uk: {
     learningPlan: appUk.learningPlan,
     learningPlanPhases: appUk.learningPlanPhases,
-  },
+  } as unknown as AppLearningMessages,
 };
 
 export function getLandingMessages(locale: LandingLocaleId): LandingMessages {

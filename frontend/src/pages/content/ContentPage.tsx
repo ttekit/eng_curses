@@ -655,7 +655,6 @@ export default function ContentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, refreshProfile } = useUser();
-  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
   const L = useAppMessages().lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
   const [isVideoComplete, setIsVideoComplete] = useState(false);

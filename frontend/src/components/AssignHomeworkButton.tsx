@@ -9,7 +9,7 @@ import { AdminButton, AdminModal } from "./admin/adminUi";
 import { useAppMessages } from "../hooks/useAppMessages";
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
-  const { onClick, onFocus, value, onChange, onKeyDown, id } = props;
+  const { onClick, value, onChange, onKeyDown, id } = props;
 
   return (
     <div className="relative w-full">
