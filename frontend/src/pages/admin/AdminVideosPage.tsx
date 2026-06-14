@@ -482,7 +482,7 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      const resData = await apiFetch(`/contents/episode/${editing.id}`, {
+      const resData = await apiFetch(`/content-video/episode/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
