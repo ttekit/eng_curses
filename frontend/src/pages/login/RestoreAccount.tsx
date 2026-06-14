@@ -9,22 +9,20 @@ import { apiFetch } from "../../lib/api";
 export default function RestoreAccount() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading",
-  );
-  const [message, setMessage] = useState("");
   const { messages } = useLandingLocale();
   const restore = messages.auth.restoreAccount;
+
+  const [status, setStatus] = useState<"loading" | "success" | "error">(() =>
+    token ? "loading" : "error",
+  );
+  const [message, setMessage] = useState(() =>
+    token ? "" : restore.errorMissingToken,
+  );
 
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage(restore.errorMissingToken);
-      return;
-    }
+    if (!token) return;
 
     if (hasFetched.current) return;
     hasFetched.current = true;

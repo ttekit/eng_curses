@@ -20,6 +20,38 @@ type ClassroomVideo = {
   deadline: string | null;
 };
 
+type ClassroomApiRow = {
+  contentVideoId?: number;
+  contentId?: number;
+  name?: string;
+  thumbnailUrl?: string | null;
+  videoLink?: string | null;
+  availableFrom?: string | null;
+  deadline?: string | null;
+};
+
+function parse_classroom_row(
+  raw: unknown,
+  isTeacher: boolean,
+  myLessonLabel: string,
+  teacherLessonLabel: string,
+): ClassroomVideo | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const d = raw as ClassroomApiRow;
+  const id = d.contentVideoId ?? d.contentId;
+  if (id == null || !Number.isFinite(Number(id))) return null;
+  return {
+    id: Number(id),
+    title: typeof d.name === "string" ? d.name : "",
+    categoryLabel: isTeacher ? myLessonLabel : teacherLessonLabel,
+    thumbnailUrl: typeof d.thumbnailUrl === "string" ? d.thumbnailUrl : null,
+    videoLink: typeof d.videoLink === "string" ? d.videoLink : null,
+    availableFrom:
+      typeof d.availableFrom === "string" ? d.availableFrom : null,
+    deadline: typeof d.deadline === "string" ? d.deadline : null,
+  };
+}
+
 export default function ClassroomPage() {
   const [videos, setVideos] = useState<ClassroomVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,18 +79,15 @@ export default function ClassroomPage() {
           if (!cancelled && Array.isArray(data)) {
             setVideos(
               data
-                .map((d: any) => ({
-                  id: d.contentVideoId || d.contentId,
-                  title: d.name,
-                  categoryLabel: isTeacher
-                    ? classroom.myLesson
-                    : classroom.teacherLesson,
-                  thumbnailUrl: d.thumbnailUrl,
-                  videoLink: d.videoLink,
-                  availableFrom: d.availableFrom,
-                  deadline: d.deadline,
-                }))
-                .filter((v: any) => v.id != null),
+                .map((d: unknown) =>
+                  parse_classroom_row(
+                    d,
+                    isTeacher,
+                    classroom.myLesson,
+                    classroom.teacherLesson,
+                  ),
+                )
+                .filter((v): v is ClassroomVideo => v != null),
             );
           }
         }

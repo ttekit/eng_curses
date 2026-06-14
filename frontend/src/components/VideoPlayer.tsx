@@ -46,7 +46,7 @@ export default function VideoPlayer({
   ...rest
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const hlsRef = useRef<any>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -159,13 +159,25 @@ export default function VideoPlayer({
   }, []);
 
   useEffect(() => {
+    showControlsRef.current = showControls;
+  }, [showControls]);
+
+  const [prevPlaying, setPrevPlaying] = useState(playing);
+  if (playing !== prevPlaying) {
+    setPrevPlaying(playing);
+    setShowControls(true);
+  }
+
+  useEffect(() => {
     if (!playing) {
       clearHideTimer();
-      setControlsVisible(true);
-    } else {
-      showControlsTemporarily();
+      return;
     }
-  }, [playing, showControlsTemporarily]);
+    hideControlsTimerRef.current = window.setTimeout(() => {
+      setControlsVisible(false);
+    }, 3000);
+    return () => clearHideTimer();
+  }, [playing]);
 
   const handleToggle = useCallback(() => {
     if (!videoRef.current) return;

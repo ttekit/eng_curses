@@ -285,13 +285,26 @@ export default function LessonSummaryPage() {
   const { id: videoId } = useParams();
   const location = useLocation();
   const fromNav = location.state as LessonSummaryState | null;
-  const [stored, setStored] = useState<LessonSummaryState | null>(null);
+  const [stored, setStored] = useState<LessonSummaryState | null>(() =>
+    videoId && !fromNav ? readStoredSummary(videoId) : null,
+  );
   const [metaOnly, setMetaOnly] = useState<VideoMeta | null>(null);
   const messages = useAppMessages();
   const lesson = messages.lesson;
   const page = messages.lessonSummaryPage;
   const progress = messages.profileProgress;
   const stats = messages.profileStats;
+
+  const storageKey = `${videoId ?? ""}:${Boolean(fromNav)}`;
+  const [prevStorageKey, setPrevStorageKey] = useState(storageKey);
+  if (storageKey !== prevStorageKey) {
+    setPrevStorageKey(storageKey);
+    if (videoId && !fromNav) {
+      setStored(readStoredSummary(videoId));
+    } else {
+      setStored(null);
+    }
+  }
 
   const summary = coerceSummary(fromNav) ?? coerceSummary(stored);
   const summaryTitle =
@@ -302,11 +315,6 @@ export default function LessonSummaryPage() {
     summary?.videoDescription?.trim() ||
     metaOnly?.videoDescription?.trim() ||
     lesson.seoLoadingDescription;
-
-  useEffect(() => {
-    if (!videoId || fromNav) return;
-    setStored(readStoredSummary(videoId));
-  }, [videoId, fromNav]);
 
   useEffect(() => {
     if (!videoId || summary) return;

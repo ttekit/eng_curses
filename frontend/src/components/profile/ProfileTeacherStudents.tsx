@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   GraduationCap,
@@ -14,6 +14,7 @@ import {
 import toast from "react-hot-toast";
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
+import { getErrorMessage } from "../../lib/error-message";
 import { ProfileCard } from "./ProfileCard";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import {
@@ -97,7 +98,7 @@ export function ProfileTeacherStudents() {
     searchPlaceholder = "Search...",
   }: {
     value: string | number;
-    onChange: (val: any) => void;
+    onChange: (val: string | number) => void;
     options: { value: string | number; label: string }[];
     className?: string;
     showSearch?: boolean;
@@ -204,7 +205,7 @@ export function ProfileTeacherStudents() {
       </div>
     );
   }
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [resStudents, resClasses] = await Promise.all([
         apiFetch("/teacher/my-students/results", { method: "GET" }),
@@ -217,7 +218,9 @@ export function ProfileTeacherStudents() {
         return;
       }
 
-      const studentsData: any = await resStudents.json();
+      const studentsData = (await resStudents.json()) as {
+        students?: TeacherStudentResult[];
+      };
       setStudents(
         Array.isArray(studentsData.students) ? studentsData.students : [],
       );
@@ -229,17 +232,17 @@ export function ProfileTeacherStudents() {
         const clsData = await resClasses.json();
         setClasses(Array.isArray(clsData) ? clsData : []);
       }
-    } catch (err) {
+    } catch {
       setError(t.loadError);
       toast.error("Network error while loading data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [t.loadError]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -351,8 +354,8 @@ export function ProfileTeacherStudents() {
         isReset: true,
       });
       toast.success("New password generated successfully!");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to reset password");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Failed to reset password"));
     } finally {
       setResettingId(null);
     }
@@ -372,8 +375,8 @@ export function ProfileTeacherStudents() {
       setClassModalOpen(false);
       setClassNameInput("");
       await loadData();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to create class");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Failed to create class"));
     } finally {
       setIsSavingClass(false);
     }
@@ -418,8 +421,8 @@ export function ProfileTeacherStudents() {
       } else {
         toast.success(t.studentUpdated);
       }
-    } catch (e: any) {
-      toast.error(e.message || t.operationFailed);
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, t.operationFailed));
     } finally {
       setIsSaving(false);
     }
@@ -447,8 +450,8 @@ export function ProfileTeacherStudents() {
       toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);
       await loadData();
-    } catch (e: any) {
-      toast.error(e.message || t.deleteFailed);
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, t.deleteFailed));
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
@@ -486,11 +489,15 @@ export function ProfileTeacherStudents() {
         <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 shrink-0 w-full sm:w-auto">
           <CustomSelect
             value={selectedClassId}
-            onChange={(val) =>
+            onChange={(val) => {
+              if (val === "all" || val === "none") {
+                setSelectedClassId(val);
+                return;
+              }
               setSelectedClassId(
-                val === "all" || val === "none" ? val : parseInt(val),
-              )
-            }
+                typeof val === "number" ? val : parseInt(String(val), 10),
+              );
+            }}
             className="w-full xl:w-56"
             showSearch={true}
             searchPlaceholder="Search classes..."

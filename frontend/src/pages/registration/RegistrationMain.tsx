@@ -26,7 +26,10 @@ import { registerUser } from "../../lib/registerUser";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getApiBase } from "../../lib/api";
-const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+import type { DatePickerInputProps } from "../../types/date-picker-input";
+
+const CustomDateInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (props, ref) => {
   const { onClick } = props;
   const context = useContext(RegistrationContext);
 
@@ -56,7 +59,8 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationMain() {
@@ -218,19 +222,18 @@ export default function RegistrationMain() {
     try {
       localStorage.setItem("temp_email", email);
 
-      const result = (await registerUser({
+      const result = await registerUser({
+        ...formData,
         name,
         email,
         password,
         confirmPassword,
         dateOfBirth,
         token: captchaToken,
-        captchaToken: captchaToken,
-        role: formData.role,
-      } as any)) as any;
+      });
 
       if (result.success) {
-        if (result.isVerified) {
+        if (result.accessToken) {
           navigate("/registrationDetails");
         } else {
           navigate("/verify-email", {

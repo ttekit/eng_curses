@@ -7,17 +7,14 @@ export default function EmailConfirmedPage() {
   const { messages } = useLandingLocale();
   const t = messages.auth.emailLinkConfirm;
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading",
+  const [status, setStatus] = useState<"loading" | "success" | "error">(() =>
+    token ? "loading" : "error",
   );
   const token = searchParams.get("token");
   const initialized = useRef(false);
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      return;
-    }
+    if (!token) return;
     if (initialized.current) return;
     initialized.current = true;
 

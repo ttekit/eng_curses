@@ -5,11 +5,17 @@ import { apiFetch } from "../../lib/api";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 
+type LegacyCatalogVideo = {
+  id: number;
+  videoName: string;
+  content?: { category?: { name?: string } };
+};
+
 export default function CatalogPage() {
   const t = useAppMessages().legacyCatalogPage;
   const navigate = useNavigate();
 
-  const [videos, setVideos] = useState<any[]>([]);
+  const [videos, setVideos] = useState<LegacyCatalogVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

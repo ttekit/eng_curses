@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components -- shared context/helpers */
 import { FormEvent, useState } from "react";
 import CreatableSelect from "react-select/creatable";
-import type { MultiValue } from "react-select";
+import type { MultiValue, CSSObjectWithLabel, ControlProps } from "react-select";
 import toast from "react-hot-toast";
 import Button from "./Button";
 import InputText from "./InputText";
@@ -112,7 +113,10 @@ function normalizeHobbySelection(sel: MultiValue<HobbyOption>): string[] {
 }
 
 const customSelectStyles = {
-  control: (base: Record<string, unknown>, state: any) => ({
+  control: (
+    base: CSSObjectWithLabel,
+    state: ControlProps<HobbyOption, true>,
+  ) => ({
     ...base,
     backgroundColor: "var(--background)",
     borderColor: state.isFocused ? "var(--primary)" : "var(--input)",

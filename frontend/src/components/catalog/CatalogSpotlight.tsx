@@ -47,17 +47,26 @@ export function CatalogSpotlight({
     return scored.slice(0, 50);
   }, [query, videos]);
 
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setQuery("");
+      setActiveIndex(0);
+    }
+  }
+
+  const [prevResultsLength, setPrevResultsLength] = useState(results.length);
+  if (results.length !== prevResultsLength) {
+    setPrevResultsLength(results.length);
+    setActiveIndex((i) => Math.min(i, Math.max(0, results.length - 1)));
+  }
+
   useEffect(() => {
     if (!open) return;
-    setQuery("");
-    setActiveIndex(0);
     const id = window.setTimeout(() => inputRef.current?.focus(), 10);
     return () => window.clearTimeout(id);
   }, [open]);
-
-  useEffect(() => {
-    setActiveIndex((i) => Math.min(i, Math.max(0, results.length - 1)));
-  }, [results.length]);
 
   useEffect(() => {
     if (!open) return;

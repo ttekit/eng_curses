@@ -381,7 +381,7 @@ function splitLongTranscriptLines(
     const totalDuration = line.endSec - line.startSec;
     const totalChars = chunks.reduce((acc, c) => acc + c.length, 0);
 
-    let currentStart = line.startSec;
+    const currentStart = line.startSec;
     for (const chunk of chunks) {
       const chunkDuration = (chunk.length / totalChars) * totalDuration;
       const chunkEnd = currentStart + chunkDuration;
@@ -1089,7 +1089,7 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [vocabularyWordKey, user?.id, isLocked]);
+  }, [vocabularyWordKey, user?.id, user?.nativeLanguage, displayVocabulary, isLocked]);
 
   const enrichedDisplayVocabulary = useMemo(
     () => applyVocabularyHints(displayVocabulary, vocabularyHintMap),

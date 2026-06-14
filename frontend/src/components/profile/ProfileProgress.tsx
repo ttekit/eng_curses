@@ -108,7 +108,7 @@ export function ProfileProgress() {
     }
     const raw: unknown = await r.json();
     setTagRows(parseKnowledgeTagsPayload(raw));
-  }, [user?.id]);
+  }, [user?.id, p.tagsError]);
 
   useEffect(() => {
     if (!user?.id) {

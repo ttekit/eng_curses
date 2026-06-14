@@ -7,8 +7,14 @@ import { apiFetch, getResponseErrorMessage } from "../lib/api";
 import { cn } from "../lib/utils";
 import { AdminButton, AdminModal } from "./admin/adminUi";
 import { useAppMessages } from "../hooks/useAppMessages";
+import { getErrorMessage } from "../lib/error-message";
+import type {
+  DatePickerInputProps,
+  DatePickerWrapperProps,
+} from "../types/date-picker-input";
 
-const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (props, ref) => {
   const { onClick, value, onChange, onKeyDown, id } = props;
 
   return (
@@ -35,10 +41,16 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateTimeInput.displayName = "CustomDateTimeInput";
 
-const ExplysDatePicker = ({ selected, onChange, id, onKeyDown }: any) => (
+const ExplysDatePicker = ({
+  selected,
+  onChange,
+  id,
+  onKeyDown,
+}: DatePickerWrapperProps) => (
   <DatePicker
     selected={selected}
     onChange={onChange}
@@ -78,7 +90,7 @@ export function AssignHomeworkButton({
         .catch(() => toast.error("Failed to load classes"))
         .finally(() => setLoadingClasses(false));
     }
-  }, [isOpen]);
+  }, [isOpen, classes.length]);
 
   const handleSave = async () => {
     if (Object.keys(selectedClasses).length === 0) {
@@ -110,8 +122,8 @@ export function AssignHomeworkButton({
       toast.success("Homework assigned successfully!");
       setIsOpen(false);
       setSelectedClasses({});
-    } catch (e: any) {
-      toast.error(e.message || "Failed to assign homework");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Failed to assign homework"));
     } finally {
       setIsSaving(false);
     }

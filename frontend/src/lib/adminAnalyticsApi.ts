@@ -127,7 +127,7 @@ export function formatCompactNumber(n: number): string {
 export function relativeTimeShort(iso: string): string {
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "";
-  let sec = Math.round((Date.now() - then) / 1000);
+  const sec = Math.round((Date.now() - then) / 1000);
   if (sec < 45) return "just now";
   if (sec < 3600) return `${Math.max(1, Math.round(sec / 60))}m ago`;
   const hr = Math.round(sec / 3600);

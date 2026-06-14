@@ -34,6 +34,7 @@ import {
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
 import { apiFetch } from "../../lib/api";
+import type { DatePickerInputProps } from "../../types/date-picker-input";
 
 interface SelectOption {
   value: string;
@@ -45,7 +46,8 @@ interface Pupil {
   surname: string;
 }
 
-const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+const CustomDateInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (props, ref) => {
   const { onClick, value, onChange } = props;
   return (
     <div className="relative w-full">
@@ -67,7 +69,8 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationDetails() {
@@ -122,7 +125,7 @@ export default function RegistrationDetails() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [errors.topicsLoad]);
 
   const flatLearningOptions = useMemo(
     () => learningTopicGroups.flatMap((g) => g.options),

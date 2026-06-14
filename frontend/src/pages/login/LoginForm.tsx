@@ -147,7 +147,7 @@ export default function LoginForm() {
             toast.error(errorData?.message || loginSeo.toastSignInError);
           }
         }
-      } catch (error) {
+      } catch {
         setCaptchaToken(null);
         setCaptchaKey((prev) => prev + 1);
         toast.error(loginSeo.networkError);
