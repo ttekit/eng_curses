@@ -268,7 +268,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [catalogCheckoutReturn, navigate, refreshProfile]);
+  }, [catalogCheckoutReturn, navigate, refreshProfile, cb.stripeConfirmError, cb.stripeThanksToast]);
 
   const accessToken = getStoredAccessToken();
   const needsPlacement =
@@ -366,7 +366,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [showPlacementTest, accessToken]);
+  }, [showPlacementTest, accessToken, cb.placementLoadError]);
 
   useEffect(() => {
     const fetchVideos = async () => {

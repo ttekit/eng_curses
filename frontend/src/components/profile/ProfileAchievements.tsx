@@ -11,7 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { ProfileCard } from "./ProfileCard";
-import { useUser } from "../../context/UserContext";
+import { useUser, type UserData } from "../../context/UserContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { apiFetch } from "../../lib/api";
@@ -48,9 +48,10 @@ export function ProfileAchievements() {
   const p = useAppMessages().profileAchievements;
 
   // Добавляем стейт для выбранного видео
-  const [selectedFirstVideo, setSelectedFirstVideo] = useState<any>(null);
+  const [selectedFirstVideo, setSelectedFirstVideo] =
+    useState<NonNullable<UserData["firstWatchedVideo"]> | null>(null);
 
-  const firstWatchedVideo = (user as any).firstWatchedVideo;
+  const firstWatchedVideo = user?.firstWatchedVideo ?? null;
   const [learnedWords, setLearnedWords] = useState(0);
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export function ProfileAchievements() {
         if (data?.vocabularyProgress?.learned != null && !cancelled) {
           setLearnedWords(data.vocabularyProgress.learned);
         }
-      } catch (e) {
+      } catch {
         // Пропускаємо помилку, якщо деталі прогресу недоступні
       }
     })();

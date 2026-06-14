@@ -920,6 +920,9 @@ export const appEn = {
     skipQuestion: "Skip question",
     checkAnswer: "Check answer",
     nextQuestion: "Next question",
+    inVideoQuizHint: "Answer to continue watching",
+    inVideoQuestionOf: "In-video question {current} of {total}",
+    continueWatching: "Continue watching",
     completeLesson: "Complete lesson",
     vocabTitle: "Key vocabulary",
     vocabEmpty:
@@ -931,7 +934,7 @@ export const appEn = {
     completeBannerXp: "You earned {xp} XP",
     warning: "Warning! Age resctriction:",
     xpInfo: "Earn 150xp after finishing this lesson to move to a new level!",
-    assignHomework: "Задати домашнє завдання",
+    assignHomework: "Assign homework",
   },
 
   lessonSummaryPage: {

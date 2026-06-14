@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Clock, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
@@ -53,7 +53,6 @@ export function VideoQuiz({
   onComplete,
 }: VideoQuizProps) {
   const L = useAppMessages().lesson;
-  const summary = useAppMessages().lessonSummaryPage;
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [openDraft, setOpenDraft] = useState("");
@@ -67,16 +66,21 @@ export function VideoQuiz({
   const question = questions[currentQuestion];
   const isOpen = question ? isOpenQuestion(question) : false;
 
-  useEffect(() => {
-    if (!question) return;
+  const derivedOpenDraft =
+    question && isOpenQuestion(question)
+      ? typeof answersById[question.id] === "string"
+        ? (answersById[question.id] as string)
+        : ""
+      : "";
+
+  const questionSyncKey = `${currentQuestion}:${question?.id ?? ""}:${derivedOpenDraft}`;
+  const [prevQuestionSyncKey, setPrevQuestionSyncKey] =
+    useState(questionSyncKey);
+  if (questionSyncKey !== prevQuestionSyncKey) {
+    setPrevQuestionSyncKey(questionSyncKey);
     setErrorMsg(null);
-    if (isOpenQuestion(question)) {
-      const stored = answersById[question.id];
-      setOpenDraft(typeof stored === "string" ? stored : "");
-    } else {
-      setOpenDraft("");
-    }
-  }, [currentQuestion, answersById, question]);
+    setOpenDraft(derivedOpenDraft);
+  }
 
   if (!isVideoComplete) {
     return (
@@ -96,7 +100,7 @@ export function VideoQuiz({
     if (!question) return;
     setErrorMsg(null);
 
-    let newAnswers = { ...answersById };
+    const newAnswers = { ...answersById };
     let newCorrectCount = correctCount;
 
     // 1. Сохраняем ответ

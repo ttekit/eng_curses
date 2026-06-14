@@ -209,7 +209,7 @@ export function parseWebVttTranscriptLines(vttRaw: string): TranscriptLine[] {
       continue;
     }
 
-    let startSec = parseVttTimestamp(pair[0]!);
+    const startSec = parseVttTimestamp(pair[0]!);
     let endSec = parseVttTimestamp(pair[1]!);
 
     const bodyLines = lines.slice(idx + 1);

@@ -51,9 +51,12 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
     };
   }, [menuOpen]);
 
-  useEffect(() => {
+  const locationKey = `${pathname}#${hash}`;
+  const [prevLocationKey, setPrevLocationKey] = useState(locationKey);
+  if (locationKey !== prevLocationKey) {
+    setPrevLocationKey(locationKey);
     setMenuOpen(false);
-  }, [pathname, hash]);
+  }
 
   const appNavLinks = [
     { label: appHeader.home, to: "/" },

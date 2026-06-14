@@ -80,8 +80,10 @@ export default function LearnerRecapQuizPage() {
   const { locale } = useLandingLocale();
   const R = locale === "uk" ? appUk.recapQuizPage : appEn.recapQuizPage;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [blocked, setBlocked] = useState<string | null>(null);
+  const [loading, setLoading] = useState(() => kind !== null);
+  const [blocked, setBlocked] = useState<string | null>(() =>
+    kind ? null : R.invalidKind,
+  );
   const [bundle, setBundle] = useState<GenerateRecapResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{
@@ -95,18 +97,26 @@ export default function LearnerRecapQuizPage() {
     [bundle],
   );
 
-  useEffect(() => {
+  const [prevKind, setPrevKind] = useState(kind);
+  if (kind !== prevKind) {
+    setPrevKind(kind);
     if (!kind) {
       setBlocked(R.invalidKind);
       setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      setBlocked(null);
       setBundle(null);
       setResult(null);
+    } else {
+      setBlocked(null);
+      setLoading(true);
+      setBundle(null);
+      setResult(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!kind) return;
+    let cancelled = false;
+    void (async () => {
       const data = await generateLearnerRecap(kind);
       if (cancelled) return;
       if (data && "error" in data) {
@@ -268,18 +278,12 @@ function RecapLayout(props: {
 }) {
   return (
     <div className="flex">
-      <CatalogSidebar
-        onSelectLevel={() => {}}
-        reserveTopNavSpace={false}
-        welcomeName={
-          props.user?.name?.trim()
-            ? props.user.name.trim().split(/\s+/)[0]
-            : undefined
-        }
-        englishLevel={props.user?.englishLevel || undefined}
-        collapsed={props.collapsed}
-        onCollapsedChange={props.onCollapsedChange}
-      />
+        <CatalogSidebar
+          onSelectLevel={() => {}}
+          reserveTopNavSpace={false}
+          collapsed={props.collapsed}
+          onCollapsedChange={props.onCollapsedChange}
+        />
       <main
         className={cn(
           "ml-0 flex-1 pb-28 lg:pb-12",

@@ -170,7 +170,7 @@ export default function ProfileMain() {
       role: normalizeRole(user.role),
       level: user.englishLevel?.trim() || "—",
       joinDateLabel,
-      streakDays: (user as any).currentStreak || 0,
+      streakDays: user.currentStreak || 0,
     };
   }, [user, joinDateLabel]);
 
@@ -230,42 +230,43 @@ export default function ProfileMain() {
     return [...withLabels];
   }, [user?.role, profile]);
 
+  const tabParam = searchParams.get("tab");
+  const validIds = useMemo(
+    () => new Set<string>(tabs.map((tb) => tb.id)),
+    [tabs],
+  );
+
+  const resolvedTab = useMemo((): TabId => {
+    if (!user) return "overview";
+    let tab: TabId = "overview";
+    if (tabParam && validIds.has(tabParam)) {
+      tab = tabParam as TabId;
+    }
+    if (user.role !== "teacher" && (tab === "students" || tab === "videos")) {
+      tab = "overview";
+    }
+    if (user.role === "teacher" && tab === "studying-plan") {
+      tab = "overview";
+    }
+    return tab;
+  }, [user, tabParam, validIds]);
+
+  if (activeTab !== resolvedTab) {
+    setActiveTab(resolvedTab);
+  }
+
   useEffect(() => {
     if (!user) return;
     const t = searchParams.get("tab");
-    const validIds = new Set<string>(tabs.map((tb) => tb.id));
-    if (t && validIds.has(t)) {
-      setActiveTab(t as TabId);
-      return;
-    }
-    if (t && !validIds.has(t)) {
-      setActiveTab("overview");
+    const ids = new Set<string>(tabs.map((tb) => tb.id));
+    const needsClear =
+      (t && !ids.has(t)) ||
+      (user.role !== "teacher" && (t === "students" || t === "videos")) ||
+      (user.role === "teacher" && t === "studying-plan");
+    if (needsClear) {
       setSearchParams({}, { replace: true });
-      return;
     }
-    if (!t) setActiveTab("overview");
   }, [user, searchParams, tabs, setSearchParams]);
-
-  useEffect(() => {
-    if (user?.role !== "teacher" && activeTab === "students") {
-      setActiveTab("overview");
-      setSearchParams({}, { replace: true });
-    }
-  }, [user?.role, activeTab, setSearchParams]);
-
-  useEffect(() => {
-    if (user?.role !== "teacher" && activeTab === "videos") {
-      setActiveTab("overview");
-      setSearchParams({}, { replace: true });
-    }
-  }, [user?.role, activeTab, setSearchParams]);
-
-  useEffect(() => {
-    if (user?.role === "teacher" && activeTab === "studying-plan") {
-      setActiveTab("overview");
-      setSearchParams({}, { replace: true });
-    }
-  }, [user?.role, activeTab, setSearchParams]);
 
   if (isLoading) {
     return (
@@ -324,11 +325,6 @@ export default function ProfileMain() {
         <CatalogSidebar
           onSelectLevel={() => {}}
           reserveTopNavSpace={false}
-          welcomeName={
-            user?.name?.trim() ? user.name.trim().split(/\s+/)[0] : undefined
-          }
-          englishLevel={user?.englishLevel || undefined}
-          avatarUrl={user?.avatarUrl}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
         />
@@ -343,7 +339,7 @@ export default function ProfileMain() {
             <ProfileHeader user={headerModel} />
 
             {user?.role?.toLowerCase() === "student" &&
-              ((user as any).teacherName || user.className) && (
+              (user.teacherName || user.className) && (
                 <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl bg-primary/10 px-5 py-3 border border-primary/20 shadow-sm animate-in fade-in slide-in-from-top-2">
                   <div className="p-2 bg-primary/20 rounded-lg shrink-0">
                     <GraduationCap className="size-5 text-primary" />
@@ -361,14 +357,14 @@ export default function ProfileMain() {
                         </p>
                       </div>
                     )}
-                    {(user as any).teacherName && (
+                    {user.teacherName && (
                       <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                           {profile.yourTeacher || "Your Teacher"}
                         </p>
                         <p className="text-sm font-medium text-foreground">
                           <strong className="font-bold text-primary">
-                            {(user as any).teacherName}
+                            {user.teacherName}
                           </strong>
                         </p>
                       </div>

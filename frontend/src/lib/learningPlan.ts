@@ -339,7 +339,7 @@ function splitStructuredDaysAcrossPhases(
   }
   const w: [number, number, number, number] = [0.22, 0.24, 0.26, 0.28];
   const floors = w.map((wi) => Math.floor(n * wi));
-  let assigned = floors.reduce((a, b) => a + b, 0);
+  const assigned = floors.reduce((a, b) => a + b, 0);
   let rem = n - assigned;
   const out = [...floors] as [number, number, number, number];
   for (let i = 3; i >= 0 && rem > 0; i--) {

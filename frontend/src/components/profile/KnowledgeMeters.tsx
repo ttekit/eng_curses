@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- shared context/helpers */
 import { cn } from "../../lib/utils";
 
 /** 0–1 mastery → percentage label and bar width (profile progress). */

@@ -381,7 +381,7 @@ function splitLongTranscriptLines(
     const totalDuration = line.endSec - line.startSec;
     const totalChars = chunks.reduce((acc, c) => acc + c.length, 0);
 
-    let currentStart = line.startSec;
+    const currentStart = line.startSec;
     for (const chunk of chunks) {
       const chunkDuration = (chunk.length / totalChars) * totalDuration;
       const chunkEnd = currentStart + chunkDuration;
@@ -655,7 +655,6 @@ export default function ContentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, refreshProfile } = useUser();
-  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
   const L = useAppMessages().lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
   const [isVideoComplete, setIsVideoComplete] = useState(false);
@@ -1090,7 +1089,7 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [vocabularyWordKey, user?.id, isLocked]);
+  }, [vocabularyWordKey, user?.id, user?.nativeLanguage, displayVocabulary, isLocked]);
 
   const enrichedDisplayVocabulary = useMemo(
     () => applyVocabularyHints(displayVocabulary, vocabularyHintMap),

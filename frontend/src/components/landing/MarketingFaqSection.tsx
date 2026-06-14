@@ -18,7 +18,7 @@ export function MarketingFaqSection({
   id = "faq",
   title,
   subtitle,
-  items,
+  items: _items,
   className,
 }: MarketingFaqSectionProps) {
   const { messages } = useLandingLocale();

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Bell, LogOut, Plus, Save, Shield, User, X } from "lucide-react";
+import { LogOut, Plus, Save, Shield, User, X } from "lucide-react";
 import {
   apiFetch,
   getResponseErrorMessage,
@@ -11,10 +11,6 @@ import { useNavigate } from "react-router";
 import InputText from "../InputText";
 import { ProfileCard } from "./ProfileCard";
 import { ToggleSwitch } from "./ToggleSwitch";
-import {
-  loadProfileUiPrefs,
-  saveProfileUiPrefs,
-} from "../../lib/profileUiPrefs";
 import { Lock } from "lucide-react";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
@@ -23,13 +19,15 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon } from "lucide-react";
 import { forwardRef } from "react";
-import { ThemeToggle } from "../ThemeToggle";
 import { Monitor } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { getErrorMessage } from "../../lib/error-message";
+import type { DatePickerInputProps } from "../../types/date-picker-input";
 
 type GenreOption = { id: number; name: string };
 
-const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+const CustomDateInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (props, ref) => {
   const { onClick, value, onChange, onKeyDown, id, isError } = props;
   return (
     <div className="relative w-full">
@@ -64,19 +62,17 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateInput.displayName = "CustomDateInput";
 
 export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const { user, refreshProfile, logout } = useUser();
   const { locale, setLocale } = useLandingLocale();
 
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Проверяем текущую тему при загрузке
-  useEffect(() => {
-    setIsDarkMode(document.documentElement.classList.contains("dark"));
-  }, []);
+  const [isDarkMode, setIsDarkMode] = useState(() =>
+    document.documentElement.classList.contains("dark"),
+  );
 
   // Функция для применения темы
   const applyTheme = (dark: boolean) => {
@@ -90,7 +86,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
   const isTeacherStudent =
     user?.role?.toLowerCase() === "student" &&
-    Boolean((user as any).teacherId || (user as any).teacherName);
+    Boolean(user?.teacherId || user?.teacherName);
 
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
@@ -133,299 +129,27 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [newHobby, setNewHobby] = useState("");
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
   const [saving, setSaving] = useState(false);
-  const [savingPrefs, setSavingPrefs] = useState(false);
   const [dangerOpen, setDangerOpen] = useState<"reset" | "delete" | null>(null);
 
   const [isToggling2FA, setIsToggling2FA] = useState(false);
   const [target2FAState, setTarget2FAState] = useState(false);
   const [twoFactorPassword, setTwoFactorPassword] = useState("");
 
-  const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
+  const [, setIsChangeEmailModalOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState(
-    () => loadProfileUiPrefs(String(user?.id ?? 0)).notifications,
+  const userSyncKey = user?.id ?? null;
+  const [syncedUserKey, setSyncedUserKey] = useState<string | number | null>(
+    null,
   );
-
-  const [preferences, setPreferences] = useState(() => {
-    const ui = loadProfileUiPrefs(String(user?.id ?? 0));
-    return {
-      autoplayNext: ui.autoplayNext,
-      showSubtitles: ui.showSubtitles,
-      playbackSpeed: user?.playbackSpeed ? String(user.playbackSpeed) : "1",
-      videoQuality: user?.videoQuality?.trim() || "auto",
-    };
-  });
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setJob(user.workField || "");
-      setEducation(user.education || "");
-      setHobbies(user.hobbies ?? []);
-      setFavoriteGenreIds(user.favoriteGenres ?? []);
-      setHatedGenreIds(user.hatedGenres ?? []);
-    }
-  }, [user]);
-
-  if (!user) return null;
-
-  const handleToggle2FAClick = (checked: boolean) => {
-    setTarget2FAState(checked);
-    setTwoFactorPassword("");
-    setError("");
-    setIsToggling2FA(true);
-  };
-
-  const handleConfirm2FAToggle = async () => {
-    if (!twoFactorPassword) {
-      setError("Please enter your current password.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const response = await apiFetch("/auth/toggle-2fa", {
-        method: "POST",
-        body: JSON.stringify({
-          enable: target2FAState,
-          password: twoFactorPassword,
-        }),
-      });
-
-      if (response.ok) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        await refreshProfile();
-
-        setIsToggling2FA(false);
-        setTwoFactorPassword("");
-
-        toast.success(
-          target2FAState
-            ? "Two-factor authentication enabled"
-            : "Two-factor authentication disabled",
-        );
-      } else {
-        const data = await response.json();
-        setError(data.message || "Invalid password");
-      }
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEmailUpdate = async () => {
-    setError("");
-
-    if (emailChangeStep === 1) {
-      if (emailChangeCode.length !== 6) {
-        return setError("Please enter the 6-digit code.");
-      }
-
-      setIsLoading(true);
-      try {
-        const response = await apiFetch("/auth/check-email-change-code", {
-          method: "POST",
-          body: JSON.stringify({ code: emailChangeCode }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || "Invalid code");
-        }
-
-        setEmailChangeStep(2);
-        setError("");
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    if (!newEmail || !confirmNewEmail)
-      return setError("Please fill in all email fields.");
-    if (newEmail !== confirmNewEmail) return setError("Emails do not match.");
-
-    setIsLoading(true);
-    try {
-      const response = await apiFetch("/auth/verify-email-change", {
-        method: "POST",
-        body: JSON.stringify({
-          code: emailChangeCode,
-          newEmail: newEmail,
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.message || "Failed to update email");
-
-      toast.success("Email successfully updated!");
-      await refreshProfile();
-      setIsChangingEmail(false);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStartEmailChange = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const response = await apiFetch("/auth/send-email-change-code", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to send verification code");
-      }
-
-      setEmailChangeStep(1);
-      setEmailChangeCode("");
-      setNewEmail("");
-      setConfirmNewEmail("");
-      setIsChangingEmail(true);
-
-      toast.success("Verification code sent to your current email!");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordUpdate = async () => {
-    setError("");
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters long.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await apiFetch("/auth/update-password", {
-        method: "POST",
-        body: JSON.stringify({
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update password");
-      }
-      setIsChangingPassword(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      setError(err.message || "Invalid current password or server error.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOpenDangerZone = async (action: "reset" | "delete") => {
-    setIsSendingCode(true);
-    try {
-      const response = await apiFetch("/auth/send-danger-zone-code", {
-        method: "POST",
-        body: JSON.stringify({ action }),
-      });
-
-      if (!response.ok) throw new Error("Failed to send code");
-
-      setDangerOpen(action);
-      setDangerCode("");
-      setDangerError("");
-      toast.success("A 6-digit code has been sent to your email.");
-    } catch (error) {
-      toast.error("Could not send verification code.");
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-  const handleResetProgress = async () => {
-    if (dangerCode.length !== 6) {
-      return setDangerError("Please enter the 6-digit code.");
-    }
-
-    setIsLoading(true);
-    setIsResetting(true);
-    setDangerError("");
-
-    try {
-      const response = await apiFetch("/users/profile/progress/reset", {
-        method: "POST",
-        body: JSON.stringify({ code: dangerCode }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to reset progress");
-      }
-
-      toast.success("Progress reset successfully.");
-      setDangerOpen(null);
-      setDangerCode("");
-      await refreshProfile();
-    } catch (err: any) {
-      setDangerError(err.message);
-    } finally {
-      setIsResetting(false);
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (dangerCode.length !== 6) {
-      return setDangerError("Please enter the 6-digit code.");
-    }
-
-    setIsLoading(true);
-    setIsDeleting(true);
-    setDangerError("");
-
-    try {
-      const response = await apiFetch("/auth/delete-account", {
-        method: "DELETE",
-        body: JSON.stringify({ code: dangerCode }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to delete account");
-      }
-
-      toast.success("Your account has been deleted.");
-      logout();
-      void navigate("/loginForm", { replace: true });
-    } catch (err: any) {
-      setDangerError(err.message);
-    } finally {
-      setIsDeleting(false);
-      setIsLoading(false);
-    }
-  };
+  if (user && userSyncKey !== syncedUserKey) {
+    setSyncedUserKey(userSyncKey);
+    setName(user.name);
+    setJob(user.workField || "");
+    setEducation(user.education || "");
+    setHobbies(user.hobbies ?? []);
+    setFavoriteGenreIds(user.favoriteGenres ?? []);
+    setHatedGenreIds(user.hatedGenres ?? []);
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -438,7 +162,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     };
 
     if (isChangingPassword || isChangingEmail || isToggling2FA) {
-      // <-- Добавили
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleKeyDown);
     } else {
@@ -450,30 +173,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isChangingPassword, isChangingEmail, isToggling2FA]);
-
-  useEffect(() => {
-    setName(user.name);
-    setJob(user.workField);
-    setEducation(user.education);
-    setHobbies(user.hobbies ?? []);
-    setFavoriteGenreIds(user.favoriteGenres ?? []);
-    setHatedGenreIds(user.hatedGenres ?? []);
-  }, [user]);
-
-  useEffect(() => {
-    const ui = loadProfileUiPrefs(user.id);
-    setNotifications(ui.notifications);
-    setPreferences((prev) => ({
-      autoplayNext: ui.autoplayNext,
-      showSubtitles: ui.showSubtitles,
-      playbackSpeed:
-        user.playbackSpeed != null &&
-        Number.isFinite(Number(user.playbackSpeed))
-          ? String(user.playbackSpeed)
-          : prev.playbackSpeed || "1",
-      videoQuality: user.videoQuality?.trim() || prev.videoQuality || "auto",
-    }));
-  }, [user.id, user.playbackSpeed, user.videoQuality]);
 
   useEffect(() => {
     void (async () => {
@@ -545,6 +244,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   }, [user]);
 
   const saveProfile = useCallback(async () => {
+    if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) {
       toast.error(s.nameRequiredToast);
@@ -586,62 +286,275 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     hobbies,
     favoriteGenreIds,
     hatedGenreIds,
-    user.id,
+    user,
     onSaved,
     s.nameRequiredToast,
     s.profileSavedToast,
     s.saveProfileError,
   ]);
 
-  const saveLearnerPreferences = useCallback(async () => {
-    const speed = Number.parseFloat(preferences.playbackSpeed);
-    if (!Number.isFinite(speed) || speed <= 0) {
-      toast.error(s.playbackSpeedToast);
+  if (!user) return null;
+
+  const handleToggle2FAClick = (checked: boolean) => {
+    setTarget2FAState(checked);
+    setTwoFactorPassword("");
+    setError("");
+    setIsToggling2FA(true);
+  };
+
+  const handleConfirm2FAToggle = async () => {
+    if (!twoFactorPassword) {
+      setError("Please enter your current password.");
       return;
     }
 
-    setSavingPrefs(true);
+    setIsLoading(true);
+    setError("");
+
     try {
-      saveProfileUiPrefs(user.id, {
-        notifications,
-        autoplayNext: preferences.autoplayNext,
-        showSubtitles: preferences.showSubtitles,
-      });
-
-      const res = await apiFetch(`/users/${Number(user.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await apiFetch("/auth/toggle-2fa", {
+        method: "POST",
         body: JSON.stringify({
-          playbackSpeed: speed,
-          currentResolution: preferences.videoQuality?.trim() || "auto",
-
-          dailyReminderEnabled: notifications.dailyReminder,
-          weeklyReportEnabled: notifications.weeklyReport,
+          enable: target2FAState,
+          password: twoFactorPassword,
         }),
       });
 
-      if (!res.ok) {
-        toast.error(await getResponseErrorMessage(res));
-        return;
+      if (response.ok) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        await refreshProfile();
+
+        setIsToggling2FA(false);
+        setTwoFactorPassword("");
+
+        toast.success(
+          target2FAState
+            ? "Two-factor authentication enabled"
+            : "Two-factor authentication disabled",
+        );
+      } else {
+        const data = await response.json();
+        setError(data.message || "Invalid password");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailUpdate = async () => {
+    setError("");
+
+    if (emailChangeStep === 1) {
+      if (emailChangeCode.length !== 6) {
+        return setError("Please enter the 6-digit code.");
       }
 
-      toast.success(s.prefsSavedToast);
-      await onSaved();
-    } catch (e) {
-      console.error(e);
-      toast.error(s.prefsErrorToast);
-    } finally {
-      setSavingPrefs(false);
+      setIsLoading(true);
+      try {
+        const response = await apiFetch("/auth/check-email-change-code", {
+          method: "POST",
+          body: JSON.stringify({ code: emailChangeCode }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Invalid code");
+        }
+
+        setEmailChangeStep(2);
+        setError("");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err, "Something went wrong"));
+      } finally {
+        setIsLoading(false);
+      }
+      return;
     }
-  }, [
-    notifications,
-    preferences,
-    user.id,
-    onSaved,
-    s.playbackSpeedToast,
-    s.prefsSavedToast,
-    s.prefsErrorToast,
-  ]);
+
+    if (!newEmail || !confirmNewEmail)
+      return setError("Please fill in all email fields.");
+    if (newEmail !== confirmNewEmail) return setError("Emails do not match.");
+
+    setIsLoading(true);
+    try {
+      const response = await apiFetch("/auth/verify-email-change", {
+        method: "POST",
+        body: JSON.stringify({
+          code: emailChangeCode,
+          newEmail: newEmail,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.message || "Failed to update email");
+
+      toast.success("Email successfully updated!");
+      await refreshProfile();
+      setIsChangingEmail(false);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartEmailChange = async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch("/auth/send-email-change-code", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to send verification code");
+      }
+
+      setEmailChangeStep(1);
+      setEmailChangeCode("");
+      setNewEmail("");
+      setConfirmNewEmail("");
+      setIsChangingEmail(true);
+
+      toast.success("Verification code sent to your current email!");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    setError("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await apiFetch("/auth/update-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update password");
+      }
+      setIsChangingPassword(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      setError(
+        getErrorMessage(err, "Invalid current password or server error."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenDangerZone = async (action: "reset" | "delete") => {
+    setIsSendingCode(true);
+    try {
+      const response = await apiFetch("/auth/send-danger-zone-code", {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send code");
+
+      setDangerOpen(action);
+      setDangerCode("");
+      setDangerError("");
+      toast.success("A 6-digit code has been sent to your email.");
+    } catch {
+      toast.error("Could not send verification code.");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+  const handleResetProgress = async () => {
+    if (dangerCode.length !== 6) {
+      return setDangerError("Please enter the 6-digit code.");
+    }
+
+    setIsLoading(true);
+    setIsResetting(true);
+    setDangerError("");
+
+    try {
+      const response = await apiFetch("/users/profile/progress/reset", {
+        method: "POST",
+        body: JSON.stringify({ code: dangerCode }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to reset progress");
+      }
+
+      toast.success("Progress reset successfully.");
+      setDangerOpen(null);
+      setDangerCode("");
+      await refreshProfile();
+    } catch (err: unknown) {
+      setDangerError(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsResetting(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (dangerCode.length !== 6) {
+      return setDangerError("Please enter the 6-digit code.");
+    }
+
+    setIsLoading(true);
+    setIsDeleting(true);
+    setDangerError("");
+
+    try {
+      const response = await apiFetch("/auth/delete-account", {
+        method: "DELETE",
+        body: JSON.stringify({ code: dangerCode }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to delete account");
+      }
+
+      toast.success("Your account has been deleted.");
+      logout();
+      void navigate("/loginForm", { replace: true });
+    } catch (err: unknown) {
+      setDangerError(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsDeleting(false);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1565,9 +1478,9 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     setDangerCode("");
                     setDangerError("");
                   } else if (e.key === "Enter" && dangerCode.length === 6) {
-                    dangerOpen === "reset"
+                    void (dangerOpen === "reset"
                       ? handleResetProgress()
-                      : handleDeleteAccount();
+                      : handleDeleteAccount());
                   }
                 }}
               />

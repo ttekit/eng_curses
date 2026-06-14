@@ -397,7 +397,7 @@ export default function AdminVideosPage() {
     return () => {
       cancelled = true;
     };
-  }, [inspectMeta?.video.id, inspectMeta?.tab]);
+  }, [inspectMeta]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -407,7 +407,7 @@ export default function AdminVideosPage() {
         (v.videoDescription ?? "").toLowerCase().includes(q) ||
         v.content.category.name.toLowerCase().includes(q);
 
-      const videoAge = (v as any).ageRestriction || "0+";
+      const videoAge = v.ageRestriction || "0+";
       const matchAge = ageFilter === "all" || videoAge === ageFilter;
 
       const videoGenres = v.content.stats?.userTags ?? [];
@@ -469,7 +469,7 @@ export default function AdminVideosPage() {
     setEditing(v);
     setEditName(v.videoName);
     setEditDesc(v.videoDescription || v.content.category.description || "");
-    setEditAge((v as any).ageRestriction || "0+");
+    setEditAge(v.ageRestriction || "0+");
     setEditThumb(null);
   }, []);
 
@@ -570,7 +570,7 @@ export default function AdminVideosPage() {
         setEditing(u);
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
-        setEditAge((u as any).ageRestriction || "0+");
+        setEditAge(u.ageRestriction || "0+");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -596,7 +596,7 @@ export default function AdminVideosPage() {
         setEditing(u);
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
-        setEditAge((u as any).ageRestriction || "0+");
+        setEditAge(u.ageRestriction || "0+");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -618,7 +618,7 @@ export default function AdminVideosPage() {
         setEditing(u);
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
-        setEditAge((u as any).ageRestriction || "0+");
+        setEditAge(u.ageRestriction || "0+");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Caption generation failed");
@@ -634,7 +634,7 @@ export default function AdminVideosPage() {
       const arrayBuffer = await zipFile.arrayBuffer();
       const unzipped = unzipSync(new Uint8Array(arrayBuffer));
 
-      let tsFileName = Object.keys(unzipped).find(
+      const tsFileName = Object.keys(unzipped).find(
         (name) =>
           name.endsWith(".ts") &&
           !name.includes("__MACOSX") &&
@@ -1870,9 +1870,9 @@ export default function AdminVideosPage() {
                           className="rounded-lg border border-border bg-muted/30 transition-colors hover:border-primary/40"
                         >
                           <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
-                            {(video as any).thumbnailUrl ? (
+                            {video.thumbnailUrl ? (
                               <img
-                                src={(video as any).thumbnailUrl}
+                                src={video.thumbnailUrl}
                                 alt=""
                                 className="absolute inset-0 h-full w-full object-cover"
                               />
@@ -1880,9 +1880,9 @@ export default function AdminVideosPage() {
                               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted to-accent/20" />
                             )}
                             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                              {(video as any).ageRestriction ? (
+                              {video.ageRestriction ? (
                                 <AdminBadge variant="accent">
-                                  {(video as any).ageRestriction}
+                                  {video.ageRestriction}
                                 </AdminBadge>
                               ) : (
                                 <AdminBadge variant="accent">0+</AdminBadge>

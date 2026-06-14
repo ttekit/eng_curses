@@ -5,9 +5,9 @@
  * Templates may include `{{PLACEHOLDER}}` tokens replaced at runtime.
  */
 
-import { AI_PROMPT_ENV_KEYS } from "./ai-prompts.defaults";
+import { AI_PROMPT_ENV_KEYS } from "./ai-prompts/env-keys";
 
-export { AI_PROMPT_ENV_KEYS } from "./ai-prompts.defaults";
+export { AI_PROMPT_ENV_KEYS } from "./ai-prompts/env-keys";
 
 /**
  * Reads a prompt template from `process.env[envKey]` or falls back to `defaultTemplate`.
