@@ -111,8 +111,8 @@ export const appUk = {
     descriptionFallback:
       "Обери напрям і вчися на відібраних відео. Контент оновлюється разом із твоєю бібліотекою.",
     metaFresh: "Свіжі добірки",
-    metaQuizzes: "Відео + вікторини",
-    metaLevels: "Рівні для кожного",
+    metaQuizzes: "Відео + тести",
+    metaLevels: "Відео за рівнями для кожного",
     startWatching: "Почати перегляд",
     browseLibrary: "Переглянути каталог",
   },
@@ -164,6 +164,18 @@ export const appUk = {
     filterFilteredResults: "Результати фільтра",
     filterLevel: "Рівень",
     filterGenre: "Жанр",
+    next: "Далі",
+    prev: "Назад",
+  },
+
+  search: {
+    searchLesson: "Шукати уроки...",
+    browseCatalog: "Перегляд каталогу",
+    esc: "Вийти",
+    nav: "Навігація",
+    open: "Відкрити",
+    toggle: "Переключитись на каталог",
+    matchingLess: "Уроки",
   },
 
   videoRow: {
@@ -796,7 +808,7 @@ export const appUk = {
       "Мету й строк збережено, але навчальний план не вдалося оновити. Спробуй ще раз на повній сторінці навчального плану.",
     profileGoalHorizonSaveError: "Не вдалося зберегти мету або строк.",
     openFullPage: "Повна сторінка",
-    continueInCatalog: "Далі в каталозі",
+    continueInCatalog: "Далі до каталогу",
     seoTitle: "Навчальний план · Explys",
     seoDescription:
       "Твій персональний маршрут навчання, етапи та тижневі звички.",
@@ -870,7 +882,7 @@ export const appUk = {
     browseCatalogCta: "До каталогу",
     seoNotFoundTitle: "Урок не знайдено",
     seoNotFoundDescription: "Цей урок недоступний або його прибрали.",
-    quizUnlocked: "Вікторину відкрито",
+    quizUnlocked: "Тест відкрито",
     xpAvailable: "Доступно {xp} XP",
     preparingVocabulary: "Готуємо персоналізовану ключову лексику…",
     transcriptVocabMarkTitle: "Торкнися для перекладу й пояснення",
@@ -930,6 +942,7 @@ export const appUk = {
     warning: "Увага! Вікове обмеження: ",
     xpInfo:
       "Заробіть 150xp після завершення цього уроку, щоб перейти на новий рівень!",
+    assignHomework: "Задати домашнє завдання",
   },
 
   lessonSummaryPage: {
@@ -985,8 +998,8 @@ export const appUk = {
     quizCategoryGrammar: "Граматика",
     quizCategoryVocabulary: "Лексика",
     quizCategoryComprehension: "Розуміння тексту",
-    nextInCatalog: "Далі в каталозі",
-    reviewLesson: "Переглянути урок",
+    nextInCatalog: "Далі до каталогу",
+    reviewLesson: "Переглянути урок заново",
   },
 
   placementFlow: {

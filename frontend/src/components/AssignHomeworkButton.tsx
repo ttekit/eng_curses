@@ -6,6 +6,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { apiFetch, getResponseErrorMessage } from "../lib/api";
 import { cn } from "../lib/utils";
 import { AdminButton, AdminModal } from "./admin/adminUi";
+import { useAppMessages } from "../hooks/useAppMessages";
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
   const { onClick, onFocus, value, onChange, onKeyDown, id } = props;
@@ -66,6 +67,7 @@ export function AssignHomeworkButton({
   const [selectedClasses, setSelectedClasses] = useState<
     Record<number, { availableFrom: string; deadline: string }>
   >({});
+  const L = useAppMessages().lesson;
 
   useEffect(() => {
     if (isOpen && classes.length === 0) {
@@ -119,11 +121,11 @@ export function AssignHomeworkButton({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+        className="flex items-center gap-2 rounded-lg hover:cursor-pointer bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors border border-primary/20"
         title="Assign Homework"
       >
         <BookOpen className="size-3.5" />
-        Assign Homework
+        {L.assignHomework}
       </button>
 
       <AdminModal

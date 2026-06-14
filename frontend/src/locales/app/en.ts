@@ -163,6 +163,18 @@ export const appEn = {
     filterFilteredResults: "Filtered Results",
     filterLevel: "Level",
     filterGenre: "Genre",
+    next: "Next",
+    prev: "Prev",
+  },
+
+  search: {
+    searchLesson: "Search lessons...",
+    browseCatalog: "Browse catalog",
+    esc: "Esc",
+    nav: "Navigate",
+    open: "Open",
+    toggle: "Toggle to catalog",
+    matchingLess: "Matching lessons",
   },
 
   videoRow: {
@@ -919,6 +931,7 @@ export const appEn = {
     completeBannerXp: "You earned {xp} XP",
     warning: "Warning! Age resctriction:",
     xpInfo: "Earn 150xp after finishing this lesson to move to a new level!",
+    assignHomework: "Задати домашнє завдання",
   },
 
   lessonSummaryPage: {
