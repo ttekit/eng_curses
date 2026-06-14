@@ -21,11 +21,18 @@ describe("RequireActiveSubscriptionGuard", () => {
     }),
   } as unknown as ConfigService;
 
+  const redis = {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue("OK"),
+    del: jest.fn().mockResolvedValue(1),
+  };
+
   const guard = new RequireActiveSubscriptionGuard(
     config,
     jwt,
     prisma as never,
     reflector,
+    redis as never,
   );
 
   function mockContext(handlerMeta?: boolean): ExecutionContext {

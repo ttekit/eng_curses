@@ -1,11 +1,14 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Redis } from "ioredis";
 import Stripe from "stripe";
+import { invalidateSubscriptionAccessCache } from "./subscription-access-cache.util";
 import { PrismaService } from "../prisma.service";
 
 const CONSUMER_PLANS = ["light", "smart", "family"] as const;
@@ -74,6 +77,7 @@ export class BillingService {
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
+    @Inject("REDIS_CLIENT") private readonly redis: Redis,
   ) {
     const key = this.config.get<string>("STRIPE_SECRET_KEY")?.trim();
     this.stripe =
@@ -92,6 +96,10 @@ export class BillingService {
       : "";
     const id = envKey ? this.config.get<string>(envKey) : undefined;
     return id?.trim() || undefined;
+  }
+
+  private async clearSubscriptionAccessCache(userId: number): Promise<void> {
+    await invalidateSubscriptionAccessCache(this.redis, userId).catch(() => {});
   }
 
   async createCheckoutSession(
@@ -267,6 +275,7 @@ export class BillingService {
             subscriptionStatus: subscriptionStatusForDb,
           },
         });
+        await this.clearSubscriptionAccessCache(userId);
         this.logger.log(
           `checkout.session persisted user=${userId} plan=${planId} sub=${subId ?? "(none)"} status=${subscriptionStatusForDb}`,
         );
@@ -330,6 +339,7 @@ export class BillingService {
               : {}),
             },
           });
+          await this.clearSubscriptionAccessCache(userIdMeta);
           this.logger.log(
             `subscription.${event.type.split(".").pop()} persisted user=${userIdMeta} status=${status}`,
           );
@@ -341,6 +351,10 @@ export class BillingService {
           throw err;
         }
       } else if (id) {
+        const affectedUsers = await this.prisma.user.findMany({
+          where: { stripeSubscriptionId: id },
+          select: { id: true },
+        });
         const updateCount = await this.prisma.user.updateMany({
           where: { stripeSubscriptionId: id },
           data: {
@@ -354,6 +368,11 @@ export class BillingService {
             : {}),
           },
         });
+        await Promise.all(
+          affectedUsers.map((user) =>
+            this.clearSubscriptionAccessCache(user.id),
+          ),
+        );
         this.logger.log(
           `subscription event updateMany stripeSubscriptionId=${id} matched=${updateCount.count} status=${status}`,
         );

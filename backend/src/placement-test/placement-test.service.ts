@@ -7,10 +7,7 @@ import { ConfigService } from "@nestjs/config";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { PrismaService } from "src/prisma.service";
-import {
-  aggregateSkillScore,
-  clamp,
-} from "src/alcorythm/alcorythm-scoring.util";
+import { applyUniformDeltaToLanguageRows } from "src/user-language-data/user-language-data-mutation.util";
 import { knowledgeDelta } from "src/content-video/content-video-test-grade.util";
 import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import {
@@ -328,20 +325,7 @@ export class PlacementTestService {
       dG += d * 0.2;
     }
 
-    for (const row of rows) {
-      const nl = clamp(row.listeningScore + dL);
-      const nv = clamp(row.vocabularyScore + dV);
-      const ng = clamp(row.grammarScore + dG);
-      await this.prisma.userLanguageData.update({
-        where: { id: row.id },
-        data: {
-          listeningScore: nl,
-          vocabularyScore: nv,
-          grammarScore: ng,
-          score: aggregateSkillScore(nl, nv, ng),
-        },
-      });
-    }
+    await applyUniformDeltaToLanguageRows(this.prisma, rows, dL, dV, dG);
   }
 
   private coerceAnswers(raw: CompletePlacementDto["answers"]): Record<
