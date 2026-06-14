@@ -482,7 +482,7 @@ export default function AdminVideosPage() {
     }
     setEditSaving(true);
     try {
-      const resData = await apiFetch(`/content-video/episode/${editing.id}`, {
+      const resData = await apiFetch(`/content-video/${editing.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -743,7 +743,7 @@ export default function AdminVideosPage() {
         );
       } else {
         const contentMediaId = deleteCandidate.video.content.id;
-        const res = await apiFetch(`/content-video/episode/${contentMediaId}`, {
+        const res = await apiFetch(`/content-video/${contentMediaId}`, {
           method: "DELETE",
         });
         if (!res.ok) throw new Error("Failed to delete episode");
