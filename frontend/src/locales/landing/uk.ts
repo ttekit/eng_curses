@@ -308,6 +308,8 @@ export const landingUk = {
       backToLogin: "← Назад до входу",
       codeRequired: "Введіть 6-значний код.",
       verifyCode: "Підтвердити код",
+      orContinueWith: "Або продовжіть за допомогою",
+      google: "За допомогою Google",
     },
     emailVerification: {
       rightTitle: "Майже готово!",

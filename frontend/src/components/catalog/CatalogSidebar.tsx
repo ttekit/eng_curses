@@ -101,6 +101,11 @@ export function CatalogSidebar({
     return link ? pathname === link.to.split("?")[0] : false;
   };
 
+  const filterLabel = (value: string): string => {
+    if (value === "All") return common.filterAll;
+    return value;
+  };
+
   return (
     <>
       <aside
@@ -165,8 +170,8 @@ export function CatalogSidebar({
             <div className="mt-1 flex flex-col gap-2">
               <div className="mx-3 h-px bg-border/60" />
               <div className="flex items-center justify-between px-4 pb-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Theme
+                <span className="text-[12px] text-muted-foreground tracking-wider">
+                  {shell.appTheme}
                 </span>
                 <div className="scale-90 origin-right">
                   <ThemeToggle />
@@ -247,7 +252,7 @@ export function CatalogSidebar({
                         : "bg-muted text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {level}
+                    {filterLabel(level)}
                   </button>
                 ))}
               </div>
@@ -272,7 +277,7 @@ export function CatalogSidebar({
                         : "bg-muted text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {genre}
+                    {filterLabel(genre)}
                   </button>
                 ))}
               </div>

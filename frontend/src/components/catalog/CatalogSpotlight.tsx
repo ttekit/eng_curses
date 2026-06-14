@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ArrowRight, Search, X } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 export type CatalogSpotlightItem = {
   id: number;
@@ -34,6 +35,7 @@ export function CatalogSpotlight({
   const [query, setQuery] = useState("");
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const s = useAppMessages().search;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -164,7 +166,7 @@ export function CatalogSpotlight({
               id="catalog-spotlight-title"
               className="sr-only"
             >
-              Search lessons
+              {s.searchLesson}
             </label>
             <input
               id="catalog-spotlight-input"
@@ -175,7 +177,7 @@ export function CatalogSpotlight({
                 setQuery(e.target.value);
                 setActiveIndex(0);
               }}
-              placeholder="Search lessons…"
+              placeholder={s.searchLesson}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -191,7 +193,7 @@ export function CatalogSpotlight({
               className="absolute top-1/2 right-3 hover:cursor-pointer flex items-center gap-2 -translate-y-1/2 rounded-lg border border-border bg-muted/50 px-2.5 py-1 text-muted-foreground text-xs transition-colors hover:bg-muted hover:text-foreground"
               onClick={() => onClose()}
             >
-              <span className="hidden sm:inline">Esc</span>
+              <span className="hidden sm:inline">{s.esc}</span>
               <span className="sm:hidden">
                 <X className="size-3.5" />
               </span>
@@ -200,7 +202,7 @@ export function CatalogSpotlight({
 
           <div className="px-4 py-2">
             <p className="text-muted-foreground text-xs uppercase tracking-wide">
-              {query.trim().length ? "Matching lessons" : "Browse catalog"}
+              {query.trim().length ? s.matchingLess : s.browseCatalog}
             </p>
           </div>
 
@@ -291,17 +293,17 @@ export function CatalogSpotlight({
                 <kbd className="rounded border border-border bg-muted/80 px-1.5 py-0.5 font-sans shadow-sm">
                   ↓
                 </kbd>{" "}
-                Navigate
+                {s.nav}
               </span>
               <span>
                 <kbd className="rounded border border-border bg-muted/80 px-2 py-0.5 font-sans shadow-sm">
                   Enter
                 </kbd>{" "}
-                Open
+                {s.open}
               </span>
             </span>
             <span>
-              Toggle with{" "}
+              {s.toggle}{" "}
               <kbd className="rounded border border-border bg-muted/80 px-2 py-0.5 font-sans shadow-sm">
                 {shortcutLabel}
               </kbd>

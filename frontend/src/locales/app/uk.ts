@@ -42,6 +42,7 @@ export const appUk = {
     sectionGenre: "Жанр",
     settings: "Налаштування",
     levelWithDot: "• {prefix} {level}",
+    appTheme: "Змінити тему платформи: ",
   },
 
   myLessonsPage: {
@@ -104,16 +105,16 @@ export const appUk = {
   },
 
   catalogHero: {
-    featured: "У центрі уваги",
+    featured: "У тренді",
     browseBelow: "Дивіться нижче",
     titleFallback: "Твій каталог англійської",
     descriptionFallback:
       "Обери напрям і вчися на відібраних відео. Контент оновлюється разом із твоєю бібліотекою.",
     metaFresh: "Свіжі добірки",
-    metaQuizzes: "Відео + вікторини",
-    metaLevels: "Рівні для кожного",
+    metaQuizzes: "Відео + тести",
+    metaLevels: "Відео за рівнями для кожного",
     startWatching: "Почати перегляд",
-    browseLibrary: "Переглянути бібліотеку",
+    browseLibrary: "Переглянути каталог",
   },
 
   catalogSpotlight: {
@@ -163,6 +164,22 @@ export const appUk = {
     filterFilteredResults: "Результати фільтра",
     filterLevel: "Рівень",
     filterGenre: "Жанр",
+    next: "Далі",
+    prev: "Назад",
+  },
+
+  search: {
+    searchLesson: "Шукати уроки...",
+    browseCatalog: "Перегляд каталогу",
+    esc: "Вийти",
+    nav: "Навігація",
+    open: "Відкрити",
+    toggle: "Переключитись на каталог",
+    matchingLess: "Уроки",
+  },
+
+  videoRow: {
+    playlist: "Плейліст",
   },
 
   catalogSeriesPage: {
@@ -342,12 +359,45 @@ export const appUk = {
     resetProgressDesc: "Очистити прогрес навчання",
     resetProgressCta: "Скинути",
     deleteAccountTitle: "Видалити обліковий запис",
-    deleteAccountDesc:
-      "Незворотне видалення облікового запису",
+    deleteAccountDesc: "Незворотне видалення облікового запису",
     deleteAccountCta: "Видалити обліковий запис",
     modalUnavailableResetLead:
       "Ця дія поки недоступна в застосунку. Напиши в підтримку, якщо потрібна допомога.",
     modalClose: "Закрити",
+    cancel: "Скасувати",
+    displayLang: "Дисплей & Мова",
+    customizeDisplay: "Налаштуйте свою взаємодію з додатком.",
+    theme: "Тема",
+    lightOrDark: "Світла або темна тема",
+    light: "Світла",
+    dark: "Темна",
+    language: "Мова",
+    interfaceLang: "Мова інтерфейсу",
+    en: "en",
+    uk: "uk",
+    securityLogin: "Безпека & Логін",
+    email: "Електронна пошта",
+    changeEmail: "Змінити пошту",
+    password: "Пароль",
+    updatePassToKeep: "Оновіть свій пароль, щоб зберегти безпеку акаунта",
+    changePass: "Змінити пароль",
+    twoFactor: "Двофакторна аутентифікація",
+    extraLayer: "Додайте додатковий рівень безпеки до свого облікового запису",
+    updateEmail: "Оновлення пошти",
+    verCode: "Верифікаційний код",
+    newEmail: "Нова електронна пошта",
+    confirmEmail: "Підтвердити нову пошти",
+    updatePass: "Оновлення паролю",
+    enterCurrent: "Введіть поточний та новий пароль",
+    currentPass: "Поточний пароль",
+    newPass: "Новий пароль",
+    confirmPass: "Підтвердити новий пароль",
+    sendCode: "Ми надіслали код на",
+    enterBelow: ", введіть його нижче",
+    enterNewEmail: "Введіть нову пошту",
+    next: "Далі",
+    processing: "Обробка...",
+    done: "Готово",
   },
 
   profileTeacherVideos: {
@@ -758,7 +808,7 @@ export const appUk = {
       "Мету й строк збережено, але навчальний план не вдалося оновити. Спробуй ще раз на повній сторінці навчального плану.",
     profileGoalHorizonSaveError: "Не вдалося зберегти мету або строк.",
     openFullPage: "Повна сторінка",
-    continueInCatalog: "Далі в каталозі",
+    continueInCatalog: "Далі до каталогу",
     seoTitle: "Навчальний план · Explys",
     seoDescription:
       "Твій персональний маршрут навчання, етапи та тижневі звички.",
@@ -832,7 +882,7 @@ export const appUk = {
     browseCatalogCta: "До каталогу",
     seoNotFoundTitle: "Урок не знайдено",
     seoNotFoundDescription: "Цей урок недоступний або його прибрали.",
-    quizUnlocked: "Вікторину відкрито",
+    quizUnlocked: "Тест відкрито",
     xpAvailable: "Доступно {xp} XP",
     preparingVocabulary: "Готуємо персоналізовану ключову лексику…",
     transcriptVocabMarkTitle: "Торкнися для перекладу й пояснення",
@@ -892,6 +942,7 @@ export const appUk = {
     warning: "Увага! Вікове обмеження: ",
     xpInfo:
       "Заробіть 150xp після завершення цього уроку, щоб перейти на новий рівень!",
+    assignHomework: "Задати домашнє завдання",
   },
 
   lessonSummaryPage: {
@@ -947,8 +998,8 @@ export const appUk = {
     quizCategoryGrammar: "Граматика",
     quizCategoryVocabulary: "Лексика",
     quizCategoryComprehension: "Розуміння тексту",
-    nextInCatalog: "Далі в каталозі",
-    reviewLesson: "Переглянути урок",
+    nextInCatalog: "Далі до каталогу",
+    reviewLesson: "Переглянути урок заново",
   },
 
   placementFlow: {
