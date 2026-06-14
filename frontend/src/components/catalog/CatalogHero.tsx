@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { Info, Play, Star } from "lucide-react";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 export interface CatalogHeroVideo {
   id: number;
@@ -15,6 +16,7 @@ interface CatalogHeroProps {
 
 export function CatalogHero({ featured }: CatalogHeroProps) {
   const navigate = useNavigate();
+  const cb = useAppMessages().catalogHero;
 
   return (
     <section className="relative flex min-h-125 h-[70vh] items-end overflow-hidden bg-background">
@@ -40,7 +42,7 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
       <div className="relative z-10 max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <span className="rounded-full bg-primary/20 px-3 py-1 text-sm font-medium text-primary">
-            Featured
+            {cb.featured}
           </span>
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
             <Star className="h-4 w-4 fill-accent text-accent" />
@@ -51,30 +53,30 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
               {featured.categoryName}
             </span>
           ) : (
-            <span className="text-sm text-muted-foreground">Browse below</span>
+            <span className="text-sm text-muted-foreground">
+              {cb.browseBelow}
+            </span>
           )}
         </div>
 
         <h1 className="font-lexend mb-4 text-balance text-4xl font-bold sm:text-5xl lg:text-6xl">
-          {featured ? featured.title : "Your English catalog"}
+          {featured ? featured.title : cb.titleFallback}
         </h1>
 
         <p className="mb-8 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          {featured
-            ? featured.description
-            : "Pick a lane and learn from curated video clips. Content updates as your library grows."}
+          {featured ? featured.description : cb.descriptionFallback}
         </p>
 
         <div className="mb-8 flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <span>Fresh picks</span>
+          <span>{cb.metaFresh}</span>
           <span className="flex h-1 w-1 items-center justify-center">
             <span className="h-1 w-1 rounded-full bg-muted-foreground mt-4" />
           </span>
-          <span>Video + quizzes</span>
+          <span>{cb.metaQuizzes}</span>
           <span className="flex h-1 w-1 items-center justify-center">
             <span className="h-1 w-1 rounded-full bg-muted-foreground mt-4" />
           </span>
-          <span>Levels for every learner</span>
+          <span>{cb.metaLevels}</span>
         </div>
 
         <div className="flex flex-wrap gap-4">
@@ -85,7 +87,7 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
           >
             <Play className="h-5 w-5 fill-current pr-2" />
-            Start Watching
+            {cb.startWatching}
           </button>
           <button
             type="button"
@@ -97,7 +99,7 @@ export function CatalogHero({ featured }: CatalogHeroProps) {
             className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-sm font-bold text-secondary-foreground shadow-sm hover:bg-secondary/80 transition-colors cursor-pointer"
           >
             <Info className="h-5 w-5" />
-            Browse library
+            {cb.browseLibrary}
           </button>
         </div>
       </div>

@@ -37,13 +37,13 @@ export function HeroSection() {
             <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">
               <Link
                 to={user ? "/profile" : "/registrationMain"}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
+                className="inline-flex w-full sm:w-auto text-center items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
               >
                 {hero.ctaPrimary}
               </Link>
               <Link
                 to="/catalog"
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer"
+                className="inline-flex items-center w-full sm:w-auto text-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer"
               >
                 <Play className="h-5 w-5" />
                 {hero.ctaSecondary}

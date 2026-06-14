@@ -42,6 +42,7 @@ export const appEn = {
     sectionGenre: "Genre",
     settings: "Settings",
     levelWithDot: "• {prefix} {level}",
+    appTheme: "Change platform theme: ",
   },
 
   myLessonsPage: {
@@ -162,6 +163,10 @@ export const appEn = {
     filterFilteredResults: "Filtered Results",
     filterLevel: "Level",
     filterGenre: "Genre",
+  },
+
+  videoRow: {
+    playlist: "Playlist",
   },
 
   catalogSeriesPage: {

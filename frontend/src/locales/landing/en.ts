@@ -306,6 +306,8 @@ export const landingEn = {
       backToLogin: "← Back to login",
       codeRequired: "Please enter the 6-digit code.",
       verifyCode: "Verify Code",
+      orContinueWith: "Or continue with",
+      google: "Continue with Google",
     },
     emailVerification: {
       rightTitle: "Almost there!",
@@ -398,8 +400,8 @@ export const landingEn = {
         haveAccount: "Already have an account?",
         logIn: "Log in",
         dateOfBirth: "Date of Birth",
-        orContinueWith: "Or continue with",
-        google: "Continue with Google",
+        orContinueWith: "Or start with",
+        google: "Start with Google",
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",

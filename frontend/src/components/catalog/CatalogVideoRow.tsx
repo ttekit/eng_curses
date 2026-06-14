@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { Link } from "react-router";
 import { ChevronLeft, ChevronRight, ListVideo } from "lucide-react";
 import { CatalogVideoCard, type CatalogCardVideo } from "./CatalogVideoCard";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 interface CatalogVideoRowProps {
   title: string;
@@ -20,6 +21,7 @@ export function CatalogVideoRow({
   seriesFriendlyLink,
 }: CatalogVideoRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const cb = useAppMessages().videoRow;
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -52,7 +54,7 @@ export function CatalogVideoRow({
               className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-primary transition-colors hover:bg-primary/10"
             >
               <ListVideo className="h-4 w-4" aria-hidden />
-              Playlist
+              {cb.playlist}
             </Link>
           ) : null}
           <button

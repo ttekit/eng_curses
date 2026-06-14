@@ -42,6 +42,7 @@ export const appUk = {
     sectionGenre: "Жанр",
     settings: "Налаштування",
     levelWithDot: "• {prefix} {level}",
+    appTheme: "Змінити тему платформи: ",
   },
 
   myLessonsPage: {
@@ -104,7 +105,7 @@ export const appUk = {
   },
 
   catalogHero: {
-    featured: "У центрі уваги",
+    featured: "У тренді",
     browseBelow: "Дивіться нижче",
     titleFallback: "Твій каталог англійської",
     descriptionFallback:
@@ -113,7 +114,7 @@ export const appUk = {
     metaQuizzes: "Відео + вікторини",
     metaLevels: "Рівні для кожного",
     startWatching: "Почати перегляд",
-    browseLibrary: "Переглянути бібліотеку",
+    browseLibrary: "Переглянути каталог",
   },
 
   catalogSpotlight: {
@@ -163,6 +164,10 @@ export const appUk = {
     filterFilteredResults: "Результати фільтра",
     filterLevel: "Рівень",
     filterGenre: "Жанр",
+  },
+
+  videoRow: {
+    playlist: "Плейліст",
   },
 
   catalogSeriesPage: {
@@ -342,8 +347,7 @@ export const appUk = {
     resetProgressDesc: "Очистити прогрес навчання",
     resetProgressCta: "Скинути",
     deleteAccountTitle: "Видалити обліковий запис",
-    deleteAccountDesc:
-      "Незворотне видалення облікового запису",
+    deleteAccountDesc: "Незворотне видалення облікового запису",
     deleteAccountCta: "Видалити обліковий запис",
     modalUnavailableResetLead:
       "Ця дія поки недоступна в застосунку. Напиши в підтримку, якщо потрібна допомога.",

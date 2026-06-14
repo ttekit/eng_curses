@@ -785,7 +785,7 @@ export default function VideoPage() {
                                 : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
                             )}
                           >
-                            {age}
+                            {filterLabel(age)}
                           </button>
                         ))}
                       </div>

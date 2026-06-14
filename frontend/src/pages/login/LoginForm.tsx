@@ -321,7 +321,7 @@ export default function LoginForm() {
               <div className="flex items-center gap-4 py-2">
                 <div className="h-[1px] flex-1 bg-[#2a2b36]"></div>
                 <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  or continue with
+                  {loginSeo.orContinueWith}
                 </span>
                 <div className="h-[1px] flex-1 bg-[#2a2b36]"></div>
               </div>
@@ -351,7 +351,7 @@ export default function LoginForm() {
                     fill="#EA4335"
                   />
                 </svg>
-                Continue with Google
+                {loginSeo.google}
               </button>
             </>
           )}
