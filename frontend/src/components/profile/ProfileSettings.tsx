@@ -849,7 +849,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             disabled={saving}
             onClick={handleCancelProfile}
           >
-            Cancel
+            {s.cancel}
           </button>
           <button
             type="button"
@@ -867,22 +867,20 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2">
             <Monitor className="size-5 text-primary" />
-            Display & Language
+            {s.displayLang}
           </span>
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          Customize your app experience.
+          {s.customizeDisplay}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 py-2">
           {/* Выбор темы (Слева) */}
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 hover:bg-muted/20 transition-colors">
             <div>
-              <p className="font-medium text-foreground">Theme</p>
-              <p className="text-sm text-muted-foreground">
-                Light or dark mode
-              </p>
+              <p className="font-medium text-foreground">{s.theme}</p>
+              <p className="text-sm text-muted-foreground">{s.lightOrDark}</p>
             </div>
             <div className="mt-auto flex w-fit bg-secondary/50 rounded-lg p-1 border border-border/50">
               <button
@@ -894,7 +892,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Light
+                {s.light}
               </button>
               <button
                 type="button"
@@ -905,7 +903,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Dark
+                {s.dark}
               </button>
             </div>
           </div>
@@ -913,33 +911,31 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           {/* Выбор языка (Справа) */}
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 hover:bg-muted/20 transition-colors">
             <div>
-              <p className="font-medium text-foreground">Language</p>
-              <p className="text-sm text-muted-foreground">
-                Interface language
-              </p>
+              <p className="font-medium text-foreground">{s.language}</p>
+              <p className="text-sm text-muted-foreground">{s.interfaceLang}</p>
             </div>
             <div className="mt-auto flex w-fit bg-secondary/50 rounded-lg p-1 border border-border/50">
               <button
                 type="button"
                 onClick={() => setLocale?.("en")}
-                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                className={`px-5 py-1.5 text-sm font-medium rounded-md uppercase transition-colors hover:cursor-pointer ${
                   locale === "en"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                EN
+                {s.en}
               </button>
               <button
                 type="button"
                 onClick={() => setLocale?.("uk")}
-                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                className={`px-5 py-1.5 text-sm font-medium rounded-md uppercase transition-colors hover:cursor-pointer ${
                   locale === "uk"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                UA
+                {s.uk}
               </button>
             </div>
           </div>
@@ -950,7 +946,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2">
             <Lock className="size-5" />
-            Security & Login
+            {s.securityLogin}
           </span>
         }
       >
@@ -961,7 +957,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
                   <div>
                     <p className="font-medium text-foreground text-left">
-                      Email address
+                      {s.email}
                     </p>
                     <button
                       onClick={() => setIsChangeEmailModalOpen(true)}
@@ -976,7 +972,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   onClick={handleStartEmailChange}
                   className="shrink-0 rounded-xl px-5 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
                 >
-                  Change email
+                  {s.changeEmail}
                 </button>
 
                 {isChangingEmail && (
@@ -984,11 +980,15 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <div className="w-full max-w-2xl rounded-2xl border border-border bg-card text-foreground shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
                       <div className="flex items-start justify-between p-8 pb-6">
                         <div>
-                          <h2 className="text-3xl font-bold">Update email</h2>
+                          <h2 className="text-3xl font-bold">
+                            {s.updateEmail}
+                          </h2>
                           <p className="text-base text-muted-foreground mt-2">
                             {emailChangeStep === 1
-                              ? `We sent a code to ${maskEmail(user?.email)}. Enter it below.`
-                              : "Enter your new email address."}
+                              ? `${s.sendCode}${" "}
+                                ${maskEmail(user?.email)}
+                                ${s.enterBelow}`
+                              : s.enterNewEmail}
                           </p>
                         </div>
                         <button
@@ -1021,7 +1021,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         {emailChangeStep === 1 ? (
                           <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              Verification Code{" "}
+                              {s.verCode}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1042,7 +1042,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           <div className="space-y-5">
                             <div className="space-y-2">
                               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                New Email Address{" "}
+                                {s.newEmail}{" "}
                                 <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1056,7 +1056,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
                             <div className="space-y-2">
                               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                Confirm New Email{" "}
+                                {s.confirmEmail}{" "}
                                 <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1078,7 +1078,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           onClick={() => setIsChangingEmail(false)}
                           className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
                         >
-                          Cancel
+                          {s.cancel}
                         </button>
                         <button
                           onClick={handleEmailUpdate}
@@ -1090,10 +1090,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                         >
                           {isLoading
-                            ? "Processing..."
+                            ? s.processing
                             : emailChangeStep === 1
-                              ? "Next"
-                              : "Done"}
+                              ? s.next
+                              : s.done}
                         </button>
                       </div>
                     </div>
@@ -1110,10 +1110,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
                     <div>
                       <p className="font-medium text-foreground text-left">
-                        Password
+                        {s.password}
                       </p>
                       <p className="text-sm text-muted-foreground text-left">
-                        Update your password to keep your account secure
+                        {s.updatePassToKeep}
                       </p>
                     </div>
 
@@ -1122,7 +1122,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       onClick={() => setIsChangingPassword(true)}
                       className="shrink-0 rounded-xl px-5 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
                     >
-                      Change password
+                      {s.changePass}
                     </button>
                   </div>
 
@@ -1132,10 +1132,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         <div className="flex items-start justify-between p-8 pb-6">
                           <div>
                             <h2 className="text-3xl font-bold">
-                              Update password
+                              {s.updatePass}
                             </h2>
                             <p className="text-base text-muted-foreground mt-2">
-                              Enter your current and new password.
+                              {s.enterCurrent}
                             </p>
                           </div>
                           <button
@@ -1170,7 +1170,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
                           <div className="space-y-3">
                             <label className="text-sm font-semibold text-muted-foreground tracking-wider">
-                              Current Password{" "}
+                              {s.currentPass}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1186,7 +1186,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           </div>
                           <div className="space-y-3">
                             <label className="text-sm font-semibold text-muted-foreground tracking-wider">
-                              New Password{" "}
+                              {s.newPass}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1200,7 +1200,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           </div>
                           <div className="space-y-3">
                             <label className="text-sm font-semibold text-muted-foreground tracking-wider">
-                              Confirm New Password{" "}
+                              {s.confirmPass}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1226,7 +1226,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             disabled={isLoading}
                             className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                           >
-                            Cancel
+                            {s.cancel}
                           </button>
                           <button
                             type="button"
@@ -1256,7 +1256,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                   ></path>
                                 </svg>
-                                Saving...
+                                {s.saving}
                               </>
                             ) : (
                               "Done"
@@ -1273,12 +1273,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/20 transition-colors">
             <div>
-              <p className="font-medium text-foreground">
-                Two-factor authentication
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Add an extra layer of security to your account
-              </p>
+              <p className="font-medium text-foreground">{s.twoFactor}</p>
+              <p className="text-sm text-muted-foreground">{s.extraLayer}</p>
             </div>
 
             <ToggleSwitch
@@ -1375,7 +1371,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       disabled={isLoading}
                       className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
                     >
-                      Cancel
+                      {s.cancel}
                     </button>
                     <button
                       type="button"
