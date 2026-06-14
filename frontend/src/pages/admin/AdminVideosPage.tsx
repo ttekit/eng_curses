@@ -743,7 +743,7 @@ export default function AdminVideosPage() {
         );
       } else {
         const contentMediaId = deleteCandidate.video.content.id;
-        const res = await apiFetch(`/contents/episode/${contentMediaId}`, {
+        const res = await apiFetch(`/content-video/episode/${contentMediaId}`, {
           method: "DELETE",
         });
         if (!res.ok) throw new Error("Failed to delete episode");
@@ -1596,7 +1596,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                    null
+                      null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
