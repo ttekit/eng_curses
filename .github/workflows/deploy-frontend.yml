@@ -14,6 +14,7 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/deploy-frontend.yml"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 concurrency:
@@ -21,8 +22,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  quality:
+    name: Pre-deploy quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_SITE_URL: https://explys.com
+      VITE_APP_SUBSCRIPTION_DEV_MODE: "0"
+      VITE_SKIP_SUBSCRIPTION_ENFORCEMENT: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: SEO route lint
+        run: npm run seo:lint
+
+      - name: Production build
+        run: npm run build
+
   deploy:
-    name: Build and rsync dist
+    name: Upload dist to server
+    needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -42,7 +78,6 @@ jobs:
           VITE_SITE_URL: https://explys.com
         run: |
           npm ci
-          npm run seo:lint
           npm run build
 
       - name: Upload dist to server

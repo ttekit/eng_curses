@@ -36,6 +36,7 @@ import { parseSeriesPlaylistPayload } from "../../lib/catalogPlaylist";
 import { parseWebVttTranscriptLines } from "../../lib/parseWebVtt";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { lessonSeo } from "../../lib/lessonSeo";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { appEn } from "../../locales/app/en";
 import { formatMessage } from "../../lib/formatMessage";
@@ -1427,10 +1428,12 @@ export default function ContentPage() {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <SEO
-        title={videoData.videoName}
-        description={descriptionBlurb}
-        canonicalUrl={resolveCanonicalUrl(`/content/${id}`)}
-        noindex
+        {...lessonSeo({
+          id: id!,
+          videoName: videoData.videoName,
+          videoDescription: descriptionBlurb,
+          videoLink: videoData.videoLink,
+        })}
       />
       <ContentWatchHeader
         L={L}
