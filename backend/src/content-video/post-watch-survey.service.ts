@@ -5,10 +5,7 @@ import {
 } from "@nestjs/common";
 import { Prisma } from "../generated/prisma/client";
 import { PrismaService } from "src/prisma.service";
-import {
-  aggregateSkillScore,
-  clamp,
-} from "src/alcorythm/alcorythm-scoring.util";
+import { applyListeningBumpToExistingTopics } from "src/user-language-data/user-language-data-mutation.util";
 import {
   PostWatchSurveyGeminiClient,
   PostWatchSurveyQuestion,
@@ -129,27 +126,12 @@ export class PostWatchSurveyService {
       return;
     }
 
-    const listenBump = 0.028;
-
-    for (const topicId of topicIds) {
-      const row = await this.prisma.userLanguageData.findUnique({
-        where: { userId_topicId: { userId, topicId } },
-      });
-      if (!row) {
-        continue;
-      }
-      const base = row.score;
-      const nl = clamp((row.listeningScore ?? base) + listenBump);
-      const nv = row.vocabularyScore ?? base;
-      const ng = row.grammarScore ?? base;
-      await this.prisma.userLanguageData.update({
-        where: { id: row.id },
-        data: {
-          listeningScore: nl,
-          score: aggregateSkillScore(nl, nv, ng),
-        },
-      });
-    }
+    await applyListeningBumpToExistingTopics(
+      this.prisma,
+      userId,
+      topicIds,
+      0.028,
+    );
   }
 
   async submitSurvey(
@@ -324,12 +306,16 @@ export class PostWatchSurveyService {
     if (updatedUser.currentStreak >= 7) achievementsToUnlock.push("streak-7");
     if (updatedUser.currentStreak >= 30) achievementsToUnlock.push("streak-30");
 
-    for (const achievementId of achievementsToUnlock) {
-      await this.prisma.userAchievement.upsert({
-        where: { userId_achievementId: { userId, achievementId } },
-        update: {},
-        create: { userId, achievementId },
-      });
+    if (achievementsToUnlock.length) {
+      await this.prisma.$transaction(
+        achievementsToUnlock.map((achievementId) =>
+          this.prisma.userAchievement.upsert({
+            where: { userId_achievementId: { userId, achievementId } },
+            update: {},
+            create: { userId, achievementId },
+          }),
+        ),
+      );
     }
   }
 }

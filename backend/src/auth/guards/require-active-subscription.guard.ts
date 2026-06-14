@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   ForbiddenException,
   UnauthorizedException,
@@ -9,11 +10,16 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
 import { Reflector } from "@nestjs/core";
+import type { Redis } from "ioredis";
 import { PrismaService } from "../../prisma.service";
 import {
   hasPaidSubscriptionAccess,
   isSubscriptionEnforcementDisabled,
 } from "../../billing/subscription-access.util";
+import {
+  readSubscriptionAccessCache,
+  writeSubscriptionAccessCache,
+} from "../../billing/subscription-access-cache.util";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { UserRole } from "@generated/prisma/enums";
 import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
@@ -26,6 +32,7 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
+    @Inject("REDIS_CLIENT") private readonly redis: Redis,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -96,16 +103,27 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
       throw new UnauthorizedException("Invalid token subject");
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        role: true,
-        teacherId: true,
-        subscriptionStatus: true,
-      },
-    });
+    let user = await readSubscriptionAccessCache(this.redis, userId);
     if (!user) {
-      throw new UnauthorizedException("User not found");
+      const fromDb = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          role: true,
+          teacherId: true,
+          subscriptionStatus: true,
+        },
+      });
+      if (!fromDb) {
+        throw new UnauthorizedException("User not found");
+      }
+      user = {
+        role: fromDb.role,
+        teacherId: fromDb.teacherId,
+        subscriptionStatus: fromDb.subscriptionStatus,
+      };
+      await writeSubscriptionAccessCache(this.redis, userId, user).catch(
+        () => {},
+      );
     }
 
     if (
