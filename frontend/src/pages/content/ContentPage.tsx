@@ -724,7 +724,10 @@ export default function ContentPage() {
     return false;
   }, [user]);
 
-  const isLocked = videoData?.ageRestriction === "18+" && !isAdultUser;
+  const missingDob = user && !user.dateOfBirth;
+  const is18Plus =
+    videoData?.ageRestriction === "18+" || videoData?.ageRestriction === "21+";
+  const isLocked = is18Plus && (!isAdultUser || missingDob);
 
   const progressedToWatchedRef = useRef(false);
   const watchCompletePostedRef = useRef(false);
@@ -1272,39 +1275,6 @@ export default function ContentPage() {
     ],
   );
 
-  const missingDob = user && !user.dateOfBirth;
-
-  if (missingDob) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center antialiased">
-        <SEO
-          title="Date of Birth Required"
-          description="Please enter your date of birth to continue."
-          canonicalUrl={resolveCanonicalUrl("/catalog")}
-          noindex
-        />
-        <div className="bg-card border border-border p-8 rounded-3xl shadow-lg max-w-md w-full flex flex-col items-center animate-in zoom-in-95 duration-300">
-          <div className="bg-destructive/20 p-4 rounded-full mb-5">
-            <Calendar className="w-10 h-10 text-destructive" />
-          </div>
-          <h1 className="text-2xl font-bold font-display text-foreground mb-3">
-            Date of Birth Required
-          </h1>
-          <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-            To watch videos, please specify your date of birth in your profile
-            settings.
-          </p>
-          <button
-            onClick={() => navigate("/profileMain?tab=settings")}
-            className="flex w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-sm"
-          >
-            Go to Settings
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <>
@@ -1450,15 +1420,39 @@ export default function ContentPage() {
                 {isLocked ? (
                   <div className="aspect-video flex flex-col items-center justify-center bg-card/80 text-center p-6">
                     <div className="bg-destructive/20 p-4 rounded-full mb-4">
-                      <Lock className="w-10 h-10 text-destructive" />
+                      {missingDob ? (
+                        <Calendar className="w-10 h-10 text-destructive" />
+                      ) : (
+                        <Lock className="w-10 h-10 text-destructive" />
+                      )}
                     </div>
-                    <h2 className="text-foreground font-bold text-2xl mb-2">
-                      18+ Only
-                    </h2>
-                    <p className="text-muted-foreground text-sm max-w-md">
-                      This content is restricted to adults (18+) and is not
-                      available to your profile.
-                    </p>
+                    {missingDob ? (
+                      <>
+                        <h2 className="text-foreground font-bold text-2xl mb-2">
+                          Age Verification Required
+                        </h2>
+                        <p className="text-muted-foreground text-sm max-w-md mb-5">
+                          To watch 18+ content, please specify your date of
+                          birth in your profile settings.
+                        </p>
+                        <button
+                          onClick={() => navigate("/profileMain?tab=settings")}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 px-6 rounded-xl transition-colors cursor-pointer"
+                        >
+                          Go to Settings
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <h2 className="text-foreground font-bold text-2xl mb-2">
+                          18+ Only
+                        </h2>
+                        <p className="text-muted-foreground text-sm max-w-md">
+                          This content is restricted to adults (18+) and is not
+                          available to your profile.
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <VideoPlayer

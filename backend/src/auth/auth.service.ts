@@ -225,7 +225,6 @@ export class AuthService {
         verificationCodeExpires: otpExpires,
         subscriptionPlan: "smart",
         subscriptionStatus: "active",
-        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
         hasCompletedPlacement: roleLabel === "TEACHER",
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
@@ -531,7 +530,9 @@ export class AuthService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.role ? { role: data.role.toUpperCase() as any } : {}),
+        ...(data.role && data.role.toUpperCase() !== "CHOOSE"
+          ? { role: data.role.toUpperCase() as any }
+          : {}),
         ...(data.dateOfBirth
           ? { dateOfBirth: new Date(data.dateOfBirth) }
           : {}),
@@ -1118,7 +1119,7 @@ export class AuthService {
       id: (user as any).id,
       name: (user as any).name,
       email: (user as any).email,
-      dateOfBirth: (user as any).dateOfBirth,
+      //dateOfBirth: (user as any).dateOfBirth,
       avatarUrl: (user as any).avatarUrl,
       isTwoFactorEnable: (user as any).isTwoFactorEnable,
       isVerified: (user as any).isVerified,
