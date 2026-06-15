@@ -14,7 +14,7 @@ model User {
   password              String?
   dateOfBirth           DateTime?     @map("date_of_birth")
   avatarUrl             String?       @map("avatar_url")
-  role                  UserRole      @default(REGULAR)
+  role                  UserRole      @default(ADULT)
   hasCompletedPlacement Boolean       @default(false) @map("has_completed_placement")
   lastLogin             DateTime?
   createdAt             DateTime      @default(now())

@@ -26,6 +26,9 @@ import { jwtSubToUserId } from "src/auth/jwt-subject.util";
 import { Request, Response } from "express";
 import { CreateClassDto } from "./dto/create-class.dto";
 import { UpdateClassDto } from "./dto/update-class.dto";
+import { TeacherClassesService } from "./teacher-classes.service";
+import { ExportStudentExcelService } from "./export-student-excel.service";
+import { StudentTeacherResults } from "./student-teacher-results.service";
 
 type AuthedRequest = Request & {
   user?: { sub?: number };
@@ -37,6 +40,9 @@ type AuthedRequest = Request & {
 export class TeacherStudentsController {
   constructor(
     private readonly teacherStudentsService: TeacherStudentsService,
+    private readonly teacherClasses: TeacherClassesService,
+    private readonly exportStudentExcel: ExportStudentExcelService,
+    private readonly studentTeacherResults: StudentTeacherResults,
   ) {}
 
   @Post("classes")
@@ -52,7 +58,7 @@ export class TeacherStudentsController {
     @Body() dto: CreateClassDto,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    return this.teacherStudentsService.createClass(teacherId, dto);
+    return this.teacherClasses.createClass(teacherId, dto);
   }
 
   @Get("classes")
@@ -65,7 +71,7 @@ export class TeacherStudentsController {
   })
   async getMyClasses(@Req() req: Request & { user?: unknown }) {
     const teacherId = jwtSubToUserId(req.user);
-    return this.teacherStudentsService.getMyClasses(teacherId);
+    return this.teacherClasses.getMyClasses(teacherId);
   }
 
   @Get("classes/:id")
@@ -80,7 +86,7 @@ export class TeacherStudentsController {
     @Param("id", ParseIntPipe) id: number,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    return this.teacherStudentsService.getClassById(teacherId, id);
+    return this.teacherClasses.getClassById(teacherId, id);
   }
 
   @Patch("classes/:id")
@@ -97,7 +103,7 @@ export class TeacherStudentsController {
     @Body() dto: UpdateClassDto,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    return this.teacherStudentsService.updateClass(teacherId, id, dto);
+    return this.teacherClasses.updateClass(teacherId, id, dto);
   }
 
   @Delete("classes/:id")
@@ -110,7 +116,7 @@ export class TeacherStudentsController {
     @Param("id", ParseIntPipe) id: number,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    return this.teacherStudentsService.removeClass(teacherId, id);
+    return this.teacherClasses.removeClass(teacherId, id);
   }
 
   @Get("my-students/results")
@@ -132,7 +138,7 @@ export class TeacherStudentsController {
     if (!Number.isFinite(id)) {
       throw new ForbiddenException();
     }
-    return this.teacherStudentsService.getMyStudentsResults(id);
+    return this.studentTeacherResults.getMyStudentsResults(id);
   }
 
   @Post("my-students")
@@ -182,8 +188,7 @@ export class TeacherStudentsController {
     @Res() res: Response,
   ) {
     const teacherId = jwtSubToUserId(req.user);
-    const buffer =
-      await this.teacherStudentsService.exportStudentsExcel(teacherId);
+    const buffer = await this.exportStudentExcel.exportStudentsExcel(teacherId);
     res.send(buffer);
   }
 
