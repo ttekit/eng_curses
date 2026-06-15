@@ -23,6 +23,8 @@ import { UserSelfOrApiGuard } from "../auth/guards/user-self-or-api.guard";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UsersService } from "./users.service";
+import type { AuthedRequest } from "../auth/authenticated-request.types";
+import { resolve_authed_user_id } from "../auth/jwt-subject.util";
 import { ResetProgressDto } from "./dto/reset-progress.dto";
 import { AdminUpdateUserDto } from "./dto/update-user.dto";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
@@ -67,10 +69,14 @@ export class UsersController {
   @ApiBearerAuth("JWT-auth")
   @ApiOperation({ summary: "Update current user profile via JWT token" })
   @ApiResponse({ status: 200, description: "User successfully updated." })
-  updateProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
-    const userId = req.user?.id || req.user?.sub;
-
-    return this.usersService.updateProfile(Number(userId), updateUserDto);
+  updateProfile(
+    @Req() req: AuthedRequest,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.updateProfile(
+      resolve_authed_user_id(req.user),
+      updateUserDto,
+    );
   }
 
   @Get(":id")
@@ -134,8 +140,11 @@ export class UsersController {
     status: 400,
     description: "Invalid or expired verification code.",
   })
-  async resetProfileProgress(@Req() req: any, @Body() dto: ResetProgressDto) {
-    const userId = req.user?.id || req.user?.sub;
+  async resetProfileProgress(
+    @Req() req: AuthedRequest,
+    @Body() dto: ResetProgressDto,
+  ) {
+    const userId = resolve_authed_user_id(req.user);
 
     await this.usersService.resetProgress(Number(userId), dto);
     return { success: true, message: "Progress has been successfully reset." };

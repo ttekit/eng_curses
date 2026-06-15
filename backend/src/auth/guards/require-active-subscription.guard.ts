@@ -25,6 +25,10 @@ import { UserRole } from "@generated/prisma/enums";
 import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
 import { SKIP_SUBSCRIPTION_CHECK_KEY } from "../decorators/skip-subscription-check.decorator";
 
+type RoutedRequest = Request & {
+  route?: { path?: string };
+};
+
 @Injectable()
 export class RequireActiveSubscriptionGuard implements CanActivate {
   constructor(
@@ -36,10 +40,10 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<Request>();
+    const req = context.switchToHttp().getRequest<RoutedRequest>();
 
     const url = req.url || "";
-    const path = (req as any).route?.path || "";
+    const path = req.route?.path || "";
     if (url.includes("oauth") || path.includes("oauth")) {
       return true;
     }

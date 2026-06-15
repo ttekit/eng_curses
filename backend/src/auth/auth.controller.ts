@@ -44,6 +44,10 @@ import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan
 import { Throttle } from "@nestjs/throttler";
 import { Public } from "./decorators/public.decorator";
 import { SkipSubscriptionCheck } from "./decorators/skip-subscription-check.decorator";
+import type { AuthedRequest } from "./authenticated-request.types";
+import { resolve_authed_user_id } from "./jwt-subject.util";
+import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
+import { SaveWordDto } from "./dto/save-word.dto";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -137,30 +141,37 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @Post("update-preferences")
   @SkipSubscriptionCheck()
-  async updatePreferences(@Req() req: any, @Body() body: any) {
-    const userId = req.user?.id || req.user?.sub;
-
-    if (!userId) {
-      throw new UnauthorizedException("Login failed: User ID is missing");
-    }
-
+  async updatePreferences(
+    @Req() req: AuthedRequest,
+    @Body() body: UpdatePreferencesDto,
+  ) {
+    const userId = resolve_authed_user_id(req.user);
     return this.authService.updateUserPreferences(userId, body);
   }
 
   @UseGuards(AuthGuard)
   @Post("update-password")
-  async updatePassword(@Req() req: any, @Body() dto: UpdatePasswordDto) {
-    return await this.authService.updatePassword(req.user.sub, dto);
+  async updatePassword(
+    @Req() req: AuthedRequest,
+    @Body() dto: UpdatePasswordDto,
+  ) {
+    return await this.authService.updatePassword(
+      resolve_authed_user_id(req.user),
+      dto,
+    );
   }
 
   @UseGuards(AuthGuard)
   @Post("toggle-2fa")
   @HttpCode(HttpStatus.OK)
   public async toggleTwoFactor(
-    @Req() req: any,
+    @Req() req: AuthedRequest,
     @Body() dto: ToggleTwoFactorDto,
   ) {
-    return this.authService.toggleTwoFactor(req.user.sub, dto);
+    return this.authService.toggleTwoFactor(
+      resolve_authed_user_id(req.user),
+      dto,
+    );
   }
 
   @Public()
@@ -179,8 +190,11 @@ export class AuthController {
   @ApiBearerAuth("JWT-auth")
   @Post("vocabulary")
   @ApiOperation({ summary: "Save a word from video to vocabulary" })
-  async saveWord(@Req() req: any, @Body() body: any) {
-    return this.authService.saveWordToVocabulary(Number(req.user.sub), body);
+  async saveWord(@Req() req: AuthedRequest, @Body() body: SaveWordDto) {
+    return this.authService.saveWordToVocabulary(
+      resolve_authed_user_id(req.user),
+      body,
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -193,42 +207,40 @@ export class AuthController {
     description: "User profile retrieved successfully.",
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
-  getProfile(@Req() req: any) {
-    const userId = req.user?.id || req.user?.sub;
-
-    if (!userId || isNaN(Number(userId))) {
-      console.error(
-        "DEBUG PROFILE: Invalid or missing ID in req.user:",
-        req.user,
-      );
-      throw new UnauthorizedException("Unable to determine the user's profile");
-    }
-
-    return this.authService.getProfile(Number(userId));
+  getProfile(@Req() req: AuthedRequest) {
+    return this.authService.getProfile(resolve_authed_user_id(req.user));
   }
 
   @Post("send-email-change-code")
   @UseGuards(AuthGuard)
-  async sendEmailChangeCode(@Req() req: any) {
-    const userId = req.user?.id || req.user?.sub;
-    return this.authService.sendEmailChangeCode(Number(userId));
+  async sendEmailChangeCode(@Req() req: AuthedRequest) {
+    return this.authService.sendEmailChangeCode(
+      resolve_authed_user_id(req.user),
+    );
   }
 
   @Post("verify-email-change")
   @UseGuards(AuthGuard)
   async verifyAndChangeEmail(
-    @Req() req: any,
+    @Req() req: AuthedRequest,
     @Body() dto: VerifyEmailChangeDto,
   ) {
-    const userId = req.user?.id || req.user?.sub;
-    return this.authService.verifyAndChangeEmail(Number(userId), dto);
+    return this.authService.verifyAndChangeEmail(
+      resolve_authed_user_id(req.user),
+      dto,
+    );
   }
 
   @Post("check-email-change-code")
   @UseGuards(AuthGuard)
-  async checkEmailChangeCode(@Req() req: any, @Body("code") code: string) {
-    const userId = req.user?.id || req.user?.sub;
-    return this.authService.checkEmailChangeCode(Number(userId), code);
+  async checkEmailChangeCode(
+    @Req() req: AuthedRequest,
+    @Body("code") code: string,
+  ) {
+    return this.authService.checkEmailChangeCode(
+      resolve_authed_user_id(req.user),
+      code,
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -239,9 +251,8 @@ export class AuthController {
       "Learning dashboard stats (watch time, quizzes, Mon–Sun weekly activity UTC)",
   })
   @ApiResponse({ status: 200, description: "Stats retrieved." })
-  getLearningStats(@Req() req: any) {
-    const userId = Number(req.user.sub);
-    return this.authService.getLearningStats(userId);
+  getLearningStats(@Req() req: AuthedRequest) {
+    return this.authService.getLearningStats(resolve_authed_user_id(req.user));
   }
 
   @UseGuards(AuthGuard)
@@ -252,9 +263,10 @@ export class AuthController {
       "Topic-tag knowledge (listening / vocabulary / grammar means from UserLanguageData)",
   })
   @ApiResponse({ status: 200, description: "Tag aggregates returned." })
-  getKnowledgeTags(@Req() req: any) {
-    const userId = Number(req.user.sub);
-    return this.authService.getKnowledgeTagProgress(userId);
+  getKnowledgeTags(@Req() req: AuthedRequest) {
+    return this.authService.getKnowledgeTagProgress(
+      resolve_authed_user_id(req.user),
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -267,9 +279,10 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: "Tag aggregates refreshed." })
   @ApiResponse({ status: 403, description: "DEV_MODE is not enabled" })
-  refreshKnowledgeTags(@Req() req: any) {
-    const userId = Number(req.user.sub);
-    return this.authService.refreshKnowledgeTagProgress(userId);
+  refreshKnowledgeTags(@Req() req: AuthedRequest) {
+    return this.authService.refreshKnowledgeTagProgress(
+      resolve_authed_user_id(req.user),
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -282,9 +295,10 @@ export class AuthController {
     status: 200,
     description: "Detailed summary data objects returned successfully.",
   })
-  getProgressDetails(@Req() req: any) {
-    const userId = Number(req.user.sub);
-    return this.authService.getProgressDetails(userId);
+  getProgressDetails(@Req() req: AuthedRequest) {
+    return this.authService.getProgressDetails(
+      resolve_authed_user_id(req.user),
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -300,13 +314,8 @@ export class AuthController {
     status: 200,
     description: "Studying plan regenerated and saved.",
   })
-  async regenerateStudyingPlan(
-    @Req() req: { user?: { sub?: unknown; id?: unknown } },
-  ) {
-    const userId = Number(req.user?.sub ?? req.user?.id);
-    if (!Number.isFinite(userId)) {
-      throw new UnauthorizedException("User id not found in token");
-    }
+  async regenerateStudyingPlan(@Req() req: AuthedRequest) {
+    const userId = resolve_authed_user_id(req.user);
     return this.studyingPlanRegeneration.regenerateForUser(userId);
   }
 
@@ -332,7 +341,7 @@ export class AuthController {
         code,
       );
 
-      const isNewUser = (result as any).isNewUser || false;
+      const isNewUser = result.isNewUser;
       const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.access_token}&isNewUser=${isNewUser}`;
 
       return res.redirect(redirectUrl);
@@ -364,21 +373,30 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Send OTP for danger zone actions" })
   async sendDangerZoneCode(
-    @Req() req: any,
+    @Req() req: AuthedRequest,
     @Body("action") action: "delete" | "reset",
   ) {
     if (action !== "delete" && action !== "reset") {
       throw new BadRequestException("Invalid action type");
     }
-    return await this.authService.sendDangerZoneCode(req.user.sub, action);
+    return await this.authService.sendDangerZoneCode(
+      resolve_authed_user_id(req.user),
+      action,
+    );
   }
 
   @UseGuards(AuthGuard)
   @Delete("delete-account")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Delete user account using OTP" })
-  async deleteAccount(@Req() req: any, @Body() body: { code: string }) {
-    return await this.authService.deleteAccount(req.user.sub, body.code);
+  async deleteAccount(
+    @Req() req: AuthedRequest,
+    @Body() body: { code: string },
+  ) {
+    return await this.authService.deleteAccount(
+      resolve_authed_user_id(req.user),
+      body.code,
+    );
   }
 
   @Public()

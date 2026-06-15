@@ -5,6 +5,10 @@ import { AlcorythmModule } from "../alcorythm/alcorythm.module";
 import { AuthController } from "./auth.controller";
 import { AuthGuard } from "./auth.guard";
 import { AuthService } from "./auth.service";
+import { AuthProfileService } from "./auth-profile.service";
+import { AuthLearningStatsService } from "./auth-learning-stats.service";
+import { AuthKnowledgeTagsService } from "./auth-knowledge-tags.service";
+import { AuthProgressDetailsService } from "./auth-progress-details.service";
 import { ApiTokenOrJwtAuthGuard } from "./guards/api-token-or-jwt.guard";
 import { ApiTokenOnlyGuard } from "./guards/api-token-only.guard";
 import { JwtAdminGuard } from "./guards/jwt-admin.guard";
@@ -46,6 +50,10 @@ import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
   controllers: [AuthController, PasswordRecoveryController],
   providers: [
     AuthService,
+    AuthProfileService,
+    AuthLearningStatsService,
+    AuthKnowledgeTagsService,
+    AuthProgressDetailsService,
     AuthGuard,
     ApiTokenOrJwtAuthGuard,
     ApiTokenOnlyGuard,
@@ -61,6 +69,10 @@ import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
   exports: [
     JwtModule,
     AuthService,
+    AuthProfileService,
+    AuthLearningStatsService,
+    AuthKnowledgeTagsService,
+    AuthProgressDetailsService,
     AuthGuard,
     ApiTokenOrJwtAuthGuard,
     ApiTokenOnlyGuard,

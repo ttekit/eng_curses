@@ -1,23 +1,42 @@
-import { CanActivate, ExecutionContext, Injectable, BadRequestException } from '@nestjs/common';
-import { TurnstileService } from '../provider/turnstile.provider'; 
+import {
+  BadRequestException,
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { TurnstileService } from "../provider/turnstile.provider";
+import { should_skip_turnstile_for_mobile } from "./mobile-client.util";
 
 @Injectable()
 export class TurnstileGuard implements CanActivate {
-  constructor(private readonly turnstileService: TurnstileService) {}
+  constructor(
+    private readonly turnstileService: TurnstileService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const token = request.body?.captchaToken;
-
-    if (!token) {
-      throw new BadRequestException('CAPTCHA is required');
+    const nodeEnv = this.configService.get<string>("NODE_ENV");
+    if (nodeEnv !== "production") {
+      return true;
     }
 
-    const ip = request.headers['x-forwarded-for'] || request.ip;
-    const isValid = await this.turnstileService.validateToken(token, ip);
+    const request = context.switchToHttp().getRequest();
+    if (should_skip_turnstile_for_mobile(request)) {
+      return true;
+    }
 
+    const token = request.body?.captchaToken;
+    if (!token) {
+      throw new BadRequestException("CAPTCHA is required");
+    }
+
+    const ip = request.headers["x-forwarded-for"] || request.ip;
+    const isValid = await this.turnstileService.validateToken(token, ip);
     if (!isValid) {
-      throw new BadRequestException('The CAPTCHA verification failed or the token has expired');
+      throw new BadRequestException(
+        "The CAPTCHA verification failed or the token has expired",
+      );
     }
 
     return true;
