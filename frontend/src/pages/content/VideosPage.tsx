@@ -139,12 +139,10 @@ export default function VideoPage() {
   const catalogSeo = messages.catalogPage;
   const placementCompleteHandled = useRef(false);
 
-  // Ссылки на контейнеры для горизонтальной прокрутки
   const levelScrollRef = useRef<HTMLDivElement>(null);
   const genreScrollRef = useRef<HTMLDivElement>(null);
   const ageScrollRef = useRef<HTMLDivElement>(null);
 
-  // Умная проверка возраста юзера
   const isAdultUser = useMemo(() => {
     if (!user) return false;
     if (user.role === "adult") return true;
@@ -615,9 +613,6 @@ export default function VideoPage() {
       )
     : [];
 
-  // Определяем, нужна ли блокировка
-  const missingDob = !userLoading && user && !user.dateOfBirth;
-
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground antialiased flex-col">
       {activatingSubscriptionOverlay ? (
@@ -664,37 +659,7 @@ export default function VideoPage() {
                 : "lg:ml-64 lg:max-w-[calc(100vw-16rem)]",
             )}
           >
-            {missingDob && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/30 backdrop-blur-xl p-4">
-                {" "}
-                <div className="bg-card border border-border p-8 rounded-3xl shadow-2xl max-w-md w-full flex flex-col items-center animate-in zoom-in-95 duration-300">
-                  <div className="bg-destructive/20 p-4 rounded-full mb-5">
-                    <Calendar className="w-10 h-10 text-destructive" />
-                  </div>
-                  <h1 className="text-2xl font-bold font-display text-foreground mb-3 text-center">
-                    Date of Birth Required
-                  </h1>
-                  <p className="text-muted-foreground mb-8 text-sm leading-relaxed text-center">
-                    To view the catalog and watch videos, please specify your
-                    date of birth in your profile settings.
-                  </p>
-                  <button
-                    onClick={() => navigate("/profileMain?tab=settings")}
-                    className="flex w-full rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer shadow-sm"
-                  >
-                    Go to Settings
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* КОНТЕНТ КАТАЛОГА (Замыливается, если нет ДР) */}
-            <div
-              className={cn(
-                missingDob &&
-                  "pointer-events-none select-none blur-lg opacity-40 overflow-hidden h-[100vh]",
-              )}
-            >
+            <div>
               <CatalogHero featured={featuredHero} />
 
               <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
@@ -897,7 +862,9 @@ export default function VideoPage() {
                       {paginatedVideos.map((video) => {
                         const vidAge = video.ageRestriction || "0+";
                         const is18Plus = vidAge === "18+" || vidAge === "21+";
-                        const isLocked = is18Plus && !isAdultUser;
+                        const missingDob = !user?.dateOfBirth;
+                        const isLocked =
+                          is18Plus && (!isAdultUser || missingDob);
 
                         return (
                           <div
@@ -914,18 +881,42 @@ export default function VideoPage() {
                               <CatalogVideoCard video={toCardVideo(video)} />
                             </div>
                             {isLocked && (
-                              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 p-4 text-center">
-                                <div className="bg-destructive/20 p-3 rounded-full mb-3 backdrop-blur-md shadow-lg border border-destructive/30">
-                                  <Lock className="w-8 h-8 text-destructive" />
-                                </div>
-                                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-md">
-                                  18+ Only
-                                </h3>
-                                <p className="text-zinc-200 text-xs leading-relaxed font-medium drop-shadow-md">
-                                  {locale === "uk"
-                                    ? "Контент недоступний для вашого віку"
-                                    : "Content unavailable for your age"}
-                                </p>
+                              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 p-4 text-center">
+                                {missingDob ? (
+                                  <>
+                                    <div className="bg-destructive/20 p-2.5 rounded-full mb-2 backdrop-blur-md shadow-lg border border-destructive/30">
+                                      <Calendar className="w-6 h-6 text-destructive" />
+                                    </div>
+                                    <h3 className="text-white font-bold text-sm mb-1 drop-shadow-md">
+                                      Age Verification
+                                    </h3>
+                                    <p className="text-zinc-300 text-[11px] leading-tight font-medium mb-3 drop-shadow-md px-1">
+                                      Please set your Date of Birth.
+                                    </p>
+                                    <button
+                                      onClick={() =>
+                                        navigate("/profileMain?tab=settings")
+                                      }
+                                      className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold py-1.5 px-4 rounded-lg z-20 pointer-events-auto shadow-sm"
+                                    >
+                                      Settings
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="bg-destructive/20 p-3 rounded-full mb-3 backdrop-blur-md shadow-lg border border-destructive/30">
+                                      <Lock className="w-8 h-8 text-destructive" />
+                                    </div>
+                                    <h3 className="text-white font-bold text-lg mb-1 drop-shadow-md">
+                                      18+ Only
+                                    </h3>
+                                    <p className="text-zinc-200 text-xs leading-relaxed font-medium drop-shadow-md">
+                                      {locale === "uk"
+                                        ? "Контент недоступний"
+                                        : "Unavailable for your age"}
+                                    </p>
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
