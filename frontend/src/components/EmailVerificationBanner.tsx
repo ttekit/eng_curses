@@ -1,29 +1,21 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { AlertTriangle } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import { useAppMessages } from "../hooks/useAppMessages";
-import { use_email_verification_banner_offset } from "../hooks/use_email_verification_banner_offset";
+import { useEmailVerificationBannerOffset } from "../hooks/useEmailVerificationBannerOffset";
+import { should_show_email_verification_banner } from "../lib/emailVerificationBanner";
 import { apiFetch } from "../lib/api";
-
-export function should_show_email_verification_banner(
-  _isLoggedIn: boolean,
-  _isVerified: boolean | undefined,
-): boolean {
-  return false;
-}
 
 export function EmailVerificationBanner() {
   const { user, isLoggedIn } = useUser();
   const b = useAppMessages().emailVerificationBanner;
   const [resendSent, setResendSent] = useState(false);
-  const bannerRef = useRef<HTMLDivElement>(null);
   const isVisible = should_show_email_verification_banner(
     isLoggedIn,
     user?.isVerified,
   );
-
-  use_email_verification_banner_offset(isVisible, bannerRef);
+  const setBannerRef = useEmailVerificationBannerOffset(isVisible);
 
   if (!isVisible) {
     return null;
@@ -46,7 +38,7 @@ export function EmailVerificationBanner() {
 
   return (
     <div
-      ref={bannerRef}
+      ref={setBannerRef}
       role="status"
       className="sticky top-0 z-[1000] border-b border-amber-500/40 bg-amber-500/15 px-4 py-2.5 text-sm text-foreground shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-amber-500/10 dark:bg-amber-950/80 dark:supports-[backdrop-filter]:bg-amber-950/70"
     >

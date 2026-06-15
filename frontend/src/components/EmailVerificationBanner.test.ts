@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { should_show_email_verification_banner } from "../components/EmailVerificationBanner";
+import { should_show_email_verification_banner } from "../lib/emailVerificationBanner";
 
 describe("should_show_email_verification_banner", () => {
   it("never shows after login (email confirm is not required)", () => {

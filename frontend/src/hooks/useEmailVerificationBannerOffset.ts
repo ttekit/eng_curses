@@ -1,34 +1,31 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useState } from "react";
 
 export const EMAIL_VERIFICATION_BANNER_HEIGHT_VAR =
   "--email-verification-banner-height";
 
-export function use_email_verification_banner_offset(
-  isActive: boolean,
-  bannerRef: RefObject<HTMLElement | null>,
-): void {
+export function useEmailVerificationBannerOffset(isActive: boolean) {
+  const [bannerEl, setBannerEl] = useState<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const root = document.documentElement;
-    if (!isActive) {
+    if (!isActive || !bannerEl) {
       root.style.removeProperty(EMAIL_VERIFICATION_BANNER_HEIGHT_VAR);
-      return;
-    }
-    const el = bannerRef.current;
-    if (!el) {
       return;
     }
     const sync_height = () => {
       root.style.setProperty(
         EMAIL_VERIFICATION_BANNER_HEIGHT_VAR,
-        `${el.offsetHeight}px`,
+        `${bannerEl.offsetHeight}px`,
       );
     };
     sync_height();
     const observer = new ResizeObserver(sync_height);
-    observer.observe(el);
+    observer.observe(bannerEl);
     return () => {
       observer.disconnect();
       root.style.removeProperty(EMAIL_VERIFICATION_BANNER_HEIGHT_VAR);
     };
-  }, [isActive, bannerRef]);
+  }, [isActive, bannerEl]);
+
+  return setBannerEl;
 }

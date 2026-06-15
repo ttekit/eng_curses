@@ -37,7 +37,7 @@ describe("learnerHasCompletedCustomise", () => {
           workField: "IT",
           education: "bachelor",
           hobbies: ["reading"],
-          favoriteGenres: ["comedy"],
+          favoriteGenres: [1],
         }),
       ),
     ).toBe(true);
@@ -50,7 +50,7 @@ describe("learnerHasCompletedCustomise", () => {
           workField: "choose",
           education: "bachelor",
           hobbies: ["reading"],
-          favoriteGenres: ["comedy"],
+          favoriteGenres: [1],
         }),
       ),
     ).toBe(false);
@@ -74,7 +74,7 @@ describe("shouldShowLearnerCustomiseFab", () => {
           workField: "IT",
           education: "bachelor",
           hobbies: ["reading"],
-          favoriteGenres: ["comedy"],
+          favoriteGenres: [1],
         }),
         "/catalog",
       ),

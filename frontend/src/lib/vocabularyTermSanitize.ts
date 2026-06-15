@@ -125,12 +125,16 @@ function lemmatizeToken(token: string): string {
   if (low.endsWith("ies") && low.length > 4) return `${low.slice(0, -3)}y`;
   if (low.endsWith("ing") && low.length > 5) {
     let stem = low.slice(0, -3);
-    if (stem.length >= 2 && stem.at(-1) === stem.at(-2)) stem = stem.slice(0, -1);
+    const last = stem[stem.length - 1];
+    const prev = stem[stem.length - 2];
+    if (stem.length >= 2 && last === prev) stem = stem.slice(0, -1);
     return stem;
   }
   if (low.endsWith("ed") && low.length > 4) {
     let stem = low.slice(0, -2);
-    if (stem.length >= 2 && stem.at(-1) === stem.at(-2)) stem = stem.slice(0, -1);
+    const last = stem[stem.length - 1];
+    const prev = stem[stem.length - 2];
+    if (stem.length >= 2 && last === prev) stem = stem.slice(0, -1);
     return stem;
   }
   if (low.endsWith("es") && low.length > 4) return low.slice(0, -2);
