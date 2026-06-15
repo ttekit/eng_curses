@@ -146,18 +146,17 @@ export default function RegistrationMain() {
     try {
       localStorage.setItem("temp_email", email);
 
-      const result = (await registerUser({
+      const result = await registerUser({
+        ...formData,
         name,
         email,
         password,
         confirmPassword,
         token: captchaToken,
-        captchaToken: captchaToken,
-        role: formData.role,
-      } as any)) as any;
+      });
 
       if (result.success) {
-        if (result.isVerified) {
+        if (result.accessToken) {
           navigate("/registrationDetails");
         } else {
           navigate("/verify-email", {
@@ -358,7 +357,7 @@ export default function RegistrationMain() {
           <div className="flex items-center gap-4 py-2">
             <div className="h-[1px] flex-1 bg-[#2a2b36]"></div>
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              or sign up with
+              {step1.orContinueWith}
             </span>
             <div className="h-[1px] flex-1 bg-[#2a2b36]"></div>
           </div>
@@ -386,7 +385,7 @@ export default function RegistrationMain() {
                 fill="#EA4335"
               />
             </svg>
-            Continue with Google
+            {step1.google}
           </button>
         </form>
 

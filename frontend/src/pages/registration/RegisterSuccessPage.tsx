@@ -1,12 +1,9 @@
-import { useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router";
-import { Eye, EyeOff } from "lucide-react";
+import { useLocation, useNavigate } from "react-router";
 import Button from "../../components/Button";
 import { downloadStudentAccountsExcel } from "../../lib/studentAccountsExcel";
 import type { GeneratedStudentAccount } from "../../lib/registerUser";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
-import { formatMessage } from "../../lib/formatMessage";
 
 type SuccessLocationState = {
   generatedStudents?: GeneratedStudentAccount[];
@@ -21,8 +18,6 @@ export default function RegisterSuccessPage() {
   const state = location.state as SuccessLocationState | null;
   const students = state?.generatedStudents ?? [];
   const hasStudents = students.length > 0;
-
-  const [showStudents, setShowStudents] = useState(false);
 
   return (
     <>

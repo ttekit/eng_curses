@@ -31,8 +31,6 @@ import {
   isDevModeEnabled,
   isEmailConfirmationDisabled,
 } from "src/common/utils/outbound-mail-disabled.util";
-import { parsePhaseFinalTestProgress } from "src/phase-final-test/phase-final-test-progress.util";
-import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan-regeneration.service";
 import { MailService } from "src/common/mail/mail.service";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
@@ -40,6 +38,13 @@ import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { v4 as uuidv4 } from "uuid";
 import { randomInt } from "crypto";
 import { generateSecurePassword } from "src/common/utils/password.util";
+import { AuthProfileService } from "./auth-profile.service";
+import { AuthLearningStatsService } from "./auth-learning-stats.service";
+import { AuthKnowledgeTagsService } from "./auth-knowledge-tags.service";
+import { AuthProgressDetailsService } from "./auth-progress-details.service";
+import { SaveWordDto } from "./dto/save-word.dto";
+import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
+import type { OAuthCallbackResult } from "./oauth-callback.types";
 
 export interface GeneratedStudent {
   name: string;
@@ -59,7 +64,10 @@ export class AuthService {
     private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
-    private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
+    private readonly authProfileService: AuthProfileService,
+    private readonly authLearningStatsService: AuthLearningStatsService,
+    private readonly authKnowledgeTagsService: AuthKnowledgeTagsService,
+    private readonly authProgressDetailsService: AuthProgressDetailsService,
   ) {}
 
   private async filterExistingGenreIds(
@@ -460,7 +468,7 @@ export class AuthService {
     return { message: "Your email address has been successfully verified" };
   }
 
-  async updateUserPreferences(userId: number, data: any) {
+  async updateUserPreferences(userId: number, data: UpdatePreferencesDto) {
     const prisma = this.prisma as any;
     const generatedStudents: GeneratedStudent[] = [];
 
@@ -662,9 +670,9 @@ export class AuthService {
         role: user.role,
         hasCompletedPlacement: user.hasCompletedPlacement,
 
-        subscriptionPlan: (user as any).subscriptionPlan ?? "",
-        subscriptionStatus: (user as any).subscriptionStatus ?? "",
-        stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
+        subscriptionPlan: user.subscriptionPlan ?? "",
+        subscriptionStatus: user.subscriptionStatus ?? "",
+        stripeSubscriptionId: user.stripeSubscriptionId ?? "",
       },
     };
   }
@@ -885,7 +893,7 @@ export class AuthService {
     req: Request,
     provider: string,
     code: string,
-  ) {
+  ): Promise<OAuthCallbackResult> {
     const providerInstance = this.providerService.findByService(provider);
 
     if (!providerInstance) {
@@ -1018,7 +1026,7 @@ export class AuthService {
     });
   }
 
-  async saveWordToVocabulary(userId: number, body: any) {
+  async saveWordToVocabulary(userId: number, body: SaveWordDto) {
     if (!body.term) {
       throw new BadRequestException("Term is required");
     }
@@ -1177,297 +1185,19 @@ export class AuthService {
   }
 
   async getLearningStats(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { isSuspended: true },
-    });
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-    if (user.isSuspended) {
-      throw new ForbiddenException("Account suspended");
-    }
-
-    const [watchSum, distinctVideos, quizAgg, weekSessions] = await Promise.all(
-      [
-        this.prisma.watchSession.aggregate({
-          where: { userId },
-          _sum: { secondsWatched: true },
-        }),
-        this.prisma.watchSession.findMany({
-          where: { userId, completed: true },
-          select: { contentVideoId: true },
-          distinct: ["contentVideoId"],
-        }),
-        this.prisma.comprehensionTestAttempt.aggregate({
-          where: { userId },
-          _avg: { scorePct: true },
-          _count: { _all: true },
-        }),
-        (() => {
-          const { weekStart, weekEndExclusive } = this.utcWeekRange();
-          return this.prisma.watchSession.findMany({
-            where: {
-              userId,
-              endedAt: { gte: weekStart, lt: weekEndExclusive },
-            },
-            select: { endedAt: true, secondsWatched: true },
-          });
-        })(),
-      ],
-    );
-
-    const totalSeconds = Number(watchSum?._sum?.secondsWatched ?? 0);
-
-    const totalWatchTimeMin = Math.floor(totalSeconds / 60);
-
-    const videosCompleted = Array.isArray(distinctVideos)
-      ? distinctVideos.length
-      : 0;
-    const testsCompleted = quizAgg?._count?._all ?? 0;
-    const rawAvg = quizAgg?._avg?.scorePct;
-    const averageScore =
-      typeof rawAvg === "number" && Number.isFinite(rawAvg)
-        ? Math.round(rawAvg)
-        : null;
-
-    const minutesMonSun = [0, 0, 0, 0, 0, 0, 0];
-    const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    for (const s of weekSessions) {
-      if (!s.endedAt) continue;
-      const d = s.endedAt as Date;
-      const utcDow = d.getUTCDay();
-      const idx = utcDow === 0 ? 6 : utcDow - 1;
-      minutesMonSun[idx] += Number(s.secondsWatched ?? 0) / 60;
-    }
-
-    const weeklyActivity = DAY_LABELS.map((day, i) => ({
-      day,
-      minutes: Math.ceil(minutesMonSun[i]),
-    }));
-
-    return {
-      totalWatchTimeMin,
-      videosCompleted,
-      testsCompleted,
-      averageScore,
-      weeklyActivity,
-    };
+    return this.authLearningStatsService.get_learning_stats(userId);
   }
 
-  async getKnowledgeTagProgress(userId: number): Promise<{
-    tags: Array<{
-      name: string;
-      score: number;
-      listening: number;
-      vocabulary: number;
-      grammar: number;
-      topicCount: number;
-    }>;
-  }> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { isSuspended: true },
-    });
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-    if (user.isSuspended) {
-      throw new ForbiddenException("Account suspended");
-    }
-
-    const rows = await this.prisma.userLanguageData.findMany({
-      where: { userId },
-      include: {
-        topic: { include: { tags: { select: { name: true } } } },
-      },
-    });
-
-    const accum = new Map<
-      string,
-      { l: number; v: number; g: number; agg: number; n: number }
-    >();
-
-    for (const row of rows) {
-      for (const tag of row.topic.tags) {
-        const name = tag.name.trim();
-        if (!name) {
-          continue;
-        }
-        const cur = accum.get(name) ?? { l: 0, v: 0, g: 0, agg: 0, n: 0 };
-        cur.l += row.listeningScore;
-        cur.v += row.vocabularyScore;
-        cur.g += row.grammarScore;
-        cur.agg += row.score;
-        cur.n += 1;
-        accum.set(name, cur);
-      }
-    }
-
-    const tags = [...accum.entries()]
-      .map(([name, cur]) => {
-        const n = cur.n;
-        return {
-          name,
-          listening: Math.round((cur.l / n) * 1000) / 1000,
-          vocabulary: Math.round((cur.v / n) * 1000) / 1000,
-          grammar: Math.round((cur.g / n) * 1000) / 1000,
-          score: Math.round((cur.agg / n) * 1000) / 1000,
-          topicCount: cur.n,
-        };
-      })
-      .sort((a, b) => b.score - a.score);
-
-    return { tags };
+  async getKnowledgeTagProgress(userId: number) {
+    return this.authKnowledgeTagsService.get_knowledge_tag_progress(userId);
   }
 
-  async refreshKnowledgeTagProgress(userId: number): Promise<{
-    tags: Array<{
-      name: string;
-      score: number;
-      listening: number;
-      vocabulary: number;
-      grammar: number;
-      topicCount: number;
-    }>;
-  }> {
-    if (!isDevModeEnabled(this.configService)) {
-      throw new ForbiddenException(
-        "Knowledge tag refresh is only available when DEV_MODE is enabled",
-      );
-    }
-    await this.alcorythmService.analyzeUserLevel(userId);
-    return this.getKnowledgeTagProgress(userId);
+  async refreshKnowledgeTagProgress(userId: number) {
+    return this.authKnowledgeTagsService.refresh_knowledge_tag_progress(userId);
   }
 
   async getProgressDetails(userId: number) {
-    if (!userId || Number.isNaN(userId)) {
-      throw new BadRequestException("Invalid user ID");
-    }
-
-    let totalWords = 0;
-    let learnedWords = 0;
-    let masteredWords = 0;
-
-    try {
-      totalWords = await this.prisma.userVocabulary.count({
-        where: { userId },
-      });
-
-      learnedWords = await this.prisma.userVocabulary.count({
-        where: {
-          userId,
-          mastery: { gt: 0 },
-        },
-      });
-
-      masteredWords = await this.prisma.userVocabulary.count({
-        where: {
-          userId,
-          mastery: { gte: 0.8 },
-        },
-      });
-    } catch (e) {
-      console.error(e);
-    }
-
-    const vocabularyProgress = {
-      total: totalWords,
-      learned: learnedWords,
-      mastered: masteredWords,
-      reviewing: Math.max(0, totalWords - masteredWords),
-    };
-
-    let recentSessions: any[] = [];
-    try {
-      recentSessions = await this.prisma.watchSession.findMany({
-        where: { userId },
-        orderBy: { endedAt: "desc" },
-        take: 4,
-        include: { contentVideo: true },
-      });
-    } catch (e) {
-      console.error(e);
-    }
-
-    const recentVideos = await Promise.all(
-      recentSessions.map(async (session: any) => {
-        let test: any = null;
-        try {
-          test = await this.prisma.comprehensionTestAttempt.findFirst({
-            where: { userId, contentVideoId: session.contentVideoId },
-            orderBy: { createdAt: "desc" },
-          });
-        } catch (e) {
-          console.error(e);
-        }
-
-        return {
-          id: String(session.id),
-          title: session.contentVideo?.videoName || "Video Lesson",
-          category: "General",
-          completed: !!session.completed,
-          score: test ? Math.round(test.scorePct) : 0,
-          progress: session.completed ? 100 : 50,
-        };
-      }),
-    );
-
-    let completedVideosCount = 0;
-    try {
-      completedVideosCount = await this.prisma.watchSession.count({
-        where: { userId, completed: true },
-      });
-    } catch (e) {
-      console.error(e);
-    }
-
-    const businessCount = await this.prisma.watchSession.count({
-      where: {
-        userId,
-        completed: true,
-        contentVideo: { content: { category: { name: "Business English" } } },
-      },
-    });
-
-    const travelCount = await this.prisma.watchSession.count({
-      where: {
-        userId,
-        completed: true,
-        contentVideo: {
-          content: { category: { name: "Travel & Conversation" } },
-        },
-      },
-    });
-
-    const learningPaths = [
-      {
-        id: "business",
-        title: "Business English",
-        description: "Professional communication for the workplace",
-        progress: Math.min(100, Math.round((businessCount / 12) * 100)),
-        totalVideos: 12,
-        completedVideos: businessCount,
-        level: "B2",
-        accentClass: "bg-primary",
-      },
-      {
-        id: "travel",
-        title: "Travel & Conversation",
-        description: "Essential phrases for traveling abroad",
-        progress: Math.min(100, Math.round((travelCount / 10) * 100)),
-        totalVideos: 10,
-        completedVideos: travelCount,
-        level: "B1",
-        accentClass: "bg-accent",
-      },
-    ];
-
-    return {
-      vocabularyProgress,
-      recentVideos,
-      learningPaths,
-    };
+    return this.authProgressDetailsService.get_progress_details(userId);
   }
 
   async sendDangerZoneCode(userId: number, action: "delete" | "reset") {

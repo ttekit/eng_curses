@@ -19,6 +19,9 @@ export type VideoRecommendationItem = {
   content: {
     name: string;
   };
+  stats?: {
+    systemTags?: string[];
+  };
 };
 
 export type ContentRecommendationsResponse = {
@@ -142,8 +145,8 @@ export function mapRecommendationsToCatalogCards(
       ageRestriction: ageRestrictionById?.has(id)
         ? ageRestrictionById.get(id)
         : item.contentVideo.ageRestriction,
-      level: item.stats?.systemTags?.find((t) =>
-        /^(A1|A2|B1|B2|C1|C2)$/i.test(t),
+      level: item.stats?.systemTags?.find((tag) =>
+        /^(A1|A2|B1|B2|C1|C2)$/i.test(tag),
       ),
     });
   }

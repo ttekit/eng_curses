@@ -1,12 +1,15 @@
 import {
-  IsEmail,
-  IsString,
-  IsOptional,
   IsArray,
-  MinLength,
   IsDateString,
+  IsEmail,
+  IsOptional,
+  IsString,
+  MinLength,
   ValidateIf,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
+import { RegisterStudentNameRowDto } from "./register-student-name-row.dto";
 
 export class RegisterDto {
   @IsEmail()
@@ -33,7 +36,9 @@ export class RegisterDto {
 
   @IsOptional()
   @IsArray()
-  studentNames?: any;
+  @ValidateNested({ each: true })
+  @Type(() => RegisterStudentNameRowDto)
+  studentNames?: RegisterStudentNameRowDto[];
 
   @IsOptional()
   @IsString()
@@ -68,7 +73,8 @@ export class RegisterDto {
   knownLanguages?: string[];
 
   @IsOptional()
-  knownLanguageLevels?: any;
+  @IsArray()
+  knownLanguageLevels?: Array<{ language: string; level: string }>;
 
   @IsOptional()
   @IsString()
@@ -99,4 +105,8 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   captchaToken?: string;
+
+  @IsOptional()
+  @IsString()
+  clientType?: string;
 }

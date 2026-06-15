@@ -39,12 +39,33 @@ export function TimeToAchieveField({
   allowEmpty = false,
   className,
 }: Props) {
-  const [amountStr, setAmountStr] = useState("");
-  const [unit, setUnit] = useState<TimeToAchieveUnit>("month");
+  function parse_value_fields(raw: string): {
+    amountStr: string;
+    unit: TimeToAchieveUnit;
+  } {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return { amountStr: "", unit: "month" };
+    }
+    const next = parseTimeToAchieveString(trimmed);
+    return { amountStr: String(next.amount), unit: next.unit };
+  }
+
+  const initialFields = parse_value_fields(value);
+  const [amountStr, setAmountStr] = useState(initialFields.amountStr);
+  const [unit, setUnit] = useState<TimeToAchieveUnit>(initialFields.unit);
+  const [prevValue, setPrevValue] = useState(value);
+
+  if (value !== prevValue) {
+    setPrevValue(value);
+    const parsed = parse_value_fields(value);
+    setAmountStr(parsed.amountStr);
+    setUnit(parsed.unit);
+  }
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Закрытие при клике вне элемента
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -57,18 +78,6 @@ export function TimeToAchieveField({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      setAmountStr("");
-      setUnit("month");
-      return;
-    }
-    const next = parseTimeToAchieveString(trimmed);
-    setAmountStr(String(next.amount));
-    setUnit(next.unit);
-  }, [value]);
 
   function emit(amount: number, nextUnit: TimeToAchieveUnit): void {
     onChange(serializeTimeToAchieve(amount, nextUnit));

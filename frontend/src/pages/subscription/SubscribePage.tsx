@@ -15,6 +15,12 @@ import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { consumePendingRegistrationLoginWelcome } from "../../lib/registrationStorage";
+import type { GeneratedStudentAccount } from "../../lib/registerUser";
+
+type SubscribePageLocationState = {
+  isTeacherRegistration?: boolean;
+  generatedStudents?: GeneratedStudentAccount[];
+};
 
 export default function SubscribePage() {
   const [searchParams] = useSearchParams();
@@ -26,7 +32,7 @@ export default function SubscribePage() {
   const sub = useAppMessages().subscription;
   const toastAccountCreated = messages.auth.login.toastAccountCreated;
 
-  const state = location.state as { isTeacherRegistration?: boolean; generatedStudents?: any[] } | null;
+  const state = location.state as SubscribePageLocationState | null;
   const isTeacherRegistration = state?.isTeacherRegistration;
   const generatedStudents = state?.generatedStudents;
 
@@ -61,7 +67,7 @@ export default function SubscribePage() {
     if (checkoutDone) {
       navigate("/catalog", { replace: true });
     }
-  }, [devSkip, isLoading, navigate, searchParams, user, isTeacherRegistration]);
+  }, [devSkip, isLoading, navigate, searchParams, user, isTeacherRegistration, sub.thankYouSubscribing]);
 
   useEffect(() => {
     if (!consumePendingRegistrationLoginWelcome()) {

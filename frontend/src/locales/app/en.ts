@@ -42,6 +42,7 @@ export const appEn = {
     sectionGenre: "Genre",
     settings: "Settings",
     levelWithDot: "• {prefix} {level}",
+    appTheme: "Change platform theme: ",
   },
 
   myLessonsPage: {
@@ -162,6 +163,22 @@ export const appEn = {
     filterFilteredResults: "Filtered Results",
     filterLevel: "Level",
     filterGenre: "Genre",
+    next: "Next",
+    prev: "Prev",
+  },
+
+  search: {
+    searchLesson: "Search lessons...",
+    browseCatalog: "Browse catalog",
+    esc: "Esc",
+    nav: "Navigate",
+    open: "Open",
+    toggle: "Toggle to catalog",
+    matchingLess: "Matching lessons",
+  },
+
+  videoRow: {
+    playlist: "Playlist",
   },
 
   catalogSeriesPage: {
@@ -345,6 +362,40 @@ export const appEn = {
     modalUnavailableResetLead:
       "This action isn’t available in the app yet. Contact support if you need help.",
     modalClose: "Close",
+    cancel: "Cancel",
+    displayLang: "Display & Language",
+    customizeDisplay: "Customize your app experience.",
+    theme: "Theme",
+    lightOrDark: "Light or Dark mode",
+    light: "Light",
+    dark: "Dark",
+    language: "Language",
+    interfaceLang: "Interface language",
+    en: "en",
+    uk: "uk",
+    securityLogin: "Security & Login",
+    email: "Email adress",
+    changeEmail: "Change email",
+    password: "Password",
+    updatePassToKeep: "Update your password to keep your account secure",
+    changePass: "Change password",
+    twoFactor: "Two-factor authentication",
+    extraLayer: "Add an extra layer of security to your account",
+    updateEmail: "Update email",
+    verCode: "Verification code",
+    newEmail: "New Email Address",
+    confirmEmail: "Confirm New Email",
+    updatePass: "Update Password",
+    enterCurrent: "Enter your current and new password.",
+    currentPass: "Current Password",
+    newPass: "New Password",
+    confirmPass: "Confirm New Password",
+    sendCode: "We sent a code to",
+    enterBelow: ", enter it below",
+    enterNewEmail: "Enter your new email address.",
+    next: "Next",
+    processing: "Processing...",
+    done: "Done",
   },
 
   profileTeacherVideos: {
@@ -869,6 +920,9 @@ export const appEn = {
     skipQuestion: "Skip question",
     checkAnswer: "Check answer",
     nextQuestion: "Next question",
+    inVideoQuizHint: "Answer to continue watching",
+    inVideoQuestionOf: "In-video question {current} of {total}",
+    continueWatching: "Continue watching",
     completeLesson: "Complete lesson",
     vocabTitle: "Key vocabulary",
     vocabEmpty:
@@ -880,6 +934,7 @@ export const appEn = {
     completeBannerXp: "You earned {xp} XP",
     warning: "Warning! Age resctriction:",
     xpInfo: "Earn 150xp after finishing this lesson to move to a new level!",
+    assignHomework: "Assign homework",
   },
 
   lessonSummaryPage: {

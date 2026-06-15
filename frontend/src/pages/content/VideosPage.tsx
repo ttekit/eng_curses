@@ -266,7 +266,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [catalogCheckoutReturn, navigate, refreshProfile]);
+  }, [catalogCheckoutReturn, navigate, refreshProfile, cb.stripeConfirmError, cb.stripeThanksToast]);
 
   const accessToken = getStoredAccessToken();
   const needsPlacement =
@@ -364,7 +364,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [showPlacementTest, accessToken]);
+  }, [showPlacementTest, accessToken, cb.placementLoadError]);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -750,7 +750,7 @@ export default function VideoPage() {
                                 : "bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary",
                             )}
                           >
-                            {age}
+                            {filterLabel(age)}
                           </button>
                         ))}
                       </div>
@@ -958,7 +958,7 @@ export default function VideoPage() {
                       disabled={currentPage === 1}
                       className="flex items-center justify-center px-4 py-2 min-h-[44px] rounded-xl bg-card border border-border text-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors cursor-pointer"
                     >
-                      Prev
+                      {cb.prev}
                     </button>
 
                     {getPaginationRange(currentPage, totalPages).map((p, i) =>
@@ -998,7 +998,7 @@ export default function VideoPage() {
                       disabled={currentPage === totalPages}
                       className="flex items-center justify-center px-6 py-2 min-h-[44px] rounded-xl bg-primary text-primary-foreground font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors cursor-pointer shadow-sm"
                     >
-                      Next
+                      {cb.next}
                     </button>
                   </div>
                 )}

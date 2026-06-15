@@ -9,10 +9,7 @@ import { createHash } from "node:crypto";
 import { Prisma } from "../generated/prisma/client";
 import { webVttToPlainText } from "src/contents/webvtt-to-plain-text.util";
 import { PrismaService } from "src/prisma.service";
-import {
-  aggregateSkillScore,
-  clamp,
-} from "src/alcorythm/alcorythm-scoring.util";
+import { applySkillDeltasToTopics } from "src/user-language-data/user-language-data-mutation.util";
 import {
   applyOpenResult,
   createGradingToken,
@@ -645,54 +642,14 @@ export class ContentVideoComprehensionTestsService {
         writtenSummaryScore,
       };
     }
-    for (const topicId of topicIds) {
-      const row = await this.prisma.userLanguageData.findUnique({
-        where: { userId_topicId: { userId: p.userId, topicId } },
-      });
-      const base = row?.score ?? 0;
-      const prevListening = row?.listeningScore ?? base;
-      const prevVocabulary = row?.vocabularyScore ?? base;
-      const prevGrammar = row?.grammarScore ?? base;
-      const newListening = clamp(prevListening + deltas.listening);
-      const newVocabulary = clamp(prevVocabulary + deltas.vocabulary);
-      const newGrammar = clamp(prevGrammar + deltas.grammar);
-      const newScore = aggregateSkillScore(
-        newListening,
-        newVocabulary,
-        newGrammar,
-      );
-      const previousScore = row?.score ?? base;
-      if (row) {
-        await this.prisma.userLanguageData.update({
-          where: { id: row.id },
-          data: {
-            listeningScore: newListening,
-            vocabularyScore: newVocabulary,
-            grammarScore: newGrammar,
-            score: newScore,
-          },
-        });
-      } else {
-        await this.prisma.userLanguageData.create({
-          data: {
-            userId: p.userId,
-            topicId,
-            score: newScore,
-            listeningScore: newListening,
-            vocabularyScore: newVocabulary,
-            grammarScore: newGrammar,
-            confidence: 0.2,
-            coverage: 0.1,
-            algorithmVersion: "v2",
-          },
-        });
-      }
-      knowledgeUpdates.push({
-        topicId,
-        previousScore,
-        newScore: Math.round(1000 * newScore) / 1000,
-      });
-    }
+    knowledgeUpdates.push(
+      ...(await applySkillDeltasToTopics(
+        this.prisma,
+        p.userId,
+        topicIds,
+        deltas,
+      )),
+    );
 
     await this.persistComprehensionAttempt(
       p.userId,

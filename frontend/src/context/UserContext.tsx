@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- shared context/helpers */
 import {
   createContext,
   useState,
@@ -61,6 +62,13 @@ export interface UserData {
   teacherId?: number | null;
   teacherName?: string | null;
   className?: string | null;
+  /** First video the learner watched (achievement modal). */
+  firstWatchedVideo?: {
+    id: number;
+    videoName: string;
+    thumbnailUrl: string | null;
+    url: string;
+  } | null;
   currentStreak: number;
   xp: number;
   level: number;
@@ -207,6 +215,23 @@ function normalizeProfile(raw: unknown): UserData | null {
     })(),
     teacherName: typeof r.teacherName === "string" ? r.teacherName : null,
     className: typeof r.className === "string" ? r.className : null,
+    firstWatchedVideo: (() => {
+      const raw = r.firstWatchedVideo;
+      if (!raw || typeof raw !== "object") return null;
+      const fw = raw as Record<string, unknown>;
+      const id = Number(fw.id);
+      const videoName =
+        typeof fw.videoName === "string" ? fw.videoName.trim() : "";
+      const url = typeof fw.url === "string" ? fw.url.trim() : "";
+      if (!Number.isFinite(id) || !videoName || !url) return null;
+      return {
+        id: Math.floor(id),
+        videoName,
+        thumbnailUrl:
+          typeof fw.thumbnailUrl === "string" ? fw.thumbnailUrl : null,
+        url,
+      };
+    })(),
     currentStreak: Number(r.currentStreak) || 0,
     xp: Number(r.xp) || 0,
     level: Number(r.level) || 1,

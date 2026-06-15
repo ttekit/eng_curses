@@ -20,7 +20,7 @@ function mockUser(partial: Partial<UserData>): UserData {
     education: "uni",
     workField: "it",
     nativeLanguage: "uk",
-    favoriteGenres: ["drama"],
+    favoriteGenres: [1],
     hatedGenres: [],
     currentStreak: 0,
     xp: 0,
@@ -44,7 +44,7 @@ describe("resolvePostLoginPath", () => {
         role: "student",
         teacherId: 9,
         hasCompletedPlacement: true,
-        subscriptionStatus: null,
+        subscriptionStatus: undefined,
       }),
     );
     expect(path).toBe("/catalog");
@@ -89,7 +89,7 @@ describe("resolvePlacementPhase", () => {
           teacherId: 1,
           hasCompletedPlacement: false,
           hobbies: ["x"],
-          favoriteGenres: ["y"],
+          favoriteGenres: [1],
         }),
       ),
     ).toBe("test");

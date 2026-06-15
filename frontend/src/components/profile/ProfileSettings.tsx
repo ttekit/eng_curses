@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Bell, LogOut, Plus, Save, Shield, User, X } from "lucide-react";
+import { LogOut, Plus, Save, Shield, User, X } from "lucide-react";
 import {
   apiFetch,
   getResponseErrorMessage,
@@ -11,10 +11,6 @@ import { useNavigate } from "react-router";
 import InputText from "../InputText";
 import { ProfileCard } from "./ProfileCard";
 import { ToggleSwitch } from "./ToggleSwitch";
-import {
-  loadProfileUiPrefs,
-  saveProfileUiPrefs,
-} from "../../lib/profileUiPrefs";
 import { Lock } from "lucide-react";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
@@ -23,13 +19,15 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { CalendarIcon } from "lucide-react";
 import { forwardRef } from "react";
-import { ThemeToggle } from "../ThemeToggle";
 import { Monitor } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { getErrorMessage } from "../../lib/error-message";
+import type { DatePickerInputProps } from "../../types/date-picker-input";
 
 type GenreOption = { id: number; name: string };
 
-const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+const CustomDateInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (props, ref) => {
   const { onClick, value, onChange, onKeyDown, id, isError } = props;
   return (
     <div className="relative w-full">
@@ -64,19 +62,17 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateInput.displayName = "CustomDateInput";
 
 export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const { user, refreshProfile, logout } = useUser();
   const { locale, setLocale } = useLandingLocale();
 
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Проверяем текущую тему при загрузке
-  useEffect(() => {
-    setIsDarkMode(document.documentElement.classList.contains("dark"));
-  }, []);
+  const [isDarkMode, setIsDarkMode] = useState(() =>
+    document.documentElement.classList.contains("dark"),
+  );
 
   // Функция для применения темы
   const applyTheme = (dark: boolean) => {
@@ -90,7 +86,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
   const isTeacherStudent =
     user?.role?.toLowerCase() === "student" &&
-    Boolean((user as any).teacherId || (user as any).teacherName);
+    Boolean(user?.teacherId || user?.teacherName);
 
   const [name, setName] = useState(user?.name || "");
   const [email] = useState(user?.email || "");
@@ -133,299 +129,27 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [newHobby, setNewHobby] = useState("");
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
   const [saving, setSaving] = useState(false);
-  const [savingPrefs, setSavingPrefs] = useState(false);
   const [dangerOpen, setDangerOpen] = useState<"reset" | "delete" | null>(null);
 
   const [isToggling2FA, setIsToggling2FA] = useState(false);
   const [target2FAState, setTarget2FAState] = useState(false);
   const [twoFactorPassword, setTwoFactorPassword] = useState("");
 
-  const [isChangeEmailModalOpen, setIsChangeEmailModalOpen] = useState(false);
+  const [, setIsChangeEmailModalOpen] = useState(false);
 
-  const [notifications, setNotifications] = useState(
-    () => loadProfileUiPrefs(String(user?.id ?? 0)).notifications,
+  const userSyncKey = user?.id ?? null;
+  const [syncedUserKey, setSyncedUserKey] = useState<string | number | null>(
+    null,
   );
-
-  const [preferences, setPreferences] = useState(() => {
-    const ui = loadProfileUiPrefs(String(user?.id ?? 0));
-    return {
-      autoplayNext: ui.autoplayNext,
-      showSubtitles: ui.showSubtitles,
-      playbackSpeed: user?.playbackSpeed ? String(user.playbackSpeed) : "1",
-      videoQuality: user?.videoQuality?.trim() || "auto",
-    };
-  });
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setJob(user.workField || "");
-      setEducation(user.education || "");
-      setHobbies(user.hobbies ?? []);
-      setFavoriteGenreIds(user.favoriteGenres ?? []);
-      setHatedGenreIds(user.hatedGenres ?? []);
-    }
-  }, [user]);
-
-  if (!user) return null;
-
-  const handleToggle2FAClick = (checked: boolean) => {
-    setTarget2FAState(checked);
-    setTwoFactorPassword("");
-    setError("");
-    setIsToggling2FA(true);
-  };
-
-  const handleConfirm2FAToggle = async () => {
-    if (!twoFactorPassword) {
-      setError("Please enter your current password.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const response = await apiFetch("/auth/toggle-2fa", {
-        method: "POST",
-        body: JSON.stringify({
-          enable: target2FAState,
-          password: twoFactorPassword,
-        }),
-      });
-
-      if (response.ok) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        await refreshProfile();
-
-        setIsToggling2FA(false);
-        setTwoFactorPassword("");
-
-        toast.success(
-          target2FAState
-            ? "Two-factor authentication enabled"
-            : "Two-factor authentication disabled",
-        );
-      } else {
-        const data = await response.json();
-        setError(data.message || "Invalid password");
-      }
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEmailUpdate = async () => {
-    setError("");
-
-    if (emailChangeStep === 1) {
-      if (emailChangeCode.length !== 6) {
-        return setError("Please enter the 6-digit code.");
-      }
-
-      setIsLoading(true);
-      try {
-        const response = await apiFetch("/auth/check-email-change-code", {
-          method: "POST",
-          body: JSON.stringify({ code: emailChangeCode }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || "Invalid code");
-        }
-
-        setEmailChangeStep(2);
-        setError("");
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    if (!newEmail || !confirmNewEmail)
-      return setError("Please fill in all email fields.");
-    if (newEmail !== confirmNewEmail) return setError("Emails do not match.");
-
-    setIsLoading(true);
-    try {
-      const response = await apiFetch("/auth/verify-email-change", {
-        method: "POST",
-        body: JSON.stringify({
-          code: emailChangeCode,
-          newEmail: newEmail,
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.message || "Failed to update email");
-
-      toast.success("Email successfully updated!");
-      await refreshProfile();
-      setIsChangingEmail(false);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStartEmailChange = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const response = await apiFetch("/auth/send-email-change-code", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to send verification code");
-      }
-
-      setEmailChangeStep(1);
-      setEmailChangeCode("");
-      setNewEmail("");
-      setConfirmNewEmail("");
-      setIsChangingEmail(true);
-
-      toast.success("Verification code sent to your current email!");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordUpdate = async () => {
-    setError("");
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters long.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const response = await apiFetch("/auth/update-password", {
-        method: "POST",
-        body: JSON.stringify({
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to update password");
-      }
-      setIsChangingPassword(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      setError(err.message || "Invalid current password or server error.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOpenDangerZone = async (action: "reset" | "delete") => {
-    setIsSendingCode(true);
-    try {
-      const response = await apiFetch("/auth/send-danger-zone-code", {
-        method: "POST",
-        body: JSON.stringify({ action }),
-      });
-
-      if (!response.ok) throw new Error("Failed to send code");
-
-      setDangerOpen(action);
-      setDangerCode("");
-      setDangerError("");
-      toast.success("A 6-digit code has been sent to your email.");
-    } catch (error) {
-      toast.error("Could not send verification code.");
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-  const handleResetProgress = async () => {
-    if (dangerCode.length !== 6) {
-      return setDangerError("Please enter the 6-digit code.");
-    }
-
-    setIsLoading(true);
-    setIsResetting(true);
-    setDangerError("");
-
-    try {
-      const response = await apiFetch("/users/profile/progress/reset", {
-        method: "POST",
-        body: JSON.stringify({ code: dangerCode }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to reset progress");
-      }
-
-      toast.success("Progress reset successfully.");
-      setDangerOpen(null);
-      setDangerCode("");
-      await refreshProfile();
-    } catch (err: any) {
-      setDangerError(err.message);
-    } finally {
-      setIsResetting(false);
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (dangerCode.length !== 6) {
-      return setDangerError("Please enter the 6-digit code.");
-    }
-
-    setIsLoading(true);
-    setIsDeleting(true);
-    setDangerError("");
-
-    try {
-      const response = await apiFetch("/auth/delete-account", {
-        method: "DELETE",
-        body: JSON.stringify({ code: dangerCode }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to delete account");
-      }
-
-      toast.success("Your account has been deleted.");
-      logout();
-      void navigate("/loginForm", { replace: true });
-    } catch (err: any) {
-      setDangerError(err.message);
-    } finally {
-      setIsDeleting(false);
-      setIsLoading(false);
-    }
-  };
+  if (user && userSyncKey !== syncedUserKey) {
+    setSyncedUserKey(userSyncKey);
+    setName(user.name);
+    setJob(user.workField || "");
+    setEducation(user.education || "");
+    setHobbies(user.hobbies ?? []);
+    setFavoriteGenreIds(user.favoriteGenres ?? []);
+    setHatedGenreIds(user.hatedGenres ?? []);
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -438,7 +162,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     };
 
     if (isChangingPassword || isChangingEmail || isToggling2FA) {
-      // <-- Добавили
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", handleKeyDown);
     } else {
@@ -450,30 +173,6 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isChangingPassword, isChangingEmail, isToggling2FA]);
-
-  useEffect(() => {
-    setName(user.name);
-    setJob(user.workField);
-    setEducation(user.education);
-    setHobbies(user.hobbies ?? []);
-    setFavoriteGenreIds(user.favoriteGenres ?? []);
-    setHatedGenreIds(user.hatedGenres ?? []);
-  }, [user]);
-
-  useEffect(() => {
-    const ui = loadProfileUiPrefs(user.id);
-    setNotifications(ui.notifications);
-    setPreferences((prev) => ({
-      autoplayNext: ui.autoplayNext,
-      showSubtitles: ui.showSubtitles,
-      playbackSpeed:
-        user.playbackSpeed != null &&
-        Number.isFinite(Number(user.playbackSpeed))
-          ? String(user.playbackSpeed)
-          : prev.playbackSpeed || "1",
-      videoQuality: user.videoQuality?.trim() || prev.videoQuality || "auto",
-    }));
-  }, [user.id, user.playbackSpeed, user.videoQuality]);
 
   useEffect(() => {
     void (async () => {
@@ -545,6 +244,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   }, [user]);
 
   const saveProfile = useCallback(async () => {
+    if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) {
       toast.error(s.nameRequiredToast);
@@ -586,62 +286,275 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
     hobbies,
     favoriteGenreIds,
     hatedGenreIds,
-    user.id,
+    user,
     onSaved,
     s.nameRequiredToast,
     s.profileSavedToast,
     s.saveProfileError,
   ]);
 
-  const saveLearnerPreferences = useCallback(async () => {
-    const speed = Number.parseFloat(preferences.playbackSpeed);
-    if (!Number.isFinite(speed) || speed <= 0) {
-      toast.error(s.playbackSpeedToast);
+  if (!user) return null;
+
+  const handleToggle2FAClick = (checked: boolean) => {
+    setTarget2FAState(checked);
+    setTwoFactorPassword("");
+    setError("");
+    setIsToggling2FA(true);
+  };
+
+  const handleConfirm2FAToggle = async () => {
+    if (!twoFactorPassword) {
+      setError("Please enter your current password.");
       return;
     }
 
-    setSavingPrefs(true);
+    setIsLoading(true);
+    setError("");
+
     try {
-      saveProfileUiPrefs(user.id, {
-        notifications,
-        autoplayNext: preferences.autoplayNext,
-        showSubtitles: preferences.showSubtitles,
-      });
-
-      const res = await apiFetch(`/users/${Number(user.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await apiFetch("/auth/toggle-2fa", {
+        method: "POST",
         body: JSON.stringify({
-          playbackSpeed: speed,
-          currentResolution: preferences.videoQuality?.trim() || "auto",
-
-          dailyReminderEnabled: notifications.dailyReminder,
-          weeklyReportEnabled: notifications.weeklyReport,
+          enable: target2FAState,
+          password: twoFactorPassword,
         }),
       });
 
-      if (!res.ok) {
-        toast.error(await getResponseErrorMessage(res));
-        return;
+      if (response.ok) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        await refreshProfile();
+
+        setIsToggling2FA(false);
+        setTwoFactorPassword("");
+
+        toast.success(
+          target2FAState
+            ? "Two-factor authentication enabled"
+            : "Two-factor authentication disabled",
+        );
+      } else {
+        const data = await response.json();
+        setError(data.message || "Invalid password");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailUpdate = async () => {
+    setError("");
+
+    if (emailChangeStep === 1) {
+      if (emailChangeCode.length !== 6) {
+        return setError("Please enter the 6-digit code.");
       }
 
-      toast.success(s.prefsSavedToast);
-      await onSaved();
-    } catch (e) {
-      console.error(e);
-      toast.error(s.prefsErrorToast);
-    } finally {
-      setSavingPrefs(false);
+      setIsLoading(true);
+      try {
+        const response = await apiFetch("/auth/check-email-change-code", {
+          method: "POST",
+          body: JSON.stringify({ code: emailChangeCode }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Invalid code");
+        }
+
+        setEmailChangeStep(2);
+        setError("");
+      } catch (err: unknown) {
+        setError(getErrorMessage(err, "Something went wrong"));
+      } finally {
+        setIsLoading(false);
+      }
+      return;
     }
-  }, [
-    notifications,
-    preferences,
-    user.id,
-    onSaved,
-    s.playbackSpeedToast,
-    s.prefsSavedToast,
-    s.prefsErrorToast,
-  ]);
+
+    if (!newEmail || !confirmNewEmail)
+      return setError("Please fill in all email fields.");
+    if (newEmail !== confirmNewEmail) return setError("Emails do not match.");
+
+    setIsLoading(true);
+    try {
+      const response = await apiFetch("/auth/verify-email-change", {
+        method: "POST",
+        body: JSON.stringify({
+          code: emailChangeCode,
+          newEmail: newEmail,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.message || "Failed to update email");
+
+      toast.success("Email successfully updated!");
+      await refreshProfile();
+      setIsChangingEmail(false);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartEmailChange = async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch("/auth/send-email-change-code", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to send verification code");
+      }
+
+      setEmailChangeStep(1);
+      setEmailChangeCode("");
+      setNewEmail("");
+      setConfirmNewEmail("");
+      setIsChangingEmail(true);
+
+      toast.success("Verification code sent to your current email!");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    setError("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await apiFetch("/auth/update-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update password");
+      }
+      setIsChangingPassword(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      setError(
+        getErrorMessage(err, "Invalid current password or server error."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenDangerZone = async (action: "reset" | "delete") => {
+    setIsSendingCode(true);
+    try {
+      const response = await apiFetch("/auth/send-danger-zone-code", {
+        method: "POST",
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send code");
+
+      setDangerOpen(action);
+      setDangerCode("");
+      setDangerError("");
+      toast.success("A 6-digit code has been sent to your email.");
+    } catch {
+      toast.error("Could not send verification code.");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+  const handleResetProgress = async () => {
+    if (dangerCode.length !== 6) {
+      return setDangerError("Please enter the 6-digit code.");
+    }
+
+    setIsLoading(true);
+    setIsResetting(true);
+    setDangerError("");
+
+    try {
+      const response = await apiFetch("/users/profile/progress/reset", {
+        method: "POST",
+        body: JSON.stringify({ code: dangerCode }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to reset progress");
+      }
+
+      toast.success("Progress reset successfully.");
+      setDangerOpen(null);
+      setDangerCode("");
+      await refreshProfile();
+    } catch (err: unknown) {
+      setDangerError(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsResetting(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (dangerCode.length !== 6) {
+      return setDangerError("Please enter the 6-digit code.");
+    }
+
+    setIsLoading(true);
+    setIsDeleting(true);
+    setDangerError("");
+
+    try {
+      const response = await apiFetch("/auth/delete-account", {
+        method: "DELETE",
+        body: JSON.stringify({ code: dangerCode }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to delete account");
+      }
+
+      toast.success("Your account has been deleted.");
+      logout();
+      void navigate("/loginForm", { replace: true });
+    } catch (err: unknown) {
+      setDangerError(getErrorMessage(err, "Something went wrong"));
+    } finally {
+      setIsDeleting(false);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -849,7 +762,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             disabled={saving}
             onClick={handleCancelProfile}
           >
-            Cancel
+            {s.cancel}
           </button>
           <button
             type="button"
@@ -867,22 +780,20 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2">
             <Monitor className="size-5 text-primary" />
-            Display & Language
+            {s.displayLang}
           </span>
         }
       >
         <p className="mb-4 text-sm text-muted-foreground">
-          Customize your app experience.
+          {s.customizeDisplay}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 py-2">
           {/* Выбор темы (Слева) */}
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 hover:bg-muted/20 transition-colors">
             <div>
-              <p className="font-medium text-foreground">Theme</p>
-              <p className="text-sm text-muted-foreground">
-                Light or dark mode
-              </p>
+              <p className="font-medium text-foreground">{s.theme}</p>
+              <p className="text-sm text-muted-foreground">{s.lightOrDark}</p>
             </div>
             <div className="mt-auto flex w-fit bg-secondary/50 rounded-lg p-1 border border-border/50">
               <button
@@ -894,7 +805,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Light
+                {s.light}
               </button>
               <button
                 type="button"
@@ -905,7 +816,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Dark
+                {s.dark}
               </button>
             </div>
           </div>
@@ -913,33 +824,31 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
           {/* Выбор языка (Справа) */}
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 hover:bg-muted/20 transition-colors">
             <div>
-              <p className="font-medium text-foreground">Language</p>
-              <p className="text-sm text-muted-foreground">
-                Interface language
-              </p>
+              <p className="font-medium text-foreground">{s.language}</p>
+              <p className="text-sm text-muted-foreground">{s.interfaceLang}</p>
             </div>
             <div className="mt-auto flex w-fit bg-secondary/50 rounded-lg p-1 border border-border/50">
               <button
                 type="button"
                 onClick={() => setLocale?.("en")}
-                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                className={`px-5 py-1.5 text-sm font-medium rounded-md uppercase transition-colors hover:cursor-pointer ${
                   locale === "en"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                EN
+                {s.en}
               </button>
               <button
                 type="button"
                 onClick={() => setLocale?.("uk")}
-                className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors hover:cursor-pointer ${
+                className={`px-5 py-1.5 text-sm font-medium rounded-md uppercase transition-colors hover:cursor-pointer ${
                   locale === "uk"
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                UA
+                {s.uk}
               </button>
             </div>
           </div>
@@ -950,7 +859,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
         title={
           <span className="flex items-center gap-2">
             <Lock className="size-5" />
-            Security & Login
+            {s.securityLogin}
           </span>
         }
       >
@@ -961,7 +870,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
                   <div>
                     <p className="font-medium text-foreground text-left">
-                      Email address
+                      {s.email}
                     </p>
                     <button
                       onClick={() => setIsChangeEmailModalOpen(true)}
@@ -976,7 +885,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   onClick={handleStartEmailChange}
                   className="shrink-0 rounded-xl px-5 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
                 >
-                  Change email
+                  {s.changeEmail}
                 </button>
 
                 {isChangingEmail && (
@@ -984,11 +893,15 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     <div className="w-full max-w-2xl rounded-2xl border border-border bg-card text-foreground shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
                       <div className="flex items-start justify-between p-8 pb-6">
                         <div>
-                          <h2 className="text-3xl font-bold">Update email</h2>
+                          <h2 className="text-3xl font-bold">
+                            {s.updateEmail}
+                          </h2>
                           <p className="text-base text-muted-foreground mt-2">
                             {emailChangeStep === 1
-                              ? `We sent a code to ${maskEmail(user?.email)}. Enter it below.`
-                              : "Enter your new email address."}
+                              ? `${s.sendCode}${" "}
+                                ${maskEmail(user?.email)}
+                                ${s.enterBelow}`
+                              : s.enterNewEmail}
                           </p>
                         </div>
                         <button
@@ -1021,7 +934,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         {emailChangeStep === 1 ? (
                           <div className="space-y-2">
                             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                              Verification Code{" "}
+                              {s.verCode}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1042,7 +955,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           <div className="space-y-5">
                             <div className="space-y-2">
                               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                New Email Address{" "}
+                                {s.newEmail}{" "}
                                 <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1056,7 +969,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
                             <div className="space-y-2">
                               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                Confirm New Email{" "}
+                                {s.confirmEmail}{" "}
                                 <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -1078,7 +991,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           onClick={() => setIsChangingEmail(false)}
                           className="px-5 py-3 text-sm font-medium hover:underline hover:cursor-pointer"
                         >
-                          Cancel
+                          {s.cancel}
                         </button>
                         <button
                           onClick={handleEmailUpdate}
@@ -1090,10 +1003,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
                         >
                           {isLoading
-                            ? "Processing..."
+                            ? s.processing
                             : emailChangeStep === 1
-                              ? "Next"
-                              : "Done"}
+                              ? s.next
+                              : s.done}
                         </button>
                       </div>
                     </div>
@@ -1110,10 +1023,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
                     <div>
                       <p className="font-medium text-foreground text-left">
-                        Password
+                        {s.password}
                       </p>
                       <p className="text-sm text-muted-foreground text-left">
-                        Update your password to keep your account secure
+                        {s.updatePassToKeep}
                       </p>
                     </div>
 
@@ -1122,7 +1035,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       onClick={() => setIsChangingPassword(true)}
                       className="shrink-0 rounded-xl px-5 py-2 text-sm font-semibold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
                     >
-                      Change password
+                      {s.changePass}
                     </button>
                   </div>
 
@@ -1132,10 +1045,10 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                         <div className="flex items-start justify-between p-8 pb-6">
                           <div>
                             <h2 className="text-3xl font-bold">
-                              Update password
+                              {s.updatePass}
                             </h2>
                             <p className="text-base text-muted-foreground mt-2">
-                              Enter your current and new password.
+                              {s.enterCurrent}
                             </p>
                           </div>
                           <button
@@ -1170,7 +1083,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
                           <div className="space-y-3">
                             <label className="text-sm font-semibold text-muted-foreground tracking-wider">
-                              Current Password{" "}
+                              {s.currentPass}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1186,7 +1099,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           </div>
                           <div className="space-y-3">
                             <label className="text-sm font-semibold text-muted-foreground tracking-wider">
-                              New Password{" "}
+                              {s.newPass}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1200,7 +1113,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                           </div>
                           <div className="space-y-3">
                             <label className="text-sm font-semibold text-muted-foreground tracking-wider">
-                              Confirm New Password{" "}
+                              {s.confirmPass}{" "}
                               <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -1226,7 +1139,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                             disabled={isLoading}
                             className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                           >
-                            Cancel
+                            {s.cancel}
                           </button>
                           <button
                             type="button"
@@ -1256,7 +1169,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                   ></path>
                                 </svg>
-                                Saving...
+                                {s.saving}
                               </>
                             ) : (
                               "Done"
@@ -1273,12 +1186,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
           <div className="flex flex-col gap-4 rounded-lg border border-border/50 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/20 transition-colors">
             <div>
-              <p className="font-medium text-foreground">
-                Two-factor authentication
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Add an extra layer of security to your account
-              </p>
+              <p className="font-medium text-foreground">{s.twoFactor}</p>
+              <p className="text-sm text-muted-foreground">{s.extraLayer}</p>
             </div>
 
             <ToggleSwitch
@@ -1375,7 +1284,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                       disabled={isLoading}
                       className="rounded-xl px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
                     >
-                      Cancel
+                      {s.cancel}
                     </button>
                     <button
                       type="button"
@@ -1569,9 +1478,9 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                     setDangerCode("");
                     setDangerError("");
                   } else if (e.key === "Enter" && dangerCode.length === 6) {
-                    dangerOpen === "reset"
+                    void (dangerOpen === "reset"
                       ? handleResetProgress()
-                      : handleDeleteAccount();
+                      : handleDeleteAccount());
                   }
                 }}
               />

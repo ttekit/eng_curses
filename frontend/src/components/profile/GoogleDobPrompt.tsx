@@ -11,8 +11,10 @@ import LabelRegister from "../../components/LabelRegister";
 import { apiFetch } from "../../lib/api";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useUser } from "../../context/UserContext";
+import type { GoogleDobDateInputProps } from "../../types/date-picker-input";
 
-const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+const CustomDateInput = forwardRef<HTMLInputElement, GoogleDobDateInputProps>(
+  (props, ref) => {
   const { onClick, dobValue, onDobChange } = props;
 
   return (
@@ -35,7 +37,8 @@ const CustomDateInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateInput.displayName = "CustomDateInput";
 
 export default function GoogleDobPrompt() {
@@ -94,7 +97,7 @@ export default function GoogleDobPrompt() {
         const errorData = await response.json();
         setErrorText(errorData?.message || "Failed to save date of birth.");
       }
-    } catch (error) {
+    } catch {
       setErrorText("Network error. Please try again.");
     } finally {
       setLoading(false);

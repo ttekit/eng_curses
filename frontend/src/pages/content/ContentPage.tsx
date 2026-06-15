@@ -36,6 +36,7 @@ import { parseSeriesPlaylistPayload } from "../../lib/catalogPlaylist";
 import { parseWebVttTranscriptLines } from "../../lib/parseWebVtt";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
+import { lessonSeo } from "../../lib/lessonSeo";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { appEn } from "../../locales/app/en";
 import { formatMessage } from "../../lib/formatMessage";
@@ -380,7 +381,7 @@ function splitLongTranscriptLines(
     const totalDuration = line.endSec - line.startSec;
     const totalChars = chunks.reduce((acc, c) => acc + c.length, 0);
 
-    let currentStart = line.startSec;
+    const currentStart = line.startSec;
     for (const chunk of chunks) {
       const chunkDuration = (chunk.length / totalChars) * totalDuration;
       const chunkEnd = currentStart + chunkDuration;
@@ -654,7 +655,6 @@ export default function ContentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, refreshProfile } = useUser();
-  const isTeacher = user?.role === "TEACHER" || user?.role === "ADMIN";
   const L = useAppMessages().lesson;
   const [activeTab, setActiveTab] = useState<TabId>("vocabulary");
   const [isVideoComplete, setIsVideoComplete] = useState(false);
@@ -1092,7 +1092,7 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [vocabularyWordKey, user?.id, isLocked]);
+  }, [vocabularyWordKey, user?.id, user?.nativeLanguage, displayVocabulary, isLocked]);
 
   const enrichedDisplayVocabulary = useMemo(
     () => applyVocabularyHints(displayVocabulary, vocabularyHintMap),
@@ -1397,10 +1397,12 @@ export default function ContentPage() {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
       <SEO
-        title={videoData.videoName}
-        description={descriptionBlurb}
-        canonicalUrl={resolveCanonicalUrl(`/content/${id}`)}
-        noindex
+        {...lessonSeo({
+          id: id!,
+          videoName: videoData.videoName,
+          videoDescription: descriptionBlurb,
+          videoLink: videoData.videoLink,
+        })}
       />
       <ContentWatchHeader
         L={L}

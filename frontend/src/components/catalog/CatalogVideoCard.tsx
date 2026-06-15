@@ -82,18 +82,10 @@ export function CatalogVideoCard({
   const is18Plus = vidAge === "18+" || vidAge === "21+";
   const isLocked = is18Plus && !isAdultUser;
 
-  const CardWrapper = isLocked ? "div" : Link;
-
   const targetUrl = `/content/${video.friendlyLink || video.id}`;
 
-  const wrapperProps = isLocked ? {} : { to: targetUrl };
-
-  return (
-    <div className="group relative flex w-64 shrink-0 flex-col gap-3 sm:w-80">
-      <CardWrapper
-        {...(wrapperProps as any)}
-        className={cn("flex flex-col gap-3", isLocked && "cursor-not-allowed")}
-      >
+  const cardContent = (
+    <>
         <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
           <div
             className={cn(
@@ -187,7 +179,23 @@ export function CatalogVideoCard({
         >
           {video.title}
         </h3>
-      </CardWrapper>
+    </>
+  );
+
+  return (
+    <div className="group relative flex w-64 shrink-0 flex-col gap-3 sm:w-80">
+      {isLocked ? (
+        <div className={cn("flex flex-col gap-3", "cursor-not-allowed")}>
+          {cardContent}
+        </div>
+      ) : (
+        <Link
+          to={targetUrl}
+          className="flex flex-col gap-3"
+        >
+          {cardContent}
+        </Link>
+      )}
 
       {isTeacher && (
         <div className="mt-auto">

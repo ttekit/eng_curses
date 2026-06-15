@@ -6,6 +6,8 @@ export type AdminCatalogVideoRow = {
   videoName: string;
   videoDescription: string | null;
   videoLink: string;
+  ageRestriction?: string;
+  thumbnailUrl?: string | null;
   /** Order within the parent `ContentMedia` when multiple clips share a slot. */
   playlistPosition?: number;
   videoCaption: { subtitlesFileLink: string } | null;

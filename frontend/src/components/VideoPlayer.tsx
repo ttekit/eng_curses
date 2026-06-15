@@ -46,7 +46,7 @@ export default function VideoPlayer({
   ...rest
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const hlsRef = useRef<any>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -159,13 +159,25 @@ export default function VideoPlayer({
   }, []);
 
   useEffect(() => {
+    showControlsRef.current = showControls;
+  }, [showControls]);
+
+  const [prevPlaying, setPrevPlaying] = useState(playing);
+  if (playing !== prevPlaying) {
+    setPrevPlaying(playing);
+    setShowControls(true);
+  }
+
+  useEffect(() => {
     if (!playing) {
       clearHideTimer();
-      setControlsVisible(true);
-    } else {
-      showControlsTemporarily();
+      return;
     }
-  }, [playing, showControlsTemporarily]);
+    hideControlsTimerRef.current = window.setTimeout(() => {
+      setControlsVisible(false);
+    }, 3000);
+    return () => clearHideTimer();
+  }, [playing]);
 
   const handleToggle = useCallback(() => {
     if (!videoRef.current) return;
@@ -358,14 +370,24 @@ export default function VideoPlayer({
     if (!document.fullscreenElement) {
       try {
         await containerRef.current.requestFullscreen();
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape").catch(() => { });
+        if (screen.orientation && "lock" in screen.orientation) {
+          await (
+            screen.orientation as ScreenOrientation & {
+              lock: (orientation: string) => Promise<void>;
+            }
+          )
+            .lock("landscape")
+            .catch(() => {});
         }
-      } catch (err) { }
+      } catch {
+        /* ignore fullscreen errors */
+      }
     } else {
       try {
         await document.exitFullscreen();
-      } catch (err) { }
+      } catch {
+        /* ignore exit fullscreen errors */
+      }
     }
   };
 

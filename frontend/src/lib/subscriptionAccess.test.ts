@@ -60,7 +60,7 @@ describe("userMayUseLearnerApp", () => {
     const user = mockUser({
       role: "student",
       teacherId: null,
-      subscriptionStatus: null,
+      subscriptionStatus: undefined,
     });
     expect(userMayUseLearnerApp(user)).toBe(false);
   });
@@ -69,7 +69,7 @@ describe("userMayUseLearnerApp", () => {
     const user = mockUser({
       role: "student",
       teacherId: 42,
-      subscriptionStatus: null,
+      subscriptionStatus: undefined,
     });
     expect(userExemptFromSubscription(user)).toBe(true);
     expect(userMayUseLearnerApp(user)).toBe(true);

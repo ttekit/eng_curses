@@ -16,6 +16,13 @@ import Button from "../../components/Button";
 import toast from "react-hot-toast";
 import { useUser } from "../../context/UserContext";
 import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
+import type { GeneratedStudentAccount } from "../../lib/registerUser";
+
+type EmailVerificationLocationState = {
+  email?: string;
+  isLoginFlow?: boolean;
+  generatedStudents?: GeneratedStudentAccount[];
+};
 
 export const EmailVerification: React.FC = () => {
   const location = useLocation();
@@ -24,7 +31,8 @@ export const EmailVerification: React.FC = () => {
   const { messages } = useLandingLocale();
   const verify = messages.auth.emailVerification;
 
-  const email = location.state?.email || "";
+  const routeState = location.state as EmailVerificationLocationState | null;
+  const email = routeState?.email || "";
 
   const [code, setCode] = useState("");
   const [errorText, setErrorText] = useState("");
@@ -68,7 +76,7 @@ export const EmailVerification: React.FC = () => {
 
         const profile = await refreshProfile();
 
-        const isLoginFlow = (location.state as any)?.isLoginFlow;
+        const isLoginFlow = routeState?.isLoginFlow;
         if (isLoginFlow) {
           toast.success(verify.verifiedWelcomeBack);
         }
@@ -77,7 +85,7 @@ export const EmailVerification: React.FC = () => {
           navigate("/subscribe");
           return;
         }
-        const savedStudents = location.state?.generatedStudents || [];
+        const savedStudents = routeState?.generatedStudents || [];
         if (savedStudents.length > 0) {
           navigate("/registrationSuccess", {
             state: { generatedStudents: savedStudents },
@@ -88,7 +96,7 @@ export const EmailVerification: React.FC = () => {
           !profile.role ||
           profile.role === "choose" ||
           profile.role === "regular" ||
-          (!(profile as any).additionalUserData?.englishLevel &&
+          (!profile.englishLevel &&
             !profile.hasCompletedPlacement)
         ) {
           navigate("/registrationDetails");
@@ -190,7 +198,7 @@ export const EmailVerification: React.FC = () => {
           <span className="font-medium text-primary">{maskEmail(email)}</span>
         </p>
 
-        <p className="mb-8 text-sm">Please, check your spam folder</p>
+        <p className="mb-8 text-sm">{verify.spamText}</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {errorText && (

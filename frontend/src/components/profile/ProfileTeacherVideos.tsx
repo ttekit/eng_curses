@@ -28,30 +28,70 @@ import {
   AdminInput,
   AdminTextarea,
 } from "../../components/admin/adminUi";
+import { getErrorMessage } from "../../lib/error-message";
+import type {
+  DatePickerInputProps,
+  DatePickerWrapperProps,
+} from "../../types/date-picker-input";
 
-export type TeacherSeriesItem = {
-  contentId: number;
+type TeacherVideoClassResult = {
+  id: number;
   name: string;
-  friendlyLink: string;
-  visibility: string;
-  contentVideoId: number | null;
-  captionsReady: boolean;
-  systemTags: string[];
-  userTags: string[];
-  processingComplexity: string | null;
-  availableFrom?: string | null;
-  deadline?: string | null;
-  classesAssigned?: string;
-  classIds?: number[];
-  classAccesses?: {
-    classId: number;
-    className: string;
-    availableFrom: string | null;
-    deadline: string | null;
-  }[];
 };
 
-const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
+type TeacherVideoQuizAttempt = {
+  passed: boolean;
+  scorePct: number;
+  correct?: number;
+  total?: number;
+  answers?: unknown;
+};
+
+type TeacherVideoStudentResult = {
+  id: number;
+  name: string;
+  email: string;
+  classId: number | null;
+  className: string | null;
+  attempt?: TeacherVideoQuizAttempt | null;
+};
+
+type TeacherVideoResults = {
+  contentName: string;
+  classes: TeacherVideoClassResult[];
+  students: TeacherVideoStudentResult[];
+};
+
+type QuizAnswerRow = Record<string, unknown>;
+
+function read_quiz_string(row: QuizAnswerRow, keys: string[]): string {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function read_quiz_number(row: QuizAnswerRow, keys: string[]): number {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return -1;
+}
+
+function read_quiz_options(row: QuizAnswerRow): string[] {
+  const raw = row.options ?? row.choices;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((opt): opt is string => typeof opt === "string");
+}
+
+const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
+  (props, ref) => {
   const { onClick, value, onChange, onKeyDown, id } = props;
 
   return (
@@ -78,10 +118,38 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, any>((props, ref) => {
       </button>
     </div>
   );
-});
+  },
+);
 CustomDateTimeInput.displayName = "CustomDateTimeInput";
 
-const ExplysDatePicker = ({ selected, onChange, id, onKeyDown }: any) => (
+export type TeacherSeriesItem = {
+  contentId: number;
+  name: string;
+  friendlyLink: string;
+  visibility: string;
+  contentVideoId: number | null;
+  captionsReady: boolean;
+  systemTags: string[];
+  userTags: string[];
+  processingComplexity: string | null;
+  availableFrom?: string | null;
+  deadline?: string | null;
+  classesAssigned?: string;
+  classIds?: number[];
+  classAccesses?: {
+    classId: number;
+    className: string;
+    availableFrom: string | null;
+    deadline: string | null;
+  }[];
+};
+
+const ExplysDatePicker = ({
+  selected,
+  onChange,
+  id,
+  onKeyDown,
+}: DatePickerWrapperProps) => (
   <DatePicker
     selected={selected}
     onChange={onChange}
@@ -100,8 +168,8 @@ function CustomSelect({
   value,
   onChange,
   options,
-  disabled,
-  className,
+  disabled: _disabled,
+  className: _className,
 }: {
   value: string;
   onChange: (val: string) => void;
@@ -276,11 +344,14 @@ export function ProfileTeacherVideos() {
 
   const [resultsModalOpen, setResultsModalOpen] = useState(false);
   const [resultsLoading, setResultsLoading] = useState(false);
-  const [videoResults, setVideoResults] = useState<any>(null);
+  const [videoResults, setVideoResults] = useState<TeacherVideoResults | null>(
+    null,
+  );
   const [resultsClassFilter, setResultsClassFilter] = useState<number | "all">(
     "all",
   );
-  const [selectedStudentQuiz, setSelectedStudentQuiz] = useState<any>(null);
+  const [selectedStudentQuiz, setSelectedStudentQuiz] =
+    useState<TeacherVideoStudentResult | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -497,11 +568,11 @@ export function ProfileTeacherVideos() {
       setSelectedClasses({});
 
       await loadData();
-    } catch (e: any) {
-      if (e.name === "AbortError") {
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") {
         toast.error(t.uploadCancelledToast);
       } else {
-        toast.error(t.uploadFailed);
+        toast.error(getErrorMessage(e, t.uploadFailed));
       }
     } finally {
       setUploadSaving(false);
@@ -540,17 +611,12 @@ export function ProfileTeacherVideos() {
       toast.success(t.deleteSuccessToast);
       setDeleteModalOpen(false);
       await loadData();
-    } catch (e: any) {
-      toast.error(e.message || t.deleteFailed);
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, t.deleteFailed));
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
     }
-  };
-
-  const openRevokeModal = (id: number) => {
-    setRevokingId(id);
-    setRevokeModalOpen(true);
   };
 
   const confirmRevokeVideo = async () => {
@@ -564,8 +630,8 @@ export function ProfileTeacherVideos() {
       toast.success("Assignment removed successfully!");
       setRevokeModalOpen(false);
       await loadData();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to remove assignment.");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Failed to remove assignment."));
     } finally {
       setIsRevoking(false);
       setRevokingId(null);
@@ -660,8 +726,8 @@ export function ProfileTeacherVideos() {
       toast.success("Deadlines updated successfully!");
       setEditDeadlineModalOpen(false);
       await loadData();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to update deadlines.");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Failed to update deadlines."));
     } finally {
       setIsSavingDeadline(false);
     }
@@ -678,13 +744,13 @@ export function ProfileTeacherVideos() {
         `/contents/teacher/${contentId}/student-results`,
       );
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      const data = await res.json();
+      const data = (await res.json()) as TeacherVideoResults;
       setVideoResults(data);
       if (data.classes?.length === 1) {
         setResultsClassFilter(data.classes[0].id);
       }
-    } catch (e: any) {
-      toast.error(e.message || "Failed to load results");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Failed to load results"));
       setResultsModalOpen(false);
     } finally {
       setResultsLoading(false);
@@ -862,7 +928,7 @@ export function ProfileTeacherVideos() {
               </label>
               <CustomSelect
                 value={assignMode}
-                onChange={(val) => setAssignMode(val as any)}
+                onChange={(val) => setAssignMode(val as "all" | "classes")}
                 options={[
                   { value: "all", label: "All my students" },
                   { value: "classes", label: "Specific classes" },
@@ -878,7 +944,9 @@ export function ProfileTeacherVideos() {
                   </label>
                   <CustomSelect
                     value={deadlineMode}
-                    onChange={(val) => setDeadlineMode(val as any)}
+                    onChange={(val) =>
+                      setDeadlineMode(val as "none" | "close" | "open_close")
+                    }
                     options={[
                       {
                         value: "none",
@@ -1425,7 +1493,7 @@ export function ProfileTeacherVideos() {
                   }
                   options={[
                     { value: "all", label: "All Assigned Classes" },
-                    ...videoResults.classes.map((c: any) => ({
+                    ...videoResults.classes.map((c) => ({
                       value: String(c.id),
                       label: c.name,
                     })),
@@ -1437,11 +1505,11 @@ export function ProfileTeacherVideos() {
             <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
               {videoResults.students
                 .filter(
-                  (s: any) =>
+                  (s) =>
                     resultsClassFilter === "all" ||
                     s.classId === resultsClassFilter,
                 )
-                .map((s: any) => (
+                .map((s) => (
                   <div
                     key={s.id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-muted/10 hover:bg-muted/30 transition-colors"
@@ -1494,7 +1562,7 @@ export function ProfileTeacherVideos() {
                 ))}
 
               {videoResults.students.filter(
-                (s: any) =>
+                (s) =>
                   resultsClassFilter === "all" ||
                   s.classId === resultsClassFilter,
               ).length === 0 && (
@@ -1551,9 +1619,9 @@ export function ProfileTeacherVideos() {
                   Result
                 </p>
                 <p className="text-xl font-bold text-foreground">
-                  {selectedStudentQuiz.attempt.correct}{" "}
+                  {selectedStudentQuiz.attempt.correct ?? 0}{" "}
                   <span className="text-muted-foreground text-sm">
-                    / {selectedStudentQuiz.attempt.total} correct
+                    / {selectedStudentQuiz.attempt.total ?? 0} correct
                   </span>
                 </p>
               </div>
@@ -1569,7 +1637,7 @@ export function ProfileTeacherVideos() {
                 if (typeof rawAnswers === "string") {
                   try {
                     rawAnswers = JSON.parse(rawAnswers);
-                  } catch (e) {}
+                  } catch {}
                 }
 
                 if (
@@ -1583,44 +1651,54 @@ export function ProfileTeacherVideos() {
                   );
                 }
 
-                let flatData = rawAnswers;
+                let flatData: unknown = rawAnswers;
+                const nestedAnswers = rawAnswers as Record<string, unknown>;
                 if (
-                  rawAnswers.answers &&
-                  typeof rawAnswers.answers === "object" &&
-                  !Array.isArray(rawAnswers.answers)
+                  nestedAnswers.answers &&
+                  typeof nestedAnswers.answers === "object" &&
+                  !Array.isArray(nestedAnswers.answers)
                 ) {
-                  flatData = rawAnswers.answers;
+                  flatData = nestedAnswers.answers;
                 } else if (
-                  rawAnswers.questions &&
-                  typeof rawAnswers.questions === "object" &&
-                  !Array.isArray(rawAnswers.questions)
+                  nestedAnswers.questions &&
+                  typeof nestedAnswers.questions === "object" &&
+                  !Array.isArray(nestedAnswers.questions)
                 ) {
-                  flatData = rawAnswers.questions;
+                  flatData = nestedAnswers.questions;
                 }
 
                 if (Array.isArray(flatData)) {
                   return (
                     <div className="flex flex-col gap-4">
-                      {flatData.map((q: any, idx: number) => {
+                      {flatData.map((entry: unknown, idx: number) => {
+                        const q: QuizAnswerRow =
+                          typeof entry === "object" && entry !== null
+                            ? (entry as QuizAnswerRow)
+                            : { text: String(entry) };
                         const qText =
-                          q.question || q.prompt || `Question ${idx + 1}`;
-                        const opts = q.options || q.choices || [];
-                        const studentChoice =
-                          q.studentIndex ??
-                          q.studentChoice ??
-                          q.userAnswer ??
-                          q.answer ??
-                          -1;
-                        const correctChoice =
-                          q.correctIndex ??
-                          q.correctChoice ??
-                          q.correctAnswer ??
-                          q.correct ??
-                          -1;
+                          read_quiz_string(q, ["question", "prompt"]) ||
+                          `Question ${idx + 1}`;
+                        const opts = read_quiz_options(q);
+                        const studentChoice = read_quiz_number(q, [
+                          "studentIndex",
+                          "studentChoice",
+                          "userAnswer",
+                          "answer",
+                        ]);
+                        const correctChoice = read_quiz_number(q, [
+                          "correctIndex",
+                          "correctChoice",
+                          "correctAnswer",
+                          "correct",
+                        ]);
 
-                        if (!opts || opts.length === 0) {
+                        if (opts.length === 0) {
                           const writtenAns =
-                            q.userAnswer || q.answer || q.text || String(q);
+                            read_quiz_string(q, [
+                              "userAnswer",
+                              "answer",
+                              "text",
+                            ]) || String(entry);
                           return (
                             <div
                               key={idx}
@@ -1714,7 +1792,8 @@ export function ProfileTeacherVideos() {
                   );
                 }
 
-                const baseKeys = Object.keys(rawAnswers).filter(
+                const answerMap = rawAnswers as Record<string, unknown>;
+                const baseKeys = Object.keys(answerMap).filter(
                   (k) =>
                     !k.endsWith("_text") &&
                     !k.endsWith("_options") &&
@@ -1728,17 +1807,19 @@ export function ProfileTeacherVideos() {
                 return (
                   <div className="flex flex-col gap-4">
                     {baseKeys.map((key) => {
-                      const val = rawAnswers[key];
+                      const val = answerMap[key];
+                      const qTextRaw = answerMap[`${key}_question`];
                       const qText =
-                        rawAnswers[`${key}_question`] ||
-                        `Question ${key.toUpperCase()}`;
-                      let opts = rawAnswers[`${key}_options`];
-                      const corr = rawAnswers[`${key}_correct`];
+                        typeof qTextRaw === "string" && qTextRaw.trim()
+                          ? qTextRaw
+                          : `Question ${key.toUpperCase()}`;
+                      let opts = answerMap[`${key}_options`];
+                      const corr = answerMap[`${key}_correct`];
 
                       if (typeof opts === "string") {
                         try {
                           opts = JSON.parse(opts);
-                        } catch (e) {}
+                        } catch {}
                       }
 
                       if (Array.isArray(opts)) {
@@ -1827,7 +1908,7 @@ export function ProfileTeacherVideos() {
                               WRITTEN ANSWER
                             </p>
                             <p className="text-sm italic text-foreground break-words leading-relaxed">
-                              "{val}"
+                              "{String(val ?? "")}"
                             </p>
                           </div>
                         </div>
@@ -1894,7 +1975,7 @@ export function ProfileTeacherVideos() {
                     );
                     const now = new Date(currentTime);
 
-                    let computedVis = vis;
+                    const computedVis = vis;
 
                     return (
                       <tr
@@ -2157,7 +2238,7 @@ export function ProfileTeacherVideos() {
                   const vis = s.visibility.trim().toLowerCase();
                   const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
                   const now = new Date(currentTime);
-                  let computedVis = vis;
+                  const computedVis = vis;
 
                   return (
                     <tr

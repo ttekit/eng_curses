@@ -119,6 +119,7 @@ async function bootstrap() {
       "Authorization",
       "x-api-token",
       "X-Access-Token",
+      "X-Explys-Client",
     ],
   });
 

@@ -44,9 +44,8 @@ function HighlightedText({
   vocabulary: VocabularyItem[];
   onWordClick: (word: VocabularyItem) => void;
 }) {
-  if (!vocabulary || vocabulary.length === 0) return <>{text}</>;
-
   const pattern = useMemo(() => {
+    if (!vocabulary || vocabulary.length === 0) return null;
     const escaped = vocabulary
       .map((v) => escapeRegExp(v.word.trim()))
       .filter((w) => w.length > 0)
@@ -56,6 +55,7 @@ function HighlightedText({
     return new RegExp(`\\b(${escaped.join("|")})\\b`, "gi");
   }, [vocabulary]);
 
+  if (!vocabulary || vocabulary.length === 0) return <>{text}</>;
   if (!pattern) return <>{text}</>;
 
   const parts = text.split(pattern);

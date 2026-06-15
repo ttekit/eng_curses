@@ -221,11 +221,10 @@ export class MailService implements OnModuleInit {
       if (!mxRecords || mxRecords.length === 0) return false;
 
       return true;
-    } catch (error) {
-      const err = error as any;
-      this.logger.warn(
-        `Validation failed for ${email}: ${err?.message || "Unknown error"}`,
-      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.warn(`Validation failed for ${email}: ${message}`);
       return false;
     }
   }

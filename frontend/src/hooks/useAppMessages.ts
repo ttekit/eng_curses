@@ -7,5 +7,5 @@ import { appUk } from "../locales/app/uk";
  */
 export function useAppMessages(): typeof appEn {
   const { locale } = useLandingLocale();
-  return locale === "uk" ? appUk : appEn;
+  return (locale === "uk" ? appUk : appEn) as typeof appEn;
 }

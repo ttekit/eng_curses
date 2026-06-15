@@ -22,8 +22,6 @@ export function subscriptionDevModeEnabled(): boolean {
  * When `DEV_MODE=0`, optional `VITE_SKIP_SUBSCRIPTION_ENFORCEMENT` can still bypass (staging).
  */
 export function subscriptionEnforcementDisabled(): boolean {
-  return true;
-
   if (subscriptionDevModeEnabled()) {
     return true;
   }
