@@ -78,6 +78,15 @@ export function resolvePostLoginPath(
     return "/catalog";
   }
 
+  if (
+    profile.role === "student" &&
+    profile.teacherId == null &&
+    profile.favoriteGenres.length === 0 &&
+    profile.hatedGenres.length === 0
+  ) {
+    return "/catalog";
+  }
+
   if (explicit) {
     return explicit;
   }

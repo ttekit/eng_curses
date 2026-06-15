@@ -31,7 +31,6 @@ import {
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
 import { apiFetch } from "../../lib/api";
-import type { DatePickerInputProps } from "../../types/date-picker-input";
 
 interface SelectOption {
   value: string;

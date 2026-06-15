@@ -56,10 +56,7 @@ export default function RegistrationPreferences() {
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          learningGoal: formData.learningGoal,
-          timeToAchieve: formData.timeToAchieve,
-        }),
+        body: JSON.stringify(payload),
       });
       if (response.ok) {
         await refreshProfile();
