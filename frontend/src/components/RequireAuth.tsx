@@ -26,11 +26,5 @@ export default function RequireAuth() {
   if (user && !user.role) {
     return <Navigate to="/registrationMain" replace />;
   }
-
-  const isTeacher = user?.role?.toLowerCase() === "teacher" || user?.role?.toLowerCase() === "admin";
-  if (user && !isTeacher && !user.dateOfBirth) {
-    return <Navigate to="/registrationDetails" replace />;
-  }
-
   return <Outlet />;
 }

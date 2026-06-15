@@ -3,17 +3,12 @@ import {
   Body,
   Controller,
   Delete,
-  FileTypeValidator,
   Get,
-  Header,
-  MaxFileSizeValidator,
   Param,
-  ParseFilePipe,
   ParseIntPipe,
   Patch,
   Post,
   Req,
-  Res,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -26,7 +21,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
-import { Express, Request, Response } from "express";
+import { Express, Request } from "express";
 import { AuthGuard } from "src/auth/auth.guard";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
@@ -52,7 +47,7 @@ const CONTENT_VIDEO_MAX_FILE_BYTES = contentVideoMaxFileBytes();
 @ApiTags("contents")
 @Controller("contents")
 export class ContentsController {
-  constructor(private readonly contentsService: ContentsService) { }
+  constructor(private readonly contentsService: ContentsService) {}
 
   @Get("all")
   @SkipSubscriptionCheck()
@@ -115,7 +110,7 @@ export class ContentsController {
     ) {
       try {
         fullDto.classAssignments = JSON.parse(req.body.classAssignments);
-      } catch (e) { }
+      } catch (e) {}
     }
     if (req.body.availableFrom) fullDto.availableFrom = req.body.availableFrom;
     if (req.body.deadline) fullDto.deadline = req.body.deadline;

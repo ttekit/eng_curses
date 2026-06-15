@@ -8,11 +8,9 @@ import {
   useState,
   ChangeEvent,
   FormEvent,
-  forwardRef,
 } from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
 import {
-  Calendar as CalendarIcon,
   ArrowLeft,
   ArrowRight,
   Eye,
@@ -23,45 +21,8 @@ import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import Turnstile from "react-turnstile";
 import { registerUser } from "../../lib/registerUser";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getApiBase } from "../../lib/api";
-import type { DatePickerInputProps } from "../../types/date-picker-input";
-
-const CustomDateInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
-  (props, ref) => {
-  const { onClick } = props;
-  const context = useContext(RegistrationContext);
-
-  return (
-    <div className="relative w-full">
-      <input
-        type="date"
-        ref={ref}
-        name="dateOfBirth"
-        value={context?.formData.dateOfBirth || ""}
-        onChange={(e) => {
-          context?.updateFormData({ dateOfBirth: e.target.value } as Record<
-            string,
-            string
-          >);
-        }}
-        min="1900-01-01"
-        max={new Date().toISOString().split("T")[0]}
-        className="w-full rounded-xl border border-input bg-background pl-4 pr-12 py-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 cursor-pointer"
-      />
-      <button
-        type="button"
-        onClick={onClick}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center cursor-pointer"
-      >
-        <CalendarIcon className="size-5" />
-      </button>
-    </div>
-  );
-  },
-);
-CustomDateInput.displayName = "CustomDateInput";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -125,38 +86,6 @@ export default function RegistrationMain() {
     return true;
   };
 
-  const validateDateOfBirth = (value: string) => {
-    if (!value) {
-      setErrorText(errors.dateOfBirthRequired);
-      return false;
-    }
-
-    const birthDate = new Date(value);
-    const today = new Date();
-
-    if (isNaN(birthDate.getTime()) || birthDate > today) {
-      setErrorText(errors.dateOfBirthInvalid);
-      return false;
-    }
-
-    if (birthDate.getFullYear() < 1900) {
-      setErrorText("Please enter a valid year (1900 or later).");
-      return false;
-    }
-
-    const ageDiffMs = today.getTime() - birthDate.getTime();
-    const ageDate = new Date(ageDiffMs);
-    const age = Math.abs(ageDate.getUTCFullYear() - 1970);
-
-    if (age < 13) {
-      setErrorText(errors.ageMinimum);
-      return false;
-    }
-
-    setErrorText(null);
-    return true;
-  };
-
   const handleChange = (
     e: ChangeEvent<HTMLInputElement>,
     type: "password" | "email" | "confirmPassword" | "other",
@@ -186,7 +115,6 @@ export default function RegistrationMain() {
     const email = String(fd.get("email") ?? "").trim();
     const password = String(fd.get("password") ?? "");
     const confirmPassword = String(fd.get("confirmPassword") ?? "");
-    const dateOfBirth = formData.dateOfBirth || "";
 
     if (!name) {
       setErrorText(errors.usernameRequired);
@@ -212,10 +140,6 @@ export default function RegistrationMain() {
       setErrorText(errors.captchaWait);
       return;
     }
-    if (!validateDateOfBirth(dateOfBirth)) {
-      resetCaptcha();
-      return;
-    }
 
     setErrorText(null);
 
@@ -228,7 +152,6 @@ export default function RegistrationMain() {
         email,
         password,
         confirmPassword,
-        dateOfBirth,
         token: captchaToken,
       });
 
@@ -317,39 +240,6 @@ export default function RegistrationMain() {
             />
           </div>
 
-          <div className="space-y-2">
-            <LabelRegister isRequired={true}>{step1.dateOfBirth}</LabelRegister>
-            <div className="relative">
-              <DatePicker
-                selected={
-                  formData.dateOfBirth &&
-                  !isNaN(new Date(formData.dateOfBirth).getTime())
-                    ? new Date(formData.dateOfBirth)
-                    : null
-                }
-                onChange={(date: Date | null) => {
-                  if (date && !isNaN(date.getTime())) {
-                    const y = date.getFullYear();
-                    const m = String(date.getMonth() + 1).padStart(2, "0");
-                    const d = String(date.getDate()).padStart(2, "0");
-                    const formatted = `${y}-${m}-${d}`;
-                    updateFormData({ dateOfBirth: formatted } as Record<
-                      string,
-                      string
-                    >);
-                  }
-                }}
-                dateFormat="yyyy-MM-dd"
-                showMonthDropdown
-                showYearDropdown
-                dropdownMode="select"
-                minDate={new Date("1900-01-01")}
-                maxDate={new Date()}
-                wrapperClassName="w-full"
-                customInput={<CustomDateInput />}
-              />
-            </div>
-          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">

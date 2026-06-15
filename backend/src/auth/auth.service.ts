@@ -233,7 +233,6 @@ export class AuthService {
         verificationCodeExpires: otpExpires,
         subscriptionPlan: "smart",
         subscriptionStatus: "active",
-        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
         hasCompletedPlacement: roleLabel === "TEACHER",
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
@@ -539,7 +538,9 @@ export class AuthService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.role ? { role: data.role.toUpperCase() as any } : {}),
+        ...(data.role && data.role.toUpperCase() !== "CHOOSE"
+          ? { role: data.role.toUpperCase() as any }
+          : {}),
         ...(data.dateOfBirth
           ? { dateOfBirth: new Date(data.dateOfBirth) }
           : {}),
@@ -1053,7 +1054,134 @@ export class AuthService {
   }
 
   async getProfile(userId: number) {
-    return this.authProfileService.get_profile(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        additionalUserData: {
+          include: {
+            favoriteGenres: true,
+            hatedGenres: true,
+          },
+        },
+        settings: true,
+        teacher: {
+          select: { name: true },
+        },
+        class: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+    if (user.isSuspended) {
+      throw new ForbiddenException("Account suspended");
+    }
+    const extra = (user as any).additionalUserData;
+
+    const [
+      distinctPassedVideos,
+      vocabularyTermsTotal,
+      studyingPlanPhaseTopics,
+    ] = await Promise.all([
+      this.prisma.comprehensionTestAttempt
+        .findMany({
+          where: { userId, passed: true },
+          distinct: ["contentVideoId"],
+          select: { contentVideoId: true },
+        })
+        .then((rows) => rows.length),
+      this.prisma.userVocabulary.count({ where: { userId } }),
+      this.studyingPlanRegeneration.resolvePhaseTopicsForUser(userId),
+    ]);
+
+    let actualStreak = (user as any).currentStreak ?? 0;
+    const lastActivityDate = (user as any).lastActivityDate;
+
+    if (lastActivityDate && actualStreak > 0) {
+      const now = new Date();
+      const today = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
+      const lastActivity = new Date(lastActivityDate);
+      const lastActivityDay = new Date(
+        Date.UTC(
+          lastActivity.getUTCFullYear(),
+          lastActivity.getUTCMonth(),
+          lastActivity.getUTCDate(),
+        ),
+      );
+
+      const diffDays = Math.round(
+        (today.getTime() - lastActivityDay.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      if (diffDays > 1) {
+        actualStreak = 0;
+      }
+    }
+
+    return {
+      id: (user as any).id,
+      name: (user as any).name,
+      email: (user as any).email,
+      //dateOfBirth: (user as any).dateOfBirth,
+      avatarUrl: (user as any).avatarUrl,
+      isTwoFactorEnable: (user as any).isTwoFactorEnable,
+      isVerified: (user as any).isVerified,
+      role: (user as any).role,
+      xp: (user as any).xp,
+      hasCompletedPlacement: (user as any).hasCompletedPlacement,
+      currentStreak: actualStreak,
+      englishLevel: extra?.englishLevel ?? "",
+      education: extra?.education ?? "",
+      workField: extra?.workField ?? "",
+      nativeLanguage: extra?.nativeLanguage ?? "",
+      hobbies: extra?.hobbies ?? [],
+      learningGoal: extra?.learningGoal ?? "",
+      timeToAchieve: extra?.timeToAchieve ?? "",
+      studyingPlanPhases: extra?.studyingPlanPhases ?? null,
+      studyingPlanPhaseTopics,
+      activeStudyingPhaseIndex: extra?.activeStudyingPhaseIndex ?? 0,
+      activePhaseEnteredAt:
+        extra?.activePhaseEnteredAt instanceof Date
+          ? extra.activePhaseEnteredAt.toISOString()
+          : (extra?.activePhaseEnteredAt ?? null),
+      phaseFinalTestPassedPhases: parsePhaseFinalTestProgress(
+        extra?.phaseFinalTestProgress,
+      ).passedPhaseIndices,
+      studyingPlanProgress: {
+        distinctPassedVideos,
+        vocabularyTermsTotal,
+      },
+      favoriteGenres: extra?.favoriteGenres?.map((g: any) => g.id) ?? [],
+      hatedGenres: extra?.hatedGenres?.map((g: any) => g.id) ?? [],
+      playbackSpeed: (user as any).settings?.playbackSpeed ?? null,
+      videoQuality: (user as any).settings?.currentResolution ?? "",
+      subscriptionPlan: (user as any).subscriptionPlan ?? "",
+      subscriptionStatus: (user as any).subscriptionStatus ?? "",
+      stripeSubscriptionId: (user as any).stripeSubscriptionId ?? "",
+      teacherId: (user as any).teacherId ?? null,
+      teacherName: (user as any).teacher?.name ?? null,
+      className: (user as any).class?.name ?? null,
+    };
+  }
+
+  private utcWeekRange(): { weekStart: Date; weekEndExclusive: Date } {
+    const now = new Date();
+    const day = (d: Date) => d.getUTCDay();
+    const x = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const dow = day(x);
+    const offset = dow === 0 ? -6 : 1 - dow;
+    x.setUTCDate(x.getUTCDate() + offset);
+    x.setUTCHours(0, 0, 0, 0);
+    const weekEndExclusive = new Date(x);
+    weekEndExclusive.setUTCDate(weekEndExclusive.getUTCDate() + 7);
+    return { weekStart: x, weekEndExclusive };
   }
 
   async getLearningStats(userId: number) {

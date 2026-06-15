@@ -3,13 +3,7 @@ import LabelRegister from "../../components/LabelRegister";
 import InputText from "../../components/InputText";
 import { TimeToAchieveField } from "../../components/TimeToAchieveField";
 import { Link, useNavigate } from "react-router";
-import {
-  useContext,
-  FormEvent,
-  useState,
-  useEffect,
-  ChangeEvent,
-} from "react";
+import { useContext, FormEvent, useState, useEffect, ChangeEvent } from "react";
 import {
   RegistrationContext,
   type FormData,
@@ -35,7 +29,10 @@ export default function RegistrationPreferences() {
   const navigate = useNavigate();
   const { user, refreshProfile } = useUser();
 
-  const currentRole = user?.role ? user.role : formData.role;
+  // Делаем роль независимой от регистра (student, STUDENT, Student -> student)
+  const currentRole = (
+    user?.role ? String(user.role) : String(formData.role || "")
+  ).toLowerCase();
   const isTeacher = currentRole === "teacher";
   const isAdult = currentRole === "adult";
 
@@ -102,19 +99,20 @@ export default function RegistrationPreferences() {
     e.preventDefault();
 
     try {
+      const payload = {
+        // role: formData.role ? formData.role.toUpperCase() : undefined,
+        favoriteGenres: formData.favoriteGenres,
+        hatedGenres: formData.hatedGenres,
+        learningGoal: formData.learningGoal,
+        timeToAchieve: formData.timeToAchieve,
+      };
+
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          role: formData.role,
-          dateOfBirth: formData.dateOfBirth,
-          favoriteGenres: formData.favoriteGenres,
-          hatedGenres: formData.hatedGenres,
-          learningGoal: formData.learningGoal,
-          timeToAchieve: formData.timeToAchieve,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -165,7 +163,7 @@ export default function RegistrationPreferences() {
             )}
             <div>
               <h1 className="font-display text-2xl font-bold">
-                {formData.role === "student" ? t.titleStudent : t.titleAdult}
+                {currentRole === "student" ? t.titleStudent : t.titleAdult}
               </h1>
               <p className="text-sm text-muted-foreground">{t.lead}</p>
             </div>
