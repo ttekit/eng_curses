@@ -1,236 +1,35 @@
 /* eslint-disable react-refresh/only-export-components -- shared context/helpers */
 import { FormEvent, useState } from "react";
-import CreatableSelect from "react-select/creatable";
-import type { MultiValue, CSSObjectWithLabel, ControlProps } from "react-select";
 import toast from "react-hot-toast";
 import Button from "./Button";
-import InputText from "./InputText";
 import LabelRegister from "./LabelRegister";
 import { apiFetch, readApiErrorBody } from "../lib/api";
 import { useUser, type UserData } from "../context/UserContext";
 import { useAppMessages } from "../hooks/useAppMessages";
-import { formatMessage } from "../lib/formatMessage";
 import { cn } from "../lib/utils";
-
-type HobbyOption = { value: string; label: string };
-
-const ADULT_SKIP_PLACEMENT_TEST = "none" as const;
-
-const ADULT_PLACEMENT_CEFR_LEVELS = [
-  "A1",
-  "A2",
-  "B1",
-  "B2",
-  "C1",
-  "C2",
-] as const;
-
-type AdultPlacementCefrLevel = (typeof ADULT_PLACEMENT_CEFR_LEVELS)[number];
-
-const ADULT_PLACEMENT_CEFR_SET: ReadonlySet<string> = new Set(
+import {
   ADULT_PLACEMENT_CEFR_LEVELS,
-);
-
-const selectFieldClass =
-  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
-
-function parseAdultProfileCefrTarget(
-  level: string | undefined,
-): AdultPlacementCefrLevel | "" {
-  const trimmed = level?.trim() ?? "";
-  if (!trimmed) {
-    return "";
-  }
-  const lowered = trimmed.toLowerCase();
-  if (lowered === "choose") {
-    return "";
-  }
-  const embedded = trimmed
-    .match(/\b(A1|A2|B1|B2|C1|C2)\b/i)?.[1]
-    ?.toUpperCase();
-  if (embedded && ADULT_PLACEMENT_CEFR_SET.has(embedded)) {
-    return embedded as AdultPlacementCefrLevel;
-  }
-  const upper = trimmed.toUpperCase();
-  if (ADULT_PLACEMENT_CEFR_SET.has(upper)) {
-    return upper as AdultPlacementCefrLevel;
-  }
-  if (/\bpre[-\s]?a1\b/i.test(trimmed)) {
-    return "A1";
-  }
-  if (/\bbeginner|elementary|starter\b/i.test(lowered)) {
-    return "A1";
-  }
-  if (/\ba2\b/i.test(lowered)) {
-    return "A2";
-  }
-  if (/\bupper\s+intermediate\b/i.test(lowered)) {
-    return "B2";
-  }
-  if (/\bb1\b/i.test(lowered)) {
-    return "B1";
-  }
-  if (/\bintermediate\b/i.test(lowered)) {
-    return "B1";
-  }
-  if (/\bb2\b/i.test(lowered)) {
-    return "B2";
-  }
-  if (/\badvanced\b/i.test(lowered)) {
-    return "C1";
-  }
-  if (/\bc1\b/i.test(lowered)) {
-    return "C1";
-  }
-  if (/\bproficient|mastery\b/i.test(lowered)) {
-    return "C2";
-  }
-  if (/\bc2\b/i.test(lowered)) {
-    return "C2";
-  }
-  return "";
-}
+  ADULT_PLACEMENT_CEFR_SET,
+  ADULT_SKIP_PLACEMENT_TEST,
+  adult_needs_placement_cefr,
+  parse_adult_profile_cefr_target,
+} from "../lib/placement_cefr";
 
 type PlacementPreTestSuccessDetail = {
   readonly skippedPlacementTest: boolean;
 };
 
-function hobbiesToOptions(h: string[]): HobbyOption[] {
-  return h.map((x) => ({ value: x, label: x }));
-}
-
-function normalizeHobbySelection(sel: MultiValue<HobbyOption>): string[] {
-  const raw = sel.map((o) => o.value.trim()).filter(Boolean);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const x of raw) {
-    const k = x.toLowerCase();
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(x);
-  }
-  return out;
-}
-
-const customSelectStyles = {
-  control: (
-    base: CSSObjectWithLabel,
-    state: ControlProps<HobbyOption, true>,
-  ) => ({
-    ...base,
-    backgroundColor: "var(--background)",
-    borderColor: state.isFocused ? "var(--primary)" : "var(--input)",
-    borderRadius: 12,
-    minHeight: 46,
-    boxShadow: state.isFocused
-      ? "0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent)"
-      : "0 1px 2px 0 rgb(0 0 0 / 0.05)", // shadow-sm
-    "&:hover": {
-      borderColor: state.isFocused ? "var(--primary)" : "var(--input)",
-    },
-    cursor: "text",
-  }),
-  menu: (base: Record<string, unknown>) => ({
-    ...base,
-    backgroundColor: "var(--card)",
-    border: "1px solid var(--border)",
-    borderRadius: 12,
-    overflow: "hidden",
-    boxShadow:
-      "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", // shadow-xl
-  }),
-  option: (
-    base: Record<string, unknown>,
-    state: { isFocused: boolean; isSelected: boolean },
-  ) => ({
-    ...base,
-    backgroundColor: state.isSelected
-      ? "color-mix(in srgb, var(--primary) 10%, transparent)"
-      : state.isFocused
-        ? "var(--muted)"
-        : "transparent",
-    color: state.isSelected ? "var(--primary)" : "var(--foreground)",
-    cursor: "pointer",
-    "&:active": {
-      backgroundColor: "color-mix(in srgb, var(--primary) 20%, transparent)",
-    },
-  }),
-  multiValue: (base: Record<string, unknown>) => ({
-    ...base,
-    backgroundColor: "var(--secondary)",
-    borderRadius: 6,
-  }),
-  multiValueLabel: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--secondary-foreground)",
-  }),
-  input: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--foreground)",
-  }),
-  placeholder: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--muted-foreground)",
-  }),
-  multiValueRemove: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--muted-foreground)",
-    cursor: "pointer",
-    ":hover": {
-      backgroundColor: "var(--destructive)",
-      color: "var(--destructive-foreground)",
-      borderRadius: "0 6px 6px 0",
-    },
-  }),
-  clearIndicator: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--muted-foreground)",
-    ":hover": { color: "var(--foreground)" },
-    cursor: "pointer",
-  }),
-  dropdownIndicator: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--muted-foreground)",
-    ":hover": { color: "var(--foreground)" },
-    cursor: "pointer",
-  }),
-  singleValue: (base: Record<string, unknown>) => ({
-    ...base,
-    color: "var(--foreground)",
-  }),
-};
+const selectFieldClass =
+  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
 export function adultNeedsPlacementPrepFields(user: UserData): boolean {
-  if (user.role !== "adult") {
-    return false;
-  }
-  return (
-    !user.workField?.trim() ||
-    !user.education?.trim() ||
-    !(user.hobbies && user.hobbies.length > 0) ||
-    !user.nativeLanguage?.trim() ||
-    !parseAdultProfileCefrTarget(user.englishLevel)
-  );
+  return adult_needs_placement_cefr(user);
 }
 
 export function studentNeedsPlacementPreferencesOverlay(
-  user: UserData,
+  _user: UserData,
 ): boolean {
-  if (user.role !== "student") {
-    return false;
-  }
-  const hasGenres = (user.favoriteGenres?.length ?? 0) > 0;
-  const hasHobbies = (user.hobbies?.length ?? 0) > 0;
-  if (user.teacherId != null) {
-    return !hasHobbies || !hasGenres;
-  }
-  return (
-    !user.workField?.trim() ||
-    !user.education?.trim() ||
-    !user.nativeLanguage?.trim() ||
-    !hasHobbies ||
-    !hasGenres
-  );
+  return false;
 }
 
 export default function PlacementPreTestStep({
@@ -243,18 +42,8 @@ export default function PlacementPreTestStep({
   const { refreshProfile } = useUser();
   const a = useAppMessages().placementFlow.adult;
 
-  const [job, setJob] = useState(() => user.workField?.trim() ?? "");
-  const [education, setEducation] = useState(
-    () => user.education?.trim() ?? "",
-  );
-  const [nativeLanguage, setNativeLanguage] = useState(
-    () => user.nativeLanguage?.trim() ?? "",
-  );
-  const [hobbies, setHobbies] = useState<string[]>(() => [
-    ...(user.hobbies ?? []),
-  ]);
   const [englishLevelChoice, setEnglishLevelChoice] = useState(() => {
-    const fromProfile = parseAdultProfileCefrTarget(user.englishLevel);
+    const fromProfile = parse_adult_profile_cefr_target(user.englishLevel);
     return fromProfile === "" ? "" : fromProfile;
   });
   const [saving, setSaving] = useState(false);
@@ -263,26 +52,6 @@ export default function PlacementPreTestStep({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFieldError(null);
-    const j = job.trim();
-    const ed = education.trim();
-    const nl = nativeLanguage.trim();
-    const hobbiesPayload = hobbies.map((h) => h.trim()).filter(Boolean);
-    if (!j) {
-      setFieldError(a.errorJob);
-      return;
-    }
-    if (!ed) {
-      setFieldError(a.errorEducation);
-      return;
-    }
-    if (hobbiesPayload.length < 1) {
-      setFieldError(a.errorHobbies);
-      return;
-    }
-    if (!nl) {
-      setFieldError(a.errorNativeLanguage);
-      return;
-    }
     const hasCefrTarget = ADULT_PLACEMENT_CEFR_SET.has(englishLevelChoice);
     const isSkip = englishLevelChoice === ADULT_SKIP_PLACEMENT_TEST;
     if (englishLevelChoice === "" || (!hasCefrTarget && !isSkip)) {
@@ -297,21 +66,8 @@ export default function PlacementPreTestStep({
         method: "PATCH",
         body: JSON.stringify(
           skipTest
-            ? {
-                workField: j,
-                education: ed,
-                hobbies: hobbiesPayload,
-                nativeLanguage: nl,
-                englishLevel: "A1",
-                hasCompletedPlacement: true,
-              }
-            : {
-                workField: j,
-                education: ed,
-                hobbies: hobbiesPayload,
-                nativeLanguage: nl,
-                englishLevel: englishLevelChoice,
-              },
+            ? { englishLevel: "A1", hasCompletedPlacement: true }
+            : { englishLevel: englishLevelChoice },
         ),
       });
       if (!res.ok) {
@@ -321,7 +77,7 @@ export default function PlacementPreTestStep({
       await refreshProfile();
       onSuccess(skipTest ? { skippedPlacementTest: true } : undefined);
     } catch (error) {
-      console.error("Failed to save placement prep profile:", error);
+      console.error("Failed to save placement CEFR level:", error);
       toast.error(a.saveErrorToast);
     } finally {
       setSaving(false);
@@ -334,66 +90,8 @@ export default function PlacementPreTestStep({
       onSubmit={(e) => void handleSubmit(e)}
     >
       <p className="text-xs leading-relaxed text-muted-foreground">
-        {a.formIntro}
+        {a.englishLevelHelp}
       </p>
-
-      <section className="space-y-4 rounded-xl border border-border/50 bg-muted/15 p-4">
-        <h3 className="font-display text-sm font-semibold tracking-tight text-foreground">
-          {a.sectionAbout}
-        </h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <LabelRegister isRequired={true}>{a.job}</LabelRegister>
-            <InputText
-              name="workField"
-              value={job}
-              onChange={(e) => setJob(e.target.value)}
-              placeholder={a.jobPlaceholder}
-            />
-          </div>
-          <div className="space-y-2">
-            <LabelRegister isRequired={true}>{a.education}</LabelRegister>
-            <InputText
-              name="education"
-              value={education}
-              onChange={(e) => setEducation(e.target.value)}
-              placeholder={a.educationPlaceholder}
-            />
-          </div>
-          <div className="space-y-2">
-            <LabelRegister isRequired={true}>{a.nativeLanguage}</LabelRegister>
-            <InputText
-              name="nativeLanguage"
-              value={nativeLanguage}
-              onChange={(e) => setNativeLanguage(e.target.value)}
-              placeholder={a.nativeLanguagePlaceholder}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-3 rounded-xl border border-border/50 bg-muted/15 p-4">
-        <h3 className="font-display text-sm font-semibold tracking-tight text-foreground">
-          {a.sectionInterests}
-        </h3>
-        <div className="flex flex-col gap-1">
-          <LabelRegister isRequired={true}>{a.hobbies}</LabelRegister>
-          <CreatableSelect<HobbyOption, true>
-            isMulti
-            isClearable
-            options={[]}
-            value={hobbiesToOptions(hobbies)}
-            onChange={(sel) => setHobbies(normalizeHobbySelection(sel))}
-            placeholder={a.hobbiesPlaceholder}
-            formatCreateLabel={(input) => {
-              const t = input.trim();
-              return t ? formatMessage(a.addChipNamed, { name: t }) : a.addChip;
-            }}
-            noOptionsMessage={() => a.hobbyNoOptions}
-            styles={customSelectStyles}
-          />
-        </div>
-      </section>
 
       <section className="space-y-3 rounded-xl border border-border/50 bg-muted/15 p-4">
         <h3 className="font-display text-sm font-semibold tracking-tight text-foreground">

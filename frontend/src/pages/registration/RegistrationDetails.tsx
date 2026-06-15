@@ -268,6 +268,7 @@ export default function RegistrationDetails() {
         email: userEmail,
         password: formData.password,
         role: formData.role.toUpperCase(),
+        dateOfBirth: formData.dateOfBirth,
 
         teacherGrades:
           formData.role === "teacher" ? formData.teacherGrades : undefined,

@@ -23,7 +23,8 @@ export function isOutboundMailDisabled(configService: ConfigService): boolean {
 }
 
 /**
- * Email verification gate skipped when `DEV_MODE=1` only (not when mail is off).
+ * Legacy helper: true when `DEV_MODE=1`. Email verification is optional for app
+ * access; this flag no longer gates JWT issuance or AuthGuard.
  */
 export function isEmailConfirmationDisabled(
   configService: ConfigService,

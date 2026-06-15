@@ -47,6 +47,18 @@ export class UpdatePreferencesDto {
   hobbies?: string[];
 
   @IsOptional()
+  @IsString()
+  education?: string;
+
+  @IsOptional()
+  @IsString()
+  workField?: string;
+
+  @IsOptional()
+  @IsString()
+  nativeLanguage?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   knownLanguages?: string[];

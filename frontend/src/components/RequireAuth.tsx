@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useUser } from "../context/UserContext";
+import { EmailVerificationBanner } from "./EmailVerificationBanner";
 
 export default function RequireAuth() {
   const { isLoggedIn, isLoading, user } = useUser();
@@ -32,5 +33,10 @@ export default function RequireAuth() {
     return <Navigate to="/registrationDetails" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <EmailVerificationBanner />
+      <Outlet />
+    </>
+  );
 }

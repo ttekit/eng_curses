@@ -13,7 +13,7 @@ type TurnstileWebViewProps = {
   resetKey?: number;
 };
 
-function buildTurnstileHtml(siteKey: string): string {
+function build_turnstile_html(siteKey: string): string {
   return `<!DOCTYPE html>
 <html>
   <head>
@@ -49,9 +49,9 @@ function buildTurnstileHtml(siteKey: string): string {
 
 export function TurnstileWebView({ onToken, onExpire, resetKey = 0 }: TurnstileWebViewProps) {
   const handledRef = useRef(false);
-  const html = useMemo(() => buildTurnstileHtml(getTurnstileSiteKey()), [resetKey]);
+  const html = useMemo(() => build_turnstile_html(getTurnstileSiteKey()), [resetKey]);
 
-  const handleMessage = (event: WebViewMessageEvent) => {
+  const handle_message = (event: WebViewMessageEvent) => {
     try {
       const payload = JSON.parse(event.nativeEvent.data) as {
         type?: string;
@@ -76,7 +76,7 @@ export function TurnstileWebView({ onToken, onExpire, resetKey = 0 }: TurnstileW
         key={resetKey}
         originWhitelist={["*"]}
         source={{ html }}
-        onMessage={handleMessage}
+        onMessage={handle_message}
         javaScriptEnabled
         domStorageEnabled
         startInLoadingState

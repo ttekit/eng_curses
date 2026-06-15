@@ -1,15 +1,33 @@
 /**
- * Explys mobile theme tokens aligned with the web SPA (dark catalog shell).
+ * Explys mobile color tokens aligned with frontend/src/index.css.
  */
 export const colors = {
   background: "#09090b",
+  card: "#0A0D18",
   surface: "#18181b",
   surfaceElevated: "#27272a",
+  secondary: "#1c1c22",
+  muted: "#3f3f46",
   border: "#3f3f46",
   text: "#fafafa",
   textMuted: "#a1a1aa",
-  primary: "#3b82f6",
-  primaryPressed: "#2563eb",
-  danger: "#ef4444",
-  success: "#22c55e",
+  primary: "#813DEC",
+  primaryPressed: "#6b2fd4",
+  primaryForeground: "#fafafa",
+  accent: "#2DA17D",
+  accentForeground: "#fafafa",
+  destructive: "#AB1041",
+  danger: "#AB1041",
+  success: "#2DA17D",
+  yellow: "#B4B425",
+  orange: "#A8641B",
+  lightBlue: "#2773A9",
+  overlay: "rgba(9, 9, 11, 0.85)",
+  headerBar: "rgba(9, 9, 11, 0.8)",
+  chart1: "#813DEC",
+  chart2: "#2DA17D",
+  chart3: "#C47840",
+  chart4: "#2773A9",
+  chart5: "#B4B425",
+  cardGlass: "rgba(10, 13, 24, 0.95)",
 } as const;

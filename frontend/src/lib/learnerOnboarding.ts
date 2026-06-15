@@ -1,8 +1,5 @@
 import type { UserData } from "../context/UserContext";
-import {
-  adultNeedsPlacementPrepFields,
-  studentNeedsPlacementPreferencesOverlay,
-} from "../components/PlacementPreTestStep";
+import { adultNeedsPlacementPrepFields } from "../components/PlacementPreTestStep";
 import { userMayUseLearnerApp } from "./subscriptionAccess";
 
 export type PlacementPhase = "preferences" | "test" | "off";
@@ -30,15 +27,7 @@ export function resolvePlacementPhase(user: UserData): PlacementPhase {
   if (user.role === "adult") {
     return adultNeedsPlacementPrepFields(user) ? "preferences" : "test";
   }
-  if (user.role === "student") {
-    return studentNeedsPlacementPreferencesOverlay(user)
-      ? "preferences"
-      : "test";
-  }
-  const hasPrefs =
-    (user.hobbies?.length ?? 0) > 0 &&
-    (user.favoriteGenres?.length ?? 0) > 0;
-  return hasPrefs ? "test" : "preferences";
+  return "test";
 }
 
 /**
@@ -65,13 +54,6 @@ export function resolvePostLoginPath(
     profile.role === "regular"
   ) {
     return "/registrationDetails";
-  }
-
-  if (
-    (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
-    (!profile.hatedGenres || profile.hatedGenres.length === 0)
-  ) {
-    return "/registrationPreferences";
   }
 
   if (

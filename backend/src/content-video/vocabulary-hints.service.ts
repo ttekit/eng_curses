@@ -23,6 +23,7 @@ export class VocabularyHintsService {
   async getHints(
     words: string[],
     targetLang?: string | null,
+    options?: { preferNativeMeaning?: boolean },
   ): Promise<Record<string, VocabularyHintDto>> {
     const uniq = [
       ...new Set(
@@ -34,6 +35,9 @@ export class VocabularyHintsService {
 
     const lang = (targetLang ?? "").trim().toLowerCase();
     const wantTranslate = lang.length === 2 && lang !== "en";
+    const preferNativeMeaning = Boolean(
+      options?.preferNativeMeaning && wantTranslate,
+    );
 
     const out: Record<string, VocabularyHintDto> = {};
 
@@ -47,9 +51,17 @@ export class VocabularyHintsService {
               ? this.fetchTranslation(word, lang)
               : Promise.resolve<string | null>(null),
           ]);
+          let meaning = dict?.meaning ? shortenMeaning(dict.meaning) : null;
+          if (preferNativeMeaning) {
+            meaning = await this.resolveNativeMeaning(
+              meaning,
+              tr,
+              lang,
+            );
+          }
           out[key] = {
             pronunciation: dict?.pronunciation?.trim() || null,
-            meaning: dict?.meaning ? shortenMeaning(dict.meaning) : null,
+            meaning,
             translation: tr?.trim() || null,
           };
         } catch {
@@ -63,6 +75,24 @@ export class VocabularyHintsService {
     );
 
     return out;
+  }
+
+  private async resolveNativeMeaning(
+    englishMeaning: string | null,
+    wordTranslation: string | null,
+    targetLang: string,
+  ): Promise<string | null> {
+    if (englishMeaning?.trim()) {
+      const translated = await this.fetchTranslation(
+        englishMeaning.trim(),
+        targetLang,
+      );
+      if (translated?.trim()) {
+        return shortenMeaning(translated);
+      }
+    }
+    const shortGloss = wordTranslation?.trim();
+    return shortGloss && shortGloss.length > 0 ? shortenMeaning(shortGloss) : null;
   }
 
   private async fetchDictionary(

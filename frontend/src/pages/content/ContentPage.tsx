@@ -42,6 +42,7 @@ import { appEn } from "../../locales/app/en";
 import { formatMessage } from "../../lib/formatMessage";
 import { useIsLgUp } from "../../hooks/useMediaQuery";
 import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
+import { sanitizeVocabularyTerm } from "../../lib/vocabularyTermSanitize";
 import { AssignHomeworkButton } from "../../components/AssignHomeworkButton";
 import { Calendar } from "lucide-react";
 
@@ -140,6 +141,7 @@ function rawKeyVocabularyFromTestsPayload(payload: unknown): unknown[] {
 function normalizeLessonVocabulary(raw: unknown): VocabularyItem[] {
   const rows = Array.isArray(raw) ? raw : [];
   const out: VocabularyItem[] = [];
+  const seen = new Set<string>();
   for (const row of rows) {
     if (!row || typeof row !== "object") continue;
     const r = row as Record<string, unknown>;
@@ -151,7 +153,11 @@ function normalizeLessonVocabulary(raw: unknown): VocabularyItem[] {
           : typeof r.label === "string"
             ? r.label
             : "";
-    const word = wordRaw.trim();
+    const word = sanitizeVocabularyTerm(wordRaw);
+    if (!word) continue;
+    const key = word.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
     let definition =
       typeof r.definition === "string"
         ? r.definition.trim()
@@ -196,7 +202,9 @@ function buildVocabularyFromTranscript(
     if (w.length < 3 || w.length > 48) continue;
     const low = w.toLowerCase();
     if (low.length <= 5 && TRANSCRIPT_VOCAB_STOP.has(low)) continue;
-    found.add(w);
+    const sanitized = sanitizeVocabularyTerm(w);
+    if (!sanitized) continue;
+    found.add(sanitized);
   }
 
   const words = [...found].slice(0, 10);
@@ -428,7 +436,7 @@ function ContentWatchHeader({
   } | null;
 }) {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-border border-b bg-background/80 backdrop-blur-lg">
+    <header className="fixed top-[var(--email-verification-banner-height,0px)] right-0 left-0 z-50 border-border border-b bg-background/80 backdrop-blur-lg">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="grid grid-cols-3 items-center gap-3">
           <Link

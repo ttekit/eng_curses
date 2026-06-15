@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { normalizedLearnerCefrBand } from "./cefr-vocabulary-target.util";
+import { normalizedLearnerCefrBand, isLearnerCefrBelowB1 } from "./cefr-vocabulary-target.util";
+import { sanitizeVocabularyTerm } from "./vocabulary-term-sanitize.util";
 import { nativeLanguageToIso639_1 } from "./native-language-iso.util";
 import { PrismaService } from "src/prisma.service";
 import { normalizeVocabularyTerm } from "src/user-vocabulary/user-vocabulary.util";
@@ -52,12 +53,12 @@ export class VocabularyPersonalizationService {
     const seenNorm = new Set<string>();
     for (const raw of input.words) {
       if (typeof raw !== "string") continue;
-      const t = raw.trim();
-      if (t.length < 2 || t.length > 96) continue;
-      const norm = normalizeVocabularyTerm(t);
+      const sanitized = sanitizeVocabularyTerm(raw);
+      if (!sanitized) continue;
+      const norm = normalizeVocabularyTerm(sanitized);
       if (norm.length < 2 || seenNorm.has(norm)) continue;
       seenNorm.add(norm);
-      ordered.push(t);
+      ordered.push(sanitized);
       if (ordered.length >= MAX_WORDS) break;
     }
 
@@ -69,12 +70,16 @@ export class VocabularyPersonalizationService {
     const learnerBand = normalizedLearnerCefrBand(englishLevel) ?? "B1";
     const nativeRaw = user.additionalUserData?.nativeLanguage?.trim() || null;
     const nativeIso = nativeLanguageToIso639_1(nativeRaw ?? undefined);
+    const useNativeDescription =
+      isLearnerCefrBelowB1(englishLevel) &&
+      Boolean(nativeIso && nativeIso !== "en" && nativeRaw);
 
     const geminiRows = await this.gemini.personalize({
       words: ordered,
       learnerCefrBand: learnerBand,
       nativeLanguageLabel: nativeRaw,
       nativeLanguageIso: nativeIso,
+      useNativeDescription,
     });
 
     const out: Record<string, VocabularyHintDto> = {};
@@ -95,6 +100,7 @@ export class VocabularyPersonalizationService {
       const fallback = await this.hints.getHints(
         missing,
         nativeIso && nativeIso !== "en" ? nativeIso : null,
+        { preferNativeMeaning: useNativeDescription },
       );
       for (const w of missing) {
         const key = w.toLowerCase();

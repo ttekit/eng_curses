@@ -19,6 +19,7 @@ export class VocabularyPersonalizeGeminiClient {
     learnerCefrBand: string;
     nativeLanguageLabel: string | null;
     nativeLanguageIso: string | undefined;
+    useNativeDescription: boolean;
   }): Promise<VocabularyPersonalizeGeminiRow[] | null> {
     const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
     const apiUrl =
@@ -35,13 +36,19 @@ export class VocabularyPersonalizeGeminiClient {
       input.nativeLanguageLabel;
 
     const nativeTranslationRule = wantNative
-      ? `• nativeTranslation: a short equivalent or gloss IN THE LEARNER'S NATIVE LANGUAGE (${input.nativeLanguageLabel}). For multi-word English items, translate the whole chunk. Use null only if impossible.`
+      ? input.useNativeDescription
+        ? `• nativeTranslation: a very short equivalent or gloss IN THE LEARNER'S NATIVE LANGUAGE (${input.nativeLanguageLabel}) when it adds something beyond learnerDescription; otherwise null.`
+        : `• nativeTranslation: a short equivalent or gloss IN THE LEARNER'S NATIVE LANGUAGE (${input.nativeLanguageLabel}). For multi-word English items, translate the whole chunk. Use null only if impossible.`
       : "• nativeTranslation: null (learner native language is English or unknown — leave null).";
+    const learnerDescriptionRule = input.useNativeDescription
+      ? `• learnerDescription: explain what the English word/phrase means IN THE LEARNER'S NATIVE LANGUAGE (${input.nativeLanguageLabel}). Use simple wording for a ${input.learnerCefrBand} English learner. One or two short sentences max (~220 chars each). Do NOT write this field in English.`
+      : `• learnerDescription: explain the English word IN ENGLISH using vocabulary and grammar suited to CEFR level ${input.learnerCefrBand}. One or two short sentences max (~220 chars each). No phonetic-only descriptions.`;
     const prompt = buildAiPrompt(
       AI_PROMPT_ENV_KEYS.vocabularyPersonalize,
       DEFAULT_PROMPT_VOCABULARY_PERSONALIZE,
       {
         LEARNER_CEFR: input.learnerCefrBand,
+        LEARNER_DESCRIPTION_RULE: learnerDescriptionRule,
         NATIVE_TRANSLATION_RULE: nativeTranslationRule,
         INPUT_WORDS: JSON.stringify(input.words),
       },

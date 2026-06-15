@@ -9,6 +9,7 @@ import {
   getBasicAuthCredentials,
   isApiErrorLoggingEnabled,
 } from "./config";
+import { attach_mobile_auth_fields } from "./mobile_captcha";
 
 const ACCESS_TOKEN_KEY = "exply_access_token";
 
@@ -69,6 +70,7 @@ export async function mergeApiAuthHeaders(
   if (apiToken) {
     headers.set("x-api-token", apiToken);
   }
+  headers.set("x-explys-client", "mobile");
   return headers;
 }
 
@@ -110,9 +112,10 @@ export async function apiFetch(path: string, init: FetchOpts = {}): Promise<Resp
   const token = init.token ?? (await getStoredAccessToken());
   const { token: _ignored, ...rest } = init;
   const headers = await mergeApiAuthHeaders(rest.headers, token);
+  const body = attach_mobile_auth_fields(rest.body ?? null);
   if (
-    rest.body != null &&
-    typeof rest.body === "string" &&
+    body != null &&
+    typeof body === "string" &&
     !headers.has("Content-Type")
   ) {
     headers.set("Content-Type", "application/json");
@@ -120,7 +123,7 @@ export async function apiFetch(path: string, init: FetchOpts = {}): Promise<Resp
   const url = apiPath(path);
   const method = (rest.method ?? "GET").toUpperCase();
   try {
-    const response = await fetch(url, { ...rest, headers });
+    const response = await fetch(url, { ...rest, body: body ?? undefined, headers });
     if (!response.ok && isApiErrorLoggingEnabled()) {
       await logFailedApiResponse(url, method, response);
     }

@@ -1,5 +1,5 @@
 import type { FormData } from "../context/RegistrationContext";
-import { apiFetch, readApiErrorBody } from "./api";
+import { apiFetch, readApiErrorBody, setStoredAccessToken } from "./api";
 import { clearRegistrationDraft } from "./registrationStorage";
 
 /** Mirrors backend `AuthService` `GeneratedStudent` when `role === "teacher"`. */
@@ -52,8 +52,11 @@ export function buildRegisterBody(formData: FormData): Record<string, unknown> {
     email: formData.email.trim(),
     password: formData.password,
     captchaToken: formData.token,
-    dateOfBirth: formData.dateOfBirth,
   };
+
+  if (formData.dateOfBirth?.trim()) {
+    body.dateOfBirth = formData.dateOfBirth.trim();
+  }
 
   if (formData.role && formData.role !== CHOOSE) {
     body.role = formData.role;
@@ -139,6 +142,7 @@ export async function registerUser(
         data.access_token.length > 0
       ) {
         accessToken = data.access_token;
+        setStoredAccessToken(data.access_token);
       }
     } catch {
       // ignore body parse

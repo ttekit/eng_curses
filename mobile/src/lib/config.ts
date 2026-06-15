@@ -75,6 +75,7 @@ export function subscriptionEnforcementDisabled(): boolean {
   return readFlag("skipSubscriptionEnforcement", "EXPO_PUBLIC_SKIP_SUBSCRIPTION_ENFORCEMENT");
 }
 
+/** Cloudflare Turnstile site key (same as web registration/login). */
 export function getTurnstileSiteKey(): string {
   return readString(
     "turnstileSiteKey",

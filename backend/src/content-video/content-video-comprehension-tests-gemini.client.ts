@@ -5,6 +5,7 @@ import {
 } from "src/config/ai-prompts.defaults";
 import { buildAiPrompt } from "src/config/ai-prompts";
 import { cefrStretchForKeyVocabulary } from "./cefr-vocabulary-target.util";
+import { sanitizeVocabularyTerm } from "./vocabulary-term-sanitize.util";
 
 export type KeyVocabularyItem = {
   word: string;
@@ -179,7 +180,7 @@ export class ContentVideoComprehensionTestsGeminiClient {
       }
       let keyVocabularyRaw = normalizeKeyVocabulary(parsed.keyVocabulary);
       if (keyVocabularyRaw.length < KEY_VOCAB_COUNT) {
-        keyVocabularyRaw = fallbackKeyVocabulary({
+        const pad = fallbackKeyVocabulary({
           transcriptPlain: input.transcriptPlain,
           videoName: input.videoName,
           videoDescription: input.videoDescription,
@@ -191,6 +192,20 @@ export class ContentVideoComprehensionTestsGeminiClient {
           timeToAchieve: input.timeToAchieve,
           hobbies: input.hobbies,
         });
+        const seen = new Set(
+          keyVocabularyRaw.map((item) => item.word.toLowerCase()),
+        );
+        for (const item of pad) {
+          if (keyVocabularyRaw.length >= KEY_VOCAB_COUNT) {
+            break;
+          }
+          const key = item.word.toLowerCase();
+          if (seen.has(key)) {
+            continue;
+          }
+          seen.add(key);
+          keyVocabularyRaw.push(item);
+        }
       }
       return { tests, keyVocabulary: keyVocabularyRaw };
     } catch {
@@ -293,6 +308,7 @@ export function normalizeKeyVocabulary(raw: unknown): KeyVocabularyItem[] {
     return [];
   }
   const out: KeyVocabularyItem[] = [];
+  const seen = new Set<string>();
   for (const item of raw) {
     if (typeof item !== "object" || item === null) {
       continue;
@@ -304,28 +320,33 @@ export function normalizeKeyVocabulary(raw: unknown): KeyVocabularyItem[] {
         : typeof o.term === "string"
           ? o.term
           : "";
-    const word = wRaw.trim().slice(0, 96);
+    const sanitized = sanitizeVocabularyTerm(wRaw);
+    if (!sanitized) {
+      continue;
+    }
+    const key = sanitized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
     let definition =
       typeof o.definition === "string"
         ? o.definition.trim().slice(0, 400)
         : typeof o.meaning === "string"
           ? o.meaning.trim().slice(0, 400)
           : "";
-    if (word.length < 2) {
-      continue;
-    }
     if (definition.length < 4) {
-      definition = `Key language from this lesson — use it in your own short sentence at ${word.length > 8 ? "this" : "the"} level.`;
+      definition = `Key language from this lesson — use it in your own short sentence at ${sanitized.length > 8 ? "this" : "the"} level.`;
     }
     const example =
       typeof o.example === "string" ? o.example.trim().slice(0, 320) : "";
     out.push({
-      word,
+      word: sanitized,
       definition,
       example:
         example.length > 0
           ? example
-          : `Notice how "${word}" fits the speaker's message in this clip.`,
+          : `Notice how "${sanitized}" fits the speaker's message in this clip.`,
     });
   }
   return out.slice(0, KEY_VOCAB_COUNT);
@@ -394,21 +415,23 @@ export function fallbackKeyVocabulary(ctx: {
   const seen = new Set<string>();
   const uniq: string[] = [];
   for (const raw of seeds) {
-    const s = raw.trim();
-    if (s.length < 2) continue;
-    const k = s.toLowerCase();
+    const sanitized = sanitizeVocabularyTerm(raw);
+    if (!sanitized) {
+      continue;
+    }
+    const k = sanitized.toLowerCase();
     if (seen.has(k)) continue;
     seen.add(k);
-    uniq.push(s.slice(0, 80));
+    uniq.push(sanitized.slice(0, 80));
   }
 
   for (const t of ctx.vocabularyTerms) {
-    const s = t.trim();
-    if (s.length < 2 || uniq.length > 32) continue;
-    const k = s.toLowerCase();
+    const sanitized = sanitizeVocabularyTerm(t);
+    if (!sanitized || uniq.length > 32) continue;
+    const k = sanitized.toLowerCase();
     if (seen.has(k)) continue;
     seen.add(k);
-    uniq.push(s.slice(0, 80));
+    uniq.push(sanitized.slice(0, 80));
   }
 
   if (themeHints.length > 0) {
@@ -485,7 +508,7 @@ function pickTranscriptContentWords(text: string, max: number): string[] {
   const re = /\p{L}[\p{L}\p{M}'-]{1,30}\p{L}|\p{L}{3,32}/gu;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) && found.size < max + 24) {
-    let w = m[0];
+    const w = m[0];
     if (w.length < 3 || w.length > 48) {
       continue;
     }
@@ -493,7 +516,11 @@ function pickTranscriptContentWords(text: string, max: number): string[] {
     if (low.length <= 5 && STOP.has(low)) {
       continue;
     }
-    found.add(w);
+    const sanitized = sanitizeVocabularyTerm(w);
+    if (!sanitized) {
+      continue;
+    }
+    found.add(sanitized);
   }
   return [...found].slice(0, max);
 }

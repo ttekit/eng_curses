@@ -28,8 +28,7 @@ import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service"
 import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
 import {
-  isDevModeEnabled,
-  isEmailConfirmationDisabled,
+  isOutboundMailDisabled,
 } from "src/common/utils/outbound-mail-disabled.util";
 import { MailService } from "src/common/mail/mail.service";
 import { DeleteAccountDto } from "./dto/delete-account.dto";
@@ -107,10 +106,20 @@ export class AuthService {
     );
   }
 
+  private async mark_email_verified_on_login(userId: number): Promise<void> {
+    await this.prisma.user.updateMany({
+      where: { id: userId, isVerified: false },
+      data: {
+        isVerified: true,
+        verificationCode: null,
+        verificationCodeExpires: null,
+      },
+    });
+  }
+
   private async generateStudentAccount(
     pupil: any,
     teacherId: number,
-    emailConfirmationDisabled: boolean,
   ): Promise<GeneratedStudent> {
     const randomId = Math.floor(1000 + Math.random() * 9000);
     let firstName = "student";
@@ -142,7 +151,7 @@ export class AuthService {
         role: "STUDENT",
         method: "CREDENTIALS",
         teacherId,
-        isVerified: emailConfirmationDisabled,
+        isVerified: true,
         subscriptionPlan: "smart",
         subscriptionStatus: "active",
       },
@@ -162,9 +171,7 @@ export class AuthService {
       );
     }
     const prisma = this.prisma as any;
-    const emailConfirmationDisabled = isEmailConfirmationDisabled(
-      this.configService,
-    );
+    const outboundMailDisabled = isOutboundMailDisabled(this.configService);
 
     const userExists = await this.userService.FindByEmail(
       dto.email.toLowerCase(),
@@ -216,7 +223,7 @@ export class AuthService {
     let otpCode: string | null = null;
     let otpExpires: Date | null = null;
 
-    if (!emailConfirmationDisabled) {
+    if (!outboundMailDisabled) {
       otpCode = randomInt(100000, 1000000).toString();
       otpExpires = new Date(Date.now() + 15 * 60 * 1000);
     }
@@ -228,7 +235,7 @@ export class AuthService {
         name: dto.name,
         role: roleLabel as any,
         method: "CREDENTIALS",
-        isVerified: emailConfirmationDisabled,
+        isVerified: false,
         verificationCode: otpCode,
         verificationCodeExpires: otpExpires,
         subscriptionPlan: "smart",
@@ -275,23 +282,20 @@ export class AuthService {
         const student = await this.generateStudentAccount(
           pupil,
           mainUser.id,
-          emailConfirmationDisabled,
         );
         generatedStudents.push(student);
       }
     }
 
-    if (!emailConfirmationDisabled) {
+    if (!outboundMailDisabled) {
       await this.emailConfirmationService.sendVerificationToken(mainUser);
     }
 
     const payload = { sub: mainUser.id, email: mainUser.email };
 
     return {
-      access_token: emailConfirmationDisabled
-        ? await this.jwtService.signAsync(payload)
-        : null,
-      isVerified: emailConfirmationDisabled,
+      access_token: await this.jwtService.signAsync(payload),
+      isVerified: false,
       user: {
         id: mainUser.id,
         email: mainUser.email,
@@ -299,9 +303,9 @@ export class AuthService {
       },
       generatedStudents:
         generatedStudents.length > 0 ? generatedStudents : undefined,
-      message: emailConfirmationDisabled
+      message: outboundMailDisabled
         ? "You have successfully registered."
-        : "Please verify your email. A 6-digit confirmation code has been sent to your email address.",
+        : "Account created. A confirmation code was sent to your email—you can confirm anytime, but it is not required to continue.",
     };
   }
 
@@ -488,7 +492,7 @@ export class AuthService {
       !hasExistingStudents
     ) {
       for (const pupil of data.studentNames) {
-        const student = await this.generateStudentAccount(pupil, userId, true);
+        const student = await this.generateStudentAccount(pupil, userId);
         generatedStudents.push(student);
       }
     }
@@ -508,6 +512,10 @@ export class AuthService {
     if (data.timeToAchieve !== undefined)
       baseData.timeToAchieve = data.timeToAchieve;
     if (data.hobbies !== undefined) baseData.hobbies = data.hobbies;
+    if (data.education !== undefined) baseData.education = data.education;
+    if (data.workField !== undefined) baseData.workField = data.workField;
+    if (data.nativeLanguage !== undefined)
+      baseData.nativeLanguage = data.nativeLanguage;
     if (data.knownLanguages !== undefined)
       baseData.knownLanguages = data.knownLanguages;
 
@@ -577,9 +585,9 @@ export class AuthService {
       );
     }
 
-    if (isEmailConfirmationDisabled(this.configService)) {
+    if (isOutboundMailDisabled(this.configService)) {
       throw new BadRequestException(
-        "Email verification is disabled on this server. Please log in—your account will be activated automatically.",
+        "Outbound email is disabled on this server. Contact support if you need to verify your address.",
       );
     }
 
@@ -619,22 +627,6 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password");
     }
 
-    if (!user.isVerified) {
-      if (isEmailConfirmationDisabled(this.configService)) {
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: { isVerified: true },
-        });
-      } else {
-        await this.emailConfirmationService.sendVerificationToken(user, true);
-
-        throw new ForbiddenException({
-          message: "Email not verified. Please check your mail.",
-          error: "EMAIL_NOT_VERIFIED",
-        });
-      }
-    }
-
     if (user.isSuspended) {
       throw new ForbiddenException("Account suspended");
     }
@@ -656,6 +648,8 @@ export class AuthService {
         dto.code,
       );
     }
+
+    await this.mark_email_verified_on_login(user.id);
 
     const payload = { sub: user.id, email: user.email };
 
@@ -907,12 +901,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      if (!existingUser.isVerified) {
-        await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: { isVerified: true },
-        });
-      }
+      await this.mark_email_verified_on_login(existingUser.id);
 
       const linked = await this.prisma.account.findFirst({
         where: { userId: existingUser.id, provider: profile.provider },

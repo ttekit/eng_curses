@@ -34,6 +34,9 @@ KEY VOCABULARY — LEVEL (mandatory):
 {{VOCAB_STRETCH_INSTRUCTION}}
 Target band label for glosses: {{VOCAB_TARGET_BAND}} (not the learner's comfort band).
 - Words or multi-word chunks from the transcript (or title/description if no transcript).
+- Use usual dictionary forms only: lemmas/headwords (e.g. "be" not "I'm", "brother" not "brothers"), not contractions or inflected forms unless the phrase is a fixed chunk (e.g. "grown up").
+- NEVER include proper nouns, character names, people, places, or brand names (e.g. Peppa, George, London).
+- Prefer lowercase single-word lemmas.
 - Prioritise items whose semantics map onto LEARNER_TOPIC_STRENGTHS (known topic areas): new labels should connect to those domains when the video supports it.
 - Align several key vocabulary picks with LEARNER STUDYING PLAN (goal / interests) when transcript evidence exists; otherwise stay with neutral lesson language.
 - Avoid only picking the easiest, below-target high-frequency words when the clip contains suitable stretch items; definitions/examples must suit the target band above.

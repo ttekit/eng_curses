@@ -1,22 +1,18 @@
 import { useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import type { RootStackScreenProps } from "../navigation/types";
 import { ScreenContainer } from "../components/ScreenContainer";
+import { AuthShell } from "../components/AuthShell";
 import { AppTextInput } from "../components/AppTextInput";
 import { AppButton } from "../components/AppButton";
+import { BrandLogo } from "../components/BrandLogo";
+import { ErrorBanner } from "../components/ErrorBanner";
 import { TurnstileWebView } from "../components/TurnstileWebView";
 import { apiFetch, readApiErrorBody, setStoredAccessToken } from "../lib/api";
+import { use_turnstile_captcha } from "../hooks/use_turnstile_captcha";
 import { resolvePostLoginRoute } from "../lib/learnerOnboarding";
 import { useUser } from "../context/UserContext";
-import { colors } from "../theme/colors";
+import { loginScreenStyles as styles } from "./login_screen_styles";
 
 type Props = RootStackScreenProps<"Login">;
 
@@ -26,26 +22,23 @@ export function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [show2FA, setShow2FA] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaKey, setCaptchaKey] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { captchaToken, captchaKey, setCaptchaToken, reset_captcha } =
+    use_turnstile_captcha();
 
-  const resetCaptcha = () => {
-    setCaptchaToken(null);
-    setCaptchaKey((value) => value + 1);
-  };
-
-  const handleLogin = async () => {
-    if (!captchaToken) {
-      Alert.alert("Verification", "Complete the security check before signing in.");
-      return;
-    }
+  const handle_login = async () => {
+    setErrorMessage(null);
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Missing fields", "Enter your email and password.");
+      setErrorMessage("Enter your email and password.");
       return;
     }
     if (show2FA && twoFactorCode.trim().length !== 6) {
-      Alert.alert("2FA", "Enter the 6-digit verification code.");
+      setErrorMessage("Enter the 6-digit verification code.");
+      return;
+    }
+    if (!captchaToken) {
+      setErrorMessage("Please wait for captcha verification.");
       return;
     }
 
@@ -64,8 +57,8 @@ export function LoginScreen({ navigation }: Props) {
 
       if (!response.ok) {
         const message = await readApiErrorBody(response);
-        Alert.alert("Sign in failed", message);
-        resetCaptcha();
+        setErrorMessage(message);
+        reset_captcha();
         return;
       }
 
@@ -76,7 +69,6 @@ export function LoginScreen({ navigation }: Props) {
 
       if (data.requiresTwoFactor) {
         setShow2FA(true);
-        resetCaptcha();
         Alert.alert("2FA", "We sent a verification code to your email.");
         return;
       }
@@ -92,97 +84,73 @@ export function LoginScreen({ navigation }: Props) {
         routes: [{ name: route }],
       });
     } catch {
-      Alert.alert("Network error", "Could not reach the Explys API.");
-      resetCaptcha();
+      setErrorMessage("Could not reach the Explys API.");
+      reset_captcha();
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScreenContainer>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.brand}>
-            Ex<Text style={styles.brandAccent}>ply</Text>s
-          </Text>
+    <ScreenContainer padded={false}>
+      <AuthShell centered>
+        <View style={styles.hero}>
+          <BrandLogo />
+          <Text style={styles.welcome}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to continue learning</Text>
+        </View>
 
-          <View style={styles.form}>
+        <View style={styles.form}>
+          {errorMessage ? <ErrorBanner message={errorMessage} /> : null}
+          <AppTextInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoComplete="email"
+            editable={!show2FA}
+          />
+          {!show2FA ? (
             <AppTextInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoComplete="email"
-              editable={!show2FA}
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
             />
-            {!show2FA ? (
-              <AppTextInput
-                label="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoComplete="password"
-              />
-            ) : (
-              <AppTextInput
-                label="Verification code"
-                value={twoFactorCode}
-                onChangeText={setTwoFactorCode}
-                keyboardType="number-pad"
-                maxLength={6}
-              />
-            )}
+          ) : (
+            <AppTextInput
+              label="Verification code"
+              value={twoFactorCode}
+              onChangeText={setTwoFactorCode}
+              keyboardType="number-pad"
+              maxLength={6}
+              centered
+            />
+          )}
 
-            <TurnstileWebView
-              resetKey={captchaKey}
-              onToken={setCaptchaToken}
-              onExpire={resetCaptcha}
-            />
+          <TurnstileWebView
+            resetKey={captchaKey}
+            onToken={setCaptchaToken}
+            onExpire={reset_captcha}
+          />
 
-            <AppButton
-              label={show2FA ? "Verify & sign in" : "Sign in"}
-              loading={loading}
-              onPress={() => {
-                void handleLogin();
-              }}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <AppButton
+            label={show2FA ? "Verify & sign in" : "Sign in"}
+            loading={loading}
+            disabled={!captchaToken}
+            onPress={() => {
+              void handle_login();
+            }}
+          />
+          <Pressable onPress={() => navigation.navigate("RegisterName")}>
+            <Text style={styles.footerLink}>Create an account</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.navigate("RestoreAccount", {})}>
+            <Text style={styles.footerLink}>Restore deactivated account</Text>
+          </Pressable>
+        </View>
+      </AuthShell>
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingBottom: 32,
-  },
-  brand: {
-    color: colors.text,
-    fontSize: 36,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  brandAccent: {
-    color: colors.primary,
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 16,
-    marginBottom: 28,
-  },
-  form: {
-    gap: 16,
-  },
-});

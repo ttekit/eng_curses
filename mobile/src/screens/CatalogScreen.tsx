@@ -1,53 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  FlatList,
   RefreshControl,
-  StyleSheet,
+  ScrollView,
   Text,
   View,
 } from "react-native";
 import type { MainTabScreenProps } from "../navigation/types";
 import { ScreenContainer } from "../components/ScreenContainer";
+import { LoadingCenter } from "../components/LoadingCenter";
+import { CatalogHomeHeader } from "../components/catalog/CatalogHomeHeader";
+import { CatalogHero } from "../components/catalog/CatalogHero";
+import { CatalogVideoRow } from "../components/catalog/CatalogVideoRow";
+import type { CatalogCardVideo } from "../components/CatalogVideoCard";
 import {
-  CatalogVideoCard,
-  type CatalogCardVideo,
-} from "../components/CatalogVideoCard";
+  build_catalog_rows,
+  pick_featured_hero,
+  type CatalogContentVideo,
+} from "../lib/catalog_layout";
+import { is_adult_user } from "../lib/adult_access";
+import { extract_cefr_level } from "../lib/badge_styles";
 import { apiFetch, readApiErrorBody } from "../lib/api";
 import { useUser } from "../context/UserContext";
 import { learnerNeedsPlacement, resolvePlacementPhase } from "../lib/learnerOnboarding";
 import { userMayUseLearnerApp } from "../lib/subscriptionAccess";
-import { colors } from "../theme/colors";
-
-type ContentVideo = {
-  id: number;
-  videoName: string;
-  thumbnailUrl?: string;
-  videoLink: string;
-  content: {
-    id: number;
-    category: {
-      name: string;
-    };
-  };
-};
+import { catalogScreenStyles as styles } from "./catalog_screen_styles";
 
 type Props = MainTabScreenProps<"Catalog">;
 
-function toCardVideo(video: ContentVideo): CatalogCardVideo {
-  return {
-    id: video.id,
-    title: video.videoName,
-    categoryLabel: video.content.category.name,
-    thumbnailUrl: video.thumbnailUrl,
-    videoLink: video.videoLink,
-  };
-}
-
 export function CatalogScreen({ navigation }: Props) {
   const { user } = useUser();
-  const [videos, setVideos] = useState<ContentVideo[]>([]);
+  const [videos, setVideos] = useState<CatalogContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -55,13 +38,16 @@ export function CatalogScreen({ navigation }: Props) {
     () => (user ? resolvePlacementPhase(user) : "off"),
     [user],
   );
+  const isAdultUser = useMemo(() => is_adult_user(user), [user]);
+  const featured = useMemo(() => pick_featured_hero(videos), [videos]);
+  const rows = useMemo(() => build_catalog_rows(videos), [videos]);
 
   const loadVideos = useCallback(async () => {
     const response = await apiFetch("/content-video", { method: "GET" });
     if (!response.ok) {
       throw new Error(await readApiErrorBody(response));
     }
-    const data = (await response.json()) as ContentVideo[];
+    const data = (await response.json()) as CatalogContentVideo[];
     setVideos(Array.isArray(data) ? data : []);
   }, []);
 
@@ -89,6 +75,27 @@ export function CatalogScreen({ navigation }: Props) {
     void run();
   }, [user, loadVideos, navigation]);
 
+  const openVideo = useCallback(
+    (card: CatalogCardVideo) => {
+      const source = videos.find((video) => video.id === card.id);
+      if (!source) {
+        return;
+      }
+      if (user && learnerNeedsPlacement(user)) {
+        Alert.alert(
+          "Placement test",
+          "Complete your placement test before watching lessons.",
+        );
+        return;
+      }
+      navigation.getParent()?.navigate("Content", {
+        contentId: source.content.id,
+        videoId: source.id,
+      });
+    },
+    [navigation, user, videos],
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -100,120 +107,74 @@ export function CatalogScreen({ navigation }: Props) {
     }
   };
 
-  const cards = useMemo(() => videos.map(toCardVideo), [videos]);
+  const featuredLevel = useMemo(() => {
+    if (!featured) {
+      return null;
+    }
+    const source = videos.find((video) => video.id === featured.id);
+    return extract_cefr_level(source?.content.stats?.systemTags);
+  }, [featured, videos]);
+
+  const greeting = user?.name ? user.name : "Learner";
 
   return (
     <ScreenContainer padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>
-          Hi{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-        </Text>
-        <Text style={styles.subtitle}>Pick a lesson to watch</Text>
-      </View>
-
-      {placementPhase !== "off" ? (
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>Complete your level test</Text>
-          <Text style={styles.bannerBody}>
-            {placementPhase === "preferences"
-              ? "Finish your learning preferences on the web app, then return here."
-              : "Open the placement test in your browser to unlock personalized recommendations."}
-          </Text>
-        </View>
-      ) : null}
-
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
+        <LoadingCenter />
       ) : (
-        <FlatList
-          data={cards}
-          keyExtractor={(item) => String(item.id)}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
+        <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />
           }
-          ListEmptyComponent={
-            <Text style={styles.empty}>No videos in the catalog yet.</Text>
-          }
-          renderItem={({ item }) => (
-            <CatalogVideoCard
-              video={item}
-              onPress={() => {
-                const source = videos.find((video) => video.id === item.id);
-                if (!source) return;
-                if (user && learnerNeedsPlacement(user)) {
-                  Alert.alert(
-                    "Placement test",
-                    "Complete your placement test before watching lessons.",
-                  );
-                  return;
+          contentContainerStyle={styles.scroll}
+        >
+          <CatalogHomeHeader
+            userName={greeting}
+            streak={user?.currentStreak ?? 0}
+          />
+
+          {placementPhase !== "off" ? (
+            <View style={styles.banner}>
+              <Text style={styles.bannerTitle}>Complete your level test</Text>
+              <Text style={styles.bannerBody}>
+                {placementPhase === "preferences"
+                  ? "Finish your learning preferences on the web app, then return here."
+                  : "Open the placement test in your browser to unlock personalized recommendations."}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={styles.heroSpacer}>
+            <CatalogHero
+            featured={featured}
+            levelLabel={featuredLevel}
+            onStartWatching={() => {
+              if (featured) {
+                const card = rows.flatMap((row) => row.videos).find((v) => v.id === featured.id);
+                if (card) {
+                  openVideo(card);
                 }
-                navigation.getParent()?.navigate("Content", {
-                  contentId: source.content.id,
-                  videoId: source.id,
-                });
-              }}
+              }
+            }}
             />
+          </View>
+
+          {rows.length === 0 ? (
+            <Text style={styles.empty}>No videos in the catalog yet.</Text>
+          ) : (
+            rows.map((row) => (
+              <CatalogVideoRow
+                key={row.title}
+                title={row.title}
+                description={row.description}
+                videos={row.videos}
+                isAdultUser={isAdultUser}
+                onPressVideo={openVideo}
+              />
+            ))
           )}
-        />
+        </ScrollView>
       )}
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  greeting: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "800",
-  },
-  subtitle: {
-    color: colors.textMuted,
-    marginTop: 4,
-    fontSize: 15,
-  },
-  banner: {
-    marginHorizontal: 20,
-    marginBottom: 12,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  bannerTitle: {
-    color: colors.text,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  bannerBody: {
-    color: colors.textMuted,
-    lineHeight: 20,
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  row: {
-    justifyContent: "space-between",
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  empty: {
-    color: colors.textMuted,
-    textAlign: "center",
-    marginTop: 40,
-  },
-});

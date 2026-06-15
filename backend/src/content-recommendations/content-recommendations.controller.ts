@@ -33,9 +33,8 @@ export class ContentRecommendationsController {
   @ApiOperation({
     summary: "Rank videos for a user (deterministic, no AI)",
     description:
-      "Rule-based ranking: blended profile + active studying-plan phase CEFR, " +
-      "phase catalogue topics, per-topic knowledge scores, hobbies/job/work field, " +
-      "favorite and hated genres vs video userTags, and video CEFR / processing complexity.",
+      "Rule-based ranking for the active studying-plan phase: age-eligible videos only, " +
+      "sorted by CEFR level fit, then phase catalogue topics, then favorite/hated genres.",
   })
   @ApiParam({ name: "userId", type: "integer" })
   forUser(
