@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "../lib/utils";
+import { EmailVerificationBanner } from "./EmailVerificationBanner";
 
 export interface AuthSplitLayoutProps {
   children: ReactNode;
@@ -21,11 +22,13 @@ export function AuthSplitLayout({
   mainClassName,
 }: AuthSplitLayoutProps) {
   return (
-    <div className="min-h-screen flex font-display bg-background text-foreground">
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className={cn("w-full max-w-md", mainClassName)}>{children}</div>
-      </div>
-      <div className="relative hidden lg:flex flex-1 bg-card items-center justify-center overflow-hidden">
+    <div className="min-h-screen flex flex-col font-display bg-background text-foreground">
+      <EmailVerificationBanner />
+      <div className="flex flex-1">
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className={cn("w-full max-w-md", mainClassName)}>{children}</div>
+        </div>
+        <div className="relative hidden lg:flex flex-1 bg-card items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.25_295/0.2)_0%,transparent_70%)]" />
         <div className="relative px-12 text-center">
           <img
@@ -55,6 +58,7 @@ export function AuthSplitLayout({
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

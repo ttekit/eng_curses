@@ -13,6 +13,7 @@ function mockUser(partial: Partial<UserData>): UserData {
     email: "t@example.com",
     dateOfBirth: "",
     role: "adult",
+    isVerified: true,
     isTwoFactorEnable: false,
     hasCompletedPlacement: false,
     englishLevel: "B1",
@@ -50,7 +51,7 @@ describe("resolvePostLoginPath", () => {
     expect(path).toBe("/catalog");
   });
 
-  it("sends independent student without genres to registrationPreferences", () => {
+  it("sends student without genres to catalog", () => {
     const path = resolvePostLoginPath(
       mockUser({
         role: "student",
@@ -60,7 +61,7 @@ describe("resolvePostLoginPath", () => {
         hasCompletedPlacement: true,
       }),
     );
-    expect(path).toBe("/registrationPreferences");
+    expect(path).toBe("/catalog");
   });
 });
 
@@ -73,23 +74,41 @@ describe("resolvePlacementPhase", () => {
     ).toBe("off");
   });
 
-  it("returns preferences for adult missing prep fields", () => {
+  it("returns preferences for adult missing CEFR only", () => {
     expect(
       resolvePlacementPhase(
-        mockUser({ role: "adult", workField: "", hasCompletedPlacement: false }),
+        mockUser({
+          role: "adult",
+          englishLevel: "",
+          workField: "engineer",
+          hasCompletedPlacement: false,
+        }),
       ),
     ).toBe("preferences");
   });
 
-  it("returns test for roster student with prefs", () => {
+  it("returns test for adult with CEFR set", () => {
+    expect(
+      resolvePlacementPhase(
+        mockUser({
+          role: "adult",
+          englishLevel: "B1",
+          workField: "",
+          hasCompletedPlacement: false,
+        }),
+      ),
+    ).toBe("test");
+  });
+
+  it("returns test for roster student without profile fields", () => {
     expect(
       resolvePlacementPhase(
         mockUser({
           role: "student",
           teacherId: 1,
           hasCompletedPlacement: false,
-          hobbies: ["x"],
-          favoriteGenres: [1],
+          hobbies: [],
+          favoriteGenres: [],
         }),
       ),
     ).toBe("test");

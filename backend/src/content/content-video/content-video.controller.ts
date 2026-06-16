@@ -110,7 +110,7 @@ export class ContentVideoController {
   @UseGuards(AuthGuard)
   @ApiOperation({
     summary:
-      "Personalized vocabulary hints (native translation + CEFR-tuned English gloss) for signed-in learners",
+      "Personalized vocabulary hints for signed-in learners (native translation + level-tuned gloss; gloss in native language when level is below B1)",
     description:
       "Call once when the learner starts watching. Requires the same key-vocab words as the lesson bundle.",
   })

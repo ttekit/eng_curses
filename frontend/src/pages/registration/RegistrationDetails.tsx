@@ -31,7 +31,6 @@ import {
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
 import { apiFetch } from "../../lib/api";
-import type { DatePickerInputProps } from "../../types/date-picker-input";
 
 interface SelectOption {
   value: string;
@@ -233,6 +232,7 @@ export default function RegistrationDetails() {
         email: userEmail,
         password: formData.password,
         role: formData.role.toUpperCase(),
+        dateOfBirth: formData.dateOfBirth,
 
         teacherGrades:
           formData.role === "teacher" ? formData.teacherGrades : undefined,

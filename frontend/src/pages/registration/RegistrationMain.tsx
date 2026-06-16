@@ -21,7 +21,6 @@ import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import Turnstile from "react-turnstile";
 import { registerUser } from "../../lib/registerUser";
-import "react-datepicker/dist/react-datepicker.css";
 import { getApiBase } from "../../lib/api";
 
 export default function RegistrationMain() {
@@ -156,13 +155,7 @@ export default function RegistrationMain() {
       });
 
       if (result.success) {
-        if (result.accessToken) {
-          navigate("/registrationDetails");
-        } else {
-          navigate("/verify-email", {
-            state: { email },
-          });
-        }
+        navigate("/registrationDetails");
       } else {
         setErrorText(result.message || errors.registrationFailed);
         resetCaptcha();
@@ -239,7 +232,6 @@ export default function RegistrationMain() {
               autoComplete="email"
             />
           </div>
-
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">

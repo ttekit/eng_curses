@@ -35,14 +35,22 @@ export const appUk = {
     navSearch: "Пошук",
     navClassroom: "Клас",
     navMyLessons: "Мої уроки",
-    navProgress: "Прогрес",
+    navLeaderboard: "Рейтинг",
     navProfile: "Профіль",
+    navCustomise: "Налаштувати",
     sectionLevel: "Рівень",
     sectionCategory: "Категорія",
     sectionGenre: "Жанр",
     settings: "Налаштування",
     levelWithDot: "• {prefix} {level}",
     appTheme: "Змінити тему платформи: ",
+  },
+
+  emailVerificationBanner: {
+    message: "Email не підтверджено.",
+    confirmLink: "Підтвердити email",
+    resend: "Надіслати код знову",
+    resendSent: "Код надіслано",
   },
 
   myLessonsPage: {
@@ -291,6 +299,25 @@ export const appUk = {
     vocab500Desc: "Вивчи 500 нових слів",
     vocab1000Title: "Божество словника",
     vocab1000Desc: "Вивчи 1000 нових слів",
+  },
+
+  customisePage: {
+    seoTitle: "Налаштуйте навчання",
+    seoDescription:
+      "Вкажіть роботу, освіту, хобі та жанри для кращих рекомендацій.",
+    title: "Налаштувати",
+    lead: "Розкажіть про себе та вподобання — підберемо контент точніше.",
+    jobLabel: "Сфера роботи / професія",
+    educationLabel: "Освіта",
+    hobbiesLabel: "Хобі",
+    genresLove: "Жанри, які любите",
+    genresLoveHint: "Ми частіше рекомендуватимемо обрані тут жанри.",
+    genresAvoid: "Жанри уникати",
+    genresAvoidHint: "Ми відфільтруємо контент із цих категорій.",
+    save: "Зберегти",
+    saving: "Збереження…",
+    saveSuccess: "Налаштування збережено.",
+    saveError: "Не вдалося зберегти. Спробуйте ще раз.",
   },
 
   profileSettings: {
@@ -758,6 +785,21 @@ export const appUk = {
       b2: "B2 (Вище середнього)",
       c1: "C1 (Просунутий)",
     },
+  },
+
+  leaderboardPage: {
+    seoTitle: "Рейтинг",
+    seoDescription:
+      "Найактивніші учні за кількістю переглянутих відео з високим результатом тестів.",
+    title: "Рейтинг",
+    lead:
+      "Сортування за відео, де ваш найкращий результат тесту — {minScore}% або вище.",
+    loading: "Завантаження рейтингу…",
+    empty:
+      "Поки немає учасників. Дивіться уроки та набирайте 80%+ у тестах.",
+    yourRank: "Ваше місце: #{rank} · {count} відео",
+    videosCount: "{count} відео",
+    levelUnknown: "—",
   },
 
   classroomPage: {

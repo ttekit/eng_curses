@@ -7,27 +7,61 @@ import {
   LayoutGrid,
   Search,
   Settings,
+  SlidersHorizontal,
   Trophy,
   User,
   GraduationCap,
 } from "lucide-react";
 import { useUser } from "../../context/UserContext";
+import type { UserData } from "../../context/UserContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { ThemeToggle } from "../ThemeToggle";
+import { LearnerCustomiseFab } from "./LearnerCustomiseFab";
 
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
   { id: "search" as const, icon: Search, to: "/catalog" },
   { id: "classroom" as const, icon: GraduationCap, to: "/classroom" },
   { id: "myLessons" as const, icon: BookOpen, to: "/watched-lessons" },
+  { id: "customise" as const, icon: SlidersHorizontal, to: "/customise" },
   { id: "profile" as const, icon: User, to: "/profile" },
-  { id: "progress" as const, icon: Trophy, to: "/profile?tab=progress" },
+  { id: "leaderboard" as const, icon: Trophy, to: "/leaderboard" },
 ] as const;
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
 
+function shouldShowClassroomNav(user: UserData | null | undefined): boolean {
+  if (!user) {
+    return false;
+  }
+  const role = user.role?.toLowerCase();
+  if (role === "teacher" || role === "admin") {
+    return true;
+  }
+  return user.teacherId != null && user.teacherId > 0;
+}
+
+function resolveVisibleSidebarLinks(user: UserData | null | undefined) {
+  return sidebarLinkDefs.filter((link) => {
+    if (link.id === "customise") {
+      return false;
+    }
+    if (link.id === "classroom") {
+      return shouldShowClassroomNav(user);
+    }
+    return true;
+  });
+}
+
 const LEVELS = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
+
+function resolve_sidebar_top_class(reserveTopNavSpace: boolean): string {
+  if (reserveTopNavSpace) {
+    return "top-[calc(var(--email-verification-banner-height,0px)+4.5rem)]";
+  }
+  return "top-[var(--email-verification-banner-height,0px)]";
+}
 
 interface CatalogSidebarProps {
   // welcomeName?: string;
@@ -71,7 +105,8 @@ export function CatalogSidebar({
     search: shell.navSearch,
     classroom: shell.navClassroom,
     myLessons: shell.navMyLessons,
-    progress: shell.navProgress,
+    customise: shell.navCustomise,
+    leaderboard: shell.navLeaderboard,
     profile: shell.navProfile,
   };
 
@@ -89,13 +124,14 @@ export function CatalogSidebar({
       return pathname === "/catalog" && catalogSpotlightOpen;
     }
     const tab = searchParams.get("tab");
-    if (linkId === "progress") {
-      return pathname === "/profile" && tab === "progress";
+    if (linkId === "leaderboard") {
+      return pathname === "/leaderboard";
     }
     if (linkId === "profile") {
-      return (
-        pathname === "/profile" && tab !== "progress" && tab !== "settings"
-      );
+      return pathname === "/profile" && tab !== "settings";
+    }
+    if (linkId === "customise") {
+      return pathname === "/customise";
     }
     const link = sidebarLinkDefs.find((l) => l.id === linkId);
     return link ? pathname === link.to.split("?")[0] : false;
@@ -106,12 +142,15 @@ export function CatalogSidebar({
     return value;
   };
 
+  const sidebarTopClass = resolve_sidebar_top_class(reserveTopNavSpace);
+  const visibleSidebarLinks = resolveVisibleSidebarLinks(user);
+
   return (
     <>
       <aside
         className={cn(
           "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-600 lg:flex",
-          reserveTopNavSpace ? "top-18" : "top-0",
+          sidebarTopClass,
           collapsed ? "w-20" : "w-64 shadow-2xl",
         )}
       >
@@ -183,7 +222,7 @@ export function CatalogSidebar({
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex-col space-y-1 p-4">
-            {sidebarLinkDefs.map((link) => {
+            {visibleSidebarLinks.map((link) => {
               if (link.id === "search") {
                 const active = linkActive(link.id);
                 const itemClass = cn(
@@ -306,7 +345,7 @@ export function CatalogSidebar({
         <div
           className={cn(
             "fixed right-0 bottom-0 left-0 z-40 hidden bg-black/40 backdrop-blur-[3px] lg:block",
-            reserveTopNavSpace ? "top-18" : "top-0",
+            sidebarTopClass,
           )}
           onClick={() => onCollapsedChange(true)}
         />
@@ -314,7 +353,7 @@ export function CatalogSidebar({
 
       <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-border bg-card lg:hidden">
         <div className="flex items-center justify-around py-2">
-          {sidebarLinkDefs.slice(0, 5).map((link) => {
+          {visibleSidebarLinks.slice(0, 5).map((link) => {
             if (link.id === "search") {
               const active = linkActive(link.id);
               const itemClass = cn(
@@ -361,6 +400,7 @@ export function CatalogSidebar({
           })}
         </div>
       </nav>
+      <LearnerCustomiseFab />
     </>
   );
 }

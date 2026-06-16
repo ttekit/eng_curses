@@ -1,28 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import type { RootStackScreenProps } from "../navigation/types";
 import { ScreenContainer } from "../components/ScreenContainer";
-import { AppButton } from "../components/AppButton";
+import { LoadingCenter } from "../components/LoadingCenter";
+import { ContentWatchHeader } from "../components/ContentWatchHeader";
+import { AgeBadge, LevelBadge } from "../components/badges/LevelAgeBadges";
+import { extract_cefr_level } from "../lib/badge_styles";
+import { is_age_restricted_locked } from "../lib/adult_access";
 import { apiFetch, readApiErrorBody } from "../lib/api";
+import { useUser } from "../context/UserContext";
 import { colors } from "../theme/colors";
+import { contentScreenStyles as styles } from "./content_screen_styles";
 
 type ContentVideoPayload = {
   id: number;
   videoName: string;
   videoDescription?: string | null;
   videoLink: string;
+  ageRestriction?: string;
   content: {
     id: number;
     category: {
       name: string;
     };
+    stats?: {
+      systemTags?: string[];
+    } | null;
   };
 };
 
@@ -30,9 +39,19 @@ type Props = RootStackScreenProps<"Content">;
 
 export function ContentScreen({ route, navigation }: Props) {
   const { contentId, videoId } = route.params;
+  const { user } = useUser();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<ContentVideoPayload | null>(null);
+
+  const isLocked = useMemo(
+    () => is_age_restricted_locked(video?.ageRestriction, user),
+    [video?.ageRestriction, user],
+  );
+  const level = useMemo(
+    () => extract_cefr_level(video?.content.stats?.systemTags),
+    [video?.content.stats?.systemTags],
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -68,20 +87,26 @@ export function ContentScreen({ route, navigation }: Props) {
   });
 
   useEffect(() => {
-    if (!video?.videoLink) {
+    if (!video?.videoLink || isLocked) {
       return;
     }
     player.replace(video.videoLink);
     player.play();
-  }, [player, video?.videoLink]);
+  }, [player, video?.videoLink, isLocked]);
 
   useEffect(() => {
-    if (!video?.id) return;
+    if (!video?.id || isLocked) {
+      return;
+    }
     const markComplete = async () => {
       try {
         await apiFetch(`/content-video/${video.id}/watch-complete`, {
           method: "POST",
           body: JSON.stringify({ progressPercent: 100 }),
+        });
+        navigation.navigate("LessonSummary", {
+          videoId: video.id,
+          xpEarned: user?.xp,
         });
       } catch {
         /* non-blocking */
@@ -93,33 +118,52 @@ export function ContentScreen({ route, navigation }: Props) {
     return () => {
       sub.remove();
     };
-  }, [player, video?.id]);
+  }, [player, video?.id, isLocked, navigation, user?.xp]);
 
   return (
     <ScreenContainer padded={false}>
-      <View style={styles.topBar}>
-        <AppButton
-          label="Back"
-          variant="ghost"
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        />
-      </View>
+      <ContentWatchHeader
+        onBack={() => navigation.goBack()}
+        rightLabel={user ? `${user.xp} XP` : undefined}
+      />
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
+        <LoadingCenter />
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : video ? (
         <ScrollView contentContainerStyle={styles.content}>
-          <VideoView player={player} style={styles.player} nativeControls contentFit="contain" />
+          <View style={styles.playerFrame}>
+            {isLocked ? (
+              <View style={styles.lockPanel}>
+                <Feather name="lock" size={36} color={colors.textMuted} />
+                <Text style={styles.lockTitle}>Adults only</Text>
+                <Text style={styles.lockBody}>
+                  This content is restricted to adults (18+) and is not available on your
+                  account.
+                </Text>
+              </View>
+            ) : (
+              <VideoView
+                player={player}
+                style={styles.player}
+                nativeControls
+                contentFit="contain"
+              />
+            )}
+          </View>
+
           <View style={styles.meta}>
-            <Text style={styles.category}>{video.content.category.name}</Text>
+            <View style={styles.pill}>
+              <Text style={styles.category}>{video.content.category.name}</Text>
+            </View>
             <Text style={styles.title}>{video.videoName}</Text>
+            <View style={styles.badges}>
+              {level ? <LevelBadge label={level} /> : null}
+              {video.ageRestriction ? <AgeBadge age={video.ageRestriction} /> : null}
+            </View>
             {video.videoDescription ? (
               <Text style={styles.description}>{video.videoDescription}</Text>
             ) : null}
@@ -129,52 +173,3 @@ export function ContentScreen({ route, navigation }: Props) {
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  topBar: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-  },
-  backButton: {
-    alignSelf: "flex-start",
-    minHeight: 40,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  error: {
-    color: colors.danger,
-    textAlign: "center",
-  },
-  content: {
-    paddingBottom: 32,
-  },
-  player: {
-    width: "100%",
-    aspectRatio: 16 / 9,
-    backgroundColor: "#000",
-  },
-  meta: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 8,
-  },
-  category: {
-    color: colors.primary,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    fontSize: 12,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "800",
-  },
-  description: {
-    color: colors.textMuted,
-    lineHeight: 22,
-  },
-});

@@ -35,14 +35,22 @@ export const appEn = {
     navSearch: "Search",
     navClassroom: "Classroom",
     navMyLessons: "My Lessons",
-    navProgress: "Progress",
+    navLeaderboard: "Leaderboard",
     navProfile: "Profile",
+    navCustomise: "Customise",
     sectionLevel: "Level",
     sectionCategory: "Category",
     sectionGenre: "Genre",
     settings: "Settings",
     levelWithDot: "• {prefix} {level}",
     appTheme: "Change platform theme: ",
+  },
+
+  emailVerificationBanner: {
+    message: "Email is not confirmed.",
+    confirmLink: "Confirm email",
+    resend: "Resend code",
+    resendSent: "Code sent",
   },
 
   myLessonsPage: {
@@ -290,6 +298,25 @@ export const appEn = {
     vocab500Desc: "Learn 500 new words",
     vocab1000Title: "Dictionary deity",
     vocab1000Desc: "Learn 1000 new words",
+  },
+
+  customisePage: {
+    seoTitle: "Customise your learning",
+    seoDescription:
+      "Set your job, education, hobbies, and genre preferences for better recommendations.",
+    title: "Customise",
+    lead: "Tell us about your background and tastes so we can tailor the catalog.",
+    jobLabel: "Field of work / profession",
+    educationLabel: "Education",
+    hobbiesLabel: "Hobbies",
+    genresLove: "Genres you love",
+    genresLoveHint: "We will recommend more from genres you pick here.",
+    genresAvoid: "Genres to avoid",
+    genresAvoidHint: "We will filter out selections from these buckets.",
+    save: "Save preferences",
+    saving: "Saving…",
+    saveSuccess: "Preferences saved.",
+    saveError: "Could not save preferences. Try again.",
   },
 
   profileSettings: {
@@ -757,6 +784,20 @@ export const appEn = {
       b2: "B2 (Upper-Intermediate)",
       c1: "C1 (Advanced)",
     },
+  },
+
+  leaderboardPage: {
+    seoTitle: "Leaderboard",
+    seoDescription:
+      "See the most active learners ranked by completed videos with high quiz scores.",
+    title: "Leaderboard",
+    lead:
+      "Ranked by completed videos where your best quiz score is {minScore}% or higher.",
+    loading: "Loading leaderboard…",
+    empty: "No leaderboard entries yet. Watch lessons and score 80%+ on quizzes.",
+    yourRank: "Your rank: #{rank} · {count} qualifying videos",
+    videosCount: "{count} videos",
+    levelUnknown: "—",
   },
 
   classroomPage: {

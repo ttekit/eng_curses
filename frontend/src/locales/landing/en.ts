@@ -500,12 +500,11 @@ export const landingEn = {
       },
       step3: {
         rightTitle: "Almost there!",
-        rightSubtitle:
-          "Set your goal and genres, then pick a plan that fits you.",
+        rightSubtitle: "Tell us your learning goal — you can skip and customise later.",
         back: "Back",
-        titleStudent: "Student preferences",
-        titleAdult: "Your preferences",
-        lead: "Choose genres we should lean toward—and ones to hide.",
+        titleStudent: "Your learning goal",
+        titleAdult: "Your learning goal",
+        lead: "Share what you are working toward, or skip for now.",
         goalTitle: "Your learning goal",
         optional: "(optional)",
         goalLead:
@@ -514,10 +513,9 @@ export const landingEn = {
         timeToAchieve: "Time to achieve",
         placeholderGoal: "e.g. Travel to the UK",
         placeholderTime: "e.g. 3 months",
-        genresLove: "Genres you love",
-        genresLoveHint: "We'll recommend more from genres you pick here.",
-        genresAvoid: "Genres to avoid",
-        genresAvoidHint: "We'll filter out selections from these buckets.",
+        customiseHint:
+          "You can set job, education, hobbies, and genres anytime from Customise in the app.",
+        skip: "Skip for now",
         register: "Register",
         continueToPlans: "Continue",
       },

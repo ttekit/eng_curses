@@ -3,6 +3,7 @@
  */
 
 import { apiFetch } from "./api";
+import { isUserEligibleForVideoAge } from "./ageEligibility";
 import type { CatalogCardVideo } from "../components/catalog/CatalogVideoCard";
 import type { UserData } from "../context/UserContext";
 import { parseStudyingPlanPhases } from "./learningPlan";
@@ -131,20 +132,25 @@ export function mapRecommendationsToCatalogCards(
   thumbnailById: ReadonlyMap<number, string | undefined>,
   limit = 12,
   ageRestrictionById?: ReadonlyMap<number, string | undefined>,
+  user?: UserData | null,
 ): CatalogCardVideo[] {
   const out: CatalogCardVideo[] = [];
   for (const item of items) {
     if (out.length >= limit) break;
     const id = item.contentVideo.id;
+    const ageRestriction = ageRestrictionById?.has(id)
+      ? ageRestrictionById.get(id)
+      : item.contentVideo.ageRestriction;
+    if (!isUserEligibleForVideoAge(user, ageRestriction)) {
+      continue;
+    }
     out.push({
       id,
       title: item.contentVideo.videoName,
       categoryLabel: item.content.name,
       videoLink: item.contentVideo.videoLink,
       thumbnailUrl: thumbnailById.get(id),
-      ageRestriction: ageRestrictionById?.has(id)
-        ? ageRestrictionById.get(id)
-        : item.contentVideo.ageRestriction,
+      ageRestriction,
       level: item.stats?.systemTags?.find((tag) =>
         /^(A1|A2|B1|B2|C1|C2)$/i.test(tag),
       ),
@@ -155,7 +161,7 @@ export function mapRecommendationsToCatalogCards(
 
 /**
  * Client-side fallback when the recommendations API is unavailable.
- * Mirrors a subset of backend rules: CEFR, phase topics, hobbies/work, optional genres.
+ * Priority: age eligibility → CEFR level → active phase topics → genres.
  */
 export function buildClientRecommendedVideos(
   videos: CatalogVideoLike[],
@@ -170,46 +176,56 @@ export function buildClientRecommendedVideos(
   const level = user?.englishLevel?.trim();
   const phaseTopicNames = resolveActivePhaseTopicNames(user);
   const phaseTokens = tokenSet(phaseTopicNames);
-  const profileTokens = tokenSet([
-    ...(user?.hobbies ?? []),
-    user?.workField ?? "",
-    user?.education ?? "",
-  ]);
   const favoriteGenreTokens = tokenSet(options?.favoriteGenreNames ?? []);
   const hatedGenreTokens = tokenSet(options?.hatedGenreNames ?? []);
 
-  const scored = videos.map((v) => {
-    let score = 0;
-    const systemTags = v.content.stats?.systemTags ?? [];
-    const userTags = v.content.stats?.userTags ?? [];
-    if (level && systemTags.includes(level)) {
-      score += 5;
-    }
-    if (phaseTokens.size > 0) {
-      score += tagOverlapScore(userTags, phaseTokens) * 6;
-      for (const name of phaseTopicNames) {
-        const n = name.trim().toLowerCase();
-        if (n.length > 2 && v.videoName.toLowerCase().includes(n)) {
-          score += 1;
-          break;
+  const scored = videos
+    .filter((video) => isUserEligibleForVideoAge(user, video.ageRestriction))
+    .map((v) => {
+      const systemTags = v.content.stats?.systemTags ?? [];
+      const userTags = v.content.stats?.userTags ?? [];
+
+      const levelScore = level && systemTags.includes(level) ? 1 : 0;
+      const phaseTopicScore =
+        phaseTokens.size > 0 ? tagOverlapScore(userTags, phaseTokens) : 0;
+      let titleTopicBoost = 0;
+      if (phaseTokens.size > 0) {
+        for (const name of phaseTopicNames) {
+          const normalized = name.trim().toLowerCase();
+          if (normalized.length > 2 && v.videoName.toLowerCase().includes(normalized)) {
+            titleTopicBoost = 0.25;
+            break;
+          }
         }
       }
-    }
-    score += tagOverlapScore(userTags, profileTokens) * 3;
-    if (favoriteGenreTokens.size > 0) {
-      score += tagOverlapScore(userTags, favoriteGenreTokens) * 2;
-    }
-    if (hatedGenreTokens.size > 0) {
-      const hatedHit = tagOverlapScore(userTags, hatedGenreTokens);
-      if (hatedHit > 0) {
-        score -= Math.ceil(hatedHit * 4);
+      const topicScore = Math.min(1, phaseTopicScore + titleTopicBoost);
+
+      let genreScore = 0.5;
+      if (favoriteGenreTokens.size > 0 || hatedGenreTokens.size > 0) {
+        const favoriteHit = tagOverlapScore(userTags, favoriteGenreTokens);
+        const hatedHit = tagOverlapScore(userTags, hatedGenreTokens);
+        genreScore = Math.max(0, favoriteHit - hatedHit);
       }
+
+      return { v, levelScore, topicScore, genreScore };
+    });
+
+  scored.sort((left, right) => {
+    if (right.levelScore !== left.levelScore) {
+      return right.levelScore - left.levelScore;
     }
-    return { v, score };
+    if (right.topicScore !== left.topicScore) {
+      return right.topicScore - left.topicScore;
+    }
+    if (right.genreScore !== left.genreScore) {
+      return right.genreScore - left.genreScore;
+    }
+    return left.v.id - right.v.id;
   });
 
-  scored.sort((a, b) => b.score - a.score || a.v.id - b.v.id);
-  const withSignal = scored.filter((row) => row.score > 0);
+  const withSignal = scored.filter(
+    (row) => row.levelScore > 0 || row.topicScore > 0 || row.genreScore > 0,
+  );
   const picked = (withSignal.length > 0 ? withSignal : scored).slice(0, limit);
 
   return picked.map(({ v }) => ({

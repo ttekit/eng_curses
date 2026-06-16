@@ -8,10 +8,12 @@ import {
   type ViewStyle,
 } from "react-native";
 import { colors } from "../theme/colors";
+import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
 type AppButtonProps = PressableProps & {
   label: string;
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost";
   loading?: boolean;
   style?: ViewStyle;
   labelStyle?: TextStyle;
@@ -33,7 +35,11 @@ export function AppButton({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
-        variant === "primary" ? styles.primary : styles.ghost,
+        variant === "primary"
+          ? styles.primary
+          : variant === "secondary"
+            ? styles.secondary
+            : styles.ghost,
         pressed && !isDisabled ? styles.pressed : null,
         isDisabled ? styles.disabled : null,
         style,
@@ -46,7 +52,11 @@ export function AppButton({
         <Text
           style={[
             styles.label,
-            variant === "primary" ? styles.primaryLabel : styles.ghostLabel,
+            variant === "primary"
+              ? styles.primaryLabel
+              : variant === "secondary"
+                ? styles.secondaryLabel
+                : styles.ghostLabel,
             labelStyle,
           ]}
         >
@@ -59,14 +69,19 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
-    borderRadius: 10,
+    minHeight: 52,
+    borderRadius: spacing.buttonRadius,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   primary: {
     backgroundColor: colors.primary,
+  },
+  secondary: {
+    backgroundColor: colors.secondary,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   ghost: {
     backgroundColor: "transparent",
@@ -74,16 +89,18 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.88,
   },
   disabled: {
     opacity: 0.5,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "700",
+    ...typography.button,
   },
   primaryLabel: {
+    color: colors.primaryForeground,
+  },
+  secondaryLabel: {
     color: colors.text,
   },
   ghostLabel: {

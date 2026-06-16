@@ -25,6 +25,7 @@ import { AdminUsersModule } from "./admin-users/admin-users.module";
 import { TeacherStudentsModule } from "./teacher-students/teacher-students.module";
 import { BillingModule } from "./billing/billing.module";
 import { LearnerRecapModule } from "./learner-recap/learner-recap.module";
+import { LeaderboardModule } from "./leaderboard/leaderboard.module";
 import { ProfileModule } from "./profile/profile.module";
 import { RedisModule } from "./redis/redis.module";
 import { SeoModule } from "./seo/seo.module";
@@ -89,6 +90,7 @@ import { ScheduleModule } from "@nestjs/schedule";
     TeacherStudentsModule,
     BillingModule,
     LearnerRecapModule,
+    LeaderboardModule,
     ProfileModule,
     RedisModule,
     SeoModule,

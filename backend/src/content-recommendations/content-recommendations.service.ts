@@ -14,9 +14,16 @@ import {
   userThemeMatchScore,
   topicKnowledgeFit,
   targetProcessingComplexity,
-  totalWeightedScore,
   vocabularyStrengthFromTopicScores,
 } from './content-recommendation.scoring';
+import {
+  isUserEligibleForVideoAge,
+  resolveUserAgeYears,
+} from './content-recommendation-age.util';
+import {
+  compareRecommendationPriority,
+  encodePriorityScore,
+} from './content-recommendation-ranking.util';
 import { parseStudyingPlanV2OrNull } from 'src/studying-plan/studying-plan-json.util';
 import { expectedCefrLevelForPhase } from 'src/studying-plan/studying-plan-cefr.util';
 
@@ -32,6 +39,7 @@ export type UserRecommendationProfileDto = {
   activePhaseIndex: number;
   phaseTopicNames: string[];
   favoriteGenreSample: string[];
+  userAgeYears: number | null;
 };
 
 export type VideoRecommendationItemDto = {
@@ -52,6 +60,7 @@ export type VideoRecommendationItemDto = {
     videoDescription: string | null;
     videoLink: string;
     hasCaptions: boolean;
+    ageRestriction: string;
   };
   content: {
     name: string;
@@ -196,6 +205,11 @@ export class ContentRecommendationsService {
       ]),
     );
 
+    const userAgeYears = resolveUserAgeYears({
+      dateOfBirth: user.dateOfBirth,
+      role: user.role,
+    });
+
     const videos = await this.prisma.contentVideo.findMany({
       orderBy: { id: "asc" },
       include: {
@@ -217,6 +231,10 @@ export class ContentRecommendationsService {
 
     const scored: VideoRecommendationItemDto[] = [];
     for (const v of videos) {
+      if (!isUserEligibleForVideoAge(userAgeYears, v.ageRestriction)) {
+        continue;
+      }
+
       const stats = v.content?.stats;
       const videoCefr = stats
         ? videoSystemTagsToCefrUnit(stats.systemTags)
@@ -250,7 +268,7 @@ export class ContentRecommendationsService {
         phaseTopics,
         genres,
       };
-      const score = totalWeightedScore(parts);
+      const score = encodePriorityScore(parts);
 
       scored.push({
         rank: 0,
@@ -263,6 +281,7 @@ export class ContentRecommendationsService {
           videoDescription: v.videoDescription,
           videoLink: v.videoLink,
           hasCaptions: Boolean(v.videoCaption),
+          ageRestriction: v.ageRestriction,
         },
         content: {
           name: v.content.category.name,
@@ -279,7 +298,16 @@ export class ContentRecommendationsService {
       });
     }
 
-    scored.sort((a, b) => b.score - a.score || a.contentVideo.id - b.contentVideo.id);
+    scored.sort((left, right) => {
+      const priority = compareRecommendationPriority(
+        left.breakdown,
+        right.breakdown,
+      );
+      if (priority !== 0) {
+        return priority;
+      }
+      return left.contentVideo.id - right.contentVideo.id;
+    });
     for (let i = 0; i < scored.length; i++) {
       scored[i].rank = i + 1;
     }
@@ -299,6 +327,7 @@ export class ContentRecommendationsService {
         activePhaseIndex,
         phaseTopicNames,
         favoriteGenreSample: favoriteGenreNames.slice(0, 8),
+        userAgeYears,
       },
       recommendations: scored.slice(0, 40),
     };

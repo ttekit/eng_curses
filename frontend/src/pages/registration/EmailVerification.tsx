@@ -112,14 +112,6 @@ export const EmailVerification: React.FC = () => {
           return;
         }
 
-        if (
-          (!profile.favoriteGenres || profile.favoriteGenres.length === 0) &&
-          (!profile.hatedGenres || profile.hatedGenres.length === 0)
-        ) {
-          navigate("/registrationDetails");
-          return;
-        }
-
         if (!profile.subscriptionPlan && !profile.subscriptionStatus) {
           navigate("/subscribe");
           return;

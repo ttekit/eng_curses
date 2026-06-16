@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useUser } from "../context/UserContext";
+import { EmailVerificationBanner } from "./EmailVerificationBanner";
 
 export default function RequireAuth() {
   const { isLoggedIn, isLoading, user } = useUser();
@@ -26,5 +27,16 @@ export default function RequireAuth() {
   if (user && !user.role) {
     return <Navigate to="/registrationMain" replace />;
   }
-  return <Outlet />;
+
+  const isTeacher = user?.role?.toLowerCase() === "teacher" || user?.role?.toLowerCase() === "admin";
+  if (user && !isTeacher && !user.dateOfBirth) {
+    return <Navigate to="/registrationDetails" replace />;
+  }
+
+  return (
+    <>
+      <EmailVerificationBanner />
+      <Outlet />
+    </>
+  );
 }

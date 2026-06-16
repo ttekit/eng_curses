@@ -47,6 +47,16 @@ export function normalizedLearnerCefrBand(
   return CEFR_STEPS[idx];
 }
 
+const B1_STEP_INDEX = CEFR_STEPS.indexOf("B1");
+
+/** True when profile level is Pre-A1, A1, or A2 (comfort band below B1). */
+export function isLearnerCefrBelowB1(
+  learnerCefr: string | null | undefined,
+): boolean {
+  const idx = parseCefrStep(learnerCefr ?? null);
+  return idx != null && idx < B1_STEP_INDEX;
+}
+
 /**
  * Vocabulary for lessons should sit one CEFR band above the learner’s profile
  * so items are stretch goals, not only comfort-zone words.

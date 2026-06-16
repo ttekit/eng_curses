@@ -16,6 +16,11 @@ export default {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.explys.mobile",
+    infoPlist: {
+      NSAppTransportSecurity: {
+        NSAllowsLocalNetworking: true,
+      },
+    },
   },
   android: {
     package: "com.explys.mobile",
@@ -29,7 +34,21 @@ export default {
   web: {
     favicon: "./assets/favicon.png",
   },
-  plugins: ["expo-video"],
+  plugins: [
+    "expo-video",
+    [
+      "expo-build-properties",
+      {
+        android: {
+          buildArchs: ["arm64-v8a"],
+          usePrecompiledHeaders: true,
+        },
+        ios: {
+          deploymentTarget: "16.4",
+        },
+      },
+    ],
+  ],
   extra: {
     apiBaseUrl,
     apiToken: process.env.EXPO_PUBLIC_API_TOKEN ?? "",

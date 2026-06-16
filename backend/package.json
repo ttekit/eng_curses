@@ -82,6 +82,8 @@
     "test:ci": "jest --ci --coverage=false",
     "deploy": "npx prisma generate && npx prisma db push && npm run build && pm2 restart explys-backend",
     "seed": "npx ts-node prisma/seed.ts",
+    "seed:leaderboard": "npx ts-node prisma/seed-leaderboard-users.ts",
+    "copy:avatars-prod": "npx ts-node prisma/copy-avatars-from-prod.ts",
     "postbuild": "node -e \"require('fs').cpSync('src/generated','dist/generated',{recursive:true,force:true})\""
   },
   "jest": {

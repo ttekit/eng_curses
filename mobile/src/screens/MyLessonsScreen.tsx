@@ -1,20 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import type { MainTabScreenProps } from "../navigation/types";
 import { ScreenContainer } from "../components/ScreenContainer";
-import {
-  CatalogVideoCard,
-  type CatalogCardVideo,
-} from "../components/CatalogVideoCard";
+import { LoadingCenter } from "../components/LoadingCenter";
+import { ScreenHeader } from "../components/ScreenHeader";
+import { CatalogVideoRow } from "../components/catalog/CatalogVideoRow";
+import { RecapActionCard } from "../components/RecapActionCard";
+import type { CatalogCardVideo } from "../components/CatalogVideoCard";
+import { fetch_learner_recap_status } from "../lib/learner_recap";
 import { apiFetch, readApiErrorBody } from "../lib/api";
 import { colors } from "../theme/colors";
+import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
 type WatchedItem = {
   contentVideoId: number;
@@ -28,30 +31,29 @@ type Props = MainTabScreenProps<"MyLessons">;
 
 export function MyLessonsScreen({ navigation }: Props) {
   const [items, setItems] = useState<WatchedItem[]>([]);
+  const [recapStatus, setRecapStatus] = useState<Awaited<
+    ReturnType<typeof fetch_learner_recap_status>
+  > | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const response = await apiFetch("/content-video/watched", { method: "GET" });
-    if (!response.ok) {
-      throw new Error(await readApiErrorBody(response));
+    const [watchedResponse, recap] = await Promise.all([
+      apiFetch("/content-video/watched", { method: "GET" }),
+      fetch_learner_recap_status(),
+    ]);
+    if (!watchedResponse.ok) {
+      throw new Error(await readApiErrorBody(watchedResponse));
     }
-    const data = (await response.json()) as WatchedItem[];
+    const data = (await watchedResponse.json()) as WatchedItem[];
     setItems(Array.isArray(data) ? data : []);
+    setRecapStatus(recap);
   }, []);
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true);
-        await load();
-      } catch {
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    void run();
+    void load()
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, [load]);
 
   const cards: CatalogCardVideo[] = items.map((item) => ({
@@ -59,25 +61,22 @@ export function MyLessonsScreen({ navigation }: Props) {
     title: item.videoName,
     categoryLabel: item.categoryName ?? "Lesson",
     thumbnailUrl: item.thumbnailUrl,
+    contentId: item.contentId,
   }));
+
+  const openVideo = (card: CatalogCardVideo) => {
+    navigation.getParent()?.navigate("Content", {
+      contentId: card.contentId ?? items.find((i) => i.contentVideoId === card.id)?.contentId ?? 0,
+      videoId: card.id,
+    });
+  };
 
   return (
     <ScreenContainer padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My lessons</Text>
-        <Text style={styles.subtitle}>Lessons you have completed</Text>
-      </View>
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
+        <LoadingCenter />
       ) : (
-        <FlatList
-          data={cards}
-          keyExtractor={(item) => String(item.id)}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
+        <ScrollView
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -87,64 +86,70 @@ export function MyLessonsScreen({ navigation }: Props) {
               }}
             />
           }
-          ListEmptyComponent={
+          contentContainerStyle={styles.scroll}
+        >
+          <View style={styles.header}>
+            <ScreenHeader
+              title="My lessons"
+              subtitle="Completed lessons and practice recaps"
+            />
+          </View>
+          <View style={styles.recapSection}>
+            <RecapActionCard
+              title="Mistakes practice"
+              body="Review questions you missed recently."
+              status={recapStatus?.mistakes}
+              onPress={() => navigation.getParent()?.navigate("LearnerRecap", { kind: "mistakes" })}
+            />
+            <RecapActionCard
+              title="Weekly recap"
+              body="Summarize what you learned this week."
+              status={recapStatus?.weekly}
+              onPress={() => navigation.getParent()?.navigate("LearnerRecap", { kind: "weekly" })}
+            />
+            <RecapActionCard
+              title="Monthly recap"
+              body="A broader review of your monthly progress."
+              status={recapStatus?.monthly}
+              onPress={() => navigation.getParent()?.navigate("LearnerRecap", { kind: "monthly" })}
+            />
+          </View>
+          {cards.length === 0 ? (
             <Text style={styles.empty}>
               Watch at least 75% of a catalog video to see it here.
             </Text>
-          }
-          renderItem={({ item, index }) => {
-            const source = items[index];
-            return (
-              <CatalogVideoCard
-                video={item}
-                onPress={() => {
-                  if (!source) return;
-                  navigation.getParent()?.navigate("Content", {
-                    contentId: source.contentId,
-                    videoId: source.contentVideoId,
-                  });
-                }}
-              />
-            );
-          }}
-        />
+          ) : (
+            <CatalogVideoRow
+              title="Watched lessons"
+              videos={cards}
+              onPressVideo={openVideo}
+              isAdultUser
+            />
+          )}
+        </ScrollView>
       )}
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    paddingBottom: 32,
+  },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screenPadding,
     paddingTop: 12,
-    paddingBottom: 8,
   },
-  title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "800",
-  },
-  subtitle: {
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  row: {
-    justifyContent: "space-between",
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  recapSection: {
+    paddingHorizontal: spacing.screenPadding,
+    gap: 12,
+    marginBottom: spacing.sectionGap,
   },
   empty: {
+    ...typography.body,
     color: colors.textMuted,
     textAlign: "center",
-    marginTop: 40,
-    lineHeight: 22,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.screenPadding,
+    marginTop: 20,
   },
 });

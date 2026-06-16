@@ -1,22 +1,81 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import type { MainTabScreenProps } from "../navigation/types";
+import type { LegalSlug } from "../lib/legal_content";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { AppButton } from "../components/AppButton";
+import { AchievementGrid } from "../components/profile/AchievementGrid";
+import { IdentityCard } from "../components/profile/IdentityCard";
+import { LinkRow } from "../components/profile/LinkRow";
+import { ProfileStatGrid } from "../components/profile/ProfileStatGrid";
+import { ProgressCard } from "../components/profile/ProgressCard";
+import { SkillBars } from "../components/profile/SkillBars";
 import { useUser } from "../context/UserContext";
+import { apiFetch } from "../lib/api";
+import {
+  build_achievement_items,
+  build_skill_scores,
+  format_hours,
+} from "../lib/profile_derived";
 import { colors } from "../theme/colors";
+import { profileScreenStyles as styles } from "./profile_screen_styles";
+
+type LearningStats = {
+  totalWatchTimeMin: number;
+  videosCompleted: number;
+  testsCompleted: number;
+  averageScore: number | null;
+};
 
 type Props = MainTabScreenProps<"Profile">;
 
+const LEGAL_LINKS: Array<{ slug: LegalSlug; label: string }> = [
+  { slug: "about", label: "About" },
+  { slug: "privacy", label: "Privacy" },
+  { slug: "terms", label: "Terms" },
+  { slug: "feedback", label: "Feedback" },
+];
+
 export function ProfileScreen({ navigation }: Props) {
   const { user, logout, isLoading } = useUser();
+  const [stats, setStats] = useState<LearningStats | null>(null);
 
-  const handleSignOut = async () => {
-    await logout();
-    navigation.getParent()?.reset({
-      index: 0,
-      routes: [{ name: "Login" }],
-    });
-  };
+  useEffect(() => {
+    const load = async () => {
+      const response = await apiFetch("/profile/learning-stats", { method: "GET" });
+      if (!response.ok) {
+        return;
+      }
+      const data = (await response.json()) as Record<string, unknown>;
+      setStats({
+        totalWatchTimeMin: Number(data.totalWatchTimeMin ?? 0),
+        videosCompleted: Number(data.videosCompleted ?? 0),
+        testsCompleted: Number(data.testsCompleted ?? 0),
+        averageScore:
+          data.averageScore === null || data.averageScore === undefined
+            ? null
+            : Number(data.averageScore),
+      });
+    };
+    if (user) {
+      void load();
+    }
+  }, [user]);
+
+  const skills = useMemo(
+    () => build_skill_scores(stats?.averageScore ?? null),
+    [stats?.averageScore],
+  );
+  const achievements = useMemo(
+    () =>
+      build_achievement_items(user?.achievements ?? [], stats, user?.currentStreak ?? 0),
+    [stats, user?.achievements, user?.currentStreak],
+  );
+  const progressPercent = useMemo(() => {
+    const xp = user?.xp ?? 0;
+    return Math.min(100, Math.round((xp % 1000) / 10));
+  }, [user?.xp]);
 
   if (isLoading) {
     return (
@@ -29,105 +88,81 @@ export function ProfileScreen({ navigation }: Props) {
   if (!user) {
     return (
       <ScreenContainer>
-        <Text style={styles.title}>Profile</Text>
         <AppButton
           label="Sign in"
-          onPress={() => {
-            navigation.getParent()?.reset({
-              index: 0,
-              routes: [{ name: "Login" }],
-            });
-          }}
+          onPress={() => navigation.getParent()?.navigate("Login")}
         />
       </ScreenContainer>
     );
   }
 
+  const levelLabel = user.englishLevel
+    ? `Level ${user.englishLevel}`
+    : `Level ${user.level}`;
+
   return (
-    <ScreenContainer>
-      <Text style={styles.title}>{user.name || "Learner"}</Text>
-      <Text style={styles.email}>{user.email}</Text>
-
-      <View style={styles.statsRow}>
-        <StatBlock label="Level" value={String(user.level)} />
-        <StatBlock label="XP" value={String(user.xp)} />
-        <StatBlock label="Streak" value={String(user.currentStreak)} />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>English level</Text>
-        <Text style={styles.sectionValue}>{user.englishLevel || "—"}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Subscription</Text>
-        <Text style={styles.sectionValue}>
-          {user.subscriptionStatus?.trim() || "none"}
-          {user.subscriptionPlan ? ` · ${user.subscriptionPlan}` : ""}
-        </Text>
-      </View>
-
-      <AppButton label="Sign out" variant="ghost" onPress={() => void handleSignOut()} />
+    <ScreenContainer padded={false}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Profile</Text>
+          <Pressable accessibilityLabel="Settings">
+            <Feather name="settings" size={20} color={colors.textMuted} />
+          </Pressable>
+        </View>
+        <IdentityCard
+          name={user.name || "Learner"}
+          subtitle={`${user.role || "Learner"} · ${user.email}`}
+          levelLabel={levelLabel}
+        />
+        <ProfileStatGrid
+          items={[
+            { label: "Day streak", value: String(user.currentStreak), icon: "zap", color: colors.chart3 },
+            { label: "Hours", value: format_hours(stats?.totalWatchTimeMin ?? 0), icon: "clock", color: colors.chart2 },
+            { label: "Videos", value: String(stats?.videosCompleted ?? 0), icon: "award", color: colors.primary },
+          ]}
+        />
+        <ProgressCard
+          title="Progress to next level"
+          percent={progressPercent}
+          caption={`${user.xp} XP earned · keep watching to level up`}
+        />
+        <View>
+          <Text style={styles.sectionTitle}>Skill breakdown</Text>
+          <SkillBars skills={skills} />
+        </View>
+        <View>
+          <Text style={styles.sectionTitle}>Achievements</Text>
+          <AchievementGrid items={achievements} />
+        </View>
+        <AppButton
+          label="Re-take level test"
+          variant="secondary"
+          onPress={() => navigation.getParent()?.navigate("LevelTest")}
+        />
+        <View style={styles.links}>
+          <LinkRow label="Classroom" onPress={() => navigation.navigate("Classroom")} />
+          <LinkRow label="Learning plan" onPress={() => navigation.navigate("LearningPlan")} />
+          <LinkRow label="Pricing" onPress={() => navigation.getParent()?.navigate("Pricing")} />
+          {LEGAL_LINKS.map((link) => (
+            <LinkRow
+              key={link.slug}
+              label={link.label}
+              onPress={() =>
+                navigation.getParent()?.navigate("LegalDocument", { slug: link.slug })
+              }
+            />
+          ))}
+        </View>
+        <AppButton
+          label="Sign out"
+          variant="ghost"
+          onPress={() => {
+            void logout().then(() => {
+              navigation.getParent()?.reset({ index: 0, routes: [{ name: "Login" }] });
+            });
+          }}
+        />
+      </ScrollView>
     </ScreenContainer>
   );
 }
-
-function StatBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.statBlock}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  email: {
-    color: colors.textMuted,
-    marginBottom: 24,
-  },
-  muted: {
-    color: colors.textMuted,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 24,
-  },
-  statBlock: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statValue: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "800",
-  },
-  statLabel: {
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  sectionValue: {
-    color: colors.text,
-    fontSize: 16,
-  },
-});

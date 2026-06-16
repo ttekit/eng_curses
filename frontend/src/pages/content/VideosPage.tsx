@@ -11,7 +11,6 @@ import {
   subscriptionEnforcementDisabled,
   userMayUseLearnerApp,
 } from "../../lib/subscriptionAccess";
-import PlacementPreferencesStep from "../../components/PlacementPreferencesStep";
 import PlacementPreTestStep from "../../components/PlacementPreTestStep";
 import {
   learnerNeedsPlacement,
@@ -416,6 +415,7 @@ export default function VideoPage() {
             thumbnailByVideoId,
             12,
             ageRestrictionByVideoId,
+            user ?? null,
           );
         }
       }
@@ -1045,22 +1045,15 @@ export default function VideoPage() {
                 </p>
               </div>
               <div className="flex-1 pb-6">
-                {user ? (
-                  user.role === "adult" ? (
-                    <PlacementPreTestStep
-                      user={user}
-                      onSuccess={(detail) => {
-                        if (detail?.skippedPlacementTest) {
-                          navigate("/learning-plan", { replace: true });
-                        }
-                      }}
-                    />
-                  ) : (
-                    <PlacementPreferencesStep
-                      user={user}
-                      onSuccess={() => undefined}
-                    />
-                  )
+                {user?.role === "adult" ? (
+                  <PlacementPreTestStep
+                    user={user}
+                    onSuccess={(detail) => {
+                      if (detail?.skippedPlacementTest) {
+                        navigate("/learning-plan", { replace: true });
+                      }
+                    }}
+                  />
                 ) : null}
               </div>
             </div>

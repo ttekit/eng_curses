@@ -1,4 +1,5 @@
-import { SafeAreaView, StyleSheet, type ViewProps } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, type ViewProps } from "react-native";
 import { colors } from "../theme/colors";
 
 type ScreenContainerProps = ViewProps & {
@@ -12,7 +13,11 @@ export function ScreenContainer({
   ...rest
 }: ScreenContainerProps) {
   return (
-    <SafeAreaView style={[styles.root, padded ? styles.padded : null, style]} {...rest}>
+    <SafeAreaView
+      edges={["top", "left", "right"]}
+      style={[styles.root, padded ? styles.padded : null, style]}
+      {...rest}
+    >
       {children}
     </SafeAreaView>
   );

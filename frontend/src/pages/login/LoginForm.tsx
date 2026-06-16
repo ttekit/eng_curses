@@ -140,9 +140,6 @@ export default function LoginForm() {
 
           if (errorData?.error === "EMAIL_NOT_VERIFIED") {
             toast.error(loginSeo.emailNotVerified);
-            navigate("/verify-email", {
-              state: { email: loginData.email, isLoginFlow: true },
-            });
           } else {
             toast.error(errorData?.message || loginSeo.toastSignInError);
           }

@@ -20,6 +20,7 @@ export interface UserData {
   email: string;
   dateOfBirth: string;
   role: string;
+  isVerified: boolean;
   isTwoFactorEnable: boolean;
   hasCompletedPlacement: boolean;
   englishLevel: string;
@@ -112,6 +113,7 @@ function normalizeProfile(raw: unknown): UserData | null {
     email: String(r.email ?? ""),
     dateOfBirth: String(r.dateOfBirth ?? ""),
     role: normalizeLearnerRole(r.role),
+    isVerified: r.isVerified === true,
     isTwoFactorEnable: Boolean(r.isTwoFactorEnable),
     hasCompletedPlacement: coerceHasCompletedPlacement(r.hasCompletedPlacement),
     englishLevel: String(r.englishLevel ?? ""),

@@ -39,6 +39,8 @@ import { EmailVerification } from "./pages/registration/EmailVerification";
 import RestoreAccount from "./pages/login/RestoreAccount";
 import AdminAvatarsPage from "./pages/admin/AdminAvatarsPage";
 import ClassroomPage from "./pages/content/ClassroomPage";
+import LeaderboardPage from "./pages/leaderboard/LeaderboardPage";
+import CustomisePage from "./pages/customise/CustomisePage";
 import AboutPage from "./pages/legal/AboutPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
@@ -116,7 +118,9 @@ const router = createBrowserRouter([
                 element: <CatalogSeriesPage />,
               },
               { path: "/catalog", element: <VideoPage /> },
+              { path: "/customise", element: <CustomisePage /> },
               { path: "/classroom", element: <ClassroomPage /> },
+              { path: "/leaderboard", element: <LeaderboardPage /> },
               { path: "/learning-plan", element: <LearningPlanPage /> },
               {
                 path: "/video-page",
