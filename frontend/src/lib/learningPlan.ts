@@ -2,10 +2,10 @@ import type { UserData } from "../context/UserContext";
 import { formatMessage } from "./formatMessage";
 
 /** Used when the learner did not set a custom goal during registration. */
-export const DEFAULT_LEARNING_GOAL = "Improve language";
+export const DEFAULT_LEARNING_GOAL = "Learn english";
 
 /** Used when the learner did not set a time horizon during registration. */
-export const DEFAULT_TIME_HORIZON = "1 year";
+export const DEFAULT_TIME_HORIZON = "12 months";
 
 export function effectiveLearningGoal(
   learningGoal: string | undefined | null,

@@ -1,8 +1,10 @@
 import type { UserData } from "../context/UserContext";
 
-const ADULT_MIN_AGE = 18;
+export type VideoAgeAccess = "allowed" | "needs_dob" | "blocked";
 
-function parseVideoMinAgeYears(ageRestriction: string | undefined): number {
+export function parseVideoMinAgeYears(
+  ageRestriction: string | undefined,
+): number {
   const raw = (ageRestriction ?? "0+").trim();
   const match = /^(\d+)\+/.exec(raw);
   if (!match) {
@@ -12,14 +14,15 @@ function parseVideoMinAgeYears(ageRestriction: string | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function resolveUserAgeYears(user: UserData | null | undefined): number | null {
-  if (!user) {
-    return null;
-  }
-  if (user.role === "adult") {
-    return ADULT_MIN_AGE;
-  }
-  if (!user.dateOfBirth?.trim()) {
+function isStaffUser(user: UserData | null | undefined): boolean {
+  const role = user?.role?.toLowerCase();
+  return role === "teacher" || role === "admin";
+}
+
+export function resolveUserAgeYears(
+  user: UserData | null | undefined,
+): number | null {
+  if (!user?.dateOfBirth?.trim()) {
     return null;
   }
   const dob = new Date(user.dateOfBirth);
@@ -37,17 +40,30 @@ export function resolveUserAgeYears(user: UserData | null | undefined): number |
   return age >= 0 ? age : null;
 }
 
+export function resolveVideoAgeAccess(
+  user: UserData | null | undefined,
+  ageRestriction: string | undefined,
+): VideoAgeAccess {
+  const requiredAge = parseVideoMinAgeYears(ageRestriction);
+  if (requiredAge <= 0) {
+    return "allowed";
+  }
+  if (isStaffUser(user)) {
+    return "allowed";
+  }
+  if (!user?.dateOfBirth?.trim()) {
+    return "needs_dob";
+  }
+  const userAge = resolveUserAgeYears(user);
+  if (userAge === null) {
+    return "needs_dob";
+  }
+  return userAge >= requiredAge ? "allowed" : "blocked";
+}
+
 export function isUserEligibleForVideoAge(
   user: UserData | null | undefined,
   ageRestriction: string | undefined,
 ): boolean {
-  const requiredAge = parseVideoMinAgeYears(ageRestriction);
-  if (requiredAge <= 0) {
-    return true;
-  }
-  const userAge = resolveUserAgeYears(user);
-  if (userAge === null) {
-    return false;
-  }
-  return userAge >= requiredAge;
+  return resolveVideoAgeAccess(user, ageRestriction) === "allowed";
 }

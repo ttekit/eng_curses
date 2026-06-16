@@ -95,11 +95,26 @@ function getBasicAuthorizationValue(): string | null {
 /**
  * Merge auth-related headers for manual `fetch` calls (same rules as `apiFetch`).
  */
+function isPlaceholderBearer(value: string | null): boolean {
+  if (!value) {
+    return true;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized.length === 0 || normalized === "null" || normalized === "undefined";
+}
+
 export function mergeApiAuthHeaders(
   base: HeadersInit | undefined,
   token?: string | null,
 ): Headers {
   const headers = new Headers(base ?? {});
+  const rawAuthorization = headers.get("Authorization");
+  if (rawAuthorization?.startsWith("Bearer ")) {
+    const bearerFromHeader = rawAuthorization.slice("Bearer ".length);
+    if (isPlaceholderBearer(bearerFromHeader)) {
+      headers.delete("Authorization");
+    }
+  }
   let bearer: string | null | undefined;
   if (token === undefined) {
     bearer = getStoredAccessToken();

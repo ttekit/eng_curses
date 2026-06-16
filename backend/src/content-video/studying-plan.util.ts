@@ -1,6 +1,6 @@
 /** Mirrors frontend `learningPlan.ts` defaults for profile “Studying plan”. */
-export const DEFAULT_LEARNING_GOAL = "Improve language";
-export const DEFAULT_TIME_HORIZON = "1 year";
+export const DEFAULT_LEARNING_GOAL = "Learn english";
+export const DEFAULT_TIME_HORIZON = "12 months";
 
 export function effectiveLearningGoal(
   raw: string | null | undefined,

@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useUser } from "../context/UserContext";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
+import { learnerNeedsRoleSelection } from "../lib/learnerOnboarding";
 
 export default function RequireAuth() {
   const { isLoggedIn, isLoading, user } = useUser();
@@ -24,12 +25,7 @@ export default function RequireAuth() {
     );
   }
 
-  if (user && !user.role) {
-    return <Navigate to="/registrationMain" replace />;
-  }
-
-  const isTeacher = user?.role?.toLowerCase() === "teacher" || user?.role?.toLowerCase() === "admin";
-  if (user && !isTeacher && !user.dateOfBirth) {
+  if (user && learnerNeedsRoleSelection(user.role)) {
     return <Navigate to="/registrationDetails" replace />;
   }
 

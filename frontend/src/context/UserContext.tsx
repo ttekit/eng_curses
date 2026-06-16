@@ -96,12 +96,9 @@ function coerceHasCompletedPlacement(raw: unknown): boolean {
 }
 
 function normalizeLearnerRole(raw: unknown): string {
-  const s = String(raw ?? "adult")
+  return String(raw ?? "")
     .trim()
     .toLowerCase();
-  if (s.length === 0) return "adult";
-  if (s === "regular") return "adult";
-  return s;
 }
 
 function normalizeProfile(raw: unknown): UserData | null {

@@ -45,6 +45,8 @@ import { nativeLanguageToIso639_1 } from "../../lib/nativeLanguageCode";
 import { sanitizeVocabularyTerm } from "../../lib/vocabularyTermSanitize";
 import { AssignHomeworkButton } from "../../components/AssignHomeworkButton";
 import { Calendar } from "lucide-react";
+import { resolveVideoAgeAccess } from "../../lib/ageEligibility";
+import { AgeVerificationModal } from "../../components/profile/AgeVerificationModal";
 
 const LESSON_XP = 150;
 const LESSON_SUMMARY_STORAGE = "lessonSummary:";
@@ -714,28 +716,15 @@ export default function ContentPage() {
 
   const isLgUp = useIsLgUp();
 
-  const isAdultUser = useMemo(() => {
-    if (!user) return false;
-    if (user.role === "adult") return true;
-    if (user.dateOfBirth) {
-      const dob = new Date(user.dateOfBirth);
-      const today = new Date();
-      let age = today.getFullYear() - dob.getFullYear();
-      if (
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      ) {
-        age--;
-      }
-      return age >= 18;
-    }
-    return false;
-  }, [user]);
+  const [ageModalOpen, setAgeModalOpen] = useState(false);
 
-  const missingDob = user && !user.dateOfBirth;
-  const is18Plus =
-    videoData?.ageRestriction === "18+" || videoData?.ageRestriction === "21+";
-  const isLocked = is18Plus && (!isAdultUser || missingDob);
+  const ageAccess = useMemo(
+    () =>
+      resolveVideoAgeAccess(user, videoData?.ageRestriction ?? undefined),
+    [user, videoData?.ageRestriction],
+  );
+  const isLocked = ageAccess !== "allowed";
+  const needsDob = ageAccess === "needs_dob";
 
   const progressedToWatchedRef = useRef(false);
   const watchCompletePostedRef = useRef(false);
@@ -1430,26 +1419,27 @@ export default function ContentPage() {
                 {isLocked ? (
                   <div className="aspect-video flex flex-col items-center justify-center bg-card/80 text-center p-6">
                     <div className="bg-destructive/20 p-4 rounded-full mb-4">
-                      {missingDob ? (
+                      {needsDob ? (
                         <Calendar className="w-10 h-10 text-destructive" />
                       ) : (
                         <Lock className="w-10 h-10 text-destructive" />
                       )}
                     </div>
-                    {missingDob ? (
+                    {needsDob ? (
                       <>
                         <h2 className="text-foreground font-bold text-2xl mb-2">
                           Age Verification Required
                         </h2>
                         <p className="text-muted-foreground text-sm max-w-md mb-5">
-                          To watch 18+ content, please specify your date of
-                          birth in your profile settings.
+                          To watch age-restricted content, please confirm your
+                          date of birth.
                         </p>
                         <button
-                          onClick={() => navigate("/profileMain?tab=settings")}
+                          type="button"
+                          onClick={() => setAgeModalOpen(true)}
                           className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 px-6 rounded-xl transition-colors cursor-pointer"
                         >
-                          Go to Settings
+                          Verify age
                         </button>
                       </>
                     ) : (
@@ -1629,6 +1619,11 @@ export default function ContentPage() {
           </div>
         </div>
       </main>
+      <AgeVerificationModal
+        isOpen={ageModalOpen}
+        onClose={() => setAgeModalOpen(false)}
+        ageRestriction={videoData?.ageRestriction ?? undefined}
+      />
     </div>
   );
 }

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { UserData } from "../context/UserContext";
 import {
   learnerNeedsPlacement,
+  learnerNeedsRoleSelection,
   resolvePlacementPhase,
   resolvePostLoginPath,
+  resolveRegistrationCompletionPath,
 } from "./learnerOnboarding";
 
 function mockUser(partial: Partial<UserData>): UserData {
@@ -118,5 +120,32 @@ describe("resolvePlacementPhase", () => {
 describe("learnerNeedsPlacement", () => {
   it("is false for admin", () => {
     expect(learnerNeedsPlacement(mockUser({ role: "admin" }))).toBe(false);
+  });
+});
+
+describe("learnerNeedsRoleSelection", () => {
+  it("is true for regular and choose roles", () => {
+    expect(learnerNeedsRoleSelection("regular")).toBe(true);
+    expect(learnerNeedsRoleSelection("choose")).toBe(true);
+    expect(learnerNeedsRoleSelection("")).toBe(true);
+  });
+
+  it("is false for completed roles", () => {
+    expect(learnerNeedsRoleSelection("adult")).toBe(false);
+    expect(learnerNeedsRoleSelection("student")).toBe(false);
+  });
+});
+
+describe("resolveRegistrationCompletionPath", () => {
+  it("sends incomplete role back to step 2", () => {
+    expect(
+      resolveRegistrationCompletionPath(mockUser({ role: "regular" })),
+    ).toBe("/registrationDetails");
+  });
+
+  it("sends completed learner to catalog", () => {
+    expect(
+      resolveRegistrationCompletionPath(mockUser({ role: "adult" })),
+    ).toBe("/catalog");
   });
 });

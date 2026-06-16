@@ -46,6 +46,22 @@ export const landingEn = {
     title: "Lesson catalog",
     description:
       "Choose videos by level and interests. Adaptive English learning on Explys.",
+    welcomeBack: "Welcome back",
+    welcomeFallback: "Learner",
+    streakLabel: "Day streak",
+    ageVerification: {
+      title: "Age verification",
+      lead: "This video is rated {age}. Enter your date of birth to continue.",
+      dateLabel: "Date of birth",
+      continue: "Continue",
+      cancel: "Cancel",
+      saving: "Saving…",
+      closeAria: "Close",
+      saveFailed: "Could not save your date of birth.",
+      verifyCta: "Verify age",
+      blockedTitle: "Age restricted",
+      blockedLead: "This content is not available for your age.",
+    },
   },
 
   pricingPage: {
@@ -435,6 +451,8 @@ export const landingEn = {
         pupilNameLatinOnly:
           "Only English letters are allowed for pupil #{n}. No numbers, spaces, or symbols.",
         registrationFailedRetry: "Registration failed. Please try again.",
+        sessionNotFound:
+          "Your sign-in session was not found. Go back to step 1 and continue again.",
         networkCheckConnection: "Network error. Please check your connection.",
       },
       networkRegister:

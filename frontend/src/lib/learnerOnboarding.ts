@@ -31,6 +31,29 @@ export function resolvePlacementPhase(user: UserData): PlacementPhase {
 }
 
 /**
+ * True when the account still needs step-2 role selection (REGULAR / choose / empty).
+ */
+export function learnerNeedsRoleSelection(role: string | undefined): boolean {
+  const normalized = (role ?? "").trim().toLowerCase();
+  return !normalized || normalized === "choose" || normalized === "regular";
+}
+
+/**
+ * Where to send the learner after registration step 3.
+ */
+export function resolveRegistrationCompletionPath(
+  user: UserData | null,
+): string {
+  if (!user) {
+    return "/loginForm";
+  }
+  if (learnerNeedsRoleSelection(user.role)) {
+    return "/registrationDetails";
+  }
+  return "/catalog";
+}
+
+/**
  * Post-login redirect before the SPA loads the target route.
  */
 export function resolvePostLoginPath(

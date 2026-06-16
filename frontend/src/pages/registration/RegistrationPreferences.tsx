@@ -8,6 +8,7 @@ import { AuthPageSeo } from "../../lib/authPageSeo";
 import { apiFetch } from "../../lib/api";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useUser } from "../../context/UserContext";
+import { resolveRegistrationCompletionPath } from "../../lib/learnerOnboarding";
 import { LearningPurposeFields } from "../../components/registration/LearningPurposeFields";
 
 export default function RegistrationPreferences() {
@@ -37,8 +38,9 @@ export default function RegistrationPreferences() {
     }
   }, [isTeacher, navigate]);
 
-  const handleSkip = () => {
-    navigate("/catalog", { replace: true });
+  const handleSkip = async () => {
+    const profile = (await refreshProfile()) ?? user;
+    navigate(resolveRegistrationCompletionPath(profile), { replace: true });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -59,8 +61,8 @@ export default function RegistrationPreferences() {
         body: JSON.stringify(payload),
       });
       if (response.ok) {
-        await refreshProfile();
-        navigate("/catalog", { replace: true });
+        const profile = await refreshProfile();
+        navigate(resolveRegistrationCompletionPath(profile), { replace: true });
       } else {
         const errorData = await response.json();
         alert(

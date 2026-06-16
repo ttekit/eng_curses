@@ -22,6 +22,10 @@ import { useLandingLocale } from "../../context/LandingLocaleContext";
 import Turnstile from "react-turnstile";
 import { registerUser } from "../../lib/registerUser";
 import { getApiBase } from "../../lib/api";
+import {
+  DEFAULT_LEARNING_GOAL,
+  DEFAULT_TIME_HORIZON,
+} from "../../lib/learningPlan";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -155,6 +159,18 @@ export default function RegistrationMain() {
       });
 
       if (result.success) {
+        if (!result.accessToken) {
+          setErrorText(errors.sessionNotFound);
+          resetCaptcha();
+          return;
+        }
+        updateFormData({
+          name,
+          email,
+          password,
+          confirmPassword,
+          token: captchaToken,
+        });
         navigate("/registrationDetails");
       } else {
         setErrorText(result.message || errors.registrationFailed);
@@ -184,8 +200,8 @@ export default function RegistrationMain() {
       workField: "",
       favoriteGenres: [],
       hatedGenres: [],
-      learningGoal: "",
-      timeToAchieve: "",
+      learningGoal: DEFAULT_LEARNING_GOAL,
+      timeToAchieve: DEFAULT_TIME_HORIZON,
     });
   };
 

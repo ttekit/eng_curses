@@ -11,6 +11,7 @@ interface CatalogVideoRowProps {
   showProgress?: boolean;
   /** When set, shows a link to the ordered playlist page for this series. */
   seriesFriendlyLink?: string;
+  onRequestAgeVerification?: (ageRestriction: string) => void;
 }
 
 export function CatalogVideoRow({
@@ -19,6 +20,7 @@ export function CatalogVideoRow({
   videos,
   showProgress,
   seriesFriendlyLink,
+  onRequestAgeVerification,
 }: CatalogVideoRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cb = useAppMessages().videoRow;
@@ -87,6 +89,7 @@ export function CatalogVideoRow({
               key={video.id}
               video={video}
               showProgress={showProgress}
+              onRequestAgeVerification={onRequestAgeVerification}
             />
           ))}
         </div>

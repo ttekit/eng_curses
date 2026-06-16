@@ -30,7 +30,14 @@ import {
   RegistrationRoleCards,
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
-import { apiFetch } from "../../lib/api";
+import {
+  apiFetch,
+  getStoredAccessToken,
+  readApiErrorBody,
+  setStoredAccessToken,
+} from "../../lib/api";
+import { ensureRegistrationAccessToken } from "../../lib/registrationAuth";
+import { useUser } from "../../context/UserContext";
 
 interface SelectOption {
   value: string;
@@ -52,6 +59,7 @@ export default function RegistrationDetails() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { messages } = useLandingLocale();
+  const { refreshProfile } = useUser();
   const regSeo = messages.auth.registration.step1;
   const step2 = messages.auth.registration.step2;
   const grades = messages.auth.registration.grades;
@@ -64,10 +72,7 @@ export default function RegistrationDetails() {
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("exply_access_token") ||
-      localStorage.getItem("explys_access_token");
-    if (!token) return;
+    if (!getStoredAccessToken()) return;
 
     let cancelled = false;
     setTopicsLoading(true);
@@ -226,14 +231,19 @@ export default function RegistrationDetails() {
           })
           : undefined;
 
-      const userEmail = formData.email || localStorage.getItem("temp_email");
-      const registrationPayload = {
-        name: formData.name,
+      const userEmail = formData.email || localStorage.getItem("temp_email") || "";
+      const accessToken = await ensureRegistrationAccessToken({
         email: userEmail,
         password: formData.password,
-        role: formData.role.toUpperCase(),
-        dateOfBirth: formData.dateOfBirth,
+        captchaToken: formData.token,
+      });
+      if (!accessToken) {
+        setFormError(errors.sessionNotFound);
+        return;
+      }
 
+      const registrationPayload = {
+        role: formData.role.toUpperCase(),
         teacherGrades:
           formData.role === "teacher" ? formData.teacherGrades : undefined,
         teacherTopics:
@@ -246,30 +256,28 @@ export default function RegistrationDetails() {
         Object.entries(registrationPayload).filter(([, v]) => v !== undefined),
       );
 
-      const accessToken =
-        localStorage.getItem("exply_access_token") ||
-        localStorage.getItem("explys_access_token");
-
       const response = await apiFetch("/auth/update-preferences", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cleanPayload),
       });
 
-      const result = await response.json();
-
       if (response.ok) {
+        const result = (await response.json()) as {
+          generatedStudents?: unknown[];
+          students?: unknown[];
+          access_token?: string;
+        };
         localStorage.setItem("temp_email", formData.email);
 
         const userRole = formData.role;
         const students = result.generatedStudents || result.students || [];
 
-        if (result.access_token) {
-          localStorage.setItem("explys_access_token", result.access_token);
+        if (typeof result.access_token === "string" && result.access_token) {
+          setStoredAccessToken(result.access_token);
         }
+
+        await refreshProfile();
 
         if (userRole === "teacher") {
           navigate("/registrationSuccess", {
@@ -279,7 +287,7 @@ export default function RegistrationDetails() {
           navigate("/registrationPreferences");
         }
       } else {
-        setFormError(result.message || errors.registrationFailedRetry);
+        setFormError(await readApiErrorBody(response));
       }
     } catch (err) {
       console.error("Error during registration:", err);

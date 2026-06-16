@@ -8,7 +8,10 @@ import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
-import { apiFetch } from "../../lib/api";
+import {
+  saveUserDateOfBirth,
+  validateDateOfBirthInput,
+} from "../../lib/saveUserDateOfBirth";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useUser } from "../../context/UserContext";
 import type { GoogleDobDateInputProps } from "../../types/date-picker-input";
@@ -56,24 +59,9 @@ export default function GoogleDobPrompt() {
       return;
     }
 
-    const birthDate = new Date(dateOfBirth);
-    if (isNaN(birthDate.getTime())) {
-      setErrorText("Invalid date format");
-      return;
-    }
-
-    if (birthDate.getFullYear() < 1900) {
-      setErrorText("Please enter a valid year (1900 or later).");
-      return;
-    }
-
-    const today = new Date();
-    const age = Math.abs(
-      new Date(today.getTime() - birthDate.getTime()).getUTCFullYear() - 1970,
-    );
-
-    if (age < 13) {
-      setErrorText("You must be at least 13 years old.");
+    const validationError = validateDateOfBirthInput(dateOfBirth);
+    if (validationError) {
+      setErrorText(validationError);
       return;
     }
 
@@ -81,24 +69,14 @@ export default function GoogleDobPrompt() {
     setLoading(true);
 
     try {
-      const response = await apiFetch("/users/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dateOfBirth: dateOfBirth,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success("Date of birth saved!");
-        await refreshProfile();
-        navigate("/registrationDetails", { replace: true });
-      } else {
-        const errorData = await response.json();
-        setErrorText(errorData?.message || "Failed to save date of birth.");
-      }
-    } catch {
-      setErrorText("Network error. Please try again.");
+      await saveUserDateOfBirth(dateOfBirth);
+      toast.success("Date of birth saved!");
+      await refreshProfile();
+      navigate("/catalog", { replace: true });
+    } catch (err) {
+      setErrorText(
+        err instanceof Error ? err.message : "Failed to save date of birth.",
+      );
     } finally {
       setLoading(false);
     }

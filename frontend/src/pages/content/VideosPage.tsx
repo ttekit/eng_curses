@@ -20,6 +20,8 @@ import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { formatMessage } from "../../lib/formatMessage";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { CatalogWelcomeBar } from "../../components/catalog/CatalogWelcomeBar";
+import { AgeVerificationModal } from "../../components/profile/AgeVerificationModal";
 import { CatalogHero } from "../../components/catalog/CatalogHero";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { CatalogVideoRow } from "../../components/catalog/CatalogVideoRow";
@@ -42,7 +44,6 @@ import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
-import { Calendar } from "lucide-react";
 
 interface ContentVideo {
   id: number;
@@ -142,34 +143,15 @@ export default function VideoPage() {
   const levelScrollRef = useRef<HTMLDivElement>(null);
   const genreScrollRef = useRef<HTMLDivElement>(null);
   const ageScrollRef = useRef<HTMLDivElement>(null);
+  const [ageVerificationTarget, setAgeVerificationTarget] = useState<
+    string | null
+  >(null);
 
-  const isAdultUser = useMemo(() => {
-    if (!user) return false;
-    if (user.role === "adult") return true;
-    if (user.dateOfBirth) {
-      const dob = new Date(user.dateOfBirth);
-      const today = new Date();
-      let age = today.getFullYear() - dob.getFullYear();
-      if (
-        today.getMonth() < dob.getMonth() ||
-        (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
-      ) {
-        age--;
-      }
-      return age >= 18;
-    }
-    return false;
-  }, [user]);
+  const openAgeVerification = useCallback((ageRestriction: string) => {
+    setAgeVerificationTarget(ageRestriction);
+  }, []);
 
   const handleAgeSelect = (age: string) => {
-    if ((age === "18+" || age === "21+") && !isAdultUser) {
-      toast.error(
-        locale === "uk"
-          ? "Цей контент доступний лише для користувачів від 18 років."
-          : "This content is restricted to users 18 and older.",
-      );
-      return;
-    }
     setSelectedAge(age);
   };
 
@@ -661,6 +643,7 @@ export default function VideoPage() {
           >
             <div>
               <CatalogHero featured={featuredHero} />
+              <CatalogWelcomeBar />
 
               <div className="px-4 sm:px-6 lg:px-8 space-y-4 mt-5">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6 border-b border-border/60 pb-6 overflow-hidden">
@@ -859,69 +842,13 @@ export default function VideoPage() {
                       {buildFilteredTitle()}
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                      {paginatedVideos.map((video) => {
-                        const vidAge = video.ageRestriction || "0+";
-                        const is18Plus = vidAge === "18+" || vidAge === "21+";
-                        const missingDob = !user?.dateOfBirth;
-                        const isLocked =
-                          is18Plus && (!isAdultUser || missingDob);
-
-                        return (
-                          <div
-                            key={video.id}
-                            className="relative group rounded-2xl overflow-hidden"
-                          >
-                            <div
-                              className={cn(
-                                "transition-all h-full",
-                                isLocked &&
-                                  "blur-md brightness-50 pointer-events-none select-none",
-                              )}
-                            >
-                              <CatalogVideoCard video={toCardVideo(video)} />
-                            </div>
-                            {isLocked && (
-                              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 p-4 text-center">
-                                {missingDob ? (
-                                  <>
-                                    <div className="bg-destructive/20 p-2.5 rounded-full mb-2 backdrop-blur-md shadow-lg border border-destructive/30">
-                                      <Calendar className="w-6 h-6 text-destructive" />
-                                    </div>
-                                    <h3 className="text-white font-bold text-sm mb-1 drop-shadow-md">
-                                      Age Verification
-                                    </h3>
-                                    <p className="text-zinc-300 text-[11px] leading-tight font-medium mb-3 drop-shadow-md px-1">
-                                      Please set your Date of Birth.
-                                    </p>
-                                    <button
-                                      onClick={() =>
-                                        navigate("/profileMain?tab=settings")
-                                      }
-                                      className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold py-1.5 px-4 rounded-lg z-20 pointer-events-auto shadow-sm"
-                                    >
-                                      Settings
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="bg-destructive/20 p-3 rounded-full mb-3 backdrop-blur-md shadow-lg border border-destructive/30">
-                                      <Lock className="w-8 h-8 text-destructive" />
-                                    </div>
-                                    <h3 className="text-white font-bold text-lg mb-1 drop-shadow-md">
-                                      18+ Only
-                                    </h3>
-                                    <p className="text-zinc-200 text-xs leading-relaxed font-medium drop-shadow-md">
-                                      {locale === "uk"
-                                        ? "Контент недоступний"
-                                        : "Unavailable for your age"}
-                                    </p>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                      {paginatedVideos.map((video) => (
+                        <CatalogVideoCard
+                          key={video.id}
+                          video={toCardVideo(video)}
+                          onRequestAgeVerification={openAgeVerification}
+                        />
+                      ))}
                     </div>
                   </div>
                 ) : (
@@ -931,6 +858,7 @@ export default function VideoPage() {
                         title={cb.recommendedTitle}
                         description={cb.recommendedDescription}
                         videos={visibleRecommended}
+                        onRequestAgeVerification={openAgeVerification}
                       />
                     ) : null}
 
@@ -941,6 +869,7 @@ export default function VideoPage() {
                         description={row.description}
                         seriesFriendlyLink={row.seriesFriendlyLink}
                         videos={row.videos}
+                        onRequestAgeVerification={openAgeVerification}
                       />
                     ))}
                   </>
@@ -1118,6 +1047,12 @@ export default function VideoPage() {
           videos={spotlightVideos}
         />
       ) : null}
+
+      <AgeVerificationModal
+        isOpen={ageVerificationTarget !== null}
+        onClose={() => setAgeVerificationTarget(null)}
+        ageRestriction={ageVerificationTarget ?? undefined}
+      />
     </div>
   );
 }

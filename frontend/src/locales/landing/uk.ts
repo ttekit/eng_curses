@@ -48,6 +48,22 @@ export const landingUk = {
     title: "Каталог уроків",
     description:
       "Обирай відео за рівнем і інтересами. Адаптивне навчання англійської в Explys.",
+    welcomeBack: "З поверненням",
+    welcomeFallback: "Учень",
+    streakLabel: "Серія днів",
+    ageVerification: {
+      title: "Перевірка віку",
+      lead: "Це відео має рейтинг {age}. Введіть дату народження, щоб продовжити.",
+      dateLabel: "Дата народження",
+      continue: "Продовжити",
+      cancel: "Скасувати",
+      saving: "Збереження…",
+      closeAria: "Закрити",
+      saveFailed: "Не вдалося зберегти дату народження.",
+      verifyCta: "Підтвердити вік",
+      blockedTitle: "Обмеження за віком",
+      blockedLead: "Цей контент недоступний для вашого віку.",
+    },
   },
 
   pricingPage: {
@@ -441,6 +457,8 @@ export const landingUk = {
         pupilNameLatinOnly:
           "Для учня №{n} дозволені лише латинські літери. Без цифр, пробілів і символів.",
         registrationFailedRetry: "Реєстрація не вдалася. Спробуйте ще раз.",
+        sessionNotFound:
+          "Сесію входу не знайдено. Поверніться до кроку 1 і продовжіть знову.",
         networkCheckConnection: "Мережева помилка. Перевірте з'єднання.",
       },
       networkRegister:

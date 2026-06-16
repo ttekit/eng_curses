@@ -4,6 +4,10 @@ import {
   readRegistrationDraft,
   writeRegistrationDraft,
 } from "../lib/registrationStorage";
+import {
+  DEFAULT_LEARNING_GOAL,
+  DEFAULT_TIME_HORIZON,
+} from "../lib/learningPlan";
 
 export { clearRegistrationDraft } from "../lib/registrationStorage";
 
@@ -53,8 +57,8 @@ const defaultFormData: FormData = {
   workField: "",
   favoriteGenres: [],
   hatedGenres: [],
-  learningGoal: "",
-  timeToAchieve: "",
+  learningGoal: DEFAULT_LEARNING_GOAL,
+  timeToAchieve: DEFAULT_TIME_HORIZON,
   token: "",
 };
 

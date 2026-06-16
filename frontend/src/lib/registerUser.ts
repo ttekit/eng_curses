@@ -54,10 +54,6 @@ export function buildRegisterBody(formData: FormData): Record<string, unknown> {
     captchaToken: formData.token,
   };
 
-  if (formData.dateOfBirth?.trim()) {
-    body.dateOfBirth = formData.dateOfBirth.trim();
-  }
-
   if (formData.role && formData.role !== CHOOSE) {
     body.role = formData.role;
   }
