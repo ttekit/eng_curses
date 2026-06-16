@@ -14,6 +14,7 @@ export function EmailVerificationBanner() {
   const isVisible = should_show_email_verification_banner(
     isLoggedIn,
     user?.isVerified,
+    user?.hasCompletedPlacement,
   );
   const setBannerRef = useEmailVerificationBannerOffset(isVisible);
 
