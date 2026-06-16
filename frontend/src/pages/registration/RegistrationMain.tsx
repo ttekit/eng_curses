@@ -26,6 +26,7 @@ import {
   DEFAULT_LEARNING_GOAL,
   DEFAULT_TIME_HORIZON,
 } from "../../lib/learningPlan";
+import { ensureRegistrationAccessToken } from "../../lib/registrationAuth";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -159,7 +160,16 @@ export default function RegistrationMain() {
       });
 
       if (result.success) {
-        if (!result.accessToken) {
+        let hasToken = Boolean(result.accessToken);
+        if (!hasToken) {
+          const loginResult = await ensureRegistrationAccessToken({
+            email,
+            password,
+            captchaToken,
+          });
+          hasToken = loginResult.ok;
+        }
+        if (!hasToken) {
           setErrorText(errors.sessionNotFound);
           resetCaptcha();
           return;

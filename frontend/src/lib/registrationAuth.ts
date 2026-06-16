@@ -1,40 +1,53 @@
 import {
   apiFetch,
-  getStoredAccessToken,
   readApiErrorBody,
   setStoredAccessToken,
 } from "./api";
+import { parseAccessTokenFromAuthResponse } from "./authTokenResponse";
+import {
+  persistRegistrationSession,
+  readRegistrationSession,
+  restoreRegistrationAccessToken,
+} from "./registrationSession";
 
-type EnsureRegistrationAccessTokenParams = {
+export type EnsureRegistrationAccessTokenParams = {
   email: string;
   password: string;
   captchaToken?: string | null;
 };
 
+export type EnsureRegistrationAccessTokenResult =
+  | { ok: true; token: string }
+  | { ok: false; reason: "missing_credentials" | "captcha_required" | "login_failed" };
+
 /**
  * Returns a JWT for the in-progress registration flow.
- * Reuses a stored token or signs in with step-1 credentials when the session was lost.
+ * Reuses stored/session tokens or signs in with step-1 credentials (fresh CAPTCHA in prod).
  */
 export async function ensureRegistrationAccessToken(
   params: EnsureRegistrationAccessTokenParams,
-): Promise<string | null> {
-  const existing = getStoredAccessToken();
+): Promise<EnsureRegistrationAccessTokenResult> {
+  const existing = restoreRegistrationAccessToken();
   if (existing) {
-    return existing;
+    return { ok: true, token: existing };
   }
 
-  const email = params.email.trim();
-  if (!email || !params.password) {
-    return null;
+  const session = readRegistrationSession();
+  const email = params.email.trim() || session?.email.trim() || "";
+  const password = params.password || session?.password || "";
+  if (!email || !password) {
+    return { ok: false, reason: "missing_credentials" };
+  }
+
+  if (!params.captchaToken?.trim()) {
+    return { ok: false, reason: "captcha_required" };
   }
 
   const body: Record<string, string> = {
     email,
-    password: params.password,
+    password,
+    captchaToken: params.captchaToken.trim(),
   };
-  if (params.captchaToken) {
-    body.captchaToken = params.captchaToken;
-  }
 
   let response: Response;
   try {
@@ -43,29 +56,32 @@ export async function ensureRegistrationAccessToken(
       body: JSON.stringify(body),
     });
   } catch {
-    return null;
+    return { ok: false, reason: "login_failed" };
   }
 
   if (!response.ok) {
     await readApiErrorBody(response);
-    return null;
+    return { ok: false, reason: "login_failed" };
   }
 
   try {
-    const data = (await response.json()) as {
-      access_token?: string;
-      requiresTwoFactor?: boolean;
-    };
-    if (data.requiresTwoFactor) {
-      return null;
+    const data: unknown = await response.json();
+    const record =
+      data && typeof data === "object"
+        ? (data as Record<string, unknown>)
+        : null;
+    if (record?.requiresTwoFactor === true) {
+      return { ok: false, reason: "login_failed" };
     }
-    if (typeof data.access_token === "string" && data.access_token.length > 0) {
-      setStoredAccessToken(data.access_token);
-      return data.access_token;
+    const token = parseAccessTokenFromAuthResponse(data);
+    if (token) {
+      setStoredAccessToken(token);
+      persistRegistrationSession({ accessToken: token, email, password });
+      return { ok: true, token };
     }
   } catch {
-    return null;
+    return { ok: false, reason: "login_failed" };
   }
 
-  return null;
+  return { ok: false, reason: "login_failed" };
 }

@@ -9,6 +9,7 @@ import { apiFetch } from "../../lib/api";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useUser } from "../../context/UserContext";
 import { resolveRegistrationCompletionPath } from "../../lib/learnerOnboarding";
+import { clearRegistrationSession } from "../../lib/registrationSession";
 import { LearningPurposeFields } from "../../components/registration/LearningPurposeFields";
 
 export default function RegistrationPreferences() {
@@ -40,6 +41,7 @@ export default function RegistrationPreferences() {
 
   const handleSkip = async () => {
     const profile = (await refreshProfile()) ?? user;
+    clearRegistrationSession();
     navigate(resolveRegistrationCompletionPath(profile), { replace: true });
   };
 
@@ -62,6 +64,7 @@ export default function RegistrationPreferences() {
       });
       if (response.ok) {
         const profile = await refreshProfile();
+        clearRegistrationSession();
         navigate(resolveRegistrationCompletionPath(profile), { replace: true });
       } else {
         const errorData = await response.json();

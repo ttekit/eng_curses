@@ -95,6 +95,17 @@ function getBasicAuthorizationValue(): string | null {
 /**
  * Merge auth-related headers for manual `fetch` calls (same rules as `apiFetch`).
  */
+function requestSentLearnerJwt(headers: Headers): boolean {
+  if (headers.has("X-Access-Token")) {
+    return true;
+  }
+  const auth = headers.get("Authorization");
+  if (!auth?.startsWith("Bearer ")) {
+    return false;
+  }
+  return !isPlaceholderBearer(auth.slice("Bearer ".length));
+}
+
 function isPlaceholderBearer(value: string | null): boolean {
   if (!value) {
     return true;
@@ -217,8 +228,8 @@ export async function apiFetch(
   try {
     const response = await fetch(url, { ...rest, headers });
 
-    if (response.status === 401) {
-      localStorage.removeItem("exply_access_token");
+    if (response.status === 401 && requestSentLearnerJwt(headers)) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
     }
 
     if (!response.ok && isApiErrorLoggingEnabled()) {

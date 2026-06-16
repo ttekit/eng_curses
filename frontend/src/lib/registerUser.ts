@@ -1,6 +1,8 @@
 import type { FormData } from "../context/RegistrationContext";
 import { apiFetch, readApiErrorBody, setStoredAccessToken } from "./api";
+import { parseAccessTokenFromAuthResponse } from "./authTokenResponse";
 import { clearRegistrationDraft } from "./registrationStorage";
+import { persistRegistrationSession } from "./registrationSession";
 
 /** Mirrors backend `AuthService` `GeneratedStudent` when `role === "teacher"`. */
 export type GeneratedStudentAccount = {
@@ -123,22 +125,27 @@ export async function registerUser(
     let generatedStudents: GeneratedStudentAccount[] | undefined;
     let accessToken: string | undefined;
     try {
-      const data = (await response.json()) as {
-        generatedStudents?: GeneratedStudentAccount[];
-        access_token?: string;
-      };
+      const data: unknown = await response.json();
       if (
-        Array.isArray(data.generatedStudents) &&
-        data.generatedStudents.length > 0
+        data &&
+        typeof data === "object" &&
+        Array.isArray((data as { generatedStudents?: unknown }).generatedStudents)
       ) {
-        generatedStudents = data.generatedStudents;
+        const students = (data as { generatedStudents: GeneratedStudentAccount[] })
+          .generatedStudents;
+        if (students.length > 0) {
+          generatedStudents = students;
+        }
       }
-      if (
-        typeof data.access_token === "string" &&
-        data.access_token.length > 0
-      ) {
-        accessToken = data.access_token;
-        setStoredAccessToken(data.access_token);
+      const parsedToken = parseAccessTokenFromAuthResponse(data);
+      if (parsedToken) {
+        accessToken = parsedToken;
+        setStoredAccessToken(parsedToken);
+        persistRegistrationSession({
+          accessToken: parsedToken,
+          email: formData.email.trim(),
+          password: formData.password,
+        });
       }
     } catch {
       // ignore body parse

@@ -138,6 +138,7 @@ function mergeDraft(draft: unknown): FormData {
       typeof d.timeToAchieve === "string"
         ? d.timeToAchieve
         : defaultFormData.timeToAchieve,
+    token: typeof d.token === "string" ? d.token : defaultFormData.token,
   };
 }
 
