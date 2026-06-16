@@ -106,17 +106,6 @@ export class AuthService {
     );
   }
 
-  private async mark_email_verified_on_login(userId: number): Promise<void> {
-    await this.prisma.user.updateMany({
-      where: { id: userId, isVerified: false },
-      data: {
-        isVerified: true,
-        verificationCode: null,
-        verificationCodeExpires: null,
-      },
-    });
-  }
-
   private async generateStudentAccount(
     pupil: any,
     teacherId: number,
@@ -228,6 +217,8 @@ export class AuthService {
       otpExpires = new Date(Date.now() + 15 * 60 * 1000);
     }
 
+    const isVerifiedOnCreate = outboundMailDisabled;
+
     const mainUser = await prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
@@ -235,7 +226,7 @@ export class AuthService {
         name: dto.name,
         role: roleLabel as any,
         method: "CREDENTIALS",
-        isVerified: false,
+        isVerified: isVerifiedOnCreate,
         verificationCode: otpCode,
         verificationCodeExpires: otpExpires,
         subscriptionPlan: "smart",
@@ -294,7 +285,7 @@ export class AuthService {
 
     return {
       access_token: await this.jwtService.signAsync(payload),
-      isVerified: false,
+      isVerified: isVerifiedOnCreate,
       user: {
         id: mainUser.id,
         email: mainUser.email,
@@ -650,8 +641,6 @@ export class AuthService {
       );
     }
 
-    await this.mark_email_verified_on_login(user.id);
-
     const payload = { sub: user.id, email: user.email };
 
     return {
@@ -662,6 +651,7 @@ export class AuthService {
         name: user.name,
         avatarUrl: user.avatarUrl,
         role: user.role,
+        isVerified: user.isVerified,
         hasCompletedPlacement: user.hasCompletedPlacement,
 
         subscriptionPlan: user.subscriptionPlan ?? "",
@@ -902,8 +892,6 @@ export class AuthService {
     });
 
     if (existingUser) {
-      await this.mark_email_verified_on_login(existingUser.id);
-
       const linked = await this.prisma.account.findFirst({
         where: { userId: existingUser.id, provider: profile.provider },
       });

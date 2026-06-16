@@ -30,17 +30,12 @@ import {
   RegistrationRoleCards,
   type RegistrationRoleChoice,
 } from "../../components/RegistrationRoleCards";
-import Turnstile from "react-turnstile";
 import {
   apiFetch,
   readApiErrorBody,
   setStoredAccessToken,
 } from "../../lib/api";
-import { ensureRegistrationAccessToken } from "../../lib/registrationAuth";
-import {
-  readRegistrationSession,
-  restoreRegistrationAccessToken,
-} from "../../lib/registrationSession";
+import { restoreRegistrationAccessToken } from "../../lib/registrationSession";
 import { useUser } from "../../context/UserContext";
 
 interface SelectOption {
@@ -74,8 +69,6 @@ export default function RegistrationDetails() {
   >([]);
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [topicsLoadError, setTopicsLoadError] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaKey, setCaptchaKey] = useState(0);
 
   useEffect(() => {
     restoreRegistrationAccessToken();
@@ -243,24 +236,10 @@ export default function RegistrationDetails() {
           })
           : undefined;
 
-      const session = readRegistrationSession();
-      const userEmail =
-        formData.email ||
-        session?.email ||
-        localStorage.getItem("temp_email") ||
-        "";
-      const password = formData.password || session?.password || "";
-      const authResult = await ensureRegistrationAccessToken({
-        email: userEmail,
-        password,
-        captchaToken: captchaToken ?? formData.token,
-      });
-      if (!authResult.ok) {
-        if (authResult.reason === "captcha_required") {
-          setFormError(errors.captchaWait);
-        } else {
-          setFormError(authResult.message ?? errors.sessionNotFound);
-        }
+      const accessToken = restoreRegistrationAccessToken();
+      if (!accessToken) {
+        setFormError(errors.sessionNotFound);
+        setIsSubmitting(false);
         return;
       }
 
@@ -282,7 +261,7 @@ export default function RegistrationDetails() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cleanPayload),
-        token: authResult.token,
+        token: accessToken,
       });
 
       if (response.ok) {
@@ -494,26 +473,6 @@ export default function RegistrationDetails() {
 
           {emptyError && <ValidateError>{errors.selectRole}</ValidateError>}
           {formError && <ValidateError>{formError}</ValidateError>}
-
-          <div
-            className="flex justify-center py-2"
-            style={{ minHeight: "65px" }}
-          >
-            <Turnstile
-              key={captchaKey}
-              sitekey="0x4AAAAAADSk3etSiWLwGH5-"
-              onVerify={(token) => setCaptchaToken(token)}
-              onExpire={() => {
-                setCaptchaToken(null);
-                setCaptchaKey((prev) => prev + 1);
-              }}
-              onError={() => {
-                setCaptchaToken(null);
-                setCaptchaKey((prev) => prev + 1);
-              }}
-              theme="light"
-            />
-          </div>
 
           <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-start">
             <Button

@@ -1,6 +1,7 @@
+/** Shows a reminder while the learner is signed in but email is not verified yet. */
 export function should_show_email_verification_banner(
-  _isLoggedIn: boolean,
-  _isVerified: boolean | undefined,
+  isLoggedIn: boolean,
+  isVerified: boolean | undefined,
 ): boolean {
-  return false;
+  return isLoggedIn && isVerified === false;
 }
