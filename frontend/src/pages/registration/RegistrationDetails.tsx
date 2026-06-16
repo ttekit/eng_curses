@@ -259,7 +259,7 @@ export default function RegistrationDetails() {
         if (authResult.reason === "captcha_required") {
           setFormError(errors.captchaWait);
         } else {
-          setFormError(errors.sessionNotFound);
+          setFormError(authResult.message ?? errors.sessionNotFound);
         }
         return;
       }
@@ -282,6 +282,7 @@ export default function RegistrationDetails() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cleanPayload),
+        token: authResult.token,
       });
 
       if (response.ok) {

@@ -18,7 +18,11 @@ export type EnsureRegistrationAccessTokenParams = {
 
 export type EnsureRegistrationAccessTokenResult =
   | { ok: true; token: string }
-  | { ok: false; reason: "missing_credentials" | "captcha_required" | "login_failed" };
+  | {
+      ok: false;
+      reason: "missing_credentials" | "captcha_required" | "login_failed";
+      message?: string;
+    };
 
 /**
  * Returns a JWT for the in-progress registration flow.
@@ -60,8 +64,8 @@ export async function ensureRegistrationAccessToken(
   }
 
   if (!response.ok) {
-    await readApiErrorBody(response);
-    return { ok: false, reason: "login_failed" };
+    const message = await readApiErrorBody(response);
+    return { ok: false, reason: "login_failed", message };
   }
 
   try {
@@ -71,7 +75,11 @@ export async function ensureRegistrationAccessToken(
         ? (data as Record<string, unknown>)
         : null;
     if (record?.requiresTwoFactor === true) {
-      return { ok: false, reason: "login_failed" };
+      return {
+        ok: false,
+        reason: "login_failed",
+        message: "Two-factor authentication is required for this account.",
+      };
     }
     const token = parseAccessTokenFromAuthResponse(data);
     if (token) {

@@ -417,6 +417,8 @@ export const landingUk = {
         showConfirmPassword: "Показати підтвердження пароля",
         hideConfirmPassword: "Приховати підтвердження пароля",
         continue: "Далі",
+        captchaRetryLogin:
+          "Акаунт створено. Пройдіть перевірку ще раз нижче і натисніть «Далі».",
         backHome: "На головну",
         haveAccount: "Вже є акаунт?",
         logIn: "Увійти",

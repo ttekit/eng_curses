@@ -27,6 +27,7 @@ import {
   DEFAULT_TIME_HORIZON,
 } from "../../lib/learningPlan";
 import { ensureRegistrationAccessToken } from "../../lib/registrationAuth";
+import { persistRegistrationSession } from "../../lib/registrationSession";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -38,6 +39,8 @@ export default function RegistrationMain() {
 
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState<number>(0);
+  const [awaitingLoginCaptcha, setAwaitingLoginCaptcha] = useState(false);
+  const [infoText, setInfoText] = useState<string | null>(null);
 
   const { formData, updateFormData } = context;
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -146,9 +149,39 @@ export default function RegistrationMain() {
     }
 
     setErrorText(null);
+    setInfoText(null);
 
     try {
       localStorage.setItem("temp_email", email);
+      persistRegistrationSession({ email, password });
+
+      if (awaitingLoginCaptcha) {
+        const loginResult = await ensureRegistrationAccessToken({
+          email,
+          password,
+          captchaToken,
+        });
+        if (!loginResult.ok) {
+          if (loginResult.reason === "captcha_required") {
+            setErrorText(errors.captchaWait);
+          } else {
+            setErrorText(loginResult.message ?? errors.sessionNotFound);
+          }
+          resetCaptcha();
+          setInfoText(step1.captchaRetryLogin);
+          return;
+        }
+        updateFormData({
+          name,
+          email,
+          password,
+          confirmPassword,
+          token: captchaToken,
+        });
+        setAwaitingLoginCaptcha(false);
+        navigate("/registrationDetails");
+        return;
+      }
 
       const result = await registerUser({
         ...formData,
@@ -160,28 +193,21 @@ export default function RegistrationMain() {
       });
 
       if (result.success) {
-        let hasToken = Boolean(result.accessToken);
-        if (!hasToken) {
-          const loginResult = await ensureRegistrationAccessToken({
+        if (result.accessToken) {
+          updateFormData({
+            name,
             email,
             password,
-            captchaToken,
+            confirmPassword,
+            token: captchaToken,
           });
-          hasToken = loginResult.ok;
-        }
-        if (!hasToken) {
-          setErrorText(errors.sessionNotFound);
-          resetCaptcha();
+          navigate("/registrationDetails");
           return;
         }
-        updateFormData({
-          name,
-          email,
-          password,
-          confirmPassword,
-          token: captchaToken,
-        });
-        navigate("/registrationDetails");
+        setAwaitingLoginCaptcha(true);
+        resetCaptcha();
+        setInfoText(step1.captchaRetryLogin);
+        return;
       } else {
         setErrorText(result.message || errors.registrationFailed);
         resetCaptcha();
@@ -342,6 +368,9 @@ export default function RegistrationMain() {
           </div>
 
           {errorText && <ValidateError>{errorText}</ValidateError>}
+          {infoText ? (
+            <p className="text-sm text-muted-foreground">{infoText}</p>
+          ) : null}
 
           <div
             className="flex justify-center py-2"

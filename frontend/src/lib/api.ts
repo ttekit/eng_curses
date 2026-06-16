@@ -10,12 +10,19 @@ export function getStoredAccessToken(): string | null {
       const urlToken = searchParams.get("token");
 
       if (urlToken && window.location.pathname.includes("/oauth/success")) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, urlToken);
-        return urlToken;
+        if (!isInvalidStoredToken(urlToken)) {
+          localStorage.setItem(ACCESS_TOKEN_KEY, urlToken);
+          return urlToken;
+        }
+        return null;
       }
     }
 
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    const raw = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (isInvalidStoredToken(raw)) {
+      return null;
+    }
+    return raw;
   } catch {
     return null;
   }
@@ -106,12 +113,20 @@ function requestSentLearnerJwt(headers: Headers): boolean {
   return !isPlaceholderBearer(auth.slice("Bearer ".length));
 }
 
-function isPlaceholderBearer(value: string | null): boolean {
+function isInvalidStoredToken(value: string | null): boolean {
   if (!value) {
     return true;
   }
   const normalized = value.trim().toLowerCase();
-  return normalized.length === 0 || normalized === "null" || normalized === "undefined";
+  return (
+    normalized.length === 0 ||
+    normalized === "null" ||
+    normalized === "undefined"
+  );
+}
+
+function isPlaceholderBearer(value: string | null): boolean {
+  return isInvalidStoredToken(value);
 }
 
 export function mergeApiAuthHeaders(
@@ -229,7 +244,10 @@ export async function apiFetch(
     const response = await fetch(url, { ...rest, headers });
 
     if (response.status === 401 && requestSentLearnerJwt(headers)) {
-      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+      }
     }
 
     if (!response.ok && isApiErrorLoggingEnabled()) {

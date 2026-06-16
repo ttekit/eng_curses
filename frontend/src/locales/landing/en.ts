@@ -412,6 +412,8 @@ export const landingEn = {
         showConfirmPassword: "Show confirm password",
         hideConfirmPassword: "Hide confirm password",
         continue: "Continue",
+        captchaRetryLogin:
+          "Account created. Complete the verification check below once more, then click Continue.",
         backHome: "Back home",
         haveAccount: "Already have an account?",
         logIn: "Log in",

@@ -13,6 +13,7 @@ import {
   getStoredAccessToken,
 } from "../lib/api";
 import { identifyLearner, resetAnalytics } from "../lib/analytics";
+import { isRegistrationFlowPath } from "../lib/registrationFlowPaths";
 
 export interface UserData {
   id: string;
@@ -310,6 +311,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const load = async () => {
       try {
         setIsLoading(true);
+        if (
+          typeof window !== "undefined" &&
+          isRegistrationFlowPath(window.location.pathname)
+        ) {
+          return;
+        }
         await refreshProfile();
       } catch (error) {
         console.error("Profile load failed:", error);

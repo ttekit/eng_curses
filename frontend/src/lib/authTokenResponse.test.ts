@@ -14,6 +14,12 @@ describe("parseAccessTokenFromAuthResponse", () => {
     );
   });
 
+  it("reads nested data.access_token", () => {
+    expect(
+      parseAccessTokenFromAuthResponse({ data: { access_token: "jwt-3" } }),
+    ).toBe("jwt-3");
+  });
+
   it("returns null for empty payloads", () => {
     expect(parseAccessTokenFromAuthResponse(null)).toBeNull();
     expect(parseAccessTokenFromAuthResponse({})).toBeNull();

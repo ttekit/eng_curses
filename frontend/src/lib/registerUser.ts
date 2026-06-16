@@ -141,14 +141,17 @@ export async function registerUser(
       if (parsedToken) {
         accessToken = parsedToken;
         setStoredAccessToken(parsedToken);
-        persistRegistrationSession({
-          accessToken: parsedToken,
-          email: formData.email.trim(),
-          password: formData.password,
-        });
       }
+      persistRegistrationSession({
+        accessToken: parsedToken ?? undefined,
+        email: formData.email.trim(),
+        password: formData.password,
+      });
     } catch {
-      // ignore body parse
+      persistRegistrationSession({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
     }
     return { success: true, generatedStudents, accessToken };
   }

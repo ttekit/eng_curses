@@ -80,7 +80,7 @@
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:ci": "jest --ci --coverage=false",
-    "deploy": "git pull && cd backend && npx prisma generate && npx prisma db push && npm run build && pm2 restart explys-backend",
+    "deploy": "git pull && npx prisma generate && npx prisma db push && npm run build && pm2 restart explys-backend",
     "seed": "npx ts-node prisma/seed.ts",
     "seed:leaderboard": "npx ts-node prisma/seed-leaderboard-users.ts",
     "copy:avatars-prod": "npx ts-node prisma/copy-avatars-from-prod.ts",
