@@ -43,7 +43,7 @@ export const appEn = {
     sectionGenre: "Genre",
     settings: "Settings",
     levelWithDot: "• {prefix} {level}",
-    appTheme: "Change platform theme: ",
+    appTheme: "Theme: ",
   },
 
   emailVerificationBanner: {

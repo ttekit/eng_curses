@@ -3,19 +3,9 @@ import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
 import { Link, useNavigate } from "react-router";
-import {
-  useContext,
-  useState,
-  ChangeEvent,
-  FormEvent,
-} from "react";
+import { useContext, useState, ChangeEvent, FormEvent } from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
@@ -168,7 +158,8 @@ export default function RegistrationMain() {
       }
 
       const hasToken =
-        Boolean(result.accessToken) || Boolean(restoreRegistrationAccessToken());
+        Boolean(result.accessToken) ||
+        Boolean(restoreRegistrationAccessToken());
       if (!hasToken) {
         setErrorText(errors.registrationFailedRetry);
         resetCaptcha();
@@ -379,7 +370,7 @@ export default function RegistrationMain() {
           <button
             type="button"
             onClick={handleGoogleRegister}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-input bg-background px-6 py-4 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-secondary cursor-pointer"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-6 py-4 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-gray-100 cursor-pointer"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path

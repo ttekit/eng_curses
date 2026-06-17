@@ -25,8 +25,8 @@ const sidebarLinkDefs = [
   { id: "classroom" as const, icon: GraduationCap, to: "/classroom" },
   { id: "myLessons" as const, icon: BookOpen, to: "/watched-lessons" },
   { id: "customise" as const, icon: SlidersHorizontal, to: "/customise" },
-  { id: "profile" as const, icon: User, to: "/profile" },
   { id: "leaderboard" as const, icon: Trophy, to: "/leaderboard" },
+  { id: "profile" as const, icon: User, to: "/profile" },
 ] as const;
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
