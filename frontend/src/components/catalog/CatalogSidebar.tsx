@@ -18,6 +18,7 @@ import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import { ThemeToggle } from "../ThemeToggle";
 import { LearnerCustomiseFab } from "./LearnerCustomiseFab";
+import { useTheme } from "../../context/ThemeContext";
 
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
@@ -99,6 +100,8 @@ export function CatalogSidebar({
   const { user } = useUser();
   const shell = useAppMessages().catalogShell;
   const common = useAppMessages().common;
+
+  const { theme } = useTheme();
 
   const sidebarLabels: Record<SidebarLinkId, string> = {
     catalog: shell.navCatalog,
@@ -211,6 +214,9 @@ export function CatalogSidebar({
               <div className="flex items-center justify-between px-4 pb-1">
                 <span className="text-[12px] text-muted-foreground tracking-wider">
                   {shell.appTheme}
+                </span>
+                <span className="text-[12px] font-semibold capitalize text-foreground">
+                  {theme}
                 </span>
                 <div className="scale-90 origin-right">
                   <ThemeToggle />

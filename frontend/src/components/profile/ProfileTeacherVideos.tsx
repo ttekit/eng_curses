@@ -1,23 +1,17 @@
-import { useCallback, useEffect, useState, useRef, forwardRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   Loader2,
   Video,
   Plus,
-  Upload,
   Trash2,
   BookOpen,
   ChevronDown,
   Clock,
   FileText,
-  CheckCircle2,
-  XCircle,
-  Check,
-  CalendarIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+
 import { apiFetch, getResponseErrorMessage } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { ProfileCard } from "./ProfileCard";
@@ -26,283 +20,42 @@ import {
   AdminButton,
   AdminModal,
   AdminInput,
-  AdminTextarea,
 } from "../../components/admin/adminUi";
 import { getErrorMessage } from "../../lib/error-message";
-import type {
-  DatePickerInputProps,
-  DatePickerWrapperProps,
-} from "../../types/date-picker-input";
 
-type TeacherVideoClassResult = {
-  id: number;
-  name: string;
-};
-
-type TeacherVideoQuizAttempt = {
-  passed: boolean;
-  scorePct: number;
-  correct?: number;
-  total?: number;
-  answers?: unknown;
-};
-
-type TeacherVideoStudentResult = {
-  id: number;
-  name: string;
-  email: string;
-  classId: number | null;
-  className: string | null;
-  attempt?: TeacherVideoQuizAttempt | null;
-};
-
-type TeacherVideoResults = {
-  contentName: string;
-  classes: TeacherVideoClassResult[];
-  students: TeacherVideoStudentResult[];
-};
-
-type QuizAnswerRow = Record<string, unknown>;
-
-function read_quiz_string(row: QuizAnswerRow, keys: string[]): string {
-  for (const key of keys) {
-    const value = row[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-  return "";
-}
-
-function read_quiz_number(row: QuizAnswerRow, keys: string[]): number {
-  for (const key of keys) {
-    const value = row[key];
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return value;
-    }
-  }
-  return -1;
-}
-
-function read_quiz_options(row: QuizAnswerRow): string[] {
-  const raw = row.options ?? row.choices;
-  if (!Array.isArray(raw)) return [];
-  return raw.filter((opt): opt is string => typeof opt === "string");
-}
-
-const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
-  (props, ref) => {
-  const { onClick, value, onChange, onKeyDown, id } = props;
-
-  return (
-    <div className="relative w-full">
-      <input
-        id={id}
-        type="date"
-        ref={ref}
-        value={value || ""}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        onClick={(e) => e.stopPropagation()}
-        onFocus={(e) => e.stopPropagation()}
-        autoComplete="off"
-        className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
-      />
-      <button
-        type="button"
-        onClick={onClick}
-        tabIndex={-1}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
-      >
-        <CalendarIcon className="size-5" />
-      </button>
-    </div>
-  );
-  },
-);
-CustomDateTimeInput.displayName = "CustomDateTimeInput";
-
-export type TeacherSeriesItem = {
-  contentId: number;
-  name: string;
-  friendlyLink: string;
-  visibility: string;
-  contentVideoId: number | null;
-  captionsReady: boolean;
-  systemTags: string[];
-  userTags: string[];
-  processingComplexity: string | null;
-  availableFrom?: string | null;
-  deadline?: string | null;
-  classesAssigned?: string;
-  classIds?: number[];
-  classAccesses?: {
-    classId: number;
-    className: string;
-    availableFrom: string | null;
-    deadline: string | null;
-  }[];
-};
-
-const ExplysDatePicker = ({
-  selected,
-  onChange,
-  id,
-  onKeyDown,
-}: DatePickerWrapperProps) => (
-  <DatePicker
-    selected={selected}
-    onChange={onChange}
-    showTimeSelect
-    timeFormat="HH:mm"
-    timeIntervals={15}
-    dateFormat="yyyy-MM-dd'T'HH:mm"
-    wrapperClassName="w-full"
-    portalId="calendar-portal"
-    preventOpenOnFocus={true}
-    customInput={<CustomDateTimeInput id={id} onKeyDown={onKeyDown} />}
-  />
-);
-
-function CustomSelect({
-  value,
-  onChange,
-  options,
-  disabled: _disabled,
-  className: _className,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  options: { value: string; label: string }[];
-  disabled?: boolean;
-  className?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find((o) => o.value === value);
-
-  return (
-    <div className="relative w-full text-sm font-medium" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex w-full items-center justify-between rounded-xl border bg-background px-3 py-2.5 text-left text-foreground focus:outline-none transition-colors cursor-pointer shadow-sm",
-          isOpen
-            ? "border-primary ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
-            : "border-input hover:border-primary/50",
-        )}
-      >
-        {/* Код внутри кнопки оставляем как есть */}
-        <span className="truncate">{selectedOption?.label || value}</span>
-        <ChevronDown
-          className={cn(
-            "ml-2 size-4 shrink-0 transition-transform opacity-70",
-            isOpen && "rotate-180 text-primary",
-          )}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl animate-in fade-in zoom-in-95">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setIsOpen(false);
-              }}
-              className={cn(
-                "flex w-full items-center px-3 py-2.5 text-left transition-colors hover:bg-muted/50",
-                value === opt.value
-                  ? "text-primary font-bold bg-primary/10"
-                  : "text-foreground",
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function generateVideoThumbnailBlob(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.playsInline = true;
-    video.muted = true;
-    video.src = URL.createObjectURL(file);
-    video.onloadeddata = () => {
-      video.currentTime = 0.1;
-    };
-    video.onseeked = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => {
-          URL.revokeObjectURL(video.src);
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Canvas blob generation failed"));
-          }
-        },
-        "image/jpeg",
-        0.85,
-      );
-    };
-    video.onerror = (e) => {
-      URL.revokeObjectURL(video.src);
-      reject(e);
-    };
-  });
-}
+import { UploadVideoModal } from "../../components/teacher-videos/UploadVideoModal";
+import {
+  EditDeadlineModal,
+  type DeadlineData,
+} from "../../components/teacher-videos/EditDeadlineModal";
+import { TeacherResultsModals } from "../../components/teacher-videos/TeacherResultsModals";
+import { TeacherSeriesItem } from "../types/teacher-videos";
+import { CustomSelect } from "../UI/CustomSelect";
 
 export function ProfileTeacherVideos() {
   const t = useAppMessages().profileTeacherVideos;
+
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
-
   const [currentTime, setCurrentTime] = useState(Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   const [activeTab, setActiveTab] = useState<"uploads" | "assigned">("uploads");
   const [series, setSeries] = useState<TeacherSeriesItem[]>([]);
   const [assignedSeries, setAssignedSeries] = useState<TeacherSeriesItem[]>([]);
-
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [filterClassId, setFilterClassId] = useState<number | "all">("all");
-
   const [visibilityBusyId, setVisibilityBusyId] = useState<number | null>(null);
 
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadDesc, setUploadDesc] = useState("");
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadSaving, setUploadSaving] = useState(false);
+  const [resultsModalOpen, setResultsModalOpen] = useState(false);
+  const [resultsContentId, setResultsContentId] = useState<number | null>(null);
+  const [editDeadlineModalOpen, setEditDeadlineModalOpen] = useState(false);
+  const [editingDeadlineId, setEditingDeadlineId] = useState<number | null>(
+    null,
+  );
+  const [deadlineInitialData, setDeadlineInitialData] =
+    useState<DeadlineData | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -313,45 +66,21 @@ export function ProfileTeacherVideos() {
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
 
-  const [editDeadlineModalOpen, setEditDeadlineModalOpen] = useState(false);
-  const [editingDeadlineId, setEditingDeadlineId] = useState<number | null>(
-    null,
-  );
-  const [editingDeadlines, setEditingDeadlines] = useState<{
-    global: { availableFrom: string; deadline: string };
-    classes: {
-      classId: number;
-      className: string;
-      availableFrom: string;
-      deadline: string;
-    }[];
-  } | null>(null);
-  const [isSavingDeadline, setIsSavingDeadline] = useState(false);
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const [assignMode, setAssignMode] = useState<"all" | "classes">("all");
-  const [deadlineMode, setDeadlineMode] = useState<
-    "none" | "close" | "open_close"
-  >("none");
-  const [openDateStr, setOpenDateStr] = useState("");
-  const [closeDateStr, setCloseDateStr] = useState("");
-  const [selectedClasses, setSelectedClasses] = useState<
-    Record<number, { availableFrom: string; deadline: string }>
-  >({});
-
-  const [abortController, setAbortController] =
-    useState<AbortController | null>(null);
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
-
-  const [resultsModalOpen, setResultsModalOpen] = useState(false);
-  const [resultsLoading, setResultsLoading] = useState(false);
-  const [videoResults, setVideoResults] = useState<TeacherVideoResults | null>(
-    null,
-  );
-  const [resultsClassFilter, setResultsClassFilter] = useState<number | "all">(
-    "all",
-  );
-  const [selectedStudentQuiz, setSelectedStudentQuiz] =
-    useState<TeacherVideoStudentResult | null>(null);
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
+        else if (revokeModalOpen && !isRevoking) setRevokeModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [deleteModalOpen, isDeleting, revokeModalOpen, isRevoking]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -393,33 +122,6 @@ export function ProfileTeacherVideos() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (selectedStudentQuiz) setSelectedStudentQuiz(null);
-        else if (resultsModalOpen) setResultsModalOpen(false);
-        else if (uploadOpen && !uploadSaving) setUploadOpen(false);
-        else if (deleteModalOpen && !isDeleting) setDeleteModalOpen(false);
-        else if (revokeModalOpen && !isRevoking) setRevokeModalOpen(false);
-        else if (editDeadlineModalOpen && !isSavingDeadline)
-          setEditDeadlineModalOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [
-    selectedStudentQuiz,
-    resultsModalOpen,
-    uploadOpen,
-    uploadSaving,
-    deleteModalOpen,
-    isDeleting,
-    revokeModalOpen,
-    isRevoking,
-    editDeadlineModalOpen,
-    isSavingDeadline,
-  ]);
 
   const updateVisibility = useCallback(
     async (contentId: number, next: "public" | "unlisted"): Promise<void> => {
@@ -463,137 +165,6 @@ export function ProfileTeacherVideos() {
     },
     [t.visibilityError],
   );
-
-  const handleUpload = async () => {
-    if (uploadSaving) return;
-
-    const name = uploadTitle.trim();
-    const description = uploadDesc.trim().slice(0, 250);
-
-    if (name.length < 2 || !uploadFile) {
-      toast.error(t.titleRequired);
-      return;
-    }
-
-    let finalOpen: string | null = null;
-    let finalClose: string | null = null;
-    let initialVisibility = "unlisted";
-
-    if (assignMode === "all") {
-      if (deadlineMode === "close") {
-        if (!closeDateStr)
-          return toast.error("Please select a closing date and time.");
-        const cDate = new Date(closeDateStr);
-        if (cDate <= new Date())
-          return toast.error("The closing deadline cannot be in the past.");
-        finalClose = cDate.toISOString();
-        initialVisibility = "public";
-      } else if (deadlineMode === "open_close") {
-        if (!openDateStr || !closeDateStr)
-          return toast.error("Please select both open and close dates.");
-        const oDate = new Date(openDateStr);
-        const cDate = new Date(closeDateStr);
-        if (oDate <= new Date())
-          return toast.error("The opening date must be in the future.");
-        if (cDate <= oDate)
-          return toast.error(
-            "The closing deadline must be AFTER the opening date.",
-          );
-        finalOpen = oDate.toISOString();
-        finalClose = cDate.toISOString();
-        initialVisibility = "unlisted";
-      } else {
-        initialVisibility = "unlisted";
-      }
-    } else {
-      initialVisibility = "unlisted";
-      if (Object.keys(selectedClasses).length === 0) {
-        return toast.error("Please select at least one class.");
-      }
-    }
-
-    setUploadSaving(true);
-    const controller = new AbortController();
-    setAbortController(controller);
-
-    try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("visibility", initialVisibility);
-      fd.append("description", description);
-
-      if (assignMode === "all") {
-        if (finalOpen) fd.append("availableFrom", finalOpen);
-        if (finalClose) fd.append("deadline", finalClose);
-      } else {
-        const assignments = Object.entries(selectedClasses).map(
-          ([cId, data]) => ({
-            classId: Number(cId),
-            availableFrom: data.availableFrom
-              ? new Date(data.availableFrom).toISOString()
-              : undefined,
-            deadline: data.deadline
-              ? new Date(data.deadline).toISOString()
-              : undefined,
-          }),
-        );
-        fd.append("classAssignments", JSON.stringify(assignments));
-      }
-
-      try {
-        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } catch (thumbErr) {
-        console.warn("Thumbnail generation failed:", thumbErr);
-      }
-
-      fd.append("file", uploadFile);
-
-      await apiFetch("/contents/teacher/upload", {
-        method: "POST",
-        body: fd,
-        signal: controller.signal,
-      });
-
-      toast.success(t.uploadSuccessToast);
-      setUploadOpen(false);
-
-      setUploadTitle("");
-      setUploadDesc("");
-      setUploadFile(null);
-      setAssignMode("all");
-      setDeadlineMode("none");
-      setOpenDateStr("");
-      setCloseDateStr("");
-      setSelectedClasses({});
-
-      await loadData();
-    } catch (e: unknown) {
-      if (e instanceof DOMException && e.name === "AbortError") {
-        toast.error(t.uploadCancelledToast);
-      } else {
-        toast.error(getErrorMessage(e, t.uploadFailed));
-      }
-    } finally {
-      setUploadSaving(false);
-      setAbortController(null);
-    }
-  };
-
-  const cancelUpload = () => {
-    if (abortController) {
-      abortController.abort();
-      setCancelConfirmOpen(false);
-      setUploadOpen(false);
-      setUploadSaving(false);
-    }
-  };
-
-  const openDeleteModal = (id: number) => {
-    setDeletingId(id);
-    setDeletePhrase("");
-    setDeleteModalOpen(true);
-  };
 
   const confirmDeleteVideo = async () => {
     if (deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase) {
@@ -640,7 +211,7 @@ export function ProfileTeacherVideos() {
 
   const openEditDeadlineModal = (item: TeacherSeriesItem) => {
     setEditingDeadlineId(item.contentId);
-    setEditingDeadlines({
+    setDeadlineInitialData({
       global: {
         availableFrom: item.availableFrom || "",
         deadline: item.deadline || "",
@@ -657,104 +228,9 @@ export function ProfileTeacherVideos() {
     setEditDeadlineModalOpen(true);
   };
 
-  const handleClassDateChange = (
-    index: number,
-    field: "availableFrom" | "deadline",
-    value: string,
-  ) => {
-    if (!editingDeadlines) return;
-    const newClasses = [...editingDeadlines.classes];
-    newClasses[index] = { ...newClasses[index], [field]: value };
-    setEditingDeadlines({ ...editingDeadlines, classes: newClasses });
-  };
-
-  const handleSaveDeadline = async () => {
-    if (!editingDeadlineId || !editingDeadlines) return;
-
-    if (editingDeadlines.global.deadline) {
-      const cDate = new Date(editingDeadlines.global.deadline);
-      if (cDate <= new Date()) {
-        return toast.error("Global closing deadline cannot be in the past.");
-      }
-      if (
-        editingDeadlines.global.availableFrom &&
-        cDate <= new Date(editingDeadlines.global.availableFrom)
-      ) {
-        return toast.error(
-          "Global closing deadline must be after opening date.",
-        );
-      }
-    }
-
-    for (const cls of editingDeadlines.classes) {
-      if (cls.deadline) {
-        const cDate = new Date(cls.deadline);
-        if (cDate <= new Date()) {
-          return toast.error(
-            `Closing deadline for ${cls.className} cannot be in the past.`,
-          );
-        }
-        if (cls.availableFrom && cDate <= new Date(cls.availableFrom)) {
-          return toast.error(
-            `Closing deadline for ${cls.className} must be after opening date.`,
-          );
-        }
-      }
-    }
-
-    setIsSavingDeadline(true);
-    try {
-      const res = await apiFetch(
-        `/contents/teacher/${editingDeadlineId}/deadlines`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            global: {
-              availableFrom: editingDeadlines.global.availableFrom || null,
-              deadline: editingDeadlines.global.deadline || null,
-            },
-            classes: editingDeadlines.classes.map((c) => ({
-              classId: c.classId,
-              availableFrom: c.availableFrom || null,
-              deadline: c.deadline || null,
-            })),
-          }),
-        },
-      );
-      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      toast.success("Deadlines updated successfully!");
-      setEditDeadlineModalOpen(false);
-      await loadData();
-    } catch (e: unknown) {
-      toast.error(getErrorMessage(e, "Failed to update deadlines."));
-    } finally {
-      setIsSavingDeadline(false);
-    }
-  };
-
-  const openResultsModal = async (contentId: number) => {
-    setResultsLoading(true);
+  const openResultsModal = (contentId: number) => {
+    setResultsContentId(contentId);
     setResultsModalOpen(true);
-    setVideoResults(null);
-    setSelectedStudentQuiz(null);
-    setResultsClassFilter("all");
-    try {
-      const res = await apiFetch(
-        `/contents/teacher/${contentId}/student-results`,
-      );
-      if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      const data = (await res.json()) as TeacherVideoResults;
-      setVideoResults(data);
-      if (data.classes?.length === 1) {
-        setResultsClassFilter(data.classes[0].id);
-      }
-    } catch (e: unknown) {
-      toast.error(getErrorMessage(e, "Failed to load results"));
-      setResultsModalOpen(false);
-    } finally {
-      setResultsLoading(false);
-    }
   };
 
   const filteredSeries = series.filter((s) => {
@@ -849,524 +325,29 @@ export function ProfileTeacherVideos() {
         </p>
       ) : null}
 
-      <AdminModal
+      {/* --- ИМПОРТИРОВАННЫЕ МОДАЛЬНЫЕ ОКНА --- */}
+      <UploadVideoModal
         open={uploadOpen}
-        onClose={() => !uploadSaving && setUploadOpen(false)}
-        title={t.uploadModalTitle}
-        footer={
-          <>
-            <AdminButton
-              variant="outline"
-              onClick={() =>
-                uploadSaving ? setCancelConfirmOpen(true) : setUploadOpen(false)
-              }
-              className="w-full sm:w-auto"
-            >
-              {uploadSaving ? t.cancelUpload : "Cancel"}
-            </AdminButton>
-            <AdminButton
-              type="submit"
-              form="upload-lesson-form"
-              disabled={uploadSaving}
-              className="w-full sm:w-auto"
-            >
-              {uploadSaving ? t.publishing : t.publish}
-            </AdminButton>
-          </>
-        }
-      >
-        <form
-          id="upload-lesson-form"
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void handleUpload();
-          }}
-        >
-          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-4 sm:p-8 text-center transition-colors hover:border-primary/50">
-            <input
-              type="file"
-              accept="video/mp4,video/x-m4v,video/*"
-              className="hidden"
-              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-            />
-            <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">{t.browseMp4}</p>
-            <p className="mt-1 text-sm text-muted-foreground break-words">
-              {uploadFile ? uploadFile.name : t.uploadHint}
-            </p>
-          </label>
+        onClose={() => setUploadOpen(false)}
+        onSuccess={loadData}
+        classes={classes}
+      />
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t.lessonTitleLabel}</label>
-            <AdminInput
-              placeholder={t.titleExample}
-              value={uploadTitle}
-              className="w-full"
-              onChange={(e) => setUploadTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {t.descriptionOptional}
-            </label>
-            <AdminTextarea
-              placeholder={t.descriptionPlaceholder}
-              value={uploadDesc}
-              className="w-full"
-              onChange={(e) => setUploadDesc(e.target.value)}
-              maxLength={250}
-            />
-          </div>
-
-          <div className="space-y-4 pt-4 mt-2 border-t border-border/50">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-primary">
-                Assign To
-              </label>
-              <CustomSelect
-                value={assignMode}
-                onChange={(val) => setAssignMode(val as "all" | "classes")}
-                options={[
-                  { value: "all", label: "All my students" },
-                  { value: "classes", label: "Specific classes" },
-                ]}
-              />
-            </div>
-
-            {assignMode === "all" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-top-1 bg-muted/20 p-4 rounded-lg border border-border">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Global Visibility Rules
-                  </label>
-                  <CustomSelect
-                    value={deadlineMode}
-                    onChange={(val) =>
-                      setDeadlineMode(val as "none" | "close" | "open_close")
-                    }
-                    options={[
-                      {
-                        value: "none",
-                        label: "Manual start/stop (Starts Private)",
-                      },
-                      {
-                        value: "close",
-                        label: "Has closing deadline (Starts Public)",
-                      },
-                      {
-                        value: "open_close",
-                        label: "Schedule open & close dates (Starts Private)",
-                      },
-                    ]}
-                  />
-                </div>
-
-                {deadlineMode === "open_close" && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Opening Date (Becomes Public)
-                    </label>
-                    <ExplysDatePicker
-                      id="upload-global-open"
-                      selected={openDateStr ? new Date(openDateStr) : null}
-                      onChange={(date: Date | null) =>
-                        setOpenDateStr(date ? date.toISOString() : "")
-                      }
-                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          document
-                            .getElementById("upload-global-close")
-                            ?.focus();
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-
-                {(deadlineMode === "close" ||
-                  deadlineMode === "open_close") && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Closing Deadline (Becomes Private)
-                    </label>
-                    <ExplysDatePicker
-                      id="upload-global-close"
-                      selected={closeDateStr ? new Date(closeDateStr) : null}
-                      onChange={(date: Date | null) =>
-                        setCloseDateStr(date ? date.toISOString() : "")
-                      }
-                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void handleUpload();
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {assignMode === "classes" && (
-              <div className="space-y-3 animate-in fade-in slide-in-from-top-1 bg-muted/20 p-4 rounded-lg border border-border">
-                <label className="text-sm font-medium text-foreground">
-                  Select classes and set personal deadlines:
-                </label>
-                {classes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground bg-background p-3 rounded-lg border border-border/50">
-                    You haven't created any classes yet. Go to the "Students"
-                    tab to create one.
-                  </p>
-                ) : (
-                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
-                    {classes.map((cls) => {
-                      const isSelected = !!selectedClasses[cls.id];
-                      const data = selectedClasses[cls.id] || {
-                        availableFrom: "",
-                        deadline: "",
-                      };
-                      return (
-                        <div
-                          key={cls.id}
-                          className={cn(
-                            "border border-border/70 rounded-xl p-4 space-y-4 transition-colors",
-                            isSelected
-                              ? "bg-primary/5 border-primary/40 shadow-sm"
-                              : "bg-background hover:border-primary/30",
-                          )}
-                        >
-                          <div
-                            onClick={() => {
-                              if (isSelected) {
-                                const next = { ...selectedClasses };
-                                delete next[cls.id];
-                                setSelectedClasses(next);
-                              } else {
-                                setSelectedClasses((p) => ({
-                                  ...p,
-                                  [cls.id]: { availableFrom: "", deadline: "" },
-                                }));
-                              }
-                            }}
-                            className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none"
-                          >
-                            <div
-                              className={cn(
-                                "size-5 rounded flex items-center justify-center transition-colors shrink-0 border",
-                                isSelected
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : "border-muted-foreground/40 bg-background",
-                              )}
-                            >
-                              {isSelected && (
-                                <Check className="size-3.5 stroke-[3]" />
-                              )}
-                            </div>
-                            <span className="text-foreground">{cls.name}</span>
-                          </div>
-
-                          {isSelected && (
-                            <div className="flex flex-col gap-4 pl-8 pt-1">
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-muted-foreground">
-                                  Open Date (Optional)
-                                </label>
-                                <ExplysDatePicker
-                                  id={`upload-open-${cls.id}`}
-                                  selected={
-                                    data.availableFrom
-                                      ? new Date(data.availableFrom)
-                                      : null
-                                  }
-                                  onChange={(date: Date | null) => {
-                                    setSelectedClasses((p) => ({
-                                      ...p,
-                                      [cls.id]: {
-                                        ...p[cls.id],
-                                        availableFrom: date
-                                          ? date.toISOString()
-                                          : "",
-                                      },
-                                    }));
-                                  }}
-                                  onKeyDown={(
-                                    e: React.KeyboardEvent<HTMLInputElement>,
-                                  ) => {
-                                    if (e.key === "Enter") {
-                                      e.preventDefault();
-                                      document
-                                        .getElementById(
-                                          `upload-close-${cls.id}`,
-                                        )
-                                        ?.focus();
-                                    }
-                                  }}
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-muted-foreground">
-                                  Deadline (Optional)
-                                </label>
-                                <ExplysDatePicker
-                                  id={`upload-close-${cls.id}`}
-                                  selected={
-                                    data.deadline
-                                      ? new Date(data.deadline)
-                                      : null
-                                  }
-                                  onChange={(date: Date | null) => {
-                                    setSelectedClasses((p) => ({
-                                      ...p,
-                                      [cls.id]: {
-                                        ...p[cls.id],
-                                        deadline: date
-                                          ? date.toISOString()
-                                          : "",
-                                      },
-                                    }));
-                                  }}
-                                  onKeyDown={(
-                                    e: React.KeyboardEvent<HTMLInputElement>,
-                                  ) => {
-                                    if (e.key === "Enter") {
-                                      e.preventDefault();
-                                      const currentIdx = classes.findIndex(
-                                        (c) => c.id === cls.id,
-                                      );
-                                      let nextId = null;
-                                      for (
-                                        let i = currentIdx + 1;
-                                        i < classes.length;
-                                        i++
-                                      ) {
-                                        if (selectedClasses[classes[i].id]) {
-                                          nextId = `upload-open-${classes[i].id}`;
-                                          break;
-                                        }
-                                      }
-                                      if (nextId) {
-                                        document
-                                          .getElementById(nextId)
-                                          ?.focus();
-                                      } else {
-                                        void handleUpload();
-                                      }
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </form>
-      </AdminModal>
-
-      <AdminModal
+      <EditDeadlineModal
         open={editDeadlineModalOpen}
-        onClose={() => !isSavingDeadline && setEditDeadlineModalOpen(false)}
-        title="Edit Deadlines"
-        footer={
-          <>
-            <AdminButton
-              variant="outline"
-              onClick={() => setEditDeadlineModalOpen(false)}
-              disabled={isSavingDeadline}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </AdminButton>
-            <AdminButton
-              onClick={handleSaveDeadline}
-              disabled={isSavingDeadline}
-              className="w-full sm:w-auto"
-            >
-              {isSavingDeadline ? "Saving..." : "Save Deadlines"}
-            </AdminButton>
-          </>
-        }
-      >
-        <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 pb-16">
-          <div className="bg-muted/10 p-4 rounded-xl border border-border">
-            <h4 className="text-sm font-bold mb-3 text-foreground">
-              Global Rules (Applies to links)
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">
-                  Opening Date
-                </label>
-                <ExplysDatePicker
-                  id="edit-global-open-date"
-                  selected={
-                    editingDeadlines?.global.availableFrom
-                      ? new Date(editingDeadlines.global.availableFrom)
-                      : null
-                  }
-                  onChange={(date: Date | null) => {
-                    if (editingDeadlines) {
-                      setEditingDeadlines({
-                        ...editingDeadlines,
-                        global: {
-                          ...editingDeadlines.global,
-                          availableFrom: date ? date.toISOString() : "",
-                        },
-                      });
-                    }
-                  }}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      document
-                        .getElementById("edit-global-close-date")
-                        ?.focus();
-                    }
-                  }}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">
-                  Closing Deadline
-                </label>
-                <ExplysDatePicker
-                  id="edit-global-close-date"
-                  selected={
-                    editingDeadlines?.global.deadline
-                      ? new Date(editingDeadlines.global.deadline)
-                      : null
-                  }
-                  onChange={(date: Date | null) => {
-                    if (editingDeadlines) {
-                      setEditingDeadlines({
-                        ...editingDeadlines,
-                        global: {
-                          ...editingDeadlines.global,
-                          deadline: date ? date.toISOString() : "",
-                        },
-                      });
-                    }
-                  }}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void handleSaveDeadline();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+        onClose={() => setEditDeadlineModalOpen(false)}
+        onSuccess={loadData}
+        contentId={editingDeadlineId}
+        initialData={deadlineInitialData}
+      />
 
-          {editingDeadlines && editingDeadlines.classes.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-bold text-foreground">
-                Specific Class Deadlines
-              </h4>
-              {editingDeadlines.classes.map((cls, idx) => (
-                <div
-                  key={cls.classId}
-                  className="bg-primary/5 p-4 rounded-xl border border-primary/20"
-                >
-                  <span className="text-sm font-bold text-primary mb-3 block">
-                    {cls.className}
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase">
-                        Opening Date
-                      </label>
-                      <ExplysDatePicker
-                        id={`edit-open-date-${cls.classId}`}
-                        selected={
-                          cls.availableFrom ? new Date(cls.availableFrom) : null
-                        }
-                        onChange={(date: Date | null) => {
-                          handleClassDateChange(
-                            idx,
-                            "availableFrom",
-                            date ? date.toISOString() : "",
-                          );
-                        }}
-                        onKeyDown={(
-                          e: React.KeyboardEvent<HTMLInputElement>,
-                        ) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            document
-                              .getElementById(`edit-close-date-${cls.classId}`)
-                              ?.focus();
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase">
-                        Closing Deadline
-                      </label>
-                      <ExplysDatePicker
-                        id={`edit-close-date-${cls.classId}`}
-                        selected={cls.deadline ? new Date(cls.deadline) : null}
-                        onChange={(date: Date | null) => {
-                          handleClassDateChange(
-                            idx,
-                            "deadline",
-                            date ? date.toISOString() : "",
-                          );
-                        }}
-                        onKeyDown={(
-                          e: React.KeyboardEvent<HTMLInputElement>,
-                        ) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            void handleSaveDeadline();
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </AdminModal>
+      <TeacherResultsModals
+        open={resultsModalOpen}
+        onClose={() => setResultsModalOpen(false)}
+        contentId={resultsContentId}
+      />
 
-      <AdminModal
-        open={cancelConfirmOpen}
-        onClose={() => setCancelConfirmOpen(false)}
-        title={t.cancelUploadTitle}
-        footer={
-          <>
-            <AdminButton
-              variant="outline"
-              onClick={() => setCancelConfirmOpen(false)}
-              className="w-full sm:w-auto"
-            >
-              {t.cancelUploadNo}
-            </AdminButton>
-            <AdminButton
-              variant="danger"
-              className="w-full sm:w-auto"
-              onClick={cancelUpload}
-            >
-              {t.cancelUploadYes}
-            </AdminButton>
-          </>
-        }
-      >
-        <p>{t.cancelUploadBody}</p>
-      </AdminModal>
-
+      {/* ЛОКАЛЬНЫЕ МОДАЛКИ (Оставлены для удаления) */}
       <AdminModal
         open={deleteModalOpen}
         onClose={() => !isDeleting && setDeleteModalOpen(false)}
@@ -1386,7 +367,7 @@ export function ProfileTeacherVideos() {
                 isDeleting ||
                 deletePhrase.trim().toLowerCase() !== t.deleteConfirmPhrase
               }
-              onClick={confirmDeleteVideo}
+              onClick={() => void confirmDeleteVideo()}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
             >
               {isDeleting ? t.deleting : t.deleteVideoCta}
@@ -1441,7 +422,7 @@ export function ProfileTeacherVideos() {
               Cancel
             </AdminButton>
             <AdminButton
-              onClick={confirmRevokeVideo}
+              onClick={() => void confirmRevokeVideo()}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground w-full sm:w-auto"
             >
               {isRevoking ? "Removing..." : "Remove Assignment"}
@@ -1456,472 +437,7 @@ export function ProfileTeacherVideos() {
         </p>
       </AdminModal>
 
-      <AdminModal
-        open={resultsModalOpen && !selectedStudentQuiz}
-        onClose={() => setResultsModalOpen(false)}
-        title={
-          videoResults ? `Tests: ${videoResults.contentName}` : "Student Tests"
-        }
-        footer={
-          <AdminButton
-            onClick={() => setResultsModalOpen(false)}
-            className="w-full sm:w-auto"
-          >
-            Close
-          </AdminButton>
-        }
-      >
-        {resultsLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="size-8 animate-spin text-primary" />
-          </div>
-        ) : videoResults ? (
-          <div className="space-y-4">
-            {videoResults.classes.length > 1 && (
-              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
-                <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">
-                  Filter by Assigned Class
-                </label>
-                <CustomSelect
-                  value={
-                    resultsClassFilter === "all"
-                      ? "all"
-                      : String(resultsClassFilter)
-                  }
-                  onChange={(val) =>
-                    setResultsClassFilter(val === "all" ? "all" : Number(val))
-                  }
-                  options={[
-                    { value: "all", label: "All Assigned Classes" },
-                    ...videoResults.classes.map((c) => ({
-                      value: String(c.id),
-                      label: c.name,
-                    })),
-                  ]}
-                />
-              </div>
-            )}
-
-            <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
-              {videoResults.students
-                .filter(
-                  (s) =>
-                    resultsClassFilter === "all" ||
-                    s.classId === resultsClassFilter,
-                )
-                .map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/60 bg-muted/10 hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold text-foreground text-sm">
-                        {s.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {s.email}
-                      </span>
-                      <span className="mt-1.5 inline-flex w-fit items-center rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">
-                        {s.className || "General (No Class)"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                      {s.attempt ? (
-                        <>
-                          <span
-                            className={cn(
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide border",
-                              s.attempt.passed
-                                ? "bg-green-500/10 text-green-500 border-green-500/20"
-                                : "bg-destructive/10 text-destructive border-destructive/20",
-                            )}
-                          >
-                            {s.attempt.passed ? (
-                              <CheckCircle2 className="size-3.5" />
-                            ) : (
-                              <XCircle className="size-3.5" />
-                            )}
-                            {Math.round(s.attempt.scorePct)}%{" "}
-                            {s.attempt.passed ? "PASS" : "FAIL"}
-                          </span>
-                          <button
-                            onClick={() => setSelectedStudentQuiz(s)}
-                            className="text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground px-4 py-2 rounded-lg transition-colors"
-                          >
-                            View Answers
-                          </button>
-                        </>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide bg-muted border border-border/50 text-muted-foreground">
-                          Not started
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-              {videoResults.students.filter(
-                (s) =>
-                  resultsClassFilter === "all" ||
-                  s.classId === resultsClassFilter,
-              ).length === 0 && (
-                <div className="py-12 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed border-border/50">
-                  No students found in this category.
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="py-12 text-center text-destructive">
-            Failed to load results.
-          </div>
-        )}
-      </AdminModal>
-
-      <AdminModal
-        open={!!selectedStudentQuiz}
-        onClose={() => setSelectedStudentQuiz(null)}
-        title={
-          selectedStudentQuiz
-            ? `Test Details: ${selectedStudentQuiz.name}`
-            : "Quiz Details"
-        }
-        footer={
-          <AdminButton
-            className="w-full sm:w-auto"
-            onClick={() => setSelectedStudentQuiz(null)}
-          >
-            Back
-          </AdminButton>
-        }
-      >
-        {selectedStudentQuiz && selectedStudentQuiz.attempt && (
-          <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-            <div className="flex justify-between items-center bg-muted/20 p-4 rounded-xl border border-border">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Final Score
-                </p>
-                <p
-                  className={cn(
-                    "text-3xl font-bold",
-                    selectedStudentQuiz.attempt.passed
-                      ? "text-accent"
-                      : "text-destructive",
-                  )}
-                >
-                  {Math.round(selectedStudentQuiz.attempt.scorePct)}%
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Result
-                </p>
-                <p className="text-xl font-bold text-foreground">
-                  {selectedStudentQuiz.attempt.correct ?? 0}{" "}
-                  <span className="text-muted-foreground text-sm">
-                    / {selectedStudentQuiz.attempt.total ?? 0} correct
-                  </span>
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 pb-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">
-                Student Answers
-              </h4>
-              {(() => {
-                let rawAnswers = selectedStudentQuiz.attempt.answers;
-
-                if (typeof rawAnswers === "string") {
-                  try {
-                    rawAnswers = JSON.parse(rawAnswers);
-                  } catch {}
-                }
-
-                if (
-                  !rawAnswers ||
-                  (typeof rawAnswers !== "object" && !Array.isArray(rawAnswers))
-                ) {
-                  return (
-                    <p className="text-sm text-muted-foreground ml-1">
-                      No detailed data recorded.
-                    </p>
-                  );
-                }
-
-                let flatData: unknown = rawAnswers;
-                const nestedAnswers = rawAnswers as Record<string, unknown>;
-                if (
-                  nestedAnswers.answers &&
-                  typeof nestedAnswers.answers === "object" &&
-                  !Array.isArray(nestedAnswers.answers)
-                ) {
-                  flatData = nestedAnswers.answers;
-                } else if (
-                  nestedAnswers.questions &&
-                  typeof nestedAnswers.questions === "object" &&
-                  !Array.isArray(nestedAnswers.questions)
-                ) {
-                  flatData = nestedAnswers.questions;
-                }
-
-                if (Array.isArray(flatData)) {
-                  return (
-                    <div className="flex flex-col gap-4">
-                      {flatData.map((entry: unknown, idx: number) => {
-                        const q: QuizAnswerRow =
-                          typeof entry === "object" && entry !== null
-                            ? (entry as QuizAnswerRow)
-                            : { text: String(entry) };
-                        const qText =
-                          read_quiz_string(q, ["question", "prompt"]) ||
-                          `Question ${idx + 1}`;
-                        const opts = read_quiz_options(q);
-                        const studentChoice = read_quiz_number(q, [
-                          "studentIndex",
-                          "studentChoice",
-                          "userAnswer",
-                          "answer",
-                        ]);
-                        const correctChoice = read_quiz_number(q, [
-                          "correctIndex",
-                          "correctChoice",
-                          "correctAnswer",
-                          "correct",
-                        ]);
-
-                        if (opts.length === 0) {
-                          const writtenAns =
-                            read_quiz_string(q, [
-                              "userAnswer",
-                              "answer",
-                              "text",
-                            ]) || String(entry);
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
-                            >
-                              <p className="font-semibold text-foreground mb-3 text-[15px]">
-                                {qText}
-                              </p>
-                              <div className="bg-background/60 border border-border/50 p-4 rounded-lg">
-                                <p className="text-[10px] font-bold text-primary tracking-wider mb-2 uppercase">
-                                  WRITTEN ANSWER
-                                </p>
-                                <p className="text-sm italic text-foreground break-words leading-relaxed">
-                                  "{writtenAns}"
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div
-                            key={idx}
-                            className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
-                          >
-                            <span className="text-[15px] text-foreground font-semibold break-words leading-snug">
-                              {qText}
-                            </span>
-                            <div className="flex flex-col gap-2.5 mt-3">
-                              {opts.map((opt: string, optIdx: number) => {
-                                const isStudentChoice =
-                                  studentChoice === optIdx;
-                                const isCorrectChoice =
-                                  correctChoice === optIdx;
-
-                                let variantClass =
-                                  "border-border/40 bg-background/40 text-muted-foreground";
-                                let badgeClass =
-                                  "bg-background border border-border/50 text-muted-foreground";
-
-                                if (isCorrectChoice && isStudentChoice) {
-                                  variantClass =
-                                    "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400 font-medium shadow-sm";
-                                  badgeClass =
-                                    "bg-green-500 text-white border-green-500";
-                                } else if (isStudentChoice) {
-                                  variantClass =
-                                    "border-destructive/40 bg-destructive/10 text-destructive font-medium shadow-sm";
-                                  badgeClass =
-                                    "bg-destructive text-white border-destructive";
-                                } else if (isCorrectChoice) {
-                                  variantClass =
-                                    "border-green-500/30 bg-background text-green-600 dark:text-green-400";
-                                  badgeClass =
-                                    "bg-green-500/20 text-green-600 border-green-500/30";
-                                }
-
-                                return (
-                                  <div
-                                    key={optIdx}
-                                    className={cn(
-                                      "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors",
-                                      variantClass,
-                                    )}
-                                  >
-                                    <span
-                                      className={cn(
-                                        "flex items-center justify-center shrink-0 rounded-md size-6 text-[11px] font-bold",
-                                        badgeClass,
-                                      )}
-                                    >
-                                      {String.fromCharCode(65 + optIdx)}
-                                    </span>
-                                    <span className="break-words leading-tight flex-1">
-                                      {opt}
-                                    </span>
-                                    {isCorrectChoice && isStudentChoice && (
-                                      <CheckCircle2 className="size-4 shrink-0" />
-                                    )}
-                                    {isStudentChoice && !isCorrectChoice && (
-                                      <XCircle className="size-4 shrink-0" />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                }
-
-                const answerMap = rawAnswers as Record<string, unknown>;
-                const baseKeys = Object.keys(answerMap).filter(
-                  (k) =>
-                    !k.endsWith("_text") &&
-                    !k.endsWith("_options") &&
-                    !k.endsWith("_correct") &&
-                    !k.endsWith("_question") &&
-                    k !== "summaryText" &&
-                    k !== "summary" &&
-                    k !== "open",
-                );
-
-                return (
-                  <div className="flex flex-col gap-4">
-                    {baseKeys.map((key) => {
-                      const val = answerMap[key];
-                      const qTextRaw = answerMap[`${key}_question`];
-                      const qText =
-                        typeof qTextRaw === "string" && qTextRaw.trim()
-                          ? qTextRaw
-                          : `Question ${key.toUpperCase()}`;
-                      let opts = answerMap[`${key}_options`];
-                      const corr = answerMap[`${key}_correct`];
-
-                      if (typeof opts === "string") {
-                        try {
-                          opts = JSON.parse(opts);
-                        } catch {}
-                      }
-
-                      if (Array.isArray(opts)) {
-                        const studentIdx = Number(val);
-                        const correctIdx = Number(corr);
-                        return (
-                          <div
-                            key={key}
-                            className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
-                          >
-                            <p className="font-semibold text-foreground mb-4 text-[15px]">
-                              {qText}
-                            </p>
-                            <div className="flex flex-col gap-2.5">
-                              {opts.map((opt: string, idx: number) => {
-                                const isStudent = studentIdx === idx;
-                                const isCorrect = correctIdx === idx;
-
-                                let variantClass =
-                                  "border-border/40 bg-background/40 text-muted-foreground";
-                                let badgeClass =
-                                  "bg-background border border-border/50 text-muted-foreground";
-
-                                if (isCorrect && isStudent) {
-                                  variantClass =
-                                    "border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400 font-medium shadow-sm";
-                                  badgeClass =
-                                    "bg-green-500 text-white border-green-500";
-                                } else if (isStudent) {
-                                  variantClass =
-                                    "border-destructive/40 bg-destructive/10 text-destructive font-medium shadow-sm";
-                                  badgeClass =
-                                    "bg-destructive text-white border-destructive";
-                                } else if (isCorrect) {
-                                  variantClass =
-                                    "border-green-500/30 bg-background text-green-600 dark:text-green-400";
-                                  badgeClass =
-                                    "bg-green-500/20 text-green-600 border-green-500/30";
-                                }
-
-                                return (
-                                  <div
-                                    key={idx}
-                                    className={cn(
-                                      "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors",
-                                      variantClass,
-                                    )}
-                                  >
-                                    <span
-                                      className={cn(
-                                        "flex items-center justify-center shrink-0 rounded-md size-6 text-[11px] font-bold",
-                                        badgeClass,
-                                      )}
-                                    >
-                                      {String.fromCharCode(65 + idx)}
-                                    </span>
-                                    <span className="break-words leading-tight flex-1">
-                                      {opt}
-                                    </span>
-                                    {isCorrect && isStudent && (
-                                      <CheckCircle2 className="size-4 shrink-0" />
-                                    )}
-                                    {isStudent && !isCorrect && (
-                                      <XCircle className="size-4 shrink-0" />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (typeof val === "object" && val !== null) return null;
-
-                      return (
-                        <div
-                          key={key}
-                          className="bg-muted/10 border border-border/60 rounded-xl p-5 shadow-sm"
-                        >
-                          <p className="font-semibold text-foreground mb-3 text-[15px]">
-                            {qText}
-                          </p>
-                          <div className="bg-background/60 border border-border/50 p-4 rounded-lg">
-                            <p className="text-[10px] font-bold text-primary tracking-wider mb-2 uppercase">
-                              WRITTEN ANSWER
-                            </p>
-                            <p className="text-sm italic text-foreground break-words leading-relaxed">
-                              "{String(val ?? "")}"
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
-      </AdminModal>
-
+      {/* --- ТАБЛИЦЫ --- */}
       {activeTab === "uploads" &&
         (filteredSeries.length === 0 ? (
           <ProfileCard title={t.cardTitle}>
@@ -1975,8 +491,6 @@ export function ProfileTeacherVideos() {
                     );
                     const now = new Date(currentTime);
 
-                    const computedVis = vis;
-
                     return (
                       <tr
                         key={s.contentId}
@@ -1986,34 +500,18 @@ export function ProfileTeacherVideos() {
                           <div className="text-foreground text-base font-bold truncate max-w-[200px]">
                             {s.name}
                           </div>
-
-                          {s.processingComplexity ? (
-                            <div
-                              className="text-muted-foreground mt-2 text-xs truncate"
-                              style={{
-                                maxWidth: "200px",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
+                          {s.processingComplexity && (
+                            <div className="text-muted-foreground mt-2 text-xs truncate max-w-[200px]">
                               {t.processingPrefix} {s.processingComplexity}
                             </div>
-                          ) : null}
-                          {tags.length > 0 ? (
-                            <div
-                              className="text-muted-foreground mt-1.5 text-xs truncate"
-                              style={{
-                                maxWidth: "200px",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
+                          )}
+                          {tags.length > 0 && (
+                            <div className="text-muted-foreground mt-1.5 text-xs truncate max-w-[200px]">
                               {tags.join(" · ")}
                             </div>
-                          ) : null}
+                          )}
                         </td>
 
-                        {/* НОВАЯ КОЛОНКА ДЛЯ КЛАССОВ И ДЕДЛАЙНОВ */}
                         <td className="p-4 align-top">
                           {s.classAccesses && s.classAccesses.length > 0 ? (
                             <details className="group">
@@ -2033,39 +531,35 @@ export function ProfileTeacherVideos() {
                                       {ca.className}
                                     </span>
                                     <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
-                                      {ca.availableFrom ? (
-                                        <span>
-                                          Opens:{" "}
-                                          {new Date(
-                                            ca.availableFrom,
-                                          ).toLocaleString("en-GB", {
-                                            dateStyle: "short",
-                                            timeStyle: "short",
-                                          })}
-                                        </span>
-                                      ) : (
-                                        <span>Opens: Now</span>
-                                      )}
-                                      {ca.deadline ? (
-                                        <span
-                                          className={
-                                            new Date(ca.deadline) < now
-                                              ? "text-destructive font-medium"
-                                              : "text-amber-500 font-medium"
-                                          }
-                                        >
-                                          Closes:{" "}
-                                          {new Date(ca.deadline).toLocaleString(
-                                            "en-GB",
-                                            {
+                                      <span>
+                                        Opens:{" "}
+                                        {ca.availableFrom
+                                          ? new Date(
+                                              ca.availableFrom,
+                                            ).toLocaleString("en-GB", {
                                               dateStyle: "short",
                                               timeStyle: "short",
-                                            },
-                                          )}
-                                        </span>
-                                      ) : (
-                                        <span>Closes: Never</span>
-                                      )}
+                                            })
+                                          : "Now"}
+                                      </span>
+                                      <span
+                                        className={
+                                          ca.deadline &&
+                                          new Date(ca.deadline) < now
+                                            ? "text-destructive font-medium"
+                                            : "text-amber-500 font-medium"
+                                        }
+                                      >
+                                        Closes:{" "}
+                                        {ca.deadline
+                                          ? new Date(
+                                              ca.deadline,
+                                            ).toLocaleString("en-GB", {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            })
+                                          : "Never"}
+                                      </span>
                                     </div>
                                   </div>
                                 ))}
@@ -2076,40 +570,36 @@ export function ProfileTeacherVideos() {
                               <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
                                 Global Catalog
                               </span>
-                              {s.availableFrom ? (
-                                <span>
-                                  Opens:{" "}
-                                  {new Date(s.availableFrom).toLocaleString(
-                                    "en-GB",
-                                    {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    },
-                                  )}
-                                </span>
-                              ) : (
-                                <span>Opens: Now</span>
-                              )}
-                              {s.deadline ? (
-                                <span
-                                  className={
-                                    new Date(s.deadline) < now
-                                      ? "text-destructive font-medium"
-                                      : "text-amber-500 font-medium"
-                                  }
-                                >
-                                  Closes:{" "}
-                                  {new Date(s.deadline).toLocaleString(
-                                    "en-GB",
-                                    {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    },
-                                  )}
-                                </span>
-                              ) : (
-                                <span>Closes: Never</span>
-                              )}
+                              <span>
+                                Opens:{" "}
+                                {s.availableFrom
+                                  ? new Date(s.availableFrom).toLocaleString(
+                                      "en-GB",
+                                      {
+                                        dateStyle: "short",
+                                        timeStyle: "short",
+                                      },
+                                    )
+                                  : "Now"}
+                              </span>
+                              <span
+                                className={
+                                  s.deadline && new Date(s.deadline) < now
+                                    ? "text-destructive font-medium"
+                                    : "text-amber-500 font-medium"
+                                }
+                              >
+                                Closes:{" "}
+                                {s.deadline
+                                  ? new Date(s.deadline).toLocaleString(
+                                      "en-GB",
+                                      {
+                                        dateStyle: "short",
+                                        timeStyle: "short",
+                                      },
+                                    )
+                                  : "Never"}
+                              </span>
                             </div>
                           )}
                         </td>
@@ -2129,23 +619,19 @@ export function ProfileTeacherVideos() {
                           </span>
                         </td>
                         <td className="p-4 align-top">
-                          <div
-                            className="flex flex-col items-start gap-1.5"
-                            style={{ width: "130px" }}
-                          >
+                          <div className="flex flex-col items-start gap-1.5 w-[130px]">
                             <CustomSelect
-                              value={computedVis}
+                              value={vis}
                               disabled={
                                 busy || Boolean(s.availableFrom || s.deadline)
                               }
                               onChange={(val) => {
-                                if (val !== "public" && val !== "unlisted")
-                                  return;
-                                if (val === s.visibility) return;
-                                void updateVisibility(
-                                  s.contentId,
-                                  val as "public" | "unlisted",
-                                );
+                                if (
+                                  (val === "public" || val === "unlisted") &&
+                                  val !== s.visibility
+                                ) {
+                                  void updateVisibility(s.contentId, val);
+                                }
                               }}
                               options={[
                                 { value: "public", label: t.visibilityPublic },
@@ -2156,17 +642,17 @@ export function ProfileTeacherVideos() {
                               ]}
                               className="py-1.5 font-semibold"
                             />
-                            {busy ? (
+                            {busy && (
                               <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
                                 <Loader2 className="size-3.5 animate-spin shrink-0" />
                                 {t.visibilitySaving}
                               </span>
-                            ) : null}
+                            )}
                           </div>
                         </td>
                         <td className="p-4 align-top text-right">
                           <div className="flex items-center justify-end gap-1 sm:gap-2">
-                            {s.contentVideoId != null ? (
+                            {s.contentVideoId != null && (
                               <Link
                                 to={`/content/${s.contentVideoId}`}
                                 className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
@@ -2174,7 +660,7 @@ export function ProfileTeacherVideos() {
                               >
                                 <Video className="size-4.5" />
                               </Link>
-                            ) : null}
+                            )}
                             <button
                               onClick={() => openResultsModal(s.contentId)}
                               className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
@@ -2190,7 +676,11 @@ export function ProfileTeacherVideos() {
                               <Clock className="size-4.5" />
                             </button>
                             <button
-                              onClick={() => openDeleteModal(s.contentId)}
+                              onClick={() => {
+                                setDeletingId(s.contentId);
+                                setDeletePhrase("");
+                                setDeleteModalOpen(true);
+                              }}
                               className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
                               title={t.deleteVideoAria}
                             >
@@ -2207,6 +697,7 @@ export function ProfileTeacherVideos() {
           </div>
         ))}
 
+      {/* ТАБЛИЦА ASSIGNED (Практически такая же, как Uploads) */}
       {activeTab === "assigned" &&
         (filteredAssignedSeries.length === 0 ? (
           <ProfileCard title="Assigned Homework">
@@ -2233,12 +724,11 @@ export function ProfileTeacherVideos() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSeries.map((s) => {
+                {filteredAssignedSeries.map((s) => {
                   const busy = visibilityBusyId === s.contentId;
                   const vis = s.visibility.trim().toLowerCase();
                   const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
                   const now = new Date(currentTime);
-                  const computedVis = vis;
 
                   return (
                     <tr
@@ -2249,16 +739,16 @@ export function ProfileTeacherVideos() {
                         <div className="text-foreground text-base font-bold truncate max-w-[200px]">
                           {s.name}
                         </div>
-                        {s.processingComplexity ? (
+                        {s.processingComplexity && (
                           <div className="text-muted-foreground mt-2 text-xs truncate max-w-[200px]">
                             {t.processingPrefix} {s.processingComplexity}
                           </div>
-                        ) : null}
-                        {tags.length > 0 ? (
+                        )}
+                        {tags.length > 0 && (
                           <div className="text-muted-foreground mt-1.5 text-xs truncate max-w-[200px]">
                             {tags.join(" · ")}
                           </div>
-                        ) : null}
+                        )}
                       </td>
 
                       <td className="p-4 align-top">
@@ -2280,39 +770,36 @@ export function ProfileTeacherVideos() {
                                     {ca.className}
                                   </span>
                                   <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
-                                    {ca.availableFrom ? (
-                                      <span>
-                                        Opens:{" "}
-                                        {new Date(
-                                          ca.availableFrom,
-                                        ).toLocaleString("en-GB", {
-                                          dateStyle: "short",
-                                          timeStyle: "short",
-                                        })}
-                                      </span>
-                                    ) : (
-                                      <span>Opens: Now</span>
-                                    )}
-                                    {ca.deadline ? (
-                                      <span
-                                        className={
-                                          new Date(ca.deadline) < now
-                                            ? "text-destructive font-medium"
-                                            : "text-amber-500 font-medium"
-                                        }
-                                      >
-                                        Closes:{" "}
-                                        {new Date(ca.deadline).toLocaleString(
-                                          "en-GB",
-                                          {
+                                    <span>
+                                      Opens:{" "}
+                                      {ca.availableFrom
+                                        ? new Date(
+                                            ca.availableFrom,
+                                          ).toLocaleString("en-GB", {
                                             dateStyle: "short",
                                             timeStyle: "short",
-                                          },
-                                        )}
-                                      </span>
-                                    ) : (
-                                      <span>Closes: Never</span>
-                                    )}
+                                          })
+                                        : "Now"}
+                                    </span>
+                                    <span
+                                      className={
+                                        ca.deadline &&
+                                        new Date(ca.deadline) < now
+                                          ? "text-destructive font-medium"
+                                          : "text-amber-500 font-medium"
+                                      }
+                                    >
+                                      Closes:{" "}
+                                      {ca.deadline
+                                        ? new Date(ca.deadline).toLocaleString(
+                                            "en-GB",
+                                            {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            },
+                                          )
+                                        : "Never"}
+                                    </span>
                                   </div>
                                 </div>
                               ))}
@@ -2323,34 +810,30 @@ export function ProfileTeacherVideos() {
                             <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
                               Global Catalog
                             </span>
-                            {s.availableFrom ? (
-                              <span>
-                                Opens:{" "}
-                                {new Date(s.availableFrom).toLocaleString(
-                                  "en-GB",
-                                  { dateStyle: "short", timeStyle: "short" },
-                                )}
-                              </span>
-                            ) : (
-                              <span>Opens: Now</span>
-                            )}
-                            {s.deadline ? (
-                              <span
-                                className={
-                                  new Date(s.deadline) < now
-                                    ? "text-destructive font-medium"
-                                    : "text-amber-500 font-medium"
-                                }
-                              >
-                                Closes:{" "}
-                                {new Date(s.deadline).toLocaleString("en-GB", {
-                                  dateStyle: "short",
-                                  timeStyle: "short",
-                                })}
-                              </span>
-                            ) : (
-                              <span>Closes: Never</span>
-                            )}
+                            <span>
+                              Opens:{" "}
+                              {s.availableFrom
+                                ? new Date(s.availableFrom).toLocaleString(
+                                    "en-GB",
+                                    { dateStyle: "short", timeStyle: "short" },
+                                  )
+                                : "Now"}
+                            </span>
+                            <span
+                              className={
+                                s.deadline && new Date(s.deadline) < now
+                                  ? "text-destructive font-medium"
+                                  : "text-amber-500 font-medium"
+                              }
+                            >
+                              Closes:{" "}
+                              {s.deadline
+                                ? new Date(s.deadline).toLocaleString("en-GB", {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  })
+                                : "Never"}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -2373,18 +856,17 @@ export function ProfileTeacherVideos() {
                       <td className="p-4 align-top">
                         <div className="flex flex-col items-start gap-1.5 w-[130px]">
                           <CustomSelect
-                            value={computedVis}
+                            value={vis}
                             disabled={
                               busy || Boolean(s.availableFrom || s.deadline)
                             }
                             onChange={(val) => {
-                              if (val !== "public" && val !== "unlisted")
-                                return;
-                              if (val === s.visibility) return;
-                              void updateVisibility(
-                                s.contentId,
-                                val as "public" | "unlisted",
-                              );
+                              if (
+                                (val === "public" || val === "unlisted") &&
+                                val !== s.visibility
+                              ) {
+                                void updateVisibility(s.contentId, val);
+                              }
                             }}
                             options={[
                               { value: "public", label: t.visibilityPublic },
@@ -2392,18 +874,18 @@ export function ProfileTeacherVideos() {
                             ]}
                             className="py-1.5 font-semibold"
                           />
-                          {busy ? (
+                          {busy && (
                             <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
                               <Loader2 className="size-3.5 animate-spin shrink-0" />
                               {t.visibilitySaving}
                             </span>
-                          ) : null}
+                          )}
                         </div>
                       </td>
 
                       <td className="p-4 align-top text-right">
                         <div className="inline-flex items-center justify-end gap-0.5 rounded-lg border border-border/50 bg-muted/20 p-1">
-                          {s.contentVideoId != null ? (
+                          {s.contentVideoId != null && (
                             <Link
                               to={`/content/${s.contentVideoId}`}
                               className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
@@ -2411,7 +893,7 @@ export function ProfileTeacherVideos() {
                             >
                               <Video className="size-4" />
                             </Link>
-                          ) : null}
+                          )}
                           <button
                             onClick={() => openResultsModal(s.contentId)}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
@@ -2427,9 +909,12 @@ export function ProfileTeacherVideos() {
                             <Clock className="size-4" />
                           </button>
                           <button
-                            onClick={() => openDeleteModal(s.contentId)}
+                            onClick={() => {
+                              setRevokingId(s.contentId);
+                              setRevokeModalOpen(true);
+                            }}
                             className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:shadow-sm transition-all inline-flex"
-                            title={t.deleteVideoAria}
+                            title="Remove Assignment"
                           >
                             <Trash2 className="size-4" />
                           </button>
