@@ -25,6 +25,9 @@ import { TurnstileGuard } from "./guards/turnstile.guard";
 import { LearnerJwtGuard } from "./guards/learner-jwt.guard";
 import { OptionalLearnerJwtGuard } from "./guards/optional-learner-jwt.guard";
 import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
+import { SmtpService } from "./smtp.service";
+import { UserProfile } from "src/users/user-profile.service";
+import { AccountManagementService } from "src/users/account-management.service";
 
 @Module({
   imports: [
@@ -49,6 +52,9 @@ import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
   ],
   controllers: [AuthController, PasswordRecoveryController],
   providers: [
+    SmtpService,
+    UserProfile,
+    AccountManagementService,
     AuthService,
     AuthProfileService,
     AuthLearningStatsService,
