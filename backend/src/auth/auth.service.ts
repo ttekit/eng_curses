@@ -14,12 +14,7 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { UsersService } from "src/users/users.service";
-import {
-  AuthMethod,
-  TokenType,
-  User,
-  UserRole,
-} from "@generated/prisma/client";
+import { AuthMethod, User } from "@generated/prisma/client";
 import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { ProviderService } from "./provider/provider.service";
@@ -27,13 +22,8 @@ import { EmailConfirmationService } from "./email-confirmation/email-confirmatio
 import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
 import { UpdateEmailDto } from "./dto/update-email.dto";
-import {
-  isOutboundMailDisabled,
-} from "src/common/utils/outbound-mail-disabled.util";
+import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { MailService } from "src/common/mail/mail.service";
-import { DeleteAccountDto } from "./dto/delete-account.dto";
-import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
-import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
 import { v4 as uuidv4 } from "uuid";
 import { randomInt } from "crypto";
 import { generateSecurePassword } from "src/common/utils/password.util";
@@ -152,6 +142,7 @@ export class AuthService {
       password: tempPassword,
     };
   }
+
   async register(req: Request, dto: RegisterDto) {
     const isDomainValid = await this.mailService.validateEmailDomain(dto.email);
     if (!isDomainValid) {
@@ -269,10 +260,7 @@ export class AuthService {
 
     if (dto.role === "teacher" && Array.isArray(dto.studentNames)) {
       for (const pupil of dto.studentNames) {
-        const student = await this.generateStudentAccount(
-          pupil,
-          mainUser.id,
-        );
+        const student = await this.generateStudentAccount(pupil, mainUser.id);
         generatedStudents.push(student);
       }
     }
@@ -298,169 +286,77 @@ export class AuthService {
         : "Account created. A confirmation code was sent to your email—you can confirm anytime, but it is not required to continue.",
     };
   }
-
-  async verifyEmailCode(email: string, code: string) {
-    const prisma = this.prisma as any;
-
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (!user) {
-      throw new BadRequestException("User with this email does not exist.");
-    }
-
-    if (user.isVerified) {
-      throw new BadRequestException("This account is already verified.");
-    }
-
-    if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException("Invalid confirmation code.");
-    }
-
-    if (
-      !user.verificationCodeExpires ||
-      new Date() > new Date(user.verificationCodeExpires)
-    ) {
-      throw new BadRequestException(
-        "Verification code has expired. Please request a new one.",
-      );
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        isVerified: true,
-        verificationCode: null,
-        verificationCodeExpires: null,
+  async login(dto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: dto.email.toLowerCase(),
       },
     });
 
-    const payload = { sub: updatedUser.id, email: updatedUser.email };
+    if (!user || !user.password) {
+      throw new UnauthorizedException("Invalid credentials");
+    }
+    if (user.deletionScheduledAt) {
+      if (user.deletionScheduledAt > new Date()) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { deletionScheduledAt: null },
+        });
+
+        await this.prisma.token.deleteMany({
+          where: { email: user.email, type: "ACCOUNT_RESTORE" },
+        });
+      } else {
+        throw new UnauthorizedException("The account has been deleted.");
+      }
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Invalid email or password");
+    }
+
+    if (user.isSuspended) {
+      throw new ForbiddenException("Account suspended");
+    }
+
+    if (user.isTwoFactorEnable) {
+      if (!dto.code) {
+        await this.twoFactorAuthService.sendTwoFactorToken(user.email);
+
+        return {
+          requiresTwoFactor: true,
+          email: user.email,
+          message:
+            "Please check your email. Two-factor authentication code is required.",
+        };
+      }
+
+      await this.twoFactorAuthService.validateTwoFactorToken(
+        user.email,
+        dto.code,
+      );
+    }
+
+    const payload = { sub: user.id, email: user.email };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-      },
-      message: "Email successfully verified. Welcome!",
-    };
-  }
-
-  async deleteAccount(userId: number, code: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException("User not found");
-
-    if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException("Invalid verification code.");
-    }
-    if (
-      !user.verificationCodeExpires ||
-      user.verificationCodeExpires < new Date()
-    ) {
-      throw new BadRequestException("Verification code has expired.");
-    }
-
-    const deletionDate = new Date();
-    deletionDate.setDate(deletionDate.getDate() + 30);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        deletionScheduledAt: deletionDate,
-        verificationCode: null,
-        verificationCodeExpires: null,
-      },
-    });
-
-    await this.prisma.token.deleteMany({ where: { email: user.email } });
-
-    const restoreToken = uuidv4();
-    await this.prisma.token.create({
-      data: {
+        id: user.id,
         email: user.email,
-        token: restoreToken,
-        type: "ACCOUNT_RESTORE",
-        expiresIn: deletionDate,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        isVerified: user.isVerified,
+        hasCompletedPlacement: user.hasCompletedPlacement,
+
+        subscriptionPlan: user.subscriptionPlan ?? "",
+        subscriptionStatus: user.subscriptionStatus ?? "",
+        stripeSubscriptionId: user.stripeSubscriptionId ?? "",
       },
-    });
-
-    const restoreLink = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/restore-account?token=${restoreToken}`;
-    await this.mailService.sendAccountDeletedEmail(
-      user.email,
-      user.name,
-      restoreLink,
-    );
-
-    return {
-      success: true,
-      message: "This account is scheduled to be deleted in 30 days.",
     };
-  }
-
-  async restoreAccount(token: string) {
-    const tokenRecord = await this.prisma.token.findUnique({
-      where: { token },
-    });
-
-    if (
-      !tokenRecord ||
-      tokenRecord.type !== "ACCOUNT_RESTORE" ||
-      tokenRecord.expiresIn < new Date()
-    ) {
-      throw new BadRequestException(
-        "The recovery link is invalid or has expired.",
-      );
-    }
-
-    await this.prisma.user.update({
-      where: { email: tokenRecord.email },
-      data: { deletionScheduledAt: null },
-    });
-
-    await this.prisma.token.delete({ where: { id: tokenRecord.id } });
-
-    return {
-      success: true,
-      message: "Your account has been successfully restored!",
-    };
-  }
-
-  public async confirmEmail(token: string) {
-    const existingToken = await this.prisma.token.findUnique({
-      where: {
-        token: token,
-      },
-    });
-
-    if (!existingToken) {
-      throw new BadRequestException("Invalid or expired verification token");
-    }
-
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: existingToken.email,
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException("User not found");
-    }
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        isVerified: true,
-      },
-    });
-
-    await this.prisma.token.delete({
-      where: { id: existingToken.id },
-    });
-
-    return { message: "Your email address has been successfully verified" };
   }
 
   async updateUserPreferences(userId: number, data: UpdatePreferencesDto) {
@@ -559,317 +455,6 @@ export class AuthService {
       ...updatedUser,
       generatedStudents:
         generatedStudents.length > 0 ? generatedStudents : undefined,
-    };
-  }
-
-  public async resendConfirmationEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-
-    if (!user) {
-      throw new NotFoundException("No user with that email address was found");
-    }
-
-    if (user.isVerified) {
-      throw new BadRequestException(
-        "This email address has already been verified. You can now log in.",
-      );
-    }
-
-    if (isOutboundMailDisabled(this.configService)) {
-      throw new BadRequestException(
-        "Outbound email is disabled on this server. Contact support if you need to verify your address.",
-      );
-    }
-
-    await this.emailConfirmationService.sendVerificationToken(user);
-
-    return { message: "A new confirmation email has been sent successfully" };
-  }
-
-  async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email.toLowerCase(),
-      },
-    });
-
-    if (!user || !user.password) {
-      throw new UnauthorizedException("Invalid credentials");
-    }
-    if (user.deletionScheduledAt) {
-      if (user.deletionScheduledAt > new Date()) {
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: { deletionScheduledAt: null },
-        });
-
-        await this.prisma.token.deleteMany({
-          where: { email: user.email, type: "ACCOUNT_RESTORE" },
-        });
-      } else {
-        throw new UnauthorizedException("The account has been deleted.");
-      }
-    }
-
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid email or password");
-    }
-
-    if (user.isSuspended) {
-      throw new ForbiddenException("Account suspended");
-    }
-
-    if (user.isTwoFactorEnable) {
-      if (!dto.code) {
-        await this.twoFactorAuthService.sendTwoFactorToken(user.email);
-
-        return {
-          requiresTwoFactor: true,
-          email: user.email,
-          message:
-            "Please check your email. Two-factor authentication code is required.",
-        };
-      }
-
-      await this.twoFactorAuthService.validateTwoFactorToken(
-        user.email,
-        dto.code,
-      );
-    }
-
-    const payload = { sub: user.id, email: user.email };
-
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatarUrl: user.avatarUrl,
-        role: user.role,
-        isVerified: user.isVerified,
-        hasCompletedPlacement: user.hasCompletedPlacement,
-
-        subscriptionPlan: user.subscriptionPlan ?? "",
-        subscriptionStatus: user.subscriptionStatus ?? "",
-        stripeSubscriptionId: user.stripeSubscriptionId ?? "",
-      },
-    };
-  }
-
-  async toggleTwoFactor(userId: number, dto: ToggleTwoFactorDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException("User not found");
-    }
-
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException("Incorrect password");
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { isTwoFactorEnable: dto.enable },
-    });
-
-    return {
-      success: true,
-      message: dto.enable
-        ? "Two-factor authentication is enabled"
-        : "Two-factor authentication is disabled",
-    };
-  }
-
-  async updatePassword(userId: number, dto: UpdatePasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException("User not found");
-    }
-
-    const isPasswordValid = await bcrypt.compare(
-      dto.currentPassword,
-      user.password,
-    );
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException("Incorrect current password");
-    }
-
-    const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        password: hashedNewPassword,
-      },
-    });
-
-    this.mailService
-      .sendPasswordChangedNotification(user.email)
-      .catch((err) => {
-        console.error(
-          `Failed to send password changed notification to ${user.email}`,
-          err,
-        );
-      });
-
-    return { message: "Password successfully updated" };
-  }
-
-  async updateEmail(userId: number, dto: UpdateEmailDto) {
-    const isDomainValid = await this.mailService.validateEmailDomain(
-      dto.newEmail,
-    );
-    if (!isDomainValid) {
-      throw new BadRequestException(
-        "The provided email domain does not exist or cannot receive mail.",
-      );
-    }
-
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.newEmail },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException(
-        "This email address is already in use by another user",
-      );
-    }
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        email: dto.newEmail,
-        verificationCode: null,
-        verificationCodeExpires: null,
-      },
-    });
-
-    return {
-      success: true,
-      message: "Your email address has been successfully updated!",
-    };
-  }
-
-  async sendEmailChangeCode(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-
-    const otpCode = randomInt(100000, 1000000).toString();
-    const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        verificationCode: otpCode,
-        verificationCodeExpires: otpExpires,
-      },
-    });
-
-    await this.mailService.sendEmailChangeCode(updatedUser.email, otpCode);
-
-    return {
-      success: true,
-      message: "The code to change your email address has been sent",
-    };
-  }
-
-  async checkEmailChangeCode(userId: number, code: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { verificationCode: true, verificationCodeExpires: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-
-    if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException("Incorrect verification code");
-    }
-
-    if (
-      !user.verificationCodeExpires ||
-      user.verificationCodeExpires < new Date()
-    ) {
-      throw new BadRequestException(
-        "The code has expired. Please send a new one.",
-      );
-    }
-
-    return {
-      success: true,
-      message: "The code has been successfully verified",
-    };
-  }
-
-  async verifyAndChangeEmail(userId: number, dto: VerifyEmailChangeDto) {
-    const newEmail = (dto as any).newEmail || (dto as any).email;
-    const code = dto.code;
-
-    const isDomainValid = await this.mailService.validateEmailDomain(newEmail);
-    if (!isDomainValid) {
-      throw new BadRequestException(
-        "The provided email domain does not exist or cannot receive mail.",
-      );
-    }
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-
-    if (!user.verificationCode || user.verificationCode !== code) {
-      throw new BadRequestException("Incorrect verification code");
-    }
-    if (
-      !user.verificationCodeExpires ||
-      user.verificationCodeExpires < new Date()
-    ) {
-      throw new BadRequestException(
-        "The code has expired. Please send a new one.",
-      );
-    }
-
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: newEmail.toLowerCase() },
-    });
-
-    if (existingUser && existingUser.id !== userId) {
-      throw new ConflictException("This email address is already in use");
-    }
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        email: newEmail.toLowerCase(),
-        verificationCode: null,
-        verificationCodeExpires: null,
-      },
-    });
-
-    return {
-      success: true,
-      message: "Your email address has been successfully updated",
     };
   }
 
@@ -974,35 +559,6 @@ export class AuthService {
     });
   }
 
-  public async saveSession(req: Request, user: Partial<User>) {
-    if (!user || !user.id) {
-      throw new UnauthorizedException(
-        "User not found or session data is missing",
-      );
-    }
-
-    const payload = { sub: user.id, email: user.email };
-    const token = await this.jwtService.signAsync(payload);
-
-    req.session.userId = user.id.toString();
-
-    return new Promise((resolve, reject) => {
-      req.session.save((err) => {
-        if (err) {
-          return reject(
-            new InternalServerErrorException(
-              "Failed to save session. Please check if session parameters are configured correctly.",
-            ),
-          );
-        }
-        resolve({
-          user,
-          token,
-        });
-      });
-    });
-  }
-
   async saveWordToVocabulary(userId: number, body: SaveWordDto) {
     if (!body.term) {
       throw new BadRequestException("Term is required");
@@ -1063,22 +619,5 @@ export class AuthService {
 
   async getProgressDetails(userId: number) {
     return this.authProgressDetailsService.get_progress_details(userId);
-  }
-
-  async sendDangerZoneCode(userId: number, action: "delete" | "reset") {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException("User not found");
-
-    const otpCode = randomInt(100000, 1000000).toString();
-    const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { verificationCode: otpCode, verificationCodeExpires: otpExpires },
-    });
-
-    await this.mailService.sendDangerZoneCode(user.email, otpCode, action);
-
-    return { success: true, message: "Verification code sent to your email." };
   }
 }

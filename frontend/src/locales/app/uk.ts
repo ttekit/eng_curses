@@ -43,7 +43,7 @@ export const appUk = {
     sectionGenre: "Жанр",
     settings: "Налаштування",
     levelWithDot: "• {prefix} {level}",
-    appTheme: "Змінити тему платформи: ",
+    appTheme: "Тема: ",
   },
 
   emailVerificationBanner: {

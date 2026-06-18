@@ -2,13 +2,11 @@ import Button from "../../components/Button";
 import LabelRegister from "../../components/LabelRegister";
 import ValidateError from "../../components/ValidateError";
 import { Link, useNavigate } from "react-router";
-import SelectRegister from "../../components/SelectRegister";
 import {
   useState,
   useContext,
   useEffect,
   useMemo,
-  ChangeEvent,
   FormEvent,
 } from "react";
 import {
@@ -40,7 +38,7 @@ import { useUser } from "../../context/UserContext";
 
 interface SelectOption {
   value: string;
-  text: string;
+  label: string;
 }
 
 interface Pupil {
@@ -125,29 +123,21 @@ export default function RegistrationDetails() {
   }, [formData.teacherTopics, learningOptionByValue]);
 
   const gradeOptions: SelectOption[] = [
-    { value: "choose", text: grades.choose },
-    { value: "1", text: grades.g1 },
-    { value: "2", text: grades.g2 },
-    { value: "3", text: grades.g3 },
-    { value: "4", text: grades.g4 },
-    { value: "5", text: grades.g5 },
-    { value: "6", text: grades.g6 },
-    { value: "7", text: grades.g7 },
-    { value: "8", text: grades.g8 },
-    { value: "9", text: grades.g9 },
-    { value: "10", text: grades.g10 },
-    { value: "11", text: grades.g11 },
-    { value: "12", text: grades.g12 },
-    { value: "university", text: grades.university },
-    { value: "tutor", text: grades.tutor },
+    { value: "1", label: grades.g1 },
+    { value: "2", label: grades.g2 },
+    { value: "3", label: grades.g3 },
+    { value: "4", label: grades.g4 },
+    { value: "5", label: grades.g5 },
+    { value: "6", label: grades.g6 },
+    { value: "7", label: grades.g7 },
+    { value: "8", label: grades.g8 },
+    { value: "9", label: grades.g9 },
+    { value: "10", label: grades.g10 },
+    { value: "11", label: grades.g11 },
+    { value: "12", label: grades.g12 },
+    { value: "university", label: grades.university },
+    { value: "tutor", label: grades.tutor },
   ];
-
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    updateFormData({ [name]: value } as Partial<FormData>);
-  };
 
   const handleRoleSelect = (role: RegistrationRoleChoice) => {
     updateFormData({ role } as Partial<FormData>);
@@ -229,11 +219,11 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-          formData.teacherTopics.length > 0
+        formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-            const num = parseInt(t.replace("topic:", ""), 10);
-            return isNaN(num) ? t : num;
-          })
+              const num = parseInt(t.replace("topic:", ""), 10);
+              return isNaN(num) ? t : num;
+            })
           : undefined;
 
       const accessToken = restoreRegistrationAccessToken();
@@ -298,7 +288,13 @@ export default function RegistrationDetails() {
       setIsSubmitting(false);
     }
   };
-
+  const selectedGradeOption = useMemo(() => {
+    if (!formData.teacherGrades || formData.teacherGrades === "choose")
+      return null;
+    return (
+      gradeOptions.find((opt) => opt.value === formData.teacherGrades) || null
+    );
+  }, [formData.teacherGrades]);
   return (
     <>
       <AuthPageSeo
@@ -355,11 +351,20 @@ export default function RegistrationDetails() {
                 <LabelRegister isRequired={true}>
                   {step2.studentGrades}
                 </LabelRegister>
-                <SelectRegister
-                  name="teacherGrades"
-                  value={formData.teacherGrades}
-                  onChange={handleChange}
+                <MultiSelect<SelectOption, false>
+                  inputId="teacher-grades"
                   options={gradeOptions}
+                  isMulti={false}
+                  value={selectedGradeOption}
+                  onChange={(selected) => {
+                    updateFormData({
+                      teacherGrades: selected
+                        ? (selected as SelectOption).value
+                        : "choose",
+                    } as Partial<FormData>);
+                  }}
+                  placeholder={grades.choose}
+                  isSearchable={false}
                 />
               </div>
 

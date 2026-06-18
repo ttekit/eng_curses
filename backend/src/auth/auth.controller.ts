@@ -48,6 +48,9 @@ import type { AuthedRequest } from "./authenticated-request.types";
 import { resolve_authed_user_id } from "./jwt-subject.util";
 import { UpdatePreferencesDto } from "./dto/update-preferences.dto";
 import { SaveWordDto } from "./dto/save-word.dto";
+import { SmtpService } from "./smtp.service";
+import { UserProfile } from "src/users/user-profile.service";
+import { AccountManagementService } from "src/users/account-management.service";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -57,6 +60,9 @@ export class AuthController {
     private readonly providerService: ProviderService,
     private readonly configService: ConfigService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
+    private readonly smtpService: SmtpService,
+    private readonly userProfile: UserProfile,
+    private readonly accountManagementService: AccountManagementService,
   ) {}
 
   @Public()
@@ -111,7 +117,7 @@ export class AuthController {
         "Email and verification code are required.",
       );
     }
-    return await this.authService.verifyEmailCode(body.email, body.code);
+    return await this.smtpService.verifyEmailCode(body.email, body.code);
   }
 
   @Public()
@@ -122,7 +128,7 @@ export class AuthController {
   @ApiOperation({ summary: "Resend email confirmation" })
   @ApiBody({ schema: { properties: { email: { type: "string" } } } })
   async resendConfirmation(@Body("email") email: string) {
-    return await this.authService.resendConfirmationEmail(email);
+    return await this.smtpService.resendConfirmationEmail(email);
   }
 
   @Public()
@@ -131,7 +137,7 @@ export class AuthController {
   @ApiOperation({ summary: "Confirm user email via token" })
   @ApiQuery({ name: "token", type: "string" })
   async confirmEmail(@Query("token") token: string) {
-    await this.authService.confirmEmail(token);
+    await this.smtpService.confirmEmail(token);
     return {
       success: true,
       message: "Email successfully confirmed",
@@ -155,7 +161,7 @@ export class AuthController {
     @Req() req: AuthedRequest,
     @Body() dto: UpdatePasswordDto,
   ) {
-    return await this.authService.updatePassword(
+    return await this.userProfile.updatePassword(
       resolve_authed_user_id(req.user),
       dto,
     );
@@ -168,7 +174,7 @@ export class AuthController {
     @Req() req: AuthedRequest,
     @Body() dto: ToggleTwoFactorDto,
   ) {
-    return this.authService.toggleTwoFactor(
+    return this.smtpService.toggleTwoFactor(
       resolve_authed_user_id(req.user),
       dto,
     );
@@ -214,7 +220,7 @@ export class AuthController {
   @Post("send-email-change-code")
   @UseGuards(AuthGuard)
   async sendEmailChangeCode(@Req() req: AuthedRequest) {
-    return this.authService.sendEmailChangeCode(
+    return this.smtpService.sendEmailChangeCode(
       resolve_authed_user_id(req.user),
     );
   }
@@ -225,7 +231,7 @@ export class AuthController {
     @Req() req: AuthedRequest,
     @Body() dto: VerifyEmailChangeDto,
   ) {
-    return this.authService.verifyAndChangeEmail(
+    return this.smtpService.verifyAndChangeEmail(
       resolve_authed_user_id(req.user),
       dto,
     );
@@ -237,7 +243,7 @@ export class AuthController {
     @Req() req: AuthedRequest,
     @Body("code") code: string,
   ) {
-    return this.authService.checkEmailChangeCode(
+    return this.smtpService.checkEmailChangeCode(
       resolve_authed_user_id(req.user),
       code,
     );
@@ -331,7 +337,9 @@ export class AuthController {
     @Param("provider") provider: string,
   ) {
     if (!code) {
-      return res.redirect(`${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm`);
+      return res.redirect(
+        `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm`,
+      );
     }
 
     try {
@@ -379,7 +387,7 @@ export class AuthController {
     if (action !== "delete" && action !== "reset") {
       throw new BadRequestException("Invalid action type");
     }
-    return await this.authService.sendDangerZoneCode(
+    return await this.accountManagementService.sendDangerZoneCode(
       resolve_authed_user_id(req.user),
       action,
     );
@@ -393,7 +401,7 @@ export class AuthController {
     @Req() req: AuthedRequest,
     @Body() body: { code: string },
   ) {
-    return await this.authService.deleteAccount(
+    return await this.accountManagementService.deleteAccount(
       resolve_authed_user_id(req.user),
       body.code,
     );
@@ -402,7 +410,7 @@ export class AuthController {
   @Public()
   @Post("restore-account")
   async restoreAccount(@Body() body: { token: string }) {
-    return this.authService.restoreAccount(body.token);
+    return this.accountManagementService.restoreAccount(body.token);
   }
 
   @Public()
@@ -410,6 +418,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Resend email confirmation code" })
   async resendVerification(@Body() body: { email: string }) {
-    return await this.authService.resendConfirmationEmail(body.email);
+    return await this.smtpService.resendConfirmationEmail(body.email);
   }
 }
