@@ -34,6 +34,11 @@ export class JwtAdminGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<AdminRequest>();
     const token = extractAccessTokenFromRequest(req);
+    const user = req.user;
+
+    if (!user || user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException("Admin access required");
+    }
     if (!token) {
       throw new UnauthorizedException("Token not found");
     }

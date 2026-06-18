@@ -14,7 +14,7 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { UsersService } from "src/users/users.service";
-import { AuthMethod, User } from "@generated/prisma/client";
+import { AuthMethod, User, UserRole } from "@generated/prisma/client";
 import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { ProviderService } from "./provider/provider.service";
@@ -430,11 +430,18 @@ export class AuthService {
 
     const hasAdditionalData = Object.keys(updateData).length > 0;
 
+    const allowedRoles: string[] = [
+      UserRole.ADULT,
+      UserRole.STUDENT,
+      UserRole.TEACHER,
+    ];
+    const roleToUpdate = data.role ? data.role.toUpperCase() : null;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.role && data.role.toUpperCase() !== "CHOOSE"
-          ? { role: data.role.toUpperCase() as any }
+        ...(roleToUpdate && allowedRoles.includes(roleToUpdate)
+          ? { role: roleToUpdate as any }
           : {}),
         ...(data.dateOfBirth
           ? { dateOfBirth: new Date(data.dateOfBirth) }

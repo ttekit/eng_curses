@@ -110,7 +110,7 @@ export default function EmailConfirmationPage() {
             </button>
           </span>
           <Link
-            to="/loginForm"
+            to="/catalog"
             className="text-muted-foreground hover:text-foreground transition-colors self-start flex items-center gap-2 mt-4"
           >
             {t.backToLogin}

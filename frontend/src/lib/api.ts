@@ -1,7 +1,7 @@
 /**
- * API client: base URL, optional nginx Basic Auth, `x-api-token`, JWT via Bearer or `X-Access-Token`.
+ * API client: base URL, optional nginx Basic Auth, JWT via httpOnly cookies.
  */
-const ACCESS_TOKEN_KEY = "exply_access_token";
+const ACCESS_TOKEN_KEY = "explys_access_token";
 
 export function getStoredAccessToken(): string | null {
   try {
@@ -99,20 +99,6 @@ function getBasicAuthorizationValue(): string | null {
   return `Basic ${encodeBasicAuthCredentials(user, password)}`;
 }
 
-/**
- * Merge auth-related headers for manual `fetch` calls (same rules as `apiFetch`).
- */
-function requestSentLearnerJwt(headers: Headers): boolean {
-  if (headers.has("X-Access-Token")) {
-    return true;
-  }
-  const auth = headers.get("Authorization");
-  if (!auth?.startsWith("Bearer ")) {
-    return false;
-  }
-  return !isPlaceholderBearer(auth.slice("Bearer ".length));
-}
-
 function isInvalidStoredToken(value: string | null): boolean {
   if (!value) {
     return true;
@@ -135,20 +121,24 @@ export function mergeApiAuthHeaders(
 ): Headers {
   const headers = new Headers(base ?? {});
   const rawAuthorization = headers.get("Authorization");
+
   if (rawAuthorization?.startsWith("Bearer ")) {
     const bearerFromHeader = rawAuthorization.slice("Bearer ".length);
     if (isPlaceholderBearer(bearerFromHeader)) {
       headers.delete("Authorization");
     }
   }
+
   let bearer: string | null | undefined;
   if (token === undefined) {
     bearer = getStoredAccessToken();
   } else {
     bearer = token ?? null;
   }
+
   const basicAuth = getBasicAuthorizationValue();
   const behindProxy = usesDevApiProxy();
+
   if (basicAuth && !behindProxy) {
     headers.set("Authorization", basicAuth);
     if (bearer) {
@@ -162,14 +152,11 @@ export function mergeApiAuthHeaders(
   } else if (bearer) {
     headers.set("Authorization", `Bearer ${bearer}`);
   }
-  const key = import.meta.env.VITE_API_TOKEN;
-  if (key) {
-    headers.set("x-api-token", key);
-  }
+
   return headers;
 }
 
-/** Parses Nest/JSON error bodies (same idea as `test-nextjs/lib/api.ts`). */
+/** Parses Nest/JSON error bodies */
 export async function readApiErrorBody(res: Response): Promise<string> {
   const t = await res.text();
   if (!t) return `Request failed (${res.status})`;
@@ -223,6 +210,7 @@ async function logFailedApiResponse(
     bodyPreview,
   );
 }
+
 export async function apiFetch(
   path: string,
   init: FetchOpts = {},
@@ -231,6 +219,7 @@ export async function apiFetch(
 
   const { token: _t, ...rest } = init;
   const headers = mergeApiAuthHeaders(rest.headers, token);
+
   if (
     rest.body != null &&
     typeof rest.body === "string" &&
@@ -238,15 +227,25 @@ export async function apiFetch(
   ) {
     headers.set("Content-Type", "application/json");
   }
+
   const url = apiPath(path);
   const method = (rest.method ?? "GET").toUpperCase();
-  try {
-    const response = await fetch(url, { ...rest, headers });
 
-    if (response.status === 401 && requestSentLearnerJwt(headers)) {
-      const contentType = response.headers.get("content-type") ?? "";
-      if (contentType.includes("application/json")) {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
+  try {
+    const response = await fetch(url, {
+      credentials: "include",
+      ...rest,
+      headers,
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.includes("/login")
+      ) {
+        window.location.href = "/login";
       }
     }
 
@@ -273,8 +272,21 @@ export async function adminApiFetch(
   init: FetchOpts = {},
 ): Promise<Response> {
   const { token: _ignored, ...rest } = init;
-  return apiFetch(path, { ...rest, token: null });
+
+  const adminHeaders = new Headers(rest.headers || {});
+  const adminToken = import.meta.env.VITE_API_TOKEN;
+  if (adminToken) {
+    adminHeaders.set("x-api-token", adminToken);
+  }
+
+  return apiFetch(path, {
+    ...rest,
+    headers: adminHeaders,
+    token: null,
+    credentials: "omit",
+  });
 }
+
 export interface AvatarOption {
   id: number;
   url: string;

@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsDateString,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -8,10 +9,17 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { RegisterStudentNameRowDto } from "./register-student-name-row.dto";
+import { UserRole } from "@generated/prisma/enums";
+
+const ALLOWED_PREFERENCE_ROLES = [
+  UserRole.ADULT,
+  UserRole.STUDENT,
+  UserRole.TEACHER,
+] as const;
 
 export class UpdatePreferencesDto {
   @IsOptional()
-  @IsString()
+  @IsIn(ALLOWED_PREFERENCE_ROLES, { message: 'Invalid role selection' })
   role?: string;
 
   @IsOptional()
