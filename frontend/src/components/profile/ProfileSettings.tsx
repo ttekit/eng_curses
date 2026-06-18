@@ -137,19 +137,16 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
   const [, setIsChangeEmailModalOpen] = useState(false);
 
-  const userSyncKey = user?.id ?? null;
-  const [syncedUserKey, setSyncedUserKey] = useState<string | number | null>(
-    null,
-  );
-  if (user && userSyncKey !== syncedUserKey) {
-    setSyncedUserKey(userSyncKey);
-    setName(user.name);
-    setJob(user.workField || "");
-    setEducation(user.education || "");
-    setHobbies(user.hobbies ?? []);
-    setFavoriteGenreIds(user.favoriteGenres ?? []);
-    setHatedGenreIds(user.hatedGenres ?? []);
-  }
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setJob(user.workField || "");
+      setEducation(user.education || "");
+      setHobbies(user.hobbies ?? []);
+      setFavoriteGenreIds(user.favoriteGenres ?? []);
+      setHatedGenreIds(user.hatedGenres ?? []);
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
