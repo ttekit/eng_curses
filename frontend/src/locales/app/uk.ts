@@ -37,7 +37,7 @@ export const appUk = {
     navMyLessons: "Мої уроки",
     navLeaderboard: "Рейтинг",
     navProfile: "Профіль",
-    navCustomise: "Налаштувати",
+    navCustomise: "Налаштуйте профіль повністю",
     sectionLevel: "Рівень",
     sectionCategory: "Категорія",
     sectionGenre: "Жанр",
@@ -792,11 +792,9 @@ export const appUk = {
     seoDescription:
       "Найактивніші учні за кількістю переглянутих відео з високим результатом тестів.",
     title: "Рейтинг",
-    lead:
-      "Сортування за відео, де ваш найкращий результат тесту — {minScore}% або вище.",
+    lead: "Сортування за відео, де ваш найкращий результат тесту — {minScore}% або вище.",
     loading: "Завантаження рейтингу…",
-    empty:
-      "Поки немає учасників. Дивіться уроки та набирайте 80%+ у тестах.",
+    empty: "Поки немає учасників. Дивіться уроки та набирайте 80%+ у тестах.",
     yourRank: "Ваше місце: #{rank} · {count} відео",
     videosCount: "{count} відео",
     levelUnknown: "—",

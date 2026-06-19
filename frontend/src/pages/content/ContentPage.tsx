@@ -438,7 +438,7 @@ function ContentWatchHeader({
   } | null;
 }) {
   return (
-    <header className="fixed top-[var(--email-verification-banner-height,0px)] right-0 left-0 z-50 border-border border-b bg-background/80 backdrop-blur-lg">
+    <header className="z-100 fixed top-[var(--email-verification-banner-height,0px)] right-0 left-0 z-50 border-border border-b bg-background/80 backdrop-blur-lg">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="grid grid-cols-3 items-center gap-3">
           <Link
@@ -719,8 +719,7 @@ export default function ContentPage() {
   const [ageModalOpen, setAgeModalOpen] = useState(false);
 
   const ageAccess = useMemo(
-    () =>
-      resolveVideoAgeAccess(user, videoData?.ageRestriction ?? undefined),
+    () => resolveVideoAgeAccess(user, videoData?.ageRestriction ?? undefined),
     [user, videoData?.ageRestriction],
   );
   const isLocked = ageAccess !== "allowed";
@@ -1089,7 +1088,13 @@ export default function ContentPage() {
     return () => {
       cancelled = true;
     };
-  }, [vocabularyWordKey, user?.id, user?.nativeLanguage, displayVocabulary, isLocked]);
+  }, [
+    vocabularyWordKey,
+    user?.id,
+    user?.nativeLanguage,
+    displayVocabulary,
+    isLocked,
+  ]);
 
   const enrichedDisplayVocabulary = useMemo(
     () => applyVocabularyHints(displayVocabulary, vocabularyHintMap),
