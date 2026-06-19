@@ -51,6 +51,7 @@ export const landingUk = {
     welcomeBack: "З поверненням",
     welcomeFallback: "Учень",
     streakLabel: "Серія днів",
+    titleStreak: "Повертайся кожен день для збільшення серії",
     ageVerification: {
       title: "Перевірка віку",
       lead: "Це відео має рейтинг {age}. Введіть дату народження, щоб продовжити.",
