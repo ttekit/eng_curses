@@ -318,6 +318,28 @@ export const appEn = {
     saveSuccess: "Preferences saved.",
     saveError: "Could not save preferences. Try again.",
   },
+  genresList: {
+    Action: "Action",
+    Adventure: "Adventure",
+    Animation: "Animation",
+    Comedy: "Comedy",
+    Crime: "Crime",
+    Documentary: "Documentary",
+    Drama: "Drama",
+    Family: "Family",
+    Fantasy: "Fantasy",
+    History: "History",
+    Horror: "Horror",
+    Musical: "Musical",
+    Mystery: "Mystery",
+    Noir: "Noir",
+    Romance: "Romance",
+    "Sci-Fi": "Sci-Fi",
+    Sports: "Sports",
+    Thriller: "Thriller",
+    War: "War",
+    Western: "Western",
+  },
 
   profileSettings: {
     nameRequiredToast: "Please enter your name.",
@@ -791,10 +813,10 @@ export const appEn = {
     seoDescription:
       "See the most active learners ranked by completed videos with high quiz scores.",
     title: "Leaderboard",
-    lead:
-      "Ranked by completed videos where your best quiz score is {minScore}% or higher.",
+    lead: "Ranked by completed videos where your best quiz score is {minScore}% or higher.",
     loading: "Loading leaderboard…",
-    empty: "No leaderboard entries yet. Watch lessons and score 80%+ on quizzes.",
+    empty:
+      "No leaderboard entries yet. Watch lessons and score 80%+ on quizzes.",
     yourRank: "Your rank: #{rank} · {count} qualifying videos",
     videosCount: "{count} videos",
     levelUnknown: "—",

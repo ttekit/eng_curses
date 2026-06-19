@@ -29,6 +29,7 @@ export function LearnerCustomiseForm({
 }: LearnerCustomiseFormProps) {
   const c = useAppMessages().customisePage;
   const s = useAppMessages().profileSettings;
+  const genresI18n = useAppMessages().genresList;
 
   const [job, setJob] = useState(initialJob);
   const [education, setEducation] = useState(initialEducation);
@@ -45,30 +46,46 @@ export function LearnerCustomiseForm({
         const response = await apiFetch("/genres");
         if (!response.ok) return;
         const data = (await response.json()) as { id: number; name: string }[];
-        setGenreOptions(data);
+
+        const localizedData = data.map((g) => ({
+          id: g.id,
+          name: (genresI18n as Record<string, string>)[g.name] || g.name,
+        }));
+
+        setGenreOptions(localizedData);
       } catch {
         // ignore
       }
     })();
-  }, []);
+  }, [genresI18n]);
 
-  const toggleFavorite = useCallback((id: number) => {
-    if (hatedIds.includes(id)) return;
-    setFavoriteIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      setHatedIds((hated) => hated.filter((h) => !next.includes(h)));
-      return next;
-    });
-  }, [hatedIds]);
+  const toggleFavorite = useCallback(
+    (id: number) => {
+      if (hatedIds.includes(id)) return;
+      setFavoriteIds((prev) => {
+        const next = prev.includes(id)
+          ? prev.filter((x) => x !== id)
+          : [...prev, id];
+        setHatedIds((hated) => hated.filter((h) => !next.includes(h)));
+        return next;
+      });
+    },
+    [hatedIds],
+  );
 
-  const toggleHated = useCallback((id: number) => {
-    if (favoriteIds.includes(id)) return;
-    setHatedIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      setFavoriteIds((fav) => fav.filter((f) => !next.includes(f)));
-      return next;
-    });
-  }, [favoriteIds]);
+  const toggleHated = useCallback(
+    (id: number) => {
+      if (favoriteIds.includes(id)) return;
+      setHatedIds((prev) => {
+        const next = prev.includes(id)
+          ? prev.filter((x) => x !== id)
+          : [...prev, id];
+        setFavoriteIds((fav) => fav.filter((f) => !next.includes(f)));
+        return next;
+      });
+    },
+    [favoriteIds],
+  );
 
   const add_hobby = () => {
     const trimmed = newHobby.trim();
@@ -108,7 +125,9 @@ export function LearnerCustomiseForm({
     <form className="space-y-8" onSubmit={(e) => void handleSubmit(e)}>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-2">
-          <span className="text-sm font-medium text-foreground">{c.jobLabel}</span>
+          <span className="text-sm font-medium text-foreground">
+            {c.jobLabel}
+          </span>
           <InputText
             value={job}
             onChange={(e) => setJob(e.target.value)}
@@ -141,7 +160,9 @@ export function LearnerCustomiseForm({
               <button
                 type="button"
                 className="rounded p-0.5 hover:bg-primary/20"
-                onClick={() => setHobbies((prev) => prev.filter((h) => h !== hobby))}
+                onClick={() =>
+                  setHobbies((prev) => prev.filter((h) => h !== hobby))
+                }
                 aria-label={formatMessage(s.removeHobbyAria, { name: hobby })}
               >
                 <X className="size-3" />
@@ -154,7 +175,9 @@ export function LearnerCustomiseForm({
             value={newHobby}
             onChange={(e) => setNewHobby(e.target.value)}
             placeholder={s.placeholderHobby}
-            onKeyDown={(ev) => ev.key === "Enter" && (ev.preventDefault(), add_hobby())}
+            onKeyDown={(ev) =>
+              ev.key === "Enter" && (ev.preventDefault(), add_hobby())
+            }
             className="flex-1"
           />
           <button

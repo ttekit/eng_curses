@@ -135,6 +135,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
   const [target2FAState, setTarget2FAState] = useState(false);
   const [twoFactorPassword, setTwoFactorPassword] = useState("");
 
+  const genresI18n = useAppMessages().genresList;
+
   const [, setIsChangeEmailModalOpen] = useState(false);
 
   useEffect(() => {
@@ -183,9 +185,14 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             .map((g) => {
               const r = g as Record<string, unknown>;
               const id = Number(r.id);
-              const name = String(r.name ?? "");
-              if (!Number.isFinite(id) || !name) return null;
-              return { id, name };
+              const originalName = String(r.name ?? "");
+              if (!Number.isFinite(id) || !originalName) return null;
+              return {
+                id,
+                name:
+                  (genresI18n as Record<string, string>)[originalName] ||
+                  originalName,
+              };
             })
             .filter(Boolean) as GenreOption[],
         );
