@@ -447,6 +447,17 @@ export const appUk = {
     next: "Далі",
     processing: "Обробка...",
     done: "Готово",
+    dangerResetBody:
+      "Цю дію неможливо скасувати. Усі ваші збережені слова, історія переглядів відео, XP та результати тестів будуть назавжди видалені.",
+    dangerDeleteBody:
+      "Цю дію неможливо скасувати. Ваш обліковий запис буде заплановано на остаточне видалення.",
+    dangerCodeSent: "Ми надіслали 6-значний код на ",
+    dangerCodeEnter: ". Введіть його нижче для підтвердження.",
+    dangerVerificationCode: "Код підтвердження",
+    dangerResetting: "Скидання...",
+    dangerResetBtn: "Скинути прогрес",
+    dangerDeleting: "Видалення...",
+    dangerDeleteBtn: "Видалити назавжди",
   },
 
   profileTeacherVideos: {

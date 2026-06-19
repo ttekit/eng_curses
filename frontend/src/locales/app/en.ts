@@ -445,6 +445,17 @@ export const appEn = {
     next: "Next",
     processing: "Processing...",
     done: "Done",
+    dangerResetBody:
+      "This action cannot be undone. All your saved words, video viewing history, XP, and test results will be permanently deleted.",
+    dangerDeleteBody:
+      "This action cannot be undone. Your account will be scheduled for permanent deletion.",
+    dangerCodeSent: "We sent a 6-digit code to ",
+    dangerCodeEnter: ". Enter it below to confirm.",
+    dangerVerificationCode: "Verification Code",
+    dangerResetting: "Resetting...",
+    dangerResetBtn: "Reset progress",
+    dangerDeleting: "Deleting...",
+    dangerDeleteBtn: "Permanently Delete",
   },
 
   profileTeacherVideos: {

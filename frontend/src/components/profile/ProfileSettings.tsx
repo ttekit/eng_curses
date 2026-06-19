@@ -1445,14 +1445,12 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
             </h4>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              {dangerOpen === "reset"
-                ? "This action cannot be undone. All your saved words, video viewing history, XP, and test results will be permanently deleted."
-                : "This action cannot be undone. Your account will be scheduled for permanent deletion."}
+              {dangerOpen === "reset" ? s.dangerResetBody : s.dangerDeleteBody}
               <br />
               <br />
-              We sent a 6-digit code to{" "}
-              <strong>{maskEmail(user?.email)}</strong>. Enter it below to
-              confirm.
+              {s.dangerCodeSent}
+              <strong>{maskEmail(user?.email)}</strong>
+              {s.dangerCodeEnter}
             </p>
 
             {dangerError && (
@@ -1463,7 +1461,8 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
             <div className="mt-4 space-y-2">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Verification Code <span className="text-red-500">*</span>
+                {s.dangerVerificationCode}{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -1500,7 +1499,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   setDangerError("");
                 }}
               >
-                Cancel
+                {s.cancel}
               </button>
               <button
                 type="button"
@@ -1517,11 +1516,11 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
               >
                 {dangerOpen === "reset"
                   ? isResetting
-                    ? "Resetting..."
-                    : "Reset progress"
+                    ? s.dangerResetting
+                    : s.dangerResetBtn
                   : isDeleting
-                    ? "Deleting..."
-                    : "Permanently Delete"}
+                    ? s.dangerDeleting
+                    : s.dangerDeleteBtn}
               </button>
             </div>
           </div>
