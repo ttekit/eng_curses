@@ -106,6 +106,9 @@ export const landingUk = {
     ctaSecondary: "Переглянути контент",
     videoMin: "Лише 1 хвилина - і ви готові до старту!",
     videoWatch: "Дивіться відео",
+    users: "користувачів",
+    videos: "500+ відео",
+    hours: "10тис+ годин",
   },
 
   features: {

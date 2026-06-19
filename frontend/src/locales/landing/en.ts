@@ -104,6 +104,9 @@ export const landingEn = {
     ctaSecondary: "Browse content",
     videoMin: "Just 1 min - and you’re ready to start!",
     videoWatch: "Watch the video",
+    users: "users",
+    videos: "500+ videos",
+    hours: "10k+ hours",
   },
 
   features: {
