@@ -198,7 +198,7 @@ export class SmtpService {
       throw new UnauthorizedException("User not found");
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password ?? "");
     if (!isPasswordValid) {
       throw new UnauthorizedException("Incorrect password");
     }

@@ -56,6 +56,7 @@
     "@nestjs/cli": "^11.0.21",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/adm-zip": "^0.5.8",
+    "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cron": "^2.0.1",
     "@types/express-session": "^1.19.0",
