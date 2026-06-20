@@ -37,7 +37,7 @@ export const appEn = {
     navMyLessons: "My Lessons",
     navLeaderboard: "Leaderboard",
     navProfile: "Profile",
-    navCustomise: "Customise",
+    navCustomise: "Configure the profile completely",
     sectionLevel: "Level",
     sectionCategory: "Category",
     sectionGenre: "Genre",
