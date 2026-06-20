@@ -12,35 +12,36 @@ import type {
   DatePickerInputProps,
   DatePickerWrapperProps,
 } from "../types/date-picker-input";
+import { useUser } from "../context/UserContext";
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
   (props, ref) => {
-  const { onClick, value, onChange, onKeyDown, id } = props;
+    const { onClick, value, onChange, onKeyDown, id } = props;
 
-  return (
-    <div className="relative w-full">
-      <input
-        id={id}
-        type="datetime-local"
-        ref={ref}
-        value={value || ""}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        onClick={(e) => e.stopPropagation()}
-        onFocus={(e) => e.stopPropagation()}
-        autoComplete="off"
-        className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
-      />
-      <button
-        type="button"
-        onClick={onClick}
-        tabIndex={-1}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
-      >
-        <CalendarIcon className="size-5" />
-      </button>
-    </div>
-  );
+    return (
+      <div className="relative w-full">
+        <input
+          id={id}
+          type="datetime-local"
+          ref={ref}
+          value={value || ""}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+          autoComplete="off"
+          className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+        />
+        <button
+          type="button"
+          onClick={onClick}
+          tabIndex={-1}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+        >
+          <CalendarIcon className="size-5" />
+        </button>
+      </div>
+    );
   },
 );
 CustomDateTimeInput.displayName = "CustomDateTimeInput";
@@ -72,6 +73,10 @@ export function AssignHomeworkButton({
   contentId: number;
   contentName: string;
 }) {
+  const { user } = useUser();
+  if (user?.role?.toLowerCase() !== "teacher") {
+    return null;
+  }
   const [isOpen, setIsOpen] = useState(false);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
