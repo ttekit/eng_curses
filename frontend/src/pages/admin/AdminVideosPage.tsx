@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import toast from "react-hot-toast";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   ArrowDown,
@@ -25,7 +24,6 @@ import {
   FileArchive,
   Image as ImageIcon,
 } from "lucide-react";
-import { apiFetch } from "../../lib/api";
 import {
   AdminBadge,
   AdminButton,
@@ -43,23 +41,15 @@ import {
   AdminRowMenu,
   AdminRowMenuItem,
 } from "../../components/admin/AdminRowMenu";
-import type { AdminCatalogVideoRow } from "../../lib/adminVideosApi";
-import {
-  createAdminCatalogVideo,
-  deleteAdminCatalogContent,
-  fetchAdminCatalogVideos,
-  fetchAdminVideoSubtitlesVtt,
-  matchesVideoLevelFilter,
-  patchAdminSeriesPlaylistOrder,
-  postAdminSeriesEpisode,
-  regenerateAdminVideoLevelTags,
-  regenerateAdminVideoCaptions,
-  regenerateAdminVideoThemeTags,
-  videoLevelBadge,
-} from "../../lib/adminVideosApi";
-import { unzipSync } from "fflate";
+import { videoLevelBadge } from "../../lib/adminVideosApi";
 
-const genres = [
+import {
+  useAdminVideos,
+  getPaginationRange,
+  ADMIN_PAGE_SIZE,
+} from "../../hooks/useAdminVideos";
+
+export const genres = [
   { name: "Action" },
   { name: "Adventure" },
   { name: "Animation" },
@@ -98,16 +88,14 @@ function CustomSelect({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (ref.current && !ref.current.contains(e.target as Node))
         setIsOpen(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const selectedOption = options.find((o) => o.value === value);
-
   return (
     <div className={cn("relative w-full text-sm", className)} ref={ref}>
       <button
@@ -126,7 +114,6 @@ function CustomSelect({
           )}
         />
       </button>
-
       {isOpen && (
         <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-xl animate-in fade-in zoom-in-95">
           {options.map((opt) => (
@@ -153,98 +140,16 @@ function CustomSelect({
   );
 }
 
-function generateVideoThumbnailBlob(
-  fileOrUrl: File | Blob | string,
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "auto";
-    video.playsInline = true;
-    video.muted = true;
-
-    video.src =
-      typeof fileOrUrl === "string"
-        ? fileOrUrl
-        : URL.createObjectURL(fileOrUrl);
-
-    video.onloadeddata = () => {
-      video.currentTime = 0.5;
-    };
-
-    video.onseeked = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 360;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => {
-          if (typeof fileOrUrl !== "string") URL.revokeObjectURL(video.src);
-          if (blob) resolve(blob);
-          else reject(new Error("Canvas blob generation failed"));
-        },
-        "image/jpeg",
-        0.85,
-      );
-    };
-
-    video.onerror = (e) => {
-      if (typeof fileOrUrl !== "string") URL.revokeObjectURL(video.src);
-      reject(e);
-    };
-  });
-}
-
-function sortAdminPlaylistRows(
-  rows: AdminCatalogVideoRow[],
-): AdminCatalogVideoRow[] {
-  return [...rows].sort((a, b) => {
-    const ma =
-      typeof a.content.playlistPosition === "number"
-        ? a.content.playlistPosition
-        : 0;
-    const mb =
-      typeof b.content.playlistPosition === "number"
-        ? b.content.playlistPosition
-        : 0;
-    if (ma !== mb) return ma - mb;
-    const va = typeof a.playlistPosition === "number" ? a.playlistPosition : 0;
-    const vb = typeof b.playlistPosition === "number" ? b.playlistPosition : 0;
-    if (va !== vb) return va - vb;
-    return a.id - b.id;
-  });
-}
-
-type AdminVideoSeriesGroup = {
-  contentRootId: number;
-  seriesName: string;
-  friendlyLink: string;
-  rows: AdminCatalogVideoRow[];
-};
-
-function slugFriendly(label: string): string {
-  const base = label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-  const suffix = Date.now().toString(36);
-  const slug = `${base}-${suffix}`;
-  const trimmed =
-    slug.length > 100 ? slug.slice(0, 100).replace(/-[^-]*$/, "") : slug;
-  return trimmed?.length >= 4 ? trimmed : `video-${suffix}`;
-}
-
-type MetadataInspectTab = "themes" | "levels" | "subs";
-
-function ChipList(props: { tags: string[]; emptyLabel: string }) {
-  const { tags, emptyLabel } = props;
+function ChipList({
+  tags,
+  emptyLabel,
+}: {
+  tags: string[];
+  emptyLabel: string;
+}) {
   const list = (tags ?? []).filter((t) => t.trim().length > 0);
-  if (list.length === 0) {
+  if (list.length === 0)
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
-  }
   return (
     <div className="flex flex-wrap gap-2">
       {list.map((t, i) => (
@@ -260,651 +165,112 @@ function ChipList(props: { tags: string[]; emptyLabel: string }) {
   );
 }
 
-function getPaginationRange(current: number, total: number) {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
-  if (current >= total - 3)
-    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
-  return [1, "...", current - 1, current, current + 1, "...", total];
-}
-
 export default function AdminVideosPage() {
   const navigate = useNavigate();
-  const [videos, setVideos] = useState<AdminCatalogVideoRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [ageFilter, setAgeFilter] = useState("all");
-  const [genreFilter, setGenreFilter] = useState("all");
-  const [levelFilter, setLevelFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const listTopRef = useRef<HTMLDivElement>(null);
-
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadMode, setUploadMode] = useState<"file" | "link" | "zip">("file");
-  const [uploadLink, setUploadLink] = useState("");
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadDesc, setUploadDesc] = useState("");
-  const [uploadAge, setUploadAge] = useState("0+");
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadThumb, setUploadThumb] = useState<File | null>(null);
-  const [uploadSaving, setUploadSaving] = useState(false);
-
-  const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editAge, setEditAge] = useState("0+");
-  const [editThumb, setEditThumb] = useState<File | null>(null);
-  const [editSaving, setEditSaving] = useState(false);
-  const [regenBusy, setRegenBusy] = useState<
-    false | "tags" | "cefr" | "captions"
-  >(false);
-
-  const [editSeriesGroup, setEditSeriesGroup] =
-    useState<AdminVideoSeriesGroup | null>(null);
-  const [editSeriesName, setEditSeriesName] = useState("");
-  const [editSeriesSaving, setEditSeriesSaving] = useState(false);
-
-  const [deleteCandidate, setDeleteCandidate] = useState<{
-    video: AdminCatalogVideoRow;
-    mode: "series" | "episode";
-  } | null>(null);
-  const [deleteSaving, setDeleteSaving] = useState(false);
-
-  const [reorderBusy, setReorderBusy] = useState(false);
-  const [addEpisodeOpen, setAddEpisodeOpen] = useState(false);
-  const [addEpisodeMode, setAddEpisodeMode] = useState<"file" | "link" | "zip">(
-    "file",
-  );
-  const [addEpisodeLink, setAddEpisodeLink] = useState("");
-  const [addEpisodeSeries, setAddEpisodeSeries] =
-    useState<AdminVideoSeriesGroup | null>(null);
-  const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
-  const [addEpisodeDesc, setAddEpisodeDesc] = useState("");
-  const [addEpisodeAge, setAddEpisodeAge] = useState("0+");
-  const [addEpisodeFile, setAddEpisodeFile] = useState<File | null>(null);
-  const [addEpisodeThumb, setAddEpisodeThumb] = useState<File | null>(null);
-  const [addEpisodeSaving, setAddEpisodeSaving] = useState(false);
-
-  const [inspectMeta, setInspectMeta] = useState<{
-    video: AdminCatalogVideoRow;
-    tab: MetadataInspectTab;
-  } | null>(null);
-  const [subtitleText, setSubtitleText] = useState<string | null>(null);
-  const [subtitleLoading, setSubtitleLoading] = useState(false);
-  const [subtitleError, setSubtitleError] = useState<string | null>(null);
-
-  const seriesNames = useMemo(() => {
-    const names = videos
-      .map((v) => v.content.category.name.trim())
-      .filter(Boolean);
-    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
-  }, [videos]);
-
-  const loadVideos = useCallback(async (): Promise<
-    AdminCatalogVideoRow[] | null
-  > => {
-    setLoadError(null);
-    try {
-      setLoading(true);
-      const rows = await fetchAdminCatalogVideos();
-      setVideos(rows);
-      return rows;
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Failed to load videos");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadVideos();
-  }, [loadVideos]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, ageFilter, genreFilter, levelFilter]);
-
-  useEffect(() => {
-    setSubtitleText(null);
-    setSubtitleError(null);
-    setSubtitleLoading(false);
-  }, [inspectMeta?.video.id]);
-
-  useEffect(() => {
-    if (!inspectMeta || inspectMeta.tab !== "subs") return;
-    const link = inspectMeta.video.videoCaption?.subtitlesFileLink?.trim();
-    if (!link) return;
-    let cancelled = false;
-    setSubtitleLoading(true);
-    setSubtitleError(null);
-    setSubtitleText(null);
-    void fetchAdminVideoSubtitlesVtt(inspectMeta.video.id)
-      .then((text) => {
-        if (!cancelled) setSubtitleText(text);
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setSubtitleError(
-            e instanceof Error ? e.message : "Could not load subtitles",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSubtitleLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [inspectMeta]);
-
-  const filtered = useMemo(() => {
-    const q = searchQuery.toLowerCase();
-    return videos.filter((v) => {
-      const matchSearch =
-        v.videoName.toLowerCase().includes(q) ||
-        (v.videoDescription ?? "").toLowerCase().includes(q) ||
-        v.content.category.name.toLowerCase().includes(q);
-
-      const videoAge = v.ageRestriction || "0+";
-      const matchAge = ageFilter === "all" || videoAge === ageFilter;
-
-      const videoGenres = v.content.stats?.userTags ?? [];
-      const matchGenre =
-        genreFilter === "all" || videoGenres.includes(genreFilter);
-
-      const matchLevel = matchesVideoLevelFilter(v, levelFilter);
-
-      return matchSearch && matchAge && matchGenre && matchLevel;
-    });
-  }, [videos, searchQuery, ageFilter, genreFilter, levelFilter]);
-
-  const groupedSeries = useMemo((): AdminVideoSeriesGroup[] => {
-    const m = new Map<number, AdminCatalogVideoRow[]>();
-    for (const v of filtered) {
-      const rootId = v.content.category.id;
-      const arr = m.get(rootId);
-      if (arr) arr.push(v);
-      else m.set(rootId, [v]);
-    }
-    return [...m.entries()]
-      .map(([contentRootId, rows]) => {
-        const sorted = sortAdminPlaylistRows(rows);
-        const first = sorted[0];
-        return {
-          contentRootId,
-          seriesName: first?.content.category.name.trim() ?? "",
-          friendlyLink: first?.content.category.friendlyLink.trim() ?? "",
-          rows: sorted,
-        };
-      })
-      .sort((a, b) => a.seriesName.localeCompare(b.seriesName));
-  }, [filtered]);
-
-  const stats = useMemo(() => {
-    const watchers = videos.reduce(
-      (a, v) => a + (v.content.stats?.usersWatched ?? 0),
-      0,
-    );
-    let ratingSum = 0;
-    let ratingN = 0;
-    for (const v of videos) {
-      const r = v.content.stats?.rating;
-      if (r != null && r > 0) {
-        ratingSum += r;
-        ratingN += 1;
-      }
-    }
-    const avgRating = ratingN > 0 ? ratingSum / ratingN : 0;
-    return {
-      total: videos.length,
-      watchers,
-      avgRating,
-      seriesCount: seriesNames.length,
-    };
-  }, [videos, seriesNames.length]);
-
-  const openEdit = useCallback((v: AdminCatalogVideoRow) => {
-    setEditing(v);
-    setEditName(v.videoName);
-    setEditDesc(v.videoDescription || v.content.category.description || "");
-    setEditAge(v.ageRestriction || "0+");
-    setEditThumb(null);
-  }, []);
-
-  const handleSaveEdit = async () => {
-    if (!editing) return;
-    const name = editName.trim();
-    if (name.length < 2) {
-      toast.error("Title must be at least 2 characters");
-      return;
-    }
-    setEditSaving(true);
-    try {
-      const resData = await apiFetch(`/content-video/${editing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          videoName: name,
-          videoDescription: editDesc.trim() || null,
-          ageRestriction: editAge,
-        }),
-      });
-
-      if (!resData.ok) {
-        throw new Error("Failed to update episode metadata");
-      }
-
-      if (editThumb) {
-        const fd = new FormData();
-        fd.append("thumbnailFile", editThumb);
-
-        const res = await apiFetch(
-          `/contents/episode/${editing.id}/thumbnail`,
-          {
-            method: "PATCH",
-            body: fd,
-          },
-        );
-        if (!res.ok) throw new Error("Thumbnail update failed");
-      }
-
-      toast.success("Video updated");
-      setEditing(null);
-      setEditThumb(null);
-      await loadVideos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Update failed");
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  const openEditSeries = useCallback((group: AdminVideoSeriesGroup) => {
-    setEditSeriesGroup(group);
-    setEditSeriesName(group.seriesName);
-  }, []);
-
-  const handleSaveSeriesEdit = async () => {
-    if (!editSeriesGroup) return;
-    const name = editSeriesName.trim();
-    if (name.length < 2) {
-      toast.error("Series name must be at least 2 characters");
-      return;
-    }
-    setEditSeriesSaving(true);
-    try {
-      const res = await apiFetch(`/contents/${editSeriesGroup.contentRootId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-
-      if (!res.ok) throw new Error("Failed to update series name");
-
-      toast.success("Series name updated");
-      setEditSeriesGroup(null);
-      await loadVideos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Update failed");
-    } finally {
-      setEditSeriesSaving(false);
-    }
-  };
-
-  const handleRegenThemeTags = async () => {
-    if (!editing) return;
-    const vid = editing.id;
-    setRegenBusy("tags");
-    try {
-      const r = await regenerateAdminVideoThemeTags(vid);
-      if (r.geminiFailed) {
-        toast.error("Gemini unavailable — catalog genres unchanged");
-      } else {
-        toast.success("Catalog genres regenerated");
-      }
-      const rows = await loadVideos();
-      const u = rows?.find((x) => x.id === vid);
-      if (u) {
-        setEditing(u);
-        setEditName(u.videoName);
-        setEditDesc(u.videoDescription || u.content.category.description || "");
-        setEditAge(u.ageRestriction || "0+");
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Regeneration failed");
-    } finally {
-      setRegenBusy(false);
-    }
-  };
-
-  const handleRegenLevelTags = async () => {
-    if (!editing) return;
-    const vid = editing.id;
-    setRegenBusy("cefr");
-    try {
-      const r = await regenerateAdminVideoLevelTags(vid);
-      if (r.geminiFailed) {
-        toast.error("Gemini unavailable — CEFR bands unchanged");
-      } else {
-        toast.success("CEFR bands regenerated");
-      }
-      const rows = await loadVideos();
-      const u = rows?.find((x) => x.id === vid);
-      if (u) {
-        setEditing(u);
-        setEditName(u.videoName);
-        setEditDesc(u.videoDescription || u.content.category.description || "");
-        setEditAge(u.ageRestriction || "0+");
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Regeneration failed");
-    } finally {
-      setRegenBusy(false);
-    }
-  };
-
-  const handleRegenCaptions = async () => {
-    if (!editing) return;
-    const vid = editing.id;
-    setRegenBusy("captions");
-    try {
-      await regenerateAdminVideoCaptions(vid);
-      toast.success("Captions regenerated (WebVTT on S3)");
-      const rows = await loadVideos();
-      const u = rows?.find((x) => x.id === vid);
-      if (u) {
-        setEditing(u);
-        setEditName(u.videoName);
-        setEditDesc(u.videoDescription || u.content.category.description || "");
-        setEditAge(u.ageRestriction || "0+");
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Caption generation failed");
-    } finally {
-      setRegenBusy(false);
-    }
-  };
-
-  const extractAndGenerateThumbnailFromZip = async (
-    zipFile: File,
-  ): Promise<Blob | null> => {
-    try {
-      const arrayBuffer = await zipFile.arrayBuffer();
-      const unzipped = unzipSync(new Uint8Array(arrayBuffer));
-
-      const tsFileName = Object.keys(unzipped).find(
-        (name) =>
-          name.endsWith(".ts") &&
-          !name.includes("__MACOSX") &&
-          !name.startsWith("._"),
-      );
-
-      if (!tsFileName) return null;
-
-      const tsData = unzipped[tsFileName];
-      if (!tsData) return null;
-
-      const tsBlob = new Blob([tsData], { type: "video/MP2T" });
-      return await generateVideoThumbnailBlob(tsBlob);
-    } catch (e) {
-      console.warn("Failed to extract frame from zip dynamically:", e);
-      return null;
-    }
-  };
-
-  const handleUpload = async () => {
-    const name = uploadTitle.trim();
-    const description = uploadDesc.trim().slice(0, 250);
-    if (name.length < 2 || description.length > 250) {
-      toast.error("Title ≥ 2 characters; description ≤ 250.");
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append("name", name);
-    fd.append("friendlyLink", slugFriendly(name));
-    fd.append("ageRestriction", uploadAge);
-    fd.append(
-      "description",
-      (description || `${name} — learner catalog.`).slice(0, 250),
-    );
-
-    if (uploadMode === "file") {
-      if (!uploadFile || !uploadFile.type.startsWith("video/mp4")) {
-        toast.error("Choose an MP4 video file.");
-        return;
-      }
-      fd.append("file", uploadFile);
-    } else if (uploadMode === "zip") {
-      if (!uploadFile || !uploadFile.name.endsWith(".zip")) {
-        toast.error("Choose a .zip archive containing your HLS files.");
-        return;
-      }
-      fd.append("file", uploadFile);
-    } else {
-      const link = uploadLink.trim();
-      if (!link.startsWith("https://")) {
-        toast.error("Please use a valid HTTPS link to your .m3u8 file.");
-        return;
-      }
-      fd.append("videoLink", link);
-    }
-
-    setUploadSaving(true);
-
-    try {
-      if (uploadThumb) {
-        fd.append("thumbnailFile", uploadThumb);
-      } else if (uploadMode === "file" && uploadFile) {
-        const thumbBlob = await generateVideoThumbnailBlob(uploadFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } else if (uploadMode === "zip" && uploadFile) {
-        const thumbBlob = await extractAndGenerateThumbnailFromZip(uploadFile);
-        if (thumbBlob) {
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        }
-      } else if (uploadMode === "link") {
-        try {
-          const thumbBlob = await generateVideoThumbnailBlob(uploadLink);
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        } catch (e) {
-          console.warn("Could not auto-generate thumbnail from link", e);
-        }
-      }
-
-      await createAdminCatalogVideo(fd);
-      toast.success("Video published successfully");
-      setUploadOpen(false);
-      setUploadTitle("");
-      setUploadDesc("");
-      setUploadAge("0+");
-      setUploadFile(null);
-      setUploadLink("");
-      setUploadThumb(null);
-      await loadVideos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploadSaving(false);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteCandidate) return;
-    setDeleteSaving(true);
-    try {
-      if (deleteCandidate.mode === "series") {
-        const contentRootId = deleteCandidate.video.content.category.id;
-        await deleteAdminCatalogContent(contentRootId);
-        toast.success(
-          `${deleteCandidate.video.videoName} (series) removed from catalog`,
-        );
-      } else {
-        const contentMediaId = deleteCandidate.video.content.id;
-        const res = await apiFetch(`/content-video/${contentMediaId}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) throw new Error("Failed to delete episode");
-        toast.success(`Episode ${deleteCandidate.video.videoName} removed`);
-      }
-      setDeleteCandidate(null);
-      await loadVideos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
-    } finally {
-      setDeleteSaving(false);
-    }
-  };
-
-  const applyPlaylistReorder = useCallback(
-    async (
-      group: AdminVideoSeriesGroup,
-      reorderedRows: AdminCatalogVideoRow[],
-    ) => {
-      const orderedContentMediaIds = reorderedRows.map((r) => r.content.id);
-      const unique = new Set(orderedContentMediaIds);
-      if (unique.size !== orderedContentMediaIds.length) {
-        toast.error("Cannot reorder when multiple clips share one media slot.");
-        return;
-      }
-      setReorderBusy(true);
-      try {
-        await patchAdminSeriesPlaylistOrder(
-          group.contentRootId,
-          orderedContentMediaIds,
-        );
-        toast.success("Playlist order updated");
-        await loadVideos();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Reorder failed");
-      } finally {
-        setReorderBusy(false);
-      }
-    },
-    [loadVideos],
-  );
-
-  const moveEpisodeInSeries = useCallback(
-    async (group: AdminVideoSeriesGroup, index: number, delta: -1 | 1) => {
-      const next = index + delta;
-      if (next < 0 || next >= group.rows.length) return;
-      const rows = [...group.rows];
-      const tmp = rows[index]!;
-      rows[index] = rows[next]!;
-      rows[next] = tmp;
-      await applyPlaylistReorder(group, rows);
-    },
-    [applyPlaylistReorder],
-  );
-
-  const openAddEpisodeForSeries = useCallback(
-    (group: AdminVideoSeriesGroup) => {
-      setAddEpisodeSeries(group);
-      setAddEpisodeTitle("");
-      setAddEpisodeDesc("");
-      setAddEpisodeAge("0+");
-      setAddEpisodeFile(null);
-      setAddEpisodeLink("");
-      setAddEpisodeThumb(null);
-      setAddEpisodeOpen(true);
-    },
-    [],
-  );
-
-  const handleAddEpisodeSubmit = async () => {
-    if (!addEpisodeSeries) return;
-    const name = addEpisodeTitle.trim();
-    if (name.length < 1) {
-      toast.error("Episode title required");
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append("videoName", name);
-    fd.append("ageRestriction", addEpisodeAge);
-    const d = addEpisodeDesc.trim();
-    if (d) fd.append("videoDescription", d);
-
-    if (addEpisodeMode === "file") {
-      if (!addEpisodeFile || !addEpisodeFile.type.startsWith("video/mp4")) {
-        toast.error("Choose an MP4 video file.");
-        return;
-      }
-      fd.append("file", addEpisodeFile);
-    } else if (addEpisodeMode === "zip") {
-      if (!addEpisodeFile || !addEpisodeFile.name.endsWith(".zip")) {
-        toast.error("Choose a .zip archive containing your HLS files.");
-        return;
-      }
-      fd.append("file", addEpisodeFile);
-    } else {
-      const link = addEpisodeLink.trim();
-      if (!link.startsWith("https://")) {
-        toast.error("Please use a valid HTTPS link to your .m3u8 file.");
-        return;
-      }
-      fd.append("videoLink", link);
-    }
-
-    setAddEpisodeSaving(true);
-
-    try {
-      if (addEpisodeThumb) {
-        fd.append("thumbnailFile", addEpisodeThumb);
-      } else if (addEpisodeMode === "file" && addEpisodeFile) {
-        const thumbBlob = await generateVideoThumbnailBlob(addEpisodeFile);
-        fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-      } else if (addEpisodeMode === "zip" && addEpisodeFile) {
-        const thumbBlob =
-          await extractAndGenerateThumbnailFromZip(addEpisodeFile);
-        if (thumbBlob) {
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        }
-      } else if (addEpisodeMode === "link") {
-        try {
-          const thumbBlob = await generateVideoThumbnailBlob(addEpisodeLink);
-          fd.append("thumbnailFile", thumbBlob, "thumbnail.jpg");
-        } catch (e) {
-          console.warn("Could not auto-generate thumbnail from link", e);
-        }
-      }
-
-      await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
-      toast.success("Episode added to series");
-      setAddEpisodeOpen(false);
-      setAddEpisodeSeries(null);
-      setAddEpisodeThumb(null);
-      await loadVideos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Add episode failed");
-    } finally {
-      setAddEpisodeSaving(false);
-    }
-  };
+  const adminData = useAdminVideos();
+  const {
+    loading,
+    loadError,
+    searchQuery,
+    setSearchQuery,
+    ageFilter,
+    setAgeFilter,
+    genreFilter,
+    setGenreFilter,
+    levelFilter,
+    setLevelFilter,
+    currentPage,
+    setCurrentPage,
+    listTopRef,
+    scrollToListTop,
+    uploadOpen,
+    setUploadOpen,
+    uploadMode,
+    setUploadMode,
+    uploadLink,
+    setUploadLink,
+    uploadTitle,
+    setUploadTitle,
+    uploadDesc,
+    setUploadDesc,
+    uploadAge,
+    setUploadAge,
+    uploadFile,
+    setUploadFile,
+    uploadThumb,
+    setUploadThumb,
+    uploadSaving,
+    handleUpload,
+    editing,
+    setEditing,
+    editName,
+    setEditName,
+    editDesc,
+    setEditDesc,
+    editAge,
+    setEditAge,
+    editThumb,
+    setEditThumb,
+    editSaving,
+    regenBusy,
+    openEdit,
+    handleSaveEdit,
+    handleRegenThemeTags,
+    handleRegenLevelTags,
+    handleRegenCaptions,
+    editSeriesGroup,
+    setEditSeriesGroup,
+    editSeriesName,
+    setEditSeriesName,
+    editSeriesSaving,
+    openEditSeries,
+    handleSaveSeriesEdit,
+    deleteCandidate,
+    setDeleteCandidate,
+    deleteSaving,
+    handleConfirmDelete,
+    reorderBusy,
+    moveEpisodeInSeries,
+    addEpisodeOpen,
+    setAddEpisodeOpen,
+    addEpisodeMode,
+    setAddEpisodeMode,
+    addEpisodeLink,
+    setAddEpisodeLink,
+    addEpisodeSeries,
+    addEpisodeTitle,
+    setAddEpisodeTitle,
+    addEpisodeDesc,
+    setAddEpisodeDesc,
+    addEpisodeAge,
+    setAddEpisodeAge,
+    addEpisodeFile,
+    setAddEpisodeFile,
+    addEpisodeThumb,
+    setAddEpisodeThumb,
+    addEpisodeSaving,
+    openAddEpisodeForSeries,
+    handleAddEpisodeSubmit,
+    inspectMeta,
+    setInspectMeta,
+    subtitleText,
+    subtitleLoading,
+    subtitleError,
+    stats,
+    totalPages,
+    paginatedSeries,
+    filtered,
+    groupedSeries,
+    loadVideos,
+  } = adminData;
 
   const levelFor = videoLevelBadge;
   const ratingProgress = (r: number) =>
     Math.min(100, Math.round((Math.max(0, r) / 5) * 100));
 
-  const scrollToListTop = () => {
-    if (listTopRef.current) {
-      const y =
-        listTopRef.current.getBoundingClientRect().top + window.scrollY - 100;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
-  };
-
-  const ADMIN_PAGE_SIZE = 10;
-  const totalPages = Math.ceil(groupedSeries.length / ADMIN_PAGE_SIZE);
-  const paginatedSeries = groupedSeries.slice(
-    (currentPage - 1) * ADMIN_PAGE_SIZE,
-    currentPage * ADMIN_PAGE_SIZE,
-  );
-
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden min-w-0 pb-10">
+      {/* Шапка */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-2xl font-bold text-foreground">
@@ -935,9 +301,8 @@ export default function AdminVideosPage() {
         </AdminButton>
       </div>
 
+      {/* Модалка: Upload */}
       <AdminModal
-        // ... дальше идет твой код без изменений (AdminModal и т.д.)
-
         open={uploadOpen}
         onClose={() => !uploadSaving && setUploadOpen(false)}
         title="Upload new video"
@@ -980,17 +345,13 @@ export default function AdminVideosPage() {
               M3U8 Link
             </button>
           </div>
-
           {uploadMode === "file" ? (
             <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept="video/mp4"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setUploadFile(f);
-                }}
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
               />
               <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Browse for MP4 video</p>
@@ -1004,10 +365,7 @@ export default function AdminVideosPage() {
                 type="file"
                 accept=".zip"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setUploadFile(f);
-                }}
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
               />
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Browse for ZIP archive</p>
@@ -1030,7 +388,6 @@ export default function AdminVideosPage() {
               />
             </div>
           )}
-
           <div className="space-y-2 mt-4 border-t border-border pt-4">
             <label className="text-sm font-medium">
               Custom Thumbnail (Cover)
@@ -1040,10 +397,7 @@ export default function AdminVideosPage() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setUploadThumb(f);
-                }}
+                onChange={(e) => setUploadThumb(e.target.files?.[0] ?? null)}
               />
               {uploadThumb ? (
                 <p className="text-sm font-medium text-primary">
@@ -1060,7 +414,6 @@ export default function AdminVideosPage() {
               or ZIP contents.
             </p>
           </div>
-
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2 border-t border-border pt-4">
               <label className="text-sm font-medium" htmlFor="admin-vid-title">
@@ -1074,7 +427,6 @@ export default function AdminVideosPage() {
               />
             </div>
           </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium">
               Age Restriction / Возрастное ограничение
@@ -1092,7 +444,6 @@ export default function AdminVideosPage() {
               ]}
             />
           </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-vid-desc">
               Lesson / series description
@@ -1112,6 +463,7 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
+      {/* Модалка: Add Episode */}
       <AdminModal
         open={addEpisodeOpen}
         onClose={() => !addEpisodeSaving && setAddEpisodeOpen(false)}
@@ -1159,17 +511,13 @@ export default function AdminVideosPage() {
               M3U8 Link
             </button>
           </div>
-
           {addEpisodeMode === "file" ? (
             <label className="block cursor-pointer rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept="video/mp4"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setAddEpisodeFile(f);
-                }}
+                onChange={(e) => setAddEpisodeFile(e.target.files?.[0] ?? null)}
               />
               <Upload className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">Video file</p>
@@ -1183,10 +531,7 @@ export default function AdminVideosPage() {
                 type="file"
                 accept=".zip"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setAddEpisodeFile(f);
-                }}
+                onChange={(e) => setAddEpisodeFile(e.target.files?.[0] ?? null)}
               />
               <FileArchive className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium">ZIP Archive</p>
@@ -1209,7 +554,6 @@ export default function AdminVideosPage() {
               />
             </div>
           )}
-
           <div className="space-y-2 mt-4 border-t border-border pt-4">
             <label className="text-sm font-medium">
               Custom Thumbnail (Cover)
@@ -1219,10 +563,9 @@ export default function AdminVideosPage() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setAddEpisodeThumb(f);
-                }}
+                onChange={(e) =>
+                  setAddEpisodeThumb(e.target.files?.[0] ?? null)
+                }
               />
               {addEpisodeThumb ? (
                 <p className="text-sm font-medium text-primary">
@@ -1235,7 +578,6 @@ export default function AdminVideosPage() {
               )}
             </label>
           </div>
-
           <div className="space-y-2 border-t border-border pt-4">
             <label className="text-sm font-medium" htmlFor="admin-ep-title">
               Episode title
@@ -1247,7 +589,6 @@ export default function AdminVideosPage() {
               onChange={(e) => setAddEpisodeTitle(e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium">
               Age Restriction / Возрастное ограничение
@@ -1265,7 +606,6 @@ export default function AdminVideosPage() {
               ]}
             />
           </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="admin-ep-desc">
               Description (optional)
@@ -1282,6 +622,7 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
+      {/* Модалка: Edit */}
       <AdminModal
         open={editing != null}
         onClose={() => !editSaving && !regenBusy && setEditing(null)}
@@ -1318,11 +659,8 @@ export default function AdminVideosPage() {
               onChange={(e) => setEditName(e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Age Restriction / Возрастное ограничение
-            </label>
+            <label className="text-sm font-medium">Age Restriction</label>
             <CustomSelect
               value={editAge}
               onChange={setEditAge}
@@ -1336,7 +674,6 @@ export default function AdminVideosPage() {
               ]}
             />
           </div>
-
           <div className="space-y-2">
             <label
               className="text-sm font-medium"
@@ -1351,21 +688,17 @@ export default function AdminVideosPage() {
               onChange={(e) => setEditDesc(e.target.value)}
             />
           </div>
-
           <div className="space-y-2 border-border border-t pt-4">
             <label className="text-sm font-medium flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-muted-foreground" /> Change
-              Thumbnail / Cover Image
+              Thumbnail
             </label>
             <label className="block cursor-pointer rounded-lg border border-border p-3 text-center bg-muted/40 transition-colors hover:border-primary/50">
               <input
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  setEditThumb(f);
-                }}
+                onChange={(e) => setEditThumb(e.target.files?.[0] ?? null)}
               />
               {editThumb ? (
                 <p className="text-sm font-medium text-primary truncate">
@@ -1373,24 +706,17 @@ export default function AdminVideosPage() {
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Click to upload a new cover image (.jpg, .png)
+                  Click to upload a new cover image
                 </p>
               )}
             </label>
           </div>
-
           <div className="space-y-2 border-border border-t pt-4">
             <p className="text-sm font-medium">Transcript metadata</p>
             <p className="text-xs text-muted-foreground">
               <strong>Captions:</strong> the server FFmpeg-decodes speech to
-              WAV, then Deepgram Listen (default{" "}
-              <code className="text-[11px]">nova-3</code>;{" "}
-              <code className="text-[11px]">DEEPGRAM_TRANSCRIBE_MODEL</code>)
-              needs <code className="text-[11px]">DEEPGRAM_API_KEY</code> plus
-              an audible soundtrack in the video.{" "}
-              <strong>Catalog genres</strong> and <strong>CEFR bands</strong>{" "}
-              use WebVTT + Gemini afterward (genres must exist in the genres
-              table).
+              WAV. <strong>Catalog genres</strong> and{" "}
+              <strong>CEFR bands</strong> use WebVTT + Gemini.
             </p>
             <div className="flex flex-wrap gap-2">
               <AdminButton
@@ -1432,12 +758,12 @@ export default function AdminVideosPage() {
             Series label:{" "}
             <span className="text-foreground">
               {editing?.content.category.name ?? ""}
-            </span>{" "}
-            — change catalog structure in CMS if needed later.
+            </span>
           </p>
         </div>
       </AdminModal>
 
+      {/* Модалка: Edit Series */}
       <AdminModal
         open={editSeriesGroup != null}
         onClose={() => !editSeriesSaving && setEditSeriesGroup(null)}
@@ -1477,6 +803,7 @@ export default function AdminVideosPage() {
         </div>
       </AdminModal>
 
+      {/* Модалка: Delete */}
       <AdminModal
         open={deleteCandidate != null}
         onClose={() => !deleteSaving && setDeleteCandidate(null)}
@@ -1507,9 +834,8 @@ export default function AdminVideosPage() {
         {deleteCandidate?.mode === "series" ? (
           <p className="text-sm text-foreground">
             Delete <strong>{deleteCandidate.video.videoName}</strong> and its
-            catalog entry ( series{" "}
+            catalog entry (series{" "}
             <strong>{deleteCandidate.video.content.category.name}</strong>)?
-            This uses <code>cascade delete</code> from the backend content row.
           </p>
         ) : (
           <p className="text-sm text-foreground">
@@ -1520,6 +846,7 @@ export default function AdminVideosPage() {
         )}
       </AdminModal>
 
+      {/* Модалка: Inspect Meta */}
       <AdminModal
         open={inspectMeta != null}
         onClose={() => setInspectMeta(null)}
@@ -1568,42 +895,39 @@ export default function AdminVideosPage() {
                 Subtitles
               </AdminButton>
             </div>
-
             {inspectMeta.tab === "themes" ? (
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Catalog genres (database allow-list)
+                  Catalog genres
                 </p>
                 <ChipList
                   tags={inspectMeta.video.content.stats?.userTags ?? []}
-                  emptyLabel="No genres yet. Edit this video → “Regenerate genres”."
+                  emptyLabel="No genres yet."
                 />
               </div>
             ) : null}
-
             {inspectMeta.tab === "levels" ? (
               <div className="space-y-3">
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    CEFR bands (system tags)
+                    CEFR bands
                   </p>
                   <ChipList
                     tags={inspectMeta.video.content.stats?.systemTags ?? []}
-                    emptyLabel="No CEFR bands yet. Edit → “Regenerate CEFR”."
+                    emptyLabel="No CEFR bands yet."
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                      null
+                    null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
                 </p>
               </div>
             ) : null}
-
             {inspectMeta.tab === "subs" ? (
               <div className="space-y-3">
                 {inspectMeta.video.videoCaption?.subtitlesFileLink ? (
@@ -1612,8 +936,7 @@ export default function AdminVideosPage() {
                       Loaded via{" "}
                       <code className="text-[11px]">
                         GET /content-video/:id/subtitles
-                      </code>{" "}
-                      (same API token as admin).
+                      </code>
                     </p>
                     <a
                       href={inspectMeta.video.videoCaption.subtitlesFileLink}
@@ -1626,7 +949,7 @@ export default function AdminVideosPage() {
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    No captions row yet. Open Edit → Regenerate captions.
+                    No captions row yet.
                   </p>
                 )}
                 {subtitleLoading ? (
@@ -1648,14 +971,14 @@ export default function AdminVideosPage() {
         ) : null}
       </AdminModal>
 
-      {loadError ? (
+      {/* Ошибки загрузки и Статистика */}
+      {loadError && (
         <AdminCard className="border-destructive/40">
           <AdminCardContent className="p-6 text-sm text-destructive">
             {loadError}
           </AdminCardContent>
         </AdminCard>
-      ) : null}
-
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AdminCard>
           <AdminCardContent className="flex items-center gap-4 p-4">
@@ -1692,9 +1015,7 @@ export default function AdminVideosPage() {
               <p className="text-2xl font-bold">
                 {loading ? "…" : stats.watchers.toLocaleString()}
               </p>
-              <p className="text-sm text-muted-foreground">
-                Completed watches (stored)
-              </p>
+              <p className="text-sm text-muted-foreground">Completed watches</p>
             </div>
           </AdminCardContent>
         </AdminCard>
@@ -1707,14 +1028,13 @@ export default function AdminVideosPage() {
               <p className="text-2xl font-bold">
                 {loading ? "…" : stats.avgRating.toFixed(1)}
               </p>
-              <p className="text-sm text-muted-foreground">
-                Avg rating (videos with scores)
-              </p>
+              <p className="text-sm text-muted-foreground">Avg rating</p>
             </div>
           </AdminCardContent>
         </AdminCard>
       </div>
 
+      {/* Главный блок со списком */}
       <AdminCard>
         <div ref={listTopRef} className="scroll-mt-24" />
         <AdminCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-border border-b pt-6">
@@ -1735,26 +1055,22 @@ export default function AdminVideosPage() {
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 opacity-70" />
-
               <AdminInput
                 className="pl-10 pr-10"
                 placeholder="Search videos…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
                   className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted/50 flex items-center justify-center"
-                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-
             <div className="flex flex-wrap gap-3">
               <CustomSelect
                 value={ageFilter}
@@ -1770,7 +1086,6 @@ export default function AdminVideosPage() {
                   { value: "21+", label: "21+" },
                 ]}
               />
-
               <CustomSelect
                 value={genreFilter}
                 onChange={setGenreFilter}
@@ -1780,7 +1095,6 @@ export default function AdminVideosPage() {
                   ...genres.map((g) => ({ value: g.name, label: g.name })),
                 ]}
               />
-
               <CustomSelect
                 value={levelFilter}
                 onChange={setLevelFilter}
@@ -1821,7 +1135,6 @@ export default function AdminVideosPage() {
                           type="button"
                           onClick={() => openEditSeries(group)}
                           className="text-muted-foreground hover:text-primary transition-colors"
-                          title="Edit playlist name"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
@@ -1829,24 +1142,22 @@ export default function AdminVideosPage() {
                       <p className="text-xs text-muted-foreground">
                         {group.rows.length}{" "}
                         {group.rows.length === 1 ? "episode" : "episodes"}
-                        {group.rows.length > 1
-                          ? " · use arrows to set playlist order"
-                          : null}
+                        {group.rows.length > 1 &&
+                          " · use arrows to set playlist order"}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {group.friendlyLink ? (
+                      {group.friendlyLink && (
                         <Link
                           to={`/catalog/series/${encodeURIComponent(group.friendlyLink)}`}
                           target="_blank"
-                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-primary transition-colors hover:bg-muted"
                         >
                           <ListVideo className="h-4 w-4" />
                           Learner playlist
                           <ExternalLink className="h-3.5 w-3.5 opacity-70" />
                         </Link>
-                      ) : null}
+                      )}
                       <AdminButton
                         size="sm"
                         variant="outline"
@@ -1880,26 +1191,20 @@ export default function AdminVideosPage() {
                               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted to-accent/20" />
                             )}
                             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                              {video.ageRestriction ? (
-                                <AdminBadge variant="accent">
-                                  {video.ageRestriction}
-                                </AdminBadge>
-                              ) : (
-                                <AdminBadge variant="accent">0+</AdminBadge>
-                              )}
-                              {group.rows.length > 1 ? (
+                              <AdminBadge variant="accent">
+                                {video.ageRestriction || "0+"}
+                              </AdminBadge>
+                              {group.rows.length > 1 && (
                                 <AdminBadge variant="secondary">
                                   #{episodeIndex + 1}
                                 </AdminBadge>
-                              ) : null}
+                              )}
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity hover:opacity-100">
                               <a
                                 href={`/content/${video.id}`}
                                 target="_blank"
-                                rel="noopener noreferrer"
                                 className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/90 shadow-lg"
-                                aria-label="Preview in new tab"
                               >
                                 <Play className="ml-1 h-6 w-6 text-primary-foreground" />
                               </a>
@@ -1919,13 +1224,12 @@ export default function AdminVideosPage() {
                               <AdminCardHeader className="p-0 border-0 flex bg-transparent">
                                 <AdminRowMenu>
                                   <AdminRowMenuItem
-                                    onClick={() => {
-                                      window.open(
+                                    onClick={() =>
+                                      void window.open(
                                         `/content/${video.id}`,
                                         "_blank",
-                                        "noopener,noreferrer",
-                                      );
-                                    }}
+                                      )
+                                    }
                                   >
                                     <Play className="h-4 w-4" /> Preview
                                   </AdminRowMenuItem>
@@ -1974,7 +1278,7 @@ export default function AdminVideosPage() {
                                 </AdminRowMenu>
                               </AdminCardHeader>
                             </div>
-                            {group.rows.length > 1 ? (
+                            {group.rows.length > 1 && (
                               <div className="mt-2 flex gap-2">
                                 <AdminButton
                                   type="button"
@@ -2014,7 +1318,7 @@ export default function AdminVideosPage() {
                                   Down
                                 </AdminButton>
                               </div>
-                            ) : null}
+                            )}
                             <div className="mt-3 flex flex-wrap gap-2">
                               <AdminBadge variant="secondary">{lvl}</AdminBadge>
                               <AdminBadge variant="outline">
@@ -2053,7 +1357,6 @@ export default function AdminVideosPage() {
                 </div>
               ))}
 
-              {/* БЛОК С ПАГИНАЦИЕЙ — ТЕПЕРЬ ОН С ПЕРЕНОСОМ */}
               {totalPages > 1 && (
                 <div className="flex flex-wrap items-center justify-center gap-2 mt-12 mb-4">
                   <button
@@ -2067,7 +1370,6 @@ export default function AdminVideosPage() {
                   >
                     Prev
                   </button>
-
                   {getPaginationRange(currentPage, totalPages).map((p, i) =>
                     p === "..." ? (
                       <span
@@ -2095,7 +1397,6 @@ export default function AdminVideosPage() {
                       </button>
                     ),
                   )}
-
                   <button
                     type="button"
                     onClick={() => {
@@ -2111,14 +1412,14 @@ export default function AdminVideosPage() {
               )}
             </div>
           )}
-          {!loading ? (
+          {!loading && (
             <p className="mt-6 text-center text-sm text-muted-foreground border-t border-border pt-6">
-              Showing series {(currentPage - 1) * ADMIN_PAGE_SIZE + 1} -{" "}
+              Showing series {(currentPage - 1) * ADMIN_PAGE_SIZE + 1} &mdash;{" "}
               {Math.min(currentPage * ADMIN_PAGE_SIZE, groupedSeries.length)} of{" "}
               {groupedSeries.length} (filtered, {filtered.length} total
               episodes)
             </p>
-          ) : null}
+          )}
         </AdminCardContent>
       </AdminCard>
     </div>
