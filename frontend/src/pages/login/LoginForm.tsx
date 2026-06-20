@@ -8,7 +8,7 @@ import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import Turnstile from "react-turnstile";
 import { apiFetch, getApiBase, setStoredAccessToken } from "../../lib/api";
-import { useUser } from "../../context/UserContext";
+// import { useUser } from "../../context/UserContext";
 import { resolvePostLoginPath } from "../../lib/learnerOnboarding";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
