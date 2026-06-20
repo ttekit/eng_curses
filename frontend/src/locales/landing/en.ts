@@ -49,6 +49,7 @@ export const landingEn = {
     welcomeBack: "Welcome back",
     welcomeFallback: "Learner",
     streakLabel: "Day streak",
+    titleStreak: "Come back every day to increase your streak",
     ageVerification: {
       title: "Age verification",
       lead: "This video is rated {age}. Enter your date of birth to continue.",
@@ -103,6 +104,9 @@ export const landingEn = {
     ctaSecondary: "Browse content",
     videoMin: "Just 1 min - and you’re ready to start!",
     videoWatch: "Watch the video",
+    users: "users",
+    videos: "500+ videos",
+    hours: "10k+ hours",
   },
 
   features: {
@@ -520,7 +524,8 @@ export const landingEn = {
       },
       step3: {
         rightTitle: "Almost there!",
-        rightSubtitle: "Tell us your learning goal — you can skip and customise later.",
+        rightSubtitle:
+          "Tell us your learning goal — you can skip and customise later.",
         back: "Back",
         titleStudent: "Your learning goal",
         titleAdult: "Your learning goal",

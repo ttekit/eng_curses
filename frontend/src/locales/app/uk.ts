@@ -37,7 +37,7 @@ export const appUk = {
     navMyLessons: "Мої уроки",
     navLeaderboard: "Рейтинг",
     navProfile: "Профіль",
-    navCustomise: "Налаштувати",
+    navCustomise: "Налаштуйте профіль повністю",
     sectionLevel: "Рівень",
     sectionCategory: "Категорія",
     sectionGenre: "Жанр",
