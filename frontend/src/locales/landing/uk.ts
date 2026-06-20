@@ -51,6 +51,7 @@ export const landingUk = {
     welcomeBack: "З поверненням",
     welcomeFallback: "Учень",
     streakLabel: "Серія днів",
+    titleStreak: "Повертайся кожен день для збільшення серії",
     ageVerification: {
       title: "Перевірка віку",
       lead: "Це відео має рейтинг {age}. Введіть дату народження, щоб продовжити.",
@@ -105,6 +106,9 @@ export const landingUk = {
     ctaSecondary: "Переглянути контент",
     videoMin: "Лише 1 хвилина - і ви готові до старту!",
     videoWatch: "Дивіться відео",
+    users: "користувачів",
+    videos: "500+ відео",
+    hours: "10тис+ годин",
   },
 
   features: {

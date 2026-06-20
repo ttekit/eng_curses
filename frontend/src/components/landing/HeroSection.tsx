@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Play, Sparkles } from "lucide-react";
+import { Play, Sparkles, Users, Clapperboard, Clock } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
@@ -8,6 +8,7 @@ export function HeroSection() {
   const { messages } = useLandingLocale();
   const { hero } = messages;
   const { user } = useUser();
+  const users = 3315;
 
   return (
     <section className="relative border-b font-display border-border flex min-h-screen items-center overflow-hidden pt-24 pb-16">
@@ -48,6 +49,22 @@ export function HeroSection() {
                 <Play className="h-5 w-5" />
                 {hero.ctaSecondary}
               </Link>
+            </div>
+            <div className="flex flex-row w-fit gap-5 text-center text-foreground/75 text-lg mx-2 hover:bg-primary/15 py-3 px-6 rounded-[15px] transition-all duration-400 hover:cursor-pointer">
+              <div className="flex flex-row">
+                <Users className="size-6 mr-2" />
+                <p>
+                  {users} {hero.users}
+                </p>
+              </div>
+              <div className="flex flex-row">
+                <Clapperboard className="size-6 mr-2" />
+                <p>{hero.videos}</p>
+              </div>
+              <div className="flex flex-row">
+                <Clock className="size-6 mr-2" />
+                <p>{hero.hours}</p>
+              </div>
             </div>
           </div>
 

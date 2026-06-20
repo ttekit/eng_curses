@@ -176,16 +176,16 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.3);
-  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.6);
+  border-radius: 13px;
   transition: background 0.3s;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 58, 237, 0.5);
+  background: rgba(124, 58, 237, 0.8);
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(124, 58, 237, 0.3) transparent;
+  scrollbar-color: rgba(124, 58, 237, 0.6) transparent;
 }
 
 /* ==========================================================================

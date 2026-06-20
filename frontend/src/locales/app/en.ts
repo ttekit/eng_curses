@@ -37,7 +37,7 @@ export const appEn = {
     navMyLessons: "My Lessons",
     navLeaderboard: "Leaderboard",
     navProfile: "Profile",
-    navCustomise: "Customise",
+    navCustomise: "Configure the profile completely",
     sectionLevel: "Level",
     sectionCategory: "Category",
     sectionGenre: "Genre",
@@ -791,10 +791,10 @@ export const appEn = {
     seoDescription:
       "See the most active learners ranked by completed videos with high quiz scores.",
     title: "Leaderboard",
-    lead:
-      "Ranked by completed videos where your best quiz score is {minScore}% or higher.",
+    lead: "Ranked by completed videos where your best quiz score is {minScore}% or higher.",
     loading: "Loading leaderboard…",
-    empty: "No leaderboard entries yet. Watch lessons and score 80%+ on quizzes.",
+    empty:
+      "No leaderboard entries yet. Watch lessons and score 80%+ on quizzes.",
     yourRank: "Your rank: #{rank} · {count} qualifying videos",
     videosCount: "{count} videos",
     levelUnknown: "—",
