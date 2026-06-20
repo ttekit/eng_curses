@@ -17,7 +17,12 @@ import { ContentVideoController } from "./content-video.controller";
 import { ContentVideoService } from "./content-video.service";
 
 @Module({
-  imports: [AuthModule, AlcorythmModule, UserVocabularyModule],
+  imports: [
+    AuthModule,
+    AlcorythmModule,
+    UserVocabularyModule,
+    ContentVideoModule,
+  ],
   controllers: [ContentVideoController],
   providers: [
     ContentVideoService,
@@ -35,4 +40,4 @@ import { ContentVideoService } from "./content-video.service";
   ],
   exports: [ContentVideoService, VideoCaptionsService],
 })
-export class ContentVideoModule { }
+export class ContentVideoModule {}

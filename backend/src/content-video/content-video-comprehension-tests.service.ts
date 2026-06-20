@@ -41,7 +41,7 @@ import {
   ContentVideoSummaryRecommendationsGeminiClient,
   fallbackSummaryRecommendations,
 } from "./content-video-summary-recommendations-gemini.client";
-import type { ComprehensionSummaryRecommendationsBodyDto } from "src/content/content-video/dto/summary-recommendations.dto";
+import type { ComprehensionSummaryRecommendationsBodyDto } from "src/content-video/dto/summary-recommendations.dto";
 import { UserVocabularyService } from "src/user-vocabulary/user-vocabulary.service";
 import { syncActiveStudyingPhaseForUser } from "src/studying-plan/sync-active-studying-phase";
 import {
@@ -149,7 +149,9 @@ function normalizeSubmitKeyVocabularyDetails(raw: unknown): Array<{
 
 @Injectable()
 export class ContentVideoComprehensionTestsService {
-  private readonly logger = new Logger(ContentVideoComprehensionTestsService.name);
+  private readonly logger = new Logger(
+    ContentVideoComprehensionTestsService.name,
+  );
 
   constructor(
     private readonly prisma: PrismaService,
@@ -484,8 +486,9 @@ export class ContentVideoComprehensionTestsService {
           videoMeta?.videoCaption?.subtitlesFileLink,
         );
         const { cefr: cefrForOpen } = await this.loadLearnerContext(p.userId);
-        const learnerProfile =
-          await this.loadAdditionalProfileForOpenGrading(p.userId);
+        const learnerProfile = await this.loadAdditionalProfileForOpenGrading(
+          p.userId,
+        );
         const graded = await this.openAnswerGrader.gradeOpenSummary({
           videoName: videoMeta?.videoName ?? "",
           videoDescription: videoMeta?.videoDescription ?? null,
@@ -505,8 +508,8 @@ export class ContentVideoComprehensionTestsService {
             ? graded.feedback.trim()
             : offlineOpenSummaryFeedback(openPass);
         openEndedFeedback =
-          writtenSummaryScore != null ?
-            `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
+          writtenSummaryScore != null
+            ? `Summary score: ${writtenSummaryScore}/10.\n\n${baseFeedback}`
             : baseFeedback;
       }
     }

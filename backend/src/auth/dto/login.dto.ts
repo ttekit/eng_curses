@@ -1,28 +1,43 @@
-import { Transform } from 'class-transformer';
-import { IsString, MinLength, Matches, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { trimEmailInput } from './trim-helpers';
+import { Transform } from "class-transformer";
+import { IsString, MinLength, Matches, IsOptional } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { trimEmailInput } from "./trim-helpers";
 
 export class LoginDto {
   @ApiProperty({
-    description: 'Login address (any casing). Supports internal addresses e.g. name@class.local',
-    example: 'john.doe@example.com',
+    description:
+      "Login address (any casing). Supports internal addresses e.g. name@class.local",
+    example: "john.doe@example.com",
   })
   @Transform(({ value }) => trimEmailInput(value))
   @IsString()
   @Matches(/^[^\s@]+@[^\s@]+$/, {
-    message: 'email must be in the form name@host',
+    message: "email must be in the form name@host",
   })
   email: string;
 
-  @ApiProperty({ description: 'The password for the user account (minimum 8 characters)', example: 'Password123!' })
-  @Transform(({ value }) => String(value ?? '').trim())
+  @ApiProperty({
+    description: "The password for the user account (minimum 8 characters)",
+    example: "Password123!",
+  })
+  @Transform(({ value }) => String(value ?? "").trim())
   @IsString()
-  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @MinLength(8, { message: "Password must be at least 8 characters long" })
   password: string;
 
-  @ApiProperty({ required: false, description: 'Two-factor authentication code when enabled' })
+  @ApiProperty({
+    required: false,
+    description: "Two-factor authentication code when enabled",
+  })
   @IsOptional()
   @IsString()
   code?: string;
+
+  @ApiProperty({
+    required: false,
+    description: "Cloudflare Turnstile captcha token",
+  })
+  @IsOptional()
+  @IsString()
+  token?: string;
 }
