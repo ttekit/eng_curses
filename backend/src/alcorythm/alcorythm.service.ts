@@ -20,7 +20,7 @@ export class AlcorythmService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly geminiTagScoreClient: AlcorythmGeminiTagScoreClient,
-  ) {}
+  ) { }
 
   async analyzeUserLevel(userId: number): Promise<TopicKnowledgeItem[]> {
     const prisma = this.prisma as any;
@@ -176,9 +176,9 @@ export class AlcorythmService {
       });
     }
 
-    void this.analizeUsersLevel(userId).catch(() => {});
+    void this.analizeUsersLevel(userId).catch(() => { });
 
-    return items.map(({ preserve: _preserve, ...rest }) => rest);
+    return items.map(({ preserve: _preserve, ...rest }: { preserve: boolean } & Omit<TopicKnowledgeItem, "preserve">) => rest as TopicKnowledgeItem);
   }
 
   /** Topic ids linked to videos the learner has attempted (quiz evidence). */

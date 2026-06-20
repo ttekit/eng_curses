@@ -97,6 +97,7 @@ export default function LoginForm() {
 
         const bodyPayload = {
           ...loginData,
+          captchaToken: captchaToken,
           token: captchaToken,
           ...(show2FA ? { code: twoFactorCode } : {}),
         };
@@ -124,13 +125,17 @@ export default function LoginForm() {
           if (!token) {
             const next = resolvePostLoginPath(null, fromState);
             toast.success(loginSeo.toastSignedIn);
+            window.location.href = next;
             navigate(next);
           } else {
             setStoredAccessToken(token);
-            const profile = await refreshProfile();
-            const next = resolvePostLoginPath(profile, fromState);
+            localStorage.setItem("explys_access_token", token);
+            localStorage.setItem("exply_access_token", token);
+
             toast.success(loginSeo.toastSignedIn);
-            navigate(next);
+
+            const next = fromState || "/catalog";
+            window.location.href = next;
           }
         } else {
           const errorData = await response.json();
