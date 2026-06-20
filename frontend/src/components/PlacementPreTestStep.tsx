@@ -6,7 +6,6 @@ import LabelRegister from "./LabelRegister";
 import { apiFetch, readApiErrorBody } from "../lib/api";
 import { useUser, type UserData } from "../context/UserContext";
 import { useAppMessages } from "../hooks/useAppMessages";
-import { cn } from "../lib/utils";
 import {
   ADULT_PLACEMENT_CEFR_LEVELS,
   ADULT_PLACEMENT_CEFR_SET,
