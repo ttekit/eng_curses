@@ -11,7 +11,7 @@ export function HeroSection() {
   const users = 3315;
 
   return (
-    <section className="relative border-b font-display border-border flex min-h-screen items-center overflow-hidden pt-24 pb-16">
+    <section className="relative w-full border-b font-display border-border flex min-h-screen items-center overflow-hidden pt-24 pb-16">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
       <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
@@ -50,20 +50,20 @@ export function HeroSection() {
                 {hero.ctaSecondary}
               </Link>
             </div>
-            <div className="flex flex-row w-fit gap-5 text-center text-foreground/75 text-lg mx-2 hover:bg-primary/15 py-3 px-6 rounded-[15px] transition-all duration-400 hover:cursor-pointer">
-              <div className="flex flex-row">
-                <Users className="size-6 mr-2" />
-                <p>
+            <div className="flex flex-row w-fit max-w-full gap-4 text-center  text-foreground/75 text-lg hover:bg-primary/15 py-3 px-4 rounded-[15px] transition-all duration-400 hover:cursor-pointer">
+              <div className="flex sm:flex-row flex-col items-center">
+                <Users className="size-6 mr-2 mb-2" />
+                <p className="leading-tight">
                   {users} {hero.users}
                 </p>
               </div>
-              <div className="flex flex-row">
-                <Clapperboard className="size-6 mr-2" />
-                <p>{hero.videos}</p>
+              <div className="flex sm:flex-row flex-col items-center">
+                <Clapperboard className="size-6 mr-2 mb-2" />
+                <p className="leading-tight">{hero.videos}</p>
               </div>
-              <div className="flex flex-row">
-                <Clock className="size-6 mr-2" />
-                <p>{hero.hours}</p>
+              <div className="flex sm:flex-row flex-col items-center ">
+                <Clock className="size-6 mr-2 mb-2" />
+                <p className="leading-tight">{hero.hours}</p>
               </div>
             </div>
           </div>

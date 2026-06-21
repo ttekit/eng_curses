@@ -453,7 +453,7 @@ function ContentWatchHeader({
             <Link to="/catalog">
               <img src="/Icon.svg" className="w-15 h-18 hover:cursor-pointer" />
             </Link>
-            <span className="font-display truncate font-bold text-foreground">
+            <span className="hidden sm:block font-display truncate font-bold text-foreground">
               Explys
             </span>
           </div>
