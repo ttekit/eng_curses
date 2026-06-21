@@ -3,15 +3,24 @@ import { Play, Sparkles, Users, Clapperboard, Clock } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
+import { formatMessage } from "../../lib/formatMessage";
+import {
+  trackLandingCtaPrimary,
+  trackLandingCtaSecondary,
+  trackLandingHeroVideoPlay,
+} from "../../lib/landingAnalytics";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
-  const { hero } = messages;
+  const { hero, cta } = messages;
   const { user } = useUser();
-  const users = 3315;
+  const primaryTo = user ? "/profile" : "/registrationMain";
+  const socialProof = formatMessage(hero.socialProofLine, {
+    count: String(hero.activeLearnersCount),
+  });
 
   return (
-    <section className="relative border-b font-display border-border flex min-h-screen items-center overflow-hidden pt-24 pb-16">
+    <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
       <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
@@ -21,9 +30,7 @@ export function HeroSection() {
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">
-                {hero.badge}
-              </span>
+              <span className="text-sm font-medium text-primary">{hero.badge}</span>
             </div>
 
             <h1 className="font-display text-4xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
@@ -31,38 +38,51 @@ export function HeroSection() {
               <span className="text-primary">{hero.titleAccent}</span>
             </h1>
 
-            <p className="max-w-lg text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="max-w-lg font-sans text-lg leading-relaxed text-muted-foreground sm:text-xl">
               {hero.lead}
             </p>
 
-            <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">
-              <Link
-                to={user ? "/profile" : "/registrationMain"}
-                className="inline-flex w-full sm:w-auto text-center items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
-              >
-                {hero.ctaPrimary}
-              </Link>
-              <Link
-                to="/catalog"
-                className="inline-flex items-center w-full sm:w-auto text-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer"
-              >
-                <Play className="h-5 w-5" />
-                {hero.ctaSecondary}
-              </Link>
+            <div className="space-y-3">
+              <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">
+                <Link
+                  to={primaryTo}
+                  onClick={() => trackLandingCtaPrimary("hero")}
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-center text-lg font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:w-auto"
+                >
+                  {cta.startFree}
+                </Link>
+                <Link
+                  to={{ pathname: "/", hash: "#how-explys-works" }}
+                  onClick={() => trackLandingCtaSecondary("hero")}
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-8 py-4 text-center text-lg font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto"
+                >
+                  <Play className="h-5 w-5" />
+                  {hero.ctaSecondary}
+                </Link>
+              </div>
+              <p className="font-sans text-sm text-muted-foreground">
+                {hero.trustNoCard}
+                <span aria-hidden="true"> · </span>
+                {hero.trustPrivacy}
+              </p>
+              <p className="font-sans text-sm font-medium text-foreground/80">
+                {socialProof}
+              </p>
             </div>
-            <div className="flex flex-row w-fit gap-5 text-center text-foreground/75 text-lg mx-2 hover:bg-primary/15 py-3 px-6 rounded-[15px] transition-all duration-400 hover:cursor-pointer">
+
+            <div className="mx-2 flex w-fit flex-row gap-5 rounded-[15px] px-6 py-3 text-center text-lg text-foreground/75">
               <div className="flex flex-row">
-                <Users className="size-6 mr-2" />
+                <Users className="mr-2 size-6" />
                 <p>
-                  {users} {hero.users}
+                  {hero.activeLearnersCount} {hero.users}
                 </p>
               </div>
               <div className="flex flex-row">
-                <Clapperboard className="size-6 mr-2" />
+                <Clapperboard className="mr-2 size-6" />
                 <p>{hero.videos}</p>
               </div>
               <div className="flex flex-row">
-                <Clock className="size-6 mr-2" />
+                <Clock className="mr-2 size-6" />
                 <p>{hero.hours}</p>
               </div>
             </div>
@@ -71,15 +91,14 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
-              <p className=" text-center sm:text-right text-3xl items-start mb-4">
-                {hero.videoMin}{" "}
+              <p className="mb-4 items-start text-center font-sans text-3xl sm:text-right">
+                {hero.videoCaption}{" "}
                 <span className="text-primary">{hero.videoWatch}</span>
               </p>
-              <div className="w-auto h-auto bg-primary/10 rounded-[15px]">
+              <div className="h-auto w-auto rounded-[15px] bg-primary/10">
                 <VideoPlayer
-                  src={
-                    "https://kpi-eng-course.s3.us-east-1.amazonaws.com/m3u8_videos/Landing_video/index.m3u8"
-                  }
+                  src="https://kpi-eng-course.s3.us-east-1.amazonaws.com/m3u8_videos/Landing_video/index.m3u8"
+                  onPlay={trackLandingHeroVideoPlay}
                 />
               </div>
             </div>

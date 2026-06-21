@@ -83,6 +83,7 @@ export const landingEn = {
 
   header: {
     navLinks: [
+      { hash: "pricing", label: "Pricing" },
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "ready-to-start", label: "Ready to start" },
@@ -96,17 +97,20 @@ export const landingEn = {
   },
 
   hero: {
-    badge: "Personalized learning",
-    titleBefore: "Learn English",
-    titleAccent: "your way",
-    lead: "Adaptive video lessons that match your interests, level, and learning style — like a chameleon adapting to its environment, we adapt to you.",
-    ctaPrimary: "Start learning free",
-    ctaSecondary: "Browse content",
-    videoMin: "Just 1 min - and you’re ready to start!",
-    videoWatch: "Watch the video",
-    users: "users",
+    badge: "English learning platform",
+    titleBefore: "Understand real English from",
+    titleAccent: "movies & series",
+    lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
+    ctaSecondary: "See how it works",
+    videoCaption: "60-second product demo",
+    videoWatch: "Watch the demo",
+    activeLearnersCount: 3315,
+    users: "learners",
     videos: "500+ videos",
     hours: "10k+ hours",
+    socialProofLine: "Join {count}+ learners — no credit card required",
+    trustNoCard: "No credit card required",
+    trustPrivacy: "No spam. Your information stays private.",
   },
 
   features: {
@@ -122,14 +126,14 @@ export const landingEn = {
           "Learn from real-world content — movies, series, and educational videos tailored to your interests.",
       },
       {
-        title: "AI personalization",
+        title: "Two-way AI practice",
         description:
-          "Our system adapts to your pace, preferences, and the skills you need most.",
+          "AI adapts to your answers and pronunciation — not one-size-fits-all drills or robotic text-to-speech.",
       },
       {
-        title: "Focused practice",
+        title: "Context-aware subtitles",
         description:
-          "Interactive quizzes after each video reinforce vocabulary, grammar, and listening skills.",
+          "Interactive quizzes and subtitles built for meaning in context — not literal machine translations.",
       },
       {
         title: "For everyone",
@@ -189,8 +193,66 @@ export const landingEn = {
     subtitle:
       "From essentials to adaptive AI and family plans — plus solutions for schools.",
     fullPageLink: "Full pricing page",
-    freeAccess: "Free access in June 2026!",
-    startLearning: "Start learning now",
+    freeHeadline: "Start free — no credit card required",
+    freePromo: "Free access in June 2026!",
+  },
+
+  differentiation: {
+    titleBefore: "Why learners choose",
+    titleBrand: "Explys",
+    titleAfter: "over other video apps",
+    subtitle:
+      "Transparent pricing, real practice, and content that fits your level — not hidden paywalls or robotic drills.",
+    items: [
+      {
+        title: "Transparent pricing",
+        description:
+          "Plans and prices are visible before you sign up — no credit card required to start.",
+      },
+      {
+        title: "No card to start",
+        description:
+          "Create an account and begin learning free. Upgrade only when you are ready.",
+      },
+      {
+        title: "Real voices, real context",
+        description:
+          "Learn from authentic video with subtitles and quizzes — not synthetic robot narration.",
+      },
+      {
+        title: "Age-aware personalization",
+        description:
+          "Placement and interests shape what you see — so content matches your level and goals.",
+      },
+    ],
+  },
+
+  testimonials: {
+    title: "Learners on Explys",
+    subtitle: "Real progress from video-based practice.",
+    items: [
+      {
+        name: "Maria K.",
+        level: "B1 → B2",
+        quote:
+          "I finally understand fast dialogue in series. Quizzes right after each clip made vocabulary stick.",
+        outcome: "Confident watching English series without constant pausing",
+      },
+      {
+        name: "Alex T.",
+        level: "A2 → B1",
+        quote:
+          "The placement test pointed me to the right lessons. AI practice felt like a conversation, not a textbook.",
+        outcome: "Passed a job interview in English",
+      },
+      {
+        name: "Olena S.",
+        level: "Parent, Family plan",
+        quote:
+          "My kids get content at their level. I can see progress without forcing long grammar sessions.",
+        outcome: "Family learning habit three evenings per week",
+      },
+    ],
   },
 
   marketingFaq: {
@@ -209,7 +271,7 @@ export const landingEn = {
     freeToStart: {
       question: "Is Explys free to start?",
       answer:
-        "Yes. Currently, using Explys is completely free so you can try our approach to language learning.",
+        "Yes. You can create an account and start learning for free without a credit card. Paid plans (Light, Smart, and Family) unlock additional features when you are ready to subscribe.",
     },
     personalize: {
       question: "How does Explys personalize my lessons?",
@@ -223,16 +285,41 @@ export const landingEn = {
     },
   },
 
+  pricingQuestions: {
+    cost: {
+      question: "How much does Explys cost?",
+      answer:
+        "Light (Essentials) is $7 per month, Smart (Adaptive) is $12 per month, and Family (LMS/Pro) is $19 per month. Teacher / Enterprise pricing is custom — contact us for schools and private teachers.",
+    },
+    popular: {
+      question: "Which Explys plan is most popular?",
+      answer:
+        "Smart (Adaptive) is our most popular plan. It includes AI error analysis, unlimited interactive exercises, deep progress analytics, leaderboards, and a personalized growth plan.",
+    },
+    upgrade: {
+      question: "Can I upgrade my plan later?",
+      answer:
+        "Yes. You can upgrade anytime from the pricing page after you sign in. Payments are processed securely by Stripe.",
+    },
+    account: {
+      question: "Do I need an account before subscribing?",
+      answer:
+        "Yes. Sign in to subscribe to Light, Smart, or Family. Family plans include up to three profiles with shared parental controls and all Smart features.",
+    },
+  },
+
   cta: {
+    startFree: "Start for free",
     titleBefore: "Ready to start your",
     titleAccent: "English journey",
     titleAfter: "?",
     subtitle:
       "Join thousands of learners improving their English with personalized video content.",
     catalog: "Catalog",
-    getStartedFree: "Get started free",
     howItWorks: "How it works",
-    footnote: "Free access in June 2026!",
+    trustNoCard: "No credit card required",
+    trustPrivacy: "No spam. Your information stays private.",
+    footnotePromo: "Free access in June 2026!",
   },
 
   pricingCards: {

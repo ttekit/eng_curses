@@ -24,7 +24,7 @@ export function HowItWorksSection() {
             <span className="text-primary">{howItWorks.titleBrand}</span>{" "}
             {howItWorks.titleAfter}
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto max-w-2xl font-sans text-lg text-muted-foreground">
             {howItWorks.subtitle}
           </p>
         </div>
@@ -47,7 +47,7 @@ export function HowItWorksSection() {
                 <h3 className="mb-2 text-lg font-semibold text-foreground">
                   {step.title}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-sans text-sm text-muted-foreground">
                   {step.description}
                 </p>
               </div>

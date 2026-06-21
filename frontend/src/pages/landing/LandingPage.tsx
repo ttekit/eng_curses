@@ -1,12 +1,11 @@
-import React, { Suspense, useEffect } from "react";
-import { useLocation } from "react-router"; // Додали хук для відслідковування URL
+import React, { Suspense, useEffect, useMemo } from "react";
+import { useLocation } from "react-router";
 import { HeroSection } from "../../components/landing/HeroSection";
 import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
 import ContentHeader from "../../components/catalog/ContentHeader";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { buildLandingJsonLdSchemas } from "../../lib/seoStructuredData";
-import { landingFaqEn } from "../../lib/marketingSeoContent";
 import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
@@ -25,6 +24,16 @@ const LandingPricingSection = React.lazy(() =>
     default: m.LandingPricingSection,
   })),
 );
+const DifferentiationSection = React.lazy(() =>
+  import("../../components/landing/DifferentiationSection").then((m) => ({
+    default: m.DifferentiationSection,
+  })),
+);
+const TestimonialsSection = React.lazy(() =>
+  import("../../components/landing/TestimonialsSection").then((m) => ({
+    default: m.TestimonialsSection,
+  })),
+);
 const CtaSection = React.lazy(() =>
   import("../../components/landing/CtaSection").then((m) => ({
     default: m.CtaSection,
@@ -38,8 +47,12 @@ const LandingFooter = React.lazy(() =>
 
 export default function LandingPage() {
   const { messages, locale } = useLandingLocale();
-  const { seo } = messages;
+  const { seo, marketingFaq } = messages;
   const location = useLocation();
+  const pricingFaqItems = useMemo(
+    () => Object.values(messages.pricingQuestions),
+    [messages.pricingQuestions],
+  );
 
   useEffect(() => {
     if (location.hash) {
@@ -59,7 +72,7 @@ export default function LandingPage() {
 
   return (
     <main
-      className=" min-h-screen bg-background text-foreground selection:bg-primary/30"
+      className="min-h-screen bg-background text-foreground selection:bg-primary/30"
       lang={locale === "uk" ? "uk" : "en"}
     >
       <SEO
@@ -76,14 +89,21 @@ export default function LandingPage() {
       <HeroSection />
 
       <Suspense fallback={<div className="min-h-screen" />}>
-        <FeaturesSection />
-        <HowItWorksSection />
         <LandingPricingSection />
         <MarketingFaqSection
+          id="pricing-faq"
+          title={marketingFaq.pricingTitle}
+          subtitle={marketingFaq.pricingSubtitle}
+          items={pricingFaqItems}
+        />
+        <FeaturesSection />
+        <DifferentiationSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+        <MarketingFaqSection
           id="faq"
-          title={messages.marketingFaq.landingTitle}
-          subtitle={messages.marketingFaq.landingSubtitle}
-          items={landingFaqEn}
+          title={marketingFaq.landingTitle}
+          subtitle={marketingFaq.landingSubtitle}
         />
         <CtaSection />
         <LandingFooter />
