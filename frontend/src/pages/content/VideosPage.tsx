@@ -71,6 +71,9 @@ interface ContentVideo {
 }
 
 function toCardVideo(video: ContentVideo): CatalogCardVideo {
+  const systemTags = video.content?.stats?.systemTags || [];
+  const levelTag = systemTags.find(tag => /^(A1|A2|B1|B2|C1|C2)$/i.test(tag));
+
   return {
     id: video.id,
     title: video.videoName,
@@ -78,6 +81,7 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
     thumbnailUrl: video.thumbnailUrl,
     videoLink: video.videoLink,
     ageRestriction: video.ageRestriction,
+    level: levelTag,
   };
 }
 
@@ -512,15 +516,15 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-          id: featured.id,
-          title: featured.videoName,
-          description:
-            featured.videoDescription ??
-            featured.content.category.description ??
-            "",
-          categoryName: featured.content.category.name,
-          thumbnailUrl: featured.thumbnailUrl,
-        }
+        id: featured.id,
+        title: featured.videoName,
+        description:
+          featured.videoDescription ??
+          featured.content.category.description ??
+          "",
+        categoryName: featured.content.category.name,
+        thumbnailUrl: featured.thumbnailUrl,
+      }
       : null;
   }, [featured]);
 
@@ -583,16 +587,16 @@ export default function VideoPage() {
 
   const paginatedVideos = hasFilters
     ? filteredVideos.slice(
-        (currentPage - 1) * GRID_PAGE_SIZE,
-        currentPage * GRID_PAGE_SIZE,
-      )
+      (currentPage - 1) * GRID_PAGE_SIZE,
+      currentPage * GRID_PAGE_SIZE,
+    )
     : [];
 
   const paginatedRows = !hasFilters
     ? catalogRows.slice(
-        (currentPage - 1) * ROWS_PAGE_SIZE,
-        currentPage * ROWS_PAGE_SIZE,
-      )
+      (currentPage - 1) * ROWS_PAGE_SIZE,
+      currentPage * ROWS_PAGE_SIZE,
+    )
     : [];
 
   return (
@@ -969,7 +973,7 @@ export default function VideoPage() {
                     ? cb.beforeEntryAdult || "Let's set up your profile."
                     : user?.role === "student" && user?.teacherId == null
                       ? cb.beforeEntryIndependentStudent ||
-                        "Let's personalize your learning."
+                      "Let's personalize your learning."
                       : cb.beforeEntryStudent || "Let's get everything ready."}
                 </p>
               </div>

@@ -3,6 +3,7 @@ import { Play, Sparkles, Users, Clapperboard, Clock } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
+import { useABTest } from "../../hooks/useABtest";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
@@ -10,8 +11,17 @@ export function HeroSection() {
   const { user } = useUser();
   const users = 3315;
 
+
+  const browseVariant = useABTest("hero_browse_cta", ["control", "registration_redirect"]);
+
+  const secondaryLink =
+    browseVariant === "registration_redirect" && !user
+      ? "/registrationMain?from=hero_ab_test"
+      : "/catalog";
+
+
   return (
-    <section className="relative border-b font-display border-border flex min-h-screen items-center overflow-hidden pt-24 pb-16">
+    <section className="relative w-full border-b font-display border-border flex min-h-screen items-center overflow-hidden pt-24 pb-16">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
       <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
@@ -42,28 +52,31 @@ export function HeroSection() {
               >
                 {hero.ctaPrimary}
               </Link>
+
               <Link
-                to="/catalog"
+                to={secondaryLink}
                 className="inline-flex items-center w-full sm:w-auto text-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer"
               >
+
                 <Play className="h-5 w-5" />
                 {hero.ctaSecondary}
               </Link>
+
             </div>
-            <div className="flex flex-row w-fit gap-5 text-center text-foreground/75 text-lg mx-2 hover:bg-primary/15 py-3 px-6 rounded-[15px] transition-all duration-400 hover:cursor-pointer">
-              <div className="flex flex-row">
-                <Users className="size-6 mr-2" />
-                <p>
+            <div className="flex flex-row w-fit max-w-full gap-4 text-center  text-foreground/75 text-lg hover:bg-primary/15 py-3 px-4 rounded-[15px] transition-all duration-400 hover:cursor-pointer">
+              <div className="flex sm:flex-row flex-col items-center">
+                <Users className="size-6 mr-2 mb-2" />
+                <p className="leading-tight">
                   {users} {hero.users}
                 </p>
               </div>
-              <div className="flex flex-row">
-                <Clapperboard className="size-6 mr-2" />
-                <p>{hero.videos}</p>
+              <div className="flex sm:flex-row flex-col items-center">
+                <Clapperboard className="size-6 mr-2 mb-2" />
+                <p className="leading-tight">{hero.videos}</p>
               </div>
-              <div className="flex flex-row">
-                <Clock className="size-6 mr-2" />
-                <p>{hero.hours}</p>
+              <div className="flex sm:flex-row flex-col items-center ">
+                <Clock className="size-6 mr-2 mb-2" />
+                <p className="leading-tight">{hero.hours}</p>
               </div>
             </div>
           </div>

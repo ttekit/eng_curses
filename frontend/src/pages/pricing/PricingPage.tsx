@@ -13,6 +13,7 @@ import { buildPricingJsonLdSchemas } from "../../lib/seoStructuredData";
 import { pricingFaqEn } from "../../lib/marketingSeoContent";
 import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
 import { ArrowRight } from "lucide-react";
+import { captureEvent } from "../../lib/analytics";
 
 export default function PricingPage() {
   const [searchParams] = useSearchParams();
@@ -92,9 +93,13 @@ export default function PricingPage() {
           </div>
 
           <PricingCards
-            onSelectConsumerPlan={(id) =>
-              void startCheckout(id, { isLoggedIn })
-            }
+            onSelectConsumerPlan={(id) => {
+              captureEvent("start_checkout_clicked", {
+                plan_id: id,
+                is_logged_in: isLoggedIn,
+              });
+              void startCheckout(id, { isLoggedIn });
+            }}
             checkoutDisabled={checkoutLoading}
           />
 

@@ -4,6 +4,8 @@ import { downloadStudentAccountsExcel } from "../../lib/studentAccountsExcel";
 import type { GeneratedStudentAccount } from "../../lib/registerUser";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useEffect } from "react";
+import { captureEvent } from "../../lib/analytics";
 
 type SuccessLocationState = {
   generatedStudents?: GeneratedStudentAccount[];
@@ -18,6 +20,12 @@ export default function RegisterSuccessPage() {
   const state = location.state as SuccessLocationState | null;
   const students = state?.generatedStudents ?? [];
   const hasStudents = students.length > 0;
+  useEffect(() => {
+    captureEvent("registration_completed", {
+      students_count: students.length,
+      has_students: hasStudents,
+    });
+  }, [students.length, hasStudents]);
 
   return (
     <>

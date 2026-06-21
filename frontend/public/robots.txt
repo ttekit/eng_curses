@@ -1,8 +1,9 @@
 User-agent: *
 Allow: /
 Allow: /pricing
-Disallow: /catalog
-Disallow: /content/
+Allow: /catalog
+Allow: /content/
+
 Disallow: /learning-plan
 Disallow: /subscribe
 Disallow: /loginForm

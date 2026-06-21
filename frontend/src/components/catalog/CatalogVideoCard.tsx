@@ -112,14 +112,16 @@ export function CatalogVideoCard({
             </span>
           ) : null}
 
-          <span
-            className={cn(
-              "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-semibold z-10 backdrop-blur-md shadow-sm",
-              badgeClassForLabel(video.level || video.categoryLabel),
-            )}
-          >
-            {video.level || video.categoryLabel}
-          </span>
+          {video.level && (
+            <span
+              className={cn(
+                "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-semibold z-10 backdrop-blur-md shadow-sm",
+                badgeClassForLabel(video.level),
+              )}
+            >
+              {video.level}
+            </span>
+          )}
 
           {video.durationLabel ? (
             <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
