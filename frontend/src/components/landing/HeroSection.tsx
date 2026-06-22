@@ -1,20 +1,13 @@
 import { Link } from "react-router";
-import { useState, useEffect } from "react";
-import { Play, Sparkles, Users, Clapperboard, Clock } from "lucide-react";
+import { Play, Sparkles } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
-import { formatMessage } from "../../lib/formatMessage";
 import {
   trackLandingCtaPrimary,
   trackLandingCtaSecondary,
   trackLandingHeroVideoPlay,
 } from "../../lib/landingAnalytics";
-import type { AdminAnalyticsOverviewDto } from "../../lib/adminAnalyticsApi";
-import {
-  fetchAdminOverview,
-  defaultAnalyticsRange,
-} from "../../lib/adminAnalyticsApi";
 import HeroStats from "./HeroStats";
 
 export function HeroSection() {
@@ -22,21 +15,6 @@ export function HeroSection() {
   const { hero, cta } = messages;
   const { user } = useUser();
   const primaryTo = user ? "/profile" : "/registrationMain";
-
-  const [overview, setOverview] = useState<AdminAnalyticsOverviewDto | null>(
-    null,
-  );
-
-  useEffect(() => {
-    const { from, to } = defaultAnalyticsRange();
-    fetchAdminOverview(from, to).then(setOverview).catch(console.error);
-  }, []);
-
-  const socialProof = formatMessage(hero.socialProofLine, {
-    count: overview
-      ? (overview.totalUsers + 3259).toString()
-      : hero.activeLearnersCount.toString(),
-  });
 
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">
