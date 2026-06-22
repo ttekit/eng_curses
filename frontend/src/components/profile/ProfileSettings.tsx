@@ -1364,7 +1364,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   logout();
                   setStoredAccessToken(null);
                   toast.success(s?.signOutToast || "Signed out successfully");
-                  window.location.href = "/loginForm";
+                  navigate("/loginForm", { replace: true });
                 }}
               >
                 <LogOut className="size-4 pt-1 pr-1" />

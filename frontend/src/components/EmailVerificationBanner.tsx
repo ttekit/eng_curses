@@ -48,7 +48,7 @@ export function EmailVerificationBanner() {
           className="size-4 shrink-0 text-amber-600 dark:text-amber-400"
           aria-hidden
         />
-        <span>{b.message}</span>
+        <span className="text-white">{b.message}</span>
         <Link
           to="/verify-email"
           state={{ email: user?.email }}

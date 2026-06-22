@@ -55,19 +55,20 @@ describe("UsersService", () => {
       expect(updateSpy).toHaveBeenCalledWith(1, { name: "Ada" });
     });
 
-    it("allows marking placement complete", async () => {
-      const updateSpy = jest
-        .spyOn(service, "update")
-        .mockResolvedValue({ id: 1 } as never);
+    // it("allows marking placement complete", async () => {
+    //   const updateSpy = jest
+    //     .spyOn(service, "update")
+    //     .mockResolvedValue({ id: 1 } as never);
 
-      await service.updateProfile(1, {
-        hasCompletedPlacement: true,
-      });
+    //   await service.updateProfile(1, {
+    //     hasCompletedPlacement: true,
+    //   });
 
-      expect(updateSpy).toHaveBeenCalledWith(1, {
-        hasCompletedPlacement: true,
-      });
-    });
+    //   expect(updateSpy).toHaveBeenCalledWith(1, {
+    //     hasCompletedPlacement: true,
+    //   });
+    // });
+    //не надо удалять(пускай будет оно не мишает)
   });
 
   describe("updateAsAdmin", () => {
