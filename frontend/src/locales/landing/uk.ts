@@ -88,7 +88,7 @@ export const landingUk = {
       { hash: "pricing", label: "Тарифи" },
       { hash: "why-choose-explys", label: "Чому Explys" },
       { hash: "how-explys-works", label: "Як це працює" },
-      { hash: "testimonials", label: "Відгуки" },
+      { hash: "testimonials", label: "Учні про Explys" },
       { hash: "ready-to-start", label: "Почати" },
     ],
     pricing: "Тарифи",
@@ -160,7 +160,7 @@ export const landingUk = {
     titleBrand: "Explys",
     titleAfter: "?",
     subtitle:
-      "Створи акаунт, пройди вхідне тестування при першому відкритті каталогу, потім слідуй студентському навчальному плану з відеоуроками й вікторинами.",
+      "Покроковий план як почати отримувати справжні результати у вивченні мови",
     stepPrefix: "Крок",
     steps: [
       {

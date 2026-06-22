@@ -18,7 +18,7 @@ export function TestimonialsSection() {
   return (
     <section
       id="testimonials"
-      className="scroll-mt-24 border-t border-border bg-background py-15 font-display"
+      className="scroll-mt-24 border-t border-b border-border bg-background py-15 font-display"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-2xl text-center">

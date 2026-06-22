@@ -159,7 +159,7 @@ export const landingEn = {
     titleBrand: "Explys",
     titleAfter: "works?",
     subtitle:
-      "Create an account, finish placement when you first open the catalog, then follow your student learning plan with video lessons and quizzes.",
+      "A step-by-step plan for how to start getting real results in language learning",
     stepPrefix: "Step",
     steps: [
       {
