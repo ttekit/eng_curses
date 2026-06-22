@@ -8,7 +8,7 @@ import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import Turnstile from "react-turnstile";
 import { apiFetch, getApiBase, setStoredAccessToken } from "../../lib/api";
-// import { useUser } from "../../context/UserContext";
+import { useUser } from "../../context/UserContext";
 import { resolvePostLoginPath } from "../../lib/learnerOnboarding";
 import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 import { AuthPageSeo } from "../../lib/authPageSeo";
@@ -42,7 +42,7 @@ export default function LoginForm() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  // const { refreshProfile } = useUser();
+  const { refreshProfile } = useUser();
   const { messages } = useLandingLocale();
   const loginSeo = messages.auth.login;
 
@@ -97,7 +97,6 @@ export default function LoginForm() {
 
         const bodyPayload = {
           ...loginData,
-          captchaToken: captchaToken,
           token: captchaToken,
           ...(show2FA ? { code: twoFactorCode } : {}),
         };
@@ -123,19 +122,18 @@ export default function LoginForm() {
           const fromState = safeReturnPath(location.state);
 
           if (!token) {
+            await refreshProfile();
             const next = resolvePostLoginPath(null, fromState);
             toast.success(loginSeo.toastSignedIn);
-            window.location.href = next;
             navigate(next);
           } else {
             setStoredAccessToken(token);
-            localStorage.setItem("explys_access_token", token);
-            localStorage.setItem("exply_access_token", token);
+            await refreshProfile();
 
             toast.success(loginSeo.toastSignedIn);
 
             const next = fromState || "/catalog";
-            window.location.href = next;
+            navigate(next);
           }
         } else {
           const errorData = await response.json();

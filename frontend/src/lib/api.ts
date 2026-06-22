@@ -152,6 +152,10 @@ export function mergeApiAuthHeaders(
   } else if (bearer) {
     headers.set("Authorization", `Bearer ${bearer}`);
   }
+  const apiToken = import.meta.env.VITE_API_TOKEN;
+  if (apiToken) {
+    headers.set("x-api-token", apiToken);
+  }
 
   return headers;
 }
@@ -245,7 +249,7 @@ export async function apiFetch(
         typeof window !== "undefined" &&
         !window.location.pathname.includes("/login")
       ) {
-        window.location.href = "/login";
+        window.location.href = "/loginForm";
       }
     }
 
