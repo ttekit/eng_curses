@@ -190,11 +190,14 @@ export const landingEn = {
   },
 
   pricingSection: {
-    title: "Simple, transparent pricing",
+    title:
+      "After that, simple and transparent payment to achieve the best results",
     subtitle:
-      "From essentials to adaptive AI and family plans — plus solutions for schools.",
+      "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
-    freeHeadline: "Start free — no credit card required",
+    freeHeadline: "Start free in ",
+    freeAccess: "June 2026",
+    freeHeadlineEnd: "No credit card required",
     freePromo: "Free access in June 2026!",
   },
 

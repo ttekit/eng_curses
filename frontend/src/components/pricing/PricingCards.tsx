@@ -90,9 +90,9 @@ function CtaButton({
       className={cn(
         base,
         isPrimary &&
-        "flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]",
+          "flex rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer",
         isSecondary &&
-        "flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10",
+          "flex text-foreground/70 hover:text-white rounded-[15px] px-3 items-center justify-center gap-2 hover:cursor-pointer rounded-xlpx-8 py-4 text-sm font-semibold transition-colors hover:bg-muted-foreground/10",
       )}
     >
       {plan.ctaLabel}
@@ -214,7 +214,9 @@ export default function PricingCards({
     <div
       className={cn(
         "grid grid-cols-1 gap-6",
-        onlyPlanId ? "max-w-md mx-auto" : "md:grid-cols-2 xl:grid-cols-4 xl:items-stretch xl:gap-5",
+        onlyPlanId
+          ? "max-w-md mx-auto"
+          : "md:grid-cols-2 xl:grid-cols-4 xl:items-stretch xl:gap-5",
         className,
       )}
     >
