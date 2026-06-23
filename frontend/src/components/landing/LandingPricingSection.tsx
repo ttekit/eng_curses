@@ -32,7 +32,7 @@ export function LandingPricingSection() {
             {pricingSection.freePromo}
           </p>
           <Link
-            to="/registrationMain"
+            to="/register"
             onClick={() => trackLandingCtaPrimary("pricing")}
             className="mt-4 inline-flex cursor-pointer flex-row items-center justify-center rounded-md p-2 text-primary transition-all duration-300 hover:bg-primary/20"
           >

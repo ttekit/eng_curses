@@ -153,7 +153,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
               </Link>
             ) : (
               <>
-                <Link to="/loginForm">
+                <Link to="/login">
                   <button
                     type="button"
                     className="rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer sm:px-5"
@@ -163,7 +163,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                       : appHeader.logIn}
                   </button>
                 </Link>
-                <Link to="/registrationMain">
+                <Link to="/register">
                   <button
                     type="button"
                     className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer sm:px-6"
@@ -297,7 +297,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                   </Link>
                 ) : (
                   <>
-                    <Link to="/loginForm" onClick={closeMenu}>
+                    <Link to="/login" onClick={closeMenu}>
                       <button
                         type="button"
                         className="w-full rounded-xl px-4 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer border border-border"
@@ -307,7 +307,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                           : appHeader.logIn}
                       </button>
                     </Link>
-                    <Link to="/registrationMain" onClick={closeMenu}>
+                    <Link to="/register" onClick={closeMenu}>
                       <button
                         type="button"
                         className="w-full rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"

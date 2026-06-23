@@ -2,13 +2,16 @@ import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
-import { trackLandingCtaPrimary, trackLandingCtaSecondary } from "../../lib/landingAnalytics";
+import {
+  trackLandingCtaPrimary,
+  trackLandingCtaSecondary,
+} from "../../lib/landingAnalytics";
 
 export function CtaSection() {
   const { isLoggedIn } = useUser();
   const { messages } = useLandingLocale();
   const { cta } = messages;
-  const primaryTo = isLoggedIn ? "/catalog" : "/registrationMain";
+  const primaryTo = isLoggedIn ? "/catalog" : "/register";
   const primaryLabel = isLoggedIn ? cta.catalog : cta.startFree;
 
   return (
@@ -34,10 +37,7 @@ export function CtaSection() {
         </p>
 
         <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center sm:justify-center">
-          <Link
-            to={primaryTo}
-            onClick={() => trackLandingCtaPrimary("bottom")}
-          >
+          <Link to={primaryTo} onClick={() => trackLandingCtaPrimary("bottom")}>
             <button
               type="button"
               className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:w-auto"

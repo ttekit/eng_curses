@@ -14,7 +14,7 @@ export function HeroSection() {
   const { messages } = useLandingLocale();
   const { hero, cta } = messages;
   const { user } = useUser();
-  const primaryTo = user ? "/profile" : "/registrationMain";
+  const primaryTo = user ? "/profile" : "/register";
 
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">

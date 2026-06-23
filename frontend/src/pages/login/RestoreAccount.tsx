@@ -88,7 +88,7 @@ export default function RestoreAccount() {
           )}
 
           <div className="pt-4">
-            <Link to="/loginForm" className="block w-full">
+            <Link to="/login" className="block w-full">
               <Button
                 type="button"
                 className="w-full rounded-[15px] bg-primary px-6 py-4 text-sm font-semibold text-foreground/70 hover:bg-purple-hover hover:text-white transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"

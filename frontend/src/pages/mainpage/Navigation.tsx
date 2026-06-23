@@ -17,9 +17,7 @@ function NavControls({ mobile, n, closeMenu }: NavControlsProps) {
     <>
       <div
         className={
-          mobile
-            ? "flex w-full flex-col gap-3"
-            : "flex items-center gap-4"
+          mobile ? "flex w-full flex-col gap-3" : "flex items-center gap-4"
         }
       >
         <select className={selectClass} aria-label={n.filterGenreAria}>
@@ -48,7 +46,7 @@ function NavControls({ mobile, n, closeMenu }: NavControlsProps) {
         }
       >
         <Link
-          to="/loginForm"
+          to="/login"
           className={mobile ? "w-full sm:flex-1" : ""}
           onClick={closeMenu}
         >
@@ -58,7 +56,7 @@ function NavControls({ mobile, n, closeMenu }: NavControlsProps) {
         </Link>
 
         <Link
-          to="/registrationMain"
+          to="/register"
           className={mobile ? "w-full sm:flex-1" : ""}
           onClick={closeMenu}
         >

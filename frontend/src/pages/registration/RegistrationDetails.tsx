@@ -2,13 +2,7 @@ import Button from "../../components/Button";
 import LabelRegister from "../../components/LabelRegister";
 import ValidateError from "../../components/ValidateError";
 import { Link, useNavigate } from "react-router";
-import {
-  useState,
-  useContext,
-  useEffect,
-  useMemo,
-  FormEvent,
-} from "react";
+import { useState, useContext, useEffect, useMemo, FormEvent } from "react";
 import {
   RegistrationContext,
   type FormData,
@@ -272,11 +266,11 @@ export default function RegistrationDetails() {
         await refreshProfile();
 
         if (userRole === "teacher") {
-          navigate("/registrationSuccess", {
+          navigate("/register-success", {
             state: { generatedStudents: students },
           });
         } else {
-          navigate("/registrationPreferences");
+          navigate("/register-preferences");
         }
       } else {
         setFormError(await readApiErrorBody(response));
@@ -300,7 +294,7 @@ export default function RegistrationDetails() {
       <AuthPageSeo
         title={regSeo.seoTitle}
         description={regSeo.seoDescription}
-        path="/registrationDetails"
+        path="/register-details"
       />
       <AuthSplitLayout
         progressStep={2}
@@ -310,7 +304,7 @@ export default function RegistrationDetails() {
         rightSubtitle={step2.rightSubtitle}
       >
         <Link
-          to="/registrationMain"
+          to="/register"
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -489,7 +483,7 @@ export default function RegistrationDetails() {
             </Button>
             <Button
               type="button"
-              onClick={() => navigate("/registrationMain")}
+              onClick={() => navigate("/register")}
               className="w-full sm:w-auto rounded-xl bg-transparent px-6 py-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground cursor-pointer"
             >
               {step2.previous}

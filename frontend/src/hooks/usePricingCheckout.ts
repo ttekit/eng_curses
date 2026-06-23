@@ -15,10 +15,10 @@ export function usePricingCheckout() {
     ) => {
       if (!opts.isLoggedIn) {
         const loginFrom =
-          typeof window !== "undefined" ?
-            `${window.location.pathname}${window.location.search}`
-          : "/pricing";
-        navigate("/loginForm", {
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}`
+            : "/pricing";
+        navigate("/login", {
           replace: false,
           state: { from: loginFrom },
         });
