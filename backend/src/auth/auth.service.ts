@@ -200,14 +200,6 @@ export class AuthService {
       ? requestedRole
       : "REGULAR";
 
-    let otpCode: string | null = null;
-    let otpExpires: Date | null = null;
-
-    if (!outboundMailDisabled) {
-      otpCode = randomInt(100000, 1000000).toString();
-      otpExpires = new Date(Date.now() + 15 * 60 * 1000);
-    }
-
     const isVerifiedOnCreate = outboundMailDisabled;
 
     const mainUser = await prisma.user.create({
@@ -218,8 +210,8 @@ export class AuthService {
         role: roleLabel as any,
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
-        verificationCode: otpCode,
-        verificationCodeExpires: otpExpires,
+        //verificationCode: ,
+        //verificationCodeExpires:,
         subscriptionPlan: "smart",
         subscriptionStatus: "active",
         hasCompletedPlacement: roleLabel === "TEACHER",
@@ -234,7 +226,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
-        verificationCode: true,
+        //verificationCode: true,
       },
     });
 
@@ -265,10 +257,6 @@ export class AuthService {
       }
     }
 
-    if (!outboundMailDisabled) {
-      await this.emailConfirmationService.sendVerificationToken(mainUser);
-    }
-
     const payload = { sub: mainUser.id, email: mainUser.email };
 
     return {
@@ -286,6 +274,7 @@ export class AuthService {
         : "Account created. A confirmation code was sent to your email—you can confirm anytime, but it is not required to continue.",
     };
   }
+
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: {
