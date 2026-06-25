@@ -8,8 +8,7 @@ import { resolvePgPoolMax } from "./config/pg-pool.util";
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
+  implements OnModuleInit, OnModuleDestroy {
   private readonly pool: Pool;
 
   constructor() {

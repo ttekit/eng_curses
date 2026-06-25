@@ -16,6 +16,15 @@ export function HeroSection() {
   const { user } = useUser();
   const primaryTo = user ? "/profile" : "/register";
 
+
+  const browseVariant = useABTest("hero_browse_cta", ["control", "registration_redirect"]);
+
+  const secondaryLink =
+    browseVariant === "registration_redirect" && !user
+      ? "/registrationMain?from=hero_ab_test"
+      : "/catalog";
+
+
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
