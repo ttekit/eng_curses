@@ -57,7 +57,7 @@ export default function PricingPage() {
             {pricingMeta.freeAccess}
           </p>
           <Link
-            to="/registrationMain"
+            to="/register"
             className="hover:cursor-pointer inline-flex flex-row items-center text-center justify-center text-primary m-2 hover:bg-primary/20 rounded-md p-2 transition-all duration-300"
           >
             <span>{pricingMeta.startLearning}</span>
@@ -81,7 +81,7 @@ export default function PricingPage() {
             {!isLoggedIn ? (
               <p className="mt-4 text-sm text-muted-foreground">
                 <Link
-                  to="/loginForm"
+                  to="/login"
                   state={{ from: "/pricing" }}
                   className="font-medium text-primary underline-offset-4 hover:underline"
                 >
@@ -114,7 +114,7 @@ export default function PricingPage() {
                 className="text-muted-foreground text-sm underline-offset-4 transition-colors hover:text-foreground hover:underline"
                 onClick={() => {
                   logout();
-                  navigate("/loginForm");
+                  navigate("/login");
                 }}
               >
                 {messages.footer.links.logout}

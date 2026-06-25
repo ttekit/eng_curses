@@ -28,40 +28,40 @@ type GenreOption = { id: number; name: string };
 
 const CustomDateInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
   (props, ref) => {
-  const { onClick, value, onChange, onKeyDown, id, isError } = props;
-  return (
-    <div className="relative w-full">
-      <input
-        id={id}
-        type="date"
-        ref={ref}
-        value={value || ""}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        onClick={(e) => e.stopPropagation()}
-        onFocus={(e) => e.stopPropagation()}
-        autoComplete="off"
-        className={`flex h-12 w-full bg-background border ${
-          isError
-            ? "border-destructive focus:ring-destructive/40 hover:border-destructive/80"
-            : "border-input hover:border-primary/50 focus:ring-primary/40"
-        } rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0`}
-      />
+    const { onClick, value, onChange, onKeyDown, id, isError } = props;
+    return (
+      <div className="relative w-full">
+        <input
+          id={id}
+          type="date"
+          ref={ref}
+          value={value || ""}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+          autoComplete="off"
+          className={`flex h-12 w-full bg-background border ${
+            isError
+              ? "border-destructive focus:ring-destructive/40 hover:border-destructive/80"
+              : "border-input hover:border-primary/50 focus:ring-primary/40"
+          } rounded-xl pl-4 pr-12 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-background transition-all cursor-pointer shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0`}
+        />
 
-      <button
-        type="button"
-        onClick={onClick}
-        tabIndex={-1}
-        className={`absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors ${
-          isError
-            ? "text-destructive"
-            : "text-muted-foreground hover:text-primary"
-        }`}
-      >
-        <CalendarIcon className="size-5" />
-      </button>
-    </div>
-  );
+        <button
+          type="button"
+          onClick={onClick}
+          tabIndex={-1}
+          className={`absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors ${
+            isError
+              ? "text-destructive"
+              : "text-muted-foreground hover:text-primary"
+          }`}
+        >
+          <CalendarIcon className="size-5" />
+        </button>
+      </div>
+    );
   },
 );
 CustomDateInput.displayName = "CustomDateInput";
@@ -547,7 +547,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
 
       toast.success("Your account has been deleted.");
       logout();
-      void navigate("/loginForm", { replace: true });
+      void navigate("/login", { replace: true });
     } catch (err: unknown) {
       setDangerError(getErrorMessage(err, "Something went wrong"));
     } finally {
@@ -1360,7 +1360,7 @@ export function ProfileSettings({ onSaved }: { onSaved: () => Promise<void> }) {
                   logout();
                   setStoredAccessToken(null);
                   toast.success(s?.signOutToast || "Signed out successfully");
-                  window.location.href = "/loginForm";
+                  window.location.href = "/login";
                 }}
               >
                 <LogOut className="size-4 pt-1 pr-1" />

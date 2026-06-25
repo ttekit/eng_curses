@@ -7,9 +7,19 @@ type MarketingFaqSectionProps = {
   id?: string;
   title: string;
   subtitle?: string;
-  items: MarketingFaqItem[];
+  items?: MarketingFaqItem[];
   className?: string;
 };
+
+function resolveFaqItems(
+  items: MarketingFaqItem[] | undefined,
+  fallback: MarketingFaqItem[],
+): MarketingFaqItem[] {
+  if (items && items.length > 0) {
+    return items;
+  }
+  return fallback;
+}
 
 /**
  * Visible FAQ block — content must match FAQPage JSON-LD on the same route.
@@ -18,21 +28,19 @@ export function MarketingFaqSection({
   id = "faq",
   title,
   subtitle,
-  items: _items,
+  items,
   className,
 }: MarketingFaqSectionProps) {
   const { messages } = useLandingLocale();
   const headingId = useId();
-
-  const faqItems = messages.marketingQuestions
-    ? Object.values(messages.marketingQuestions)
-    : [];
+  const fallbackItems = Object.values(messages.marketingQuestions);
+  const faqItems = resolveFaqItems(items, fallbackItems);
 
   return (
     <section
       id={id}
       className={cn(
-        "border-border border-t bg-background py-16 sm:py-20",
+        "border-t border-border bg-background py-16 sm:py-20",
         className,
       )}
       aria-labelledby={headingId}
@@ -40,12 +48,14 @@ export function MarketingFaqSection({
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <h2
           id={headingId}
-          className="font-display text-center text-3xl font-bold tracking-tight sm:text-4xl"
+          className="text-center font-display text-3xl font-bold tracking-tight sm:text-4xl"
         >
           {title}
         </h2>
         {subtitle ? (
-          <p className="mt-3 text-center text-muted-foreground">{subtitle}</p>
+          <p className="mt-3 text-center font-sans text-muted-foreground">
+            {subtitle}
+          </p>
         ) : null}
         <dl className="mt-10 space-y-4">
           {faqItems.map((item) => (
@@ -54,7 +64,7 @@ export function MarketingFaqSection({
               className="rounded-xl border border-border bg-card/50 p-5"
             >
               <dt className="font-semibold text-foreground">{item.question}</dt>
-              <dd className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <dd className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">
                 {item.answer}
               </dd>
             </div>

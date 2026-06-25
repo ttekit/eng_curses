@@ -22,6 +22,7 @@ const linkApp =
 export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
   const { messages } = useLandingLocale();
   const landingI18n = messages.header;
+  const landingCta = messages.cta;
   const appHeader = useAppMessages().appHeader;
   const common = useAppMessages().common;
   const { pathname, hash } = useLocation();
@@ -101,7 +102,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                 return (
                   <Link
                     key={link.hash}
-                    to={{ pathname: "/", hash: link.hash }}
+                    to={{ pathname: "/", hash: `#${link.hash}` }}
                     className={cn(
                       linkLanding,
                       active
@@ -113,17 +114,6 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                   </Link>
                 );
               })}
-              <Link
-                to="/pricing"
-                className={cn(
-                  linkLanding,
-                  pathname === "/pricing"
-                    ? "bg-secondary text-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
-                )}
-              >
-                {landingI18n.pricing}
-              </Link>
             </>
           ) : (
             appNavLinks.map((link) => (
@@ -163,7 +153,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
               </Link>
             ) : (
               <>
-                <Link to="/loginForm">
+                <Link to="/login">
                   <button
                     type="button"
                     className="rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer sm:px-5"
@@ -173,13 +163,13 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                       : appHeader.logIn}
                   </button>
                 </Link>
-                <Link to="/registrationMain">
+                <Link to="/register">
                   <button
                     type="button"
                     className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer sm:px-6"
                   >
                     {variant === "landing"
-                      ? landingI18n.getStarted
+                      ? landingCta.startFree
                       : appHeader.getStarted}
                   </button>
                 </Link>
@@ -262,7 +252,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                     return (
                       <Link
                         key={link.hash}
-                        to={{ pathname: "/", hash: link.hash }}
+                        to={{ pathname: "/", hash: `#${link.hash}` }}
                         onClick={closeMenu}
                         className={cn(
                           "rounded-xl px-4 py-3 text-base font-medium transition-colors",
@@ -275,18 +265,6 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                       </Link>
                     );
                   })}
-                  <Link
-                    to="/pricing"
-                    onClick={closeMenu}
-                    className={cn(
-                      "rounded-xl px-4 py-3 text-base font-medium transition-colors",
-                      pathname === "/pricing"
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
-                    )}
-                  >
-                    {landingI18n.pricing}
-                  </Link>
                 </>
               ) : (
                 appNavLinks.map((link) => (
@@ -319,7 +297,7 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                   </Link>
                 ) : (
                   <>
-                    <Link to="/loginForm" onClick={closeMenu}>
+                    <Link to="/login" onClick={closeMenu}>
                       <button
                         type="button"
                         className="w-full rounded-xl px-4 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:bg-secondary cursor-pointer border border-border"
@@ -329,13 +307,13 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
                           : appHeader.logIn}
                       </button>
                     </Link>
-                    <Link to="/registrationMain" onClick={closeMenu}>
+                    <Link to="/register" onClick={closeMenu}>
                       <button
                         type="button"
                         className="w-full rounded-xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
                       >
                         {variant === "landing"
-                          ? landingI18n.getStarted
+                          ? landingCta.startFree
                           : appHeader.getStarted}
                       </button>
                     </Link>

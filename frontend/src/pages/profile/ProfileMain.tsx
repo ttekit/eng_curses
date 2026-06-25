@@ -274,7 +274,7 @@ export default function ProfileMain() {
         <SEO
           title={profile.seoTitle}
           description={profile.seoDescription}
-          canonicalUrl={resolveCanonicalUrl("/profileMain")}
+          canonicalUrl={resolveCanonicalUrl("/profile")}
           noindex
         />
         <div className="flex min-h-dvh items-center justify-center text-muted-foreground">
@@ -290,13 +290,13 @@ export default function ProfileMain() {
         <SEO
           title={profile.seoTitle}
           description={profile.seoDescription}
-          canonicalUrl={resolveCanonicalUrl("/profileMain")}
+          canonicalUrl={resolveCanonicalUrl("/profile")}
           noindex
         />
         <div className="m-4 rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-destructive">
           <p className="font-medium">{profile.signInPrompt}</p>
           <Link
-            to="/loginForm"
+            to="/login"
             className="mt-3 inline-block text-primary underline-offset-4 hover:underline"
           >
             {profile.goToLogin}
@@ -318,7 +318,7 @@ export default function ProfileMain() {
       <SEO
         title={profile.seoTitle}
         description={profile.seoDescription}
-        canonicalUrl={resolveCanonicalUrl("/profileMain")}
+        canonicalUrl={resolveCanonicalUrl("/profile")}
         noindex
       />
       <div className="flex">
