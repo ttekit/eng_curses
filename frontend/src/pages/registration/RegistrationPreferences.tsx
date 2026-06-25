@@ -35,7 +35,7 @@ export default function RegistrationPreferences() {
 
   useEffect(() => {
     if (isTeacher) {
-      navigate("/registrationDetails", { replace: true });
+      navigate("/register-details", { replace: true });
     }
   }, [isTeacher, navigate]);
 
@@ -85,7 +85,7 @@ export default function RegistrationPreferences() {
       <AuthPageSeo
         title={regSeo.seoTitle}
         description={regSeo.seoDescription}
-        path="/registrationPreferences"
+        path="/register-preferences"
       />
       <div lang={locale === "uk" ? "uk" : "en"}>
         <AuthSplitLayout
@@ -95,7 +95,7 @@ export default function RegistrationPreferences() {
           rightSubtitle={t.rightSubtitle}
         >
           <Link
-            to="/registrationDetails"
+            to="/register-details"
             className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-4" />

@@ -1,23 +1,20 @@
 import { Link } from "react-router";
-import { Play, Sparkles, Users, Clapperboard, Clock } from "lucide-react";
+import { Play, Sparkles } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
-import { formatMessage } from "../../lib/formatMessage";
 import {
   trackLandingCtaPrimary,
   trackLandingCtaSecondary,
   trackLandingHeroVideoPlay,
 } from "../../lib/landingAnalytics";
+import HeroStats from "./HeroStats";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
   const { hero, cta } = messages;
   const { user } = useUser();
-  const primaryTo = user ? "/profile" : "/registrationMain";
-  const socialProof = formatMessage(hero.socialProofLine, {
-    count: String(hero.activeLearnersCount),
-  });
+  const primaryTo = user ? "/profile" : "/register";
 
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">
@@ -30,7 +27,9 @@ export function HeroSection() {
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">{hero.badge}</span>
+              <span className="text-sm font-medium text-primary">
+                {hero.badge}
+              </span>
             </div>
 
             <h1 className="font-display text-4xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
@@ -60,32 +59,13 @@ export function HeroSection() {
                   {hero.ctaSecondary}
                 </Link>
               </div>
-              <p className="font-sans text-sm text-muted-foreground">
+              <p className="font-sans text-sm text-muted-foreground -mb-5">
                 {hero.trustNoCard}
                 <span aria-hidden="true"> · </span>
                 {hero.trustPrivacy}
               </p>
-              <p className="font-sans text-sm font-medium text-foreground/80">
-                {socialProof}
-              </p>
             </div>
-
-            <div className="mx-2 flex w-fit flex-row gap-5 rounded-[15px] px-6 py-3 text-center text-lg text-foreground/75">
-              <div className="flex flex-row">
-                <Users className="mr-2 size-6" />
-                <p>
-                  {hero.activeLearnersCount} {hero.users}
-                </p>
-              </div>
-              <div className="flex flex-row">
-                <Clapperboard className="mr-2 size-6" />
-                <p>{hero.videos}</p>
-              </div>
-              <div className="flex flex-row">
-                <Clock className="mr-2 size-6" />
-                <p>{hero.hours}</p>
-              </div>
-            </div>
+            <HeroStats />
           </div>
 
           <div className="relative flex justify-center lg:justify-end">

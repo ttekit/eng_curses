@@ -25,35 +25,42 @@ export function LandingPricingSection() {
     >
       <div className="relative mx-auto max-w-7xl">
         <div className="mx-auto mb-10 max-w-2xl text-center">
-          <p className="font-sans text-lg font-semibold text-foreground md:text-xl">
-            {pricingSection.freeHeadline}
-          </p>
-          <p className="mt-2 font-sans text-sm text-muted-foreground">
-            {pricingSection.freePromo}
-          </p>
+          <div className="w-full">
+            <div className="flex flex-row gap-2 w-full justify-center">
+              <p className="font-display text-xl font-semibold text-foreground md:text-3xl">
+                {pricingSection.freeHeadline}
+              </p>
+              <p className="font-display text-xl font-bold text-primary md:text-3xl">
+                {pricingSection.freeAccess}
+              </p>
+            </div>
+            <p className="font-display text-xl font-semibold text-foreground md:text-3xl">
+              {pricingSection.freeHeadlineEnd}
+            </p>
+          </div>
           <Link
-            to="/registrationMain"
+            to="/register"
             onClick={() => trackLandingCtaPrimary("pricing")}
-            className="mt-4 inline-flex cursor-pointer flex-row items-center justify-center rounded-md p-2 text-primary transition-all duration-300 hover:bg-primary/20"
+            className="mt-4 inline-flex cursor-pointer flex-row items-center justify-center rounded-[15px] p-2 px-3 text-primary transition-all duration-300 hover:bg-primary/20"
           >
             <span>{cta.startFree}</span>
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </div>
 
-        <div className="mx-auto mb-12 max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+        <div className="mx-auto mb-12 max-w-2xl text-center -mt-3">
+          <h2 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
             {pricingSection.title}
           </h2>
           <p className="mt-3 font-sans text-muted-foreground md:text-lg">
             {pricingSection.subtitle}
           </p>
-          <Link
+          {/* <Link
             to="/pricing"
             className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             {pricingSection.fullPageLink}
-          </Link>
+          </Link> */}
         </div>
 
         <PricingCards

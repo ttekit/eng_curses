@@ -178,7 +178,7 @@ export function CatalogSidebar({
         >
           {/* Верхняя часть: Аватарка и Имя */}
           <div className={cn("flex items-center gap-3", !collapsed && "p-1")}>
-            <Link to="/profileMain" className="shrink-0">
+            <Link to="/profile" className="shrink-0">
               <img
                 src={avatarUrl || "/LandingProfile.svg"}
                 className={cn(

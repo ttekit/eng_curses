@@ -7,27 +7,33 @@ Native learner app for Explys on **Android and iOS**, built from the same API an
 Learner-facing web pages are ported to native screens (admin panel remains web-only).
 
 ### Auth & onboarding
+
 - Landing, login (2FA), registration (3 steps), email verification, restore account
 - Google OAuth and full placement iframe remain web-only; demo level test on mobile
 
 ### Subscription
+
 - Pricing and subscribe paywall with plan cards (checkout via Explys website)
 
 ### Learning
+
 - Catalog (hero + category rows), catalog series detail, content watch, lesson summary
 - My lessons (watched list + recap quizzes: mistakes / weekly / monthly)
 - Classroom (teacher series or student assignments)
 - Learning plan (goals + regenerate studying plan)
 
 ### Profile & legal
+
 - Profile with stats, subscription info, links to pricing, demo test, about/privacy/terms/feedback
 
 ### Design
+
 - Explys brand styling (purple theme, Inter + Space Grotesk) on auth and core screens
 
 ## Prerequisites
 
 ### Android
+
 - Node.js 20+
 - [Android Studio](https://developer.android.com/studio) with an emulator or a USB-connected device
 - Android SDK (default macOS path: `~/Library/Android/sdk`)
@@ -36,6 +42,7 @@ Learner-facing web pages are ported to native screens (admin panel remains web-o
 Gradle reads the SDK from `android/local.properties`. If `ANDROID_HOME` is unset, run `npm run preandroid` once (or any `npm run android` / `build:apk*` script — they generate it automatically).
 
 ### iOS (macOS only)
+
 - Node.js 20+
 - [Xcode](https://developer.apple.com/xcode/) from the Mac App Store (not Command Line Tools alone)
 - After installing Xcode, point the active developer directory:
@@ -225,31 +232,31 @@ mobile/
 
 ## Screen map (web → mobile)
 
-| Web route | Mobile screen |
-|-----------|---------------|
-| `/` | `Landing` |
-| `/loginForm` | `Login` |
-| `/registrationMain` | `RegisterMain` |
-| `/registrationDetails` | `RegisterDetails` |
-| `/registrationPreferences` | `RegisterPreferences` |
-| `/registrationSuccess` | `RegisterSuccess` |
-| `/verify-email` | `VerifyEmail` |
-| `/restore-account` | `RestoreAccount` |
-| `/pricing` | `Pricing` |
-| `/subscribe` | `Subscribe` |
-| `/onboarding/dob` | `OnboardingDob` |
-| `/catalog` | `Catalog` tab |
-| `/catalog/series/:link` | `CatalogSeries` |
-| `/content/:id` | `Content` |
-| `/content/:id/summary` | `LessonSummary` |
-| `/watched-lessons` | `MyLessons` tab |
-| `/watched-lessons/recap/:kind` | `LearnerRecap` |
-| `/classroom` | `Classroom` tab |
-| `/learning-plan` | `LearningPlan` tab |
-| `/profile` | `Profile` tab |
-| `/level-test` | `LevelTest` |
-| `/about`, `/privacy`, `/terms`, `/feedback` | `LegalDocument` |
-| `*` | `NotFound` |
+| Web route                                   | Mobile screen         |
+| ------------------------------------------- | --------------------- |
+| `/`                                         | `Landing`             |
+| `/login`                                    | `Login`               |
+| `/register`                                 | `RegisterMain`        |
+| `/register-details`                         | `RegisterDetails`     |
+| `/register-preferences`                     | `RegisterPreferences` |
+| `/register-success`                         | `RegisterSuccess`     |
+| `/verify-email`                             | `VerifyEmail`         |
+| `/restore-account`                          | `RestoreAccount`      |
+| `/pricing`                                  | `Pricing`             |
+| `/subscribe`                                | `Subscribe`           |
+| `/onboarding/dob`                           | `OnboardingDob`       |
+| `/catalog`                                  | `Catalog` tab         |
+| `/catalog/series/:link`                     | `CatalogSeries`       |
+| `/content/:id`                              | `Content`             |
+| `/content/:id/summary`                      | `LessonSummary`       |
+| `/watched-lessons`                          | `MyLessons` tab       |
+| `/watched-lessons/recap/:kind`              | `LearnerRecap`        |
+| `/classroom`                                | `Classroom` tab       |
+| `/learning-plan`                            | `LearningPlan` tab    |
+| `/profile`                                  | `Profile` tab         |
+| `/level-test`                               | `LevelTest`           |
+| `/about`, `/privacy`, `/terms`, `/feedback` | `LegalDocument`       |
+| `*`                                         | `NotFound`            |
 
 **Web-only:** `/admin/*`, `/oauth/success`, full placement test iframe, in-video quiz/vocab tabs (use web for full lesson tools).
 
@@ -269,12 +276,12 @@ npm run android
 
 ## Shared logic with web
 
-| Web (`frontend/`) | Mobile (`mobile/src/`) |
-|---|---|
-| `lib/api.ts` | `lib/api.ts` (AsyncStorage instead of localStorage) |
-| `lib/subscriptionAccess.ts` | `lib/subscriptionAccess.ts` |
-| `lib/learnerOnboarding.ts` | `lib/learnerOnboarding.ts` + `lib/placementHelpers.ts` |
-| `context/UserContext.tsx` | `context/UserContext.tsx` |
+| Web (`frontend/`)           | Mobile (`mobile/src/`)                                 |
+| --------------------------- | ------------------------------------------------------ |
+| `lib/api.ts`                | `lib/api.ts` (AsyncStorage instead of localStorage)    |
+| `lib/subscriptionAccess.ts` | `lib/subscriptionAccess.ts`                            |
+| `lib/learnerOnboarding.ts`  | `lib/learnerOnboarding.ts` + `lib/placementHelpers.ts` |
+| `context/UserContext.tsx`   | `context/UserContext.tsx`                              |
 
 ## Not in v1 (use web app)
 

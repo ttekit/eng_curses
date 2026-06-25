@@ -49,7 +49,7 @@ export const EmailVerification: React.FC = () => {
 
   useEffect(() => {
     if (!email) {
-      navigate("/registrationMain");
+      navigate("/register");
     }
   }, [email, navigate]);
 
@@ -87,7 +87,7 @@ export const EmailVerification: React.FC = () => {
         }
         const savedStudents = routeState?.generatedStudents || [];
         if (savedStudents.length > 0) {
-          navigate("/registrationSuccess", {
+          navigate("/register-success", {
             state: { generatedStudents: savedStudents },
           });
           return;
@@ -96,10 +96,9 @@ export const EmailVerification: React.FC = () => {
           !profile.role ||
           profile.role === "choose" ||
           profile.role === "regular" ||
-          (!profile.englishLevel &&
-            !profile.hasCompletedPlacement)
+          (!profile.englishLevel && !profile.hasCompletedPlacement)
         ) {
-          navigate("/registrationDetails");
+          navigate("/register-details");
           return;
         }
 
@@ -249,7 +248,7 @@ export const EmailVerification: React.FC = () => {
         </form>
 
         <Link
-          to="/registrationMain"
+          to="/register"
           className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           {verify.backToRegistration}

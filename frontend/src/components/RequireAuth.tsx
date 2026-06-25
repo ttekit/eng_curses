@@ -18,7 +18,7 @@ export default function RequireAuth() {
   if (!isLoggedIn) {
     return (
       <Navigate
-        to="/loginForm"
+        to="/login"
         replace
         state={{ from: `${location.pathname}${location.search}` }}
       />
@@ -26,7 +26,7 @@ export default function RequireAuth() {
   }
 
   if (user && learnerNeedsRoleSelection(user.role)) {
-    return <Navigate to="/registrationDetails" replace />;
+    return <Navigate to="/register-details" replace />;
   }
 
   return (

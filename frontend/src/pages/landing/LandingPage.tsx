@@ -100,11 +100,6 @@ export default function LandingPage() {
         <DifferentiationSection />
         <HowItWorksSection />
         <TestimonialsSection />
-        <MarketingFaqSection
-          id="faq"
-          title={marketingFaq.landingTitle}
-          subtitle={marketingFaq.landingSubtitle}
-        />
         <CtaSection />
         <LandingFooter />
       </Suspense>
