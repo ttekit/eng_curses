@@ -9,7 +9,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  ValidateIf,
 } from "class-validator";
 import { CreateUserDto } from "./create-user.dto";
 
@@ -61,15 +60,9 @@ export class UpdateUserDto extends PartialType(
   @IsBoolean()
   weeklyReportEnabled?: boolean;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  hasCompletedPlacement?: boolean;
-
   @IsOptional()
   @IsString()
   avatarUrl?: string;
-
 }
 
 export class AdminUpdateUserDto extends UpdateUserDto {
@@ -82,4 +75,9 @@ export class AdminUpdateUserDto extends UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isSuspended?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  hasCompletedPlacement?: boolean;
 }

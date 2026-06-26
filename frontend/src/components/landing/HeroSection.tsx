@@ -18,8 +18,10 @@ export function HeroSection() {
   const { user } = useUser();
   const primaryTo = user ? "/profile" : "/register";
 
-  // ЛОГИКА A/B: Инициализируем тест
-  const browseVariant = useABTest("hero_browse_cta", ["control", "registration_redirect"]);
+  const browseVariant = useABTest("hero_browse_cta", [
+    "control",
+    "registration_redirect",
+  ]);
 
   // ЛОГИКА ССЫЛКИ: Если вариант registration_redirect и юзер не залогинен - кидаем на регу
   const secondaryLink =

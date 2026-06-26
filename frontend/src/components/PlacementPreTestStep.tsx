@@ -6,7 +6,6 @@ import LabelRegister from "./LabelRegister";
 import { apiFetch, readApiErrorBody } from "../lib/api";
 import { useUser, type UserData } from "../context/UserContext";
 import { useAppMessages } from "../hooks/useAppMessages";
-import { cn } from "../lib/utils";
 import {
   ADULT_PLACEMENT_CEFR_LEVELS,
   ADULT_PLACEMENT_CEFR_SET,
@@ -14,13 +13,11 @@ import {
   adult_needs_placement_cefr,
   parse_adult_profile_cefr_target,
 } from "../lib/placement_cefr";
+import { CustomSelect } from "./UI/CustomSelect";
 
 type PlacementPreTestSuccessDetail = {
   readonly skippedPlacementTest: boolean;
 };
-
-const selectFieldClass =
-  "w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
 
 export function adultNeedsPlacementPrepFields(user: UserData): boolean {
   return adult_needs_placement_cefr(user);
@@ -48,6 +45,15 @@ export default function PlacementPreTestStep({
   });
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+
+  const options = [
+    { value: "", label: a.englishLevelSelectPlaceholder },
+    { value: ADULT_SKIP_PLACEMENT_TEST, label: a.englishLevelNone },
+    ...ADULT_PLACEMENT_CEFR_LEVELS.map((code) => ({
+      value: code,
+      label: code,
+    })),
+  ];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -99,25 +105,14 @@ export default function PlacementPreTestStep({
         </h3>
         <div className="space-y-2">
           <LabelRegister isRequired={true}>{a.englishLevel}</LabelRegister>
-          <select
-            name="englishLevel"
+
+          <CustomSelect
             value={englishLevelChoice}
-            onChange={(e) => setEnglishLevelChoice(e.target.value)}
-            className={cn(selectFieldClass, "appearance-auto")}
-            aria-describedby="placement-english-level-help"
-          >
-            <option value="" disabled>
-              {a.englishLevelSelectPlaceholder}
-            </option>
-            <option value={ADULT_SKIP_PLACEMENT_TEST}>
-              {a.englishLevelNone}
-            </option>
-            {ADULT_PLACEMENT_CEFR_LEVELS.map((code) => (
-              <option key={code} value={code}>
-                {code}
-              </option>
-            ))}
-          </select>
+            onChange={(val: string) => setEnglishLevelChoice(val)}
+            options={options}
+            className="w-full"
+          />
+
           <p
             id="placement-english-level-help"
             className="text-muted-foreground text-sm"

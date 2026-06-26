@@ -14,7 +14,7 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { UsersService } from "src/users/users.service";
-import { AuthMethod, User } from "@generated/prisma/client";
+import { AuthMethod, User, UserRole } from "@generated/prisma/client";
 import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { ProviderService } from "./provider/provider.service";
@@ -200,14 +200,6 @@ export class AuthService {
       ? requestedRole
       : "REGULAR";
 
-    let otpCode: string | null = null;
-    let otpExpires: Date | null = null;
-
-    if (!outboundMailDisabled) {
-      otpCode = randomInt(100000, 1000000).toString();
-      otpExpires = new Date(Date.now() + 15 * 60 * 1000);
-    }
-
     const isVerifiedOnCreate = outboundMailDisabled;
 
     const mainUser = await prisma.user.create({
@@ -218,8 +210,8 @@ export class AuthService {
         role: roleLabel as any,
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
-        verificationCode: otpCode,
-        verificationCodeExpires: otpExpires,
+        //verificationCode: ,
+        //verificationCodeExpires:,
         subscriptionPlan: "smart",
         subscriptionStatus: "active",
         hasCompletedPlacement: roleLabel === "TEACHER",
@@ -234,7 +226,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
-        verificationCode: true,
+        //verificationCode: true,
       },
     });
 
@@ -265,10 +257,6 @@ export class AuthService {
       }
     }
 
-    if (!outboundMailDisabled) {
-      await this.emailConfirmationService.sendVerificationToken(mainUser);
-    }
-
     const payload = { sub: mainUser.id, email: mainUser.email };
 
     return {
@@ -286,6 +274,7 @@ export class AuthService {
         : "Account created. A confirmation code was sent to your email—you can confirm anytime, but it is not required to continue.",
     };
   }
+
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -311,7 +300,7 @@ export class AuthService {
       }
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password ?? "");
 
     if (!isPasswordValid) {
       throw new UnauthorizedException("Invalid email or password");
@@ -430,11 +419,18 @@ export class AuthService {
 
     const hasAdditionalData = Object.keys(updateData).length > 0;
 
+    const allowedRoles: string[] = [
+      UserRole.ADULT,
+      UserRole.STUDENT,
+      UserRole.TEACHER,
+    ];
+    const roleToUpdate = data.role ? data.role.toUpperCase() : null;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        ...(data.role && data.role.toUpperCase() !== "CHOOSE"
-          ? { role: data.role.toUpperCase() as any }
+        ...(roleToUpdate && allowedRoles.includes(roleToUpdate)
+          ? { role: roleToUpdate as any }
           : {}),
         ...(data.dateOfBirth
           ? { dateOfBirth: new Date(data.dateOfBirth) }

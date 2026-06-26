@@ -313,7 +313,7 @@ export default function ProfileMain() {
   }
 
   return (
-    <div className="min-h-dvh bg-background font-display antialiased">
+    <div className="min-h-[calc(100dvh-var(--email-verification-banner-height,0px))] bg-background font-display antialiased">
       {" "}
       <SEO
         title={profile.seoTitle}

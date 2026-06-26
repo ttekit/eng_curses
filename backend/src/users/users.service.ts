@@ -677,7 +677,6 @@ export class UsersService {
     const {
       role: _privilegedRole,
       isSuspended: _privilegedSuspended,
-      hasCompletedPlacement,
       ...safeData
     } = updateUserDto as UpdateUserDto & {
       role?: string;
@@ -685,9 +684,6 @@ export class UsersService {
     };
 
     const profilePatch: UpdateUserDto = { ...safeData };
-    if (hasCompletedPlacement === true) {
-      profilePatch.hasCompletedPlacement = true;
-    }
 
     return this.update(id, profilePatch);
   }

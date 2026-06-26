@@ -357,15 +357,22 @@ export function CatalogSidebar({
         />
       )}
 
-      <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-border bg-card lg:hidden">
-        <div className="flex items-center justify-around py-2">
-          {visibleSidebarLinks.slice(0, 5).map((link) => {
+      <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-border bg-card lg:hidden pb-[calc(env(safe-area-inset-bottom)+16px)]">
+        <div className="flex w-full items-start justify-evenly px-1 pt-2 pb-1">
+          {visibleSidebarLinks.map((link) => {
+            const active = linkActive(link.id);
+
+            // min-w-0 и flex-1: строго делят экран на равные части (по 16.6% на кнопку)
+            const itemClass = cn(
+              "flex flex-col flex-1 min-w-0 items-center justify-start gap-1.5 rounded-lg px-0.5 py-1 transition-colors hover:cursor-pointer",
+              active ? "text-primary" : "text-muted-foreground",
+            );
+
+            // truncate: обрезает длинный текст, tracking-tight: делает буквы чуть плотнее
+            const textClass =
+              "w-full truncate text-center text-[10px] font-medium tracking-tight";
+
             if (link.id === "search") {
-              const active = linkActive(link.id);
-              const itemClass = cn(
-                "flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors",
-                active ? "text-primary" : "text-muted-foreground",
-              );
               return pathname === "/catalog" && onOpenCatalogSpotlight ? (
                 <button
                   key={link.id}
@@ -373,8 +380,8 @@ export function CatalogSidebar({
                   className={itemClass}
                   onClick={() => onOpenCatalogSpotlight()}
                 >
-                  <link.icon className="h-5 w-5" />
-                  <span className="text-xs">{sidebarLabels[link.id]}</span>
+                  <link.icon className="h-5 w-5 shrink-0" />
+                  <span className={textClass}>{sidebarLabels[link.id]}</span>
                 </button>
               ) : (
                 <Link
@@ -383,24 +390,16 @@ export function CatalogSidebar({
                   state={{ openSpotlight: true }}
                   className={itemClass}
                 >
-                  <link.icon className="h-5 w-5" />
-                  <span className="text-xs">{sidebarLabels[link.id]}</span>
+                  <link.icon className="h-5 w-5 shrink-0" />
+                  <span className={textClass}>{sidebarLabels[link.id]}</span>
                 </Link>
               );
             }
+
             return (
-              <Link
-                key={link.id}
-                to={link.to}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors",
-                  linkActive(link.id)
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              >
-                <link.icon className="h-5 w-5" />
-                <span className="text-xs">{sidebarLabels[link.id]}</span>
+              <Link key={link.id} to={link.to} className={itemClass}>
+                <link.icon className="h-5 w-5 shrink-0" />
+                <span className={textClass}>{sidebarLabels[link.id]}</span>
               </Link>
             );
           })}

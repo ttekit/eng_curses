@@ -8,13 +8,13 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { UserRole } from "@generated/prisma/enums";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "../../prisma.service";
 import { Request } from "express";
 import { extractAccessTokenFromRequest } from "../extract-request-access-token.util";
 
 type JwtPayload = { sub?: unknown; email?: unknown };
 
-type AdminRequest = Request & {
+export type AdminRequest = Request & {
   user?: JwtPayload & { role: UserRole; sub: number };
 };
 
@@ -34,33 +34,41 @@ export class JwtAdminGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<AdminRequest>();
     const token = extractAccessTokenFromRequest(req);
+
     if (!token) {
       throw new UnauthorizedException("Token not found");
     }
+
     try {
       const secret = this.configService.getOrThrow<string>("JWT_SECRET");
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret,
       });
+
       const userId = Number(payload.sub);
       if (!Number.isFinite(userId)) {
         throw new UnauthorizedException("Invalid token subject");
       }
+
       const row = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { role: true },
       });
+
       if (!row) {
         throw new UnauthorizedException("User not found");
       }
+
       if (row.role !== UserRole.ADMIN) {
         throw new ForbiddenException("Admin access required");
       }
+
       req.user = {
         ...payload,
         sub: userId,
         role: UserRole.ADMIN,
       };
+
       return true;
     } catch (err) {
       if (

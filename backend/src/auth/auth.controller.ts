@@ -11,11 +11,9 @@ import {
   Res,
   Query,
   BadRequestException,
-  InternalServerErrorException,
-  UnauthorizedException,
   Delete,
-  SetMetadata,
   Redirect,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -34,12 +32,9 @@ import { ProviderService } from "./provider/provider.service";
 import { ConfigService } from "@nestjs/config";
 import { type Request, type Response } from "express";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
-import { UpdateEmailDto } from "./dto/update-email.dto";
 import { TurnstileGuard } from "./guards/turnstile.guard";
-import { UsersService } from "src/users/users.service";
 import { ToggleTwoFactorDto } from "./dto/toggle-2fa.dto";
 import { VerifyEmailChangeDto } from "./dto/verify-email-change.dto";
-import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { StudyingPlanRegenerationService } from "src/studying-plan/studying-plan-regeneration.service";
 import { Throttle } from "@nestjs/throttler";
 import { Public } from "./decorators/public.decorator";
@@ -51,6 +46,7 @@ import { SaveWordDto } from "./dto/save-word.dto";
 import { SmtpService } from "./smtp.service";
 import { UserProfile } from "src/users/user-profile.service";
 import { AccountManagementService } from "src/users/account-management.service";
+import * as crypto from "crypto";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -93,8 +89,59 @@ export class AuthController {
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 401, description: "Unauthorized." })
   @ApiBody({ type: LoginDto })
-  async login(@Body() loginDto: LoginDto) {
-    return await this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.login(loginDto);
+
+    if (data.requiresTwoFactor) return data;
+
+    res.cookie("explys_access_token", data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { user: data.user, access_token: data.access_token };
+  }
+
+  @Post("logout")
+  @HttpCode(HttpStatus.OK)
+  public async logout(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    res.clearCookie("explys_access_token", {
+      httpOnly: true,
+      secure: this.configService.get("NODE_ENV") === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return new Promise((resolve, reject) => {
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            return reject(
+              new InternalServerErrorException(
+                "Could not end the session. Either the server is unreachable or the session is already invalid.",
+              ),
+            );
+          }
+          const sessionName =
+            this.configService.get<string>("SESSION_NAME") || "session";
+          res.clearCookie(sessionName, { path: "/" });
+
+          res.send({ message: "Logged out successfully" });
+          resolve();
+        });
+      } else {
+        res.send({ message: "Logged out successfully" });
+        resolve();
+      }
+    });
   }
 
   @Public()
@@ -342,6 +389,16 @@ export class AuthController {
       );
     }
 
+    const savedState = (req.session as any).oauth_state;
+
+    delete (req.session as any).oauth_state;
+
+    if (!state || state !== savedState) {
+      return res.redirect(
+        `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=csrf_failed`,
+      );
+    }
+
     try {
       const result = await this.authService.extractProfileFromCode(
         req,
@@ -364,16 +421,18 @@ export class AuthController {
   @SkipSubscriptionCheck()
   @UseGuards(AuthProviderGuard)
   @Get("/oauth/connect/:provider")
-  @Redirect()
   public async connect(
+    @Req() req: Request,
     @Param("provider") provider: string,
-    @Query("action") action?: string,
+    @Res() res: Response,
   ) {
     const providerInstance = this.providerService.findByService(provider);
 
-    return {
-      url: providerInstance!.getAuthUrl(action),
-    };
+    const state = crypto.randomBytes(16).toString("hex");
+
+    (req.session as any).oauth_state = state;
+
+    return res.redirect(providerInstance!.getAuthUrl(state));
   }
 
   @UseGuards(AuthGuard)

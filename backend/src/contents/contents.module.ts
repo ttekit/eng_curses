@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "src/auth/auth.module";
-import { ContentVideoModule } from "src/content/content-video/content-video.module";
+import { ContentVideoModule } from "src/content-video/content-video.module";
 import { ContentsController } from "./contents.controller";
 import { ContentsService } from "./contents.service";
 import { ContentsDeadlineCron } from "./contents-deadline.cron";

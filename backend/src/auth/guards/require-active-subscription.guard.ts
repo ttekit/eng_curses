@@ -42,12 +42,6 @@ export class RequireActiveSubscriptionGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RoutedRequest>();
 
-    const url = req.url || "";
-    const path = req.route?.path || "";
-    if (url.includes("oauth") || path.includes("oauth")) {
-      return true;
-    }
-
     if (req.method === "OPTIONS") {
       return true;
     }

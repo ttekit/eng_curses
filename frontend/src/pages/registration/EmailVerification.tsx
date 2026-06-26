@@ -82,7 +82,7 @@ export const EmailVerification: React.FC = () => {
         }
 
         if (!profile) {
-          navigate("/subscribe");
+          navigate("/subscribe", { replace: true });
           return;
         }
         const savedStudents = routeState?.generatedStudents || [];
@@ -98,21 +98,21 @@ export const EmailVerification: React.FC = () => {
           profile.role === "regular" ||
           (!profile.englishLevel && !profile.hasCompletedPlacement)
         ) {
-          navigate("/register-details");
+        navigate("/register-details");
           return;
         }
 
         if (profile.role === "admin") {
-          navigate("/admin");
+          navigate("/admin", { replace: true });
           return;
         }
         if (profile.role === "teacher") {
-          navigate("/catalog");
+          navigate("/catalog", { replace: true });
           return;
         }
 
         if (!profile.subscriptionPlan && !profile.subscriptionStatus) {
-          navigate("/subscribe");
+          navigate("/subscribe", { replace: true });
           return;
         }
 
@@ -121,21 +121,22 @@ export const EmailVerification: React.FC = () => {
           profile.englishLevel === "choose" ||
           profile.englishLevel === ""
         ) {
-          navigate("/catalog");
+          navigate("/catalog", { replace: true });
           return;
         }
 
         if (!profile.hasCompletedPlacement) {
-          navigate("/catalog");
+          navigate("/catalog", { replace: true });
           return;
         }
 
         if (userMayUseLearnerApp(profile)) {
-          navigate("/catalog");
+          navigate("/catalog", { replace: true });
         } else {
-          navigate("/subscribe");
+          navigate("/subscribe", { replace: true });
         }
       } else {
+        // ... (дальше твой старый код без изменений)
         const errorMsg = await readApiErrorBody(response);
         setErrorText(errorMsg || verify.invalidCode);
       }

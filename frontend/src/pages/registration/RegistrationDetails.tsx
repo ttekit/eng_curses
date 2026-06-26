@@ -185,7 +185,7 @@ export default function RegistrationDetails() {
       }
 
       const currentPupils = (formData.studentNames as Pupil[]) || [];
-      const nameRegex = /^[A-Za-z]+$/;
+      const nameRegex = /^[A-Za-z\-]+$/;
 
       for (let i = 0; i < currentPupils.length; i++) {
         const p = currentPupils[i];

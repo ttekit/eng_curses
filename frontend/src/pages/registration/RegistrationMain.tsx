@@ -38,7 +38,7 @@ export default function RegistrationMain() {
   const navigate = useNavigate();
 
   const isValidPassword = (p: string) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/.test(p);
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-]).{8,}$/.test(p);
 
   const resetCaptcha = () => {
     setCaptchaToken(null);
@@ -289,7 +289,7 @@ export default function RegistrationMain() {
                 {!/\d/.test(formData.password) && (
                   <span>• {errors.passwordNumber}</span>
                 )}
-                {!/[@$!%*?&]/.test(formData.password) && (
+                {!/[@$!%*?&\-]/.test(formData.password) && (
                   <span>• {errors.passwordSpecial}</span>
                 )}
               </div>

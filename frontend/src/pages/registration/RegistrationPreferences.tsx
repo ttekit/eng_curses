@@ -26,7 +26,6 @@ export default function RegistrationPreferences() {
   const { user, refreshProfile } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Делаем роль независимой от регистра (student, STUDENT, Student -> student)
   const currentRole = (
     user?.role ? String(user.role) : String(formData.role || "")
   ).toLowerCase();

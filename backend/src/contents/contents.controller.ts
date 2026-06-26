@@ -34,6 +34,15 @@ import { TeacherUploadContentDto } from "src/contents/dto/teacher-upload-content
 import { UpdateContentDto } from "src/contents/dto/update-content.dto";
 import { AssignExistingContentDto } from "./dto/assign-existing.dto";
 
+type AuthenticatedRequest = Request & {
+  user: {
+    sub?: number | string;
+    id?: number | string;
+    email?: string;
+    role?: string;
+  };
+};
+
 function contentVideoMaxFileBytes(): number {
   const n = Number(process.env.CONTENT_VIDEO_MAX_FILE_BYTES);
   if (Number.isFinite(n) && n > 0) {
@@ -383,7 +392,7 @@ export class ContentsController {
   @Delete("teacher/my-series/:id")
   @UseGuards(AuthGuard)
   async deleteTeacherSeries(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param("id", ParseIntPipe) id: number,
   ) {
     const teacherId = Number(req.user.sub || req.user.id);

@@ -9,7 +9,7 @@ import { AuthModule } from "./auth/auth.module";
 import { CategoriesModule } from "./categories/categories.module";
 import { ContentMediaModule } from "./content/content-media/content-media.module";
 import { ContentStatsModule } from "./content/content-stats/content-stats.module";
-import { ContentVideoModule } from "./content/content-video/content-video.module";
+import { ContentVideoModule } from "./content-video/content-video.module";
 import { ContentRecommendationsModule } from "./content-recommendations/content-recommendations.module";
 import { ContentsModule } from "./contents/contents.module";
 import { PrismaModule } from "./prisma.module";
@@ -49,9 +49,7 @@ import { ScheduleModule } from "@nestjs/schedule";
         );
         const authTtl = Number(configService.get("AUTH_RATE_TTL") ?? 60_000);
         const authLimit = Number(configService.get("AUTH_RATE_LIMIT") ?? 10);
-        const uploadTtlSec = Number(
-          configService.get("UPLOAD_RATE_TTL") ?? 60,
-        );
+        const uploadTtlSec = Number(configService.get("UPLOAD_RATE_TTL") ?? 60);
         const uploadLimit = Number(
           configService.get("UPLOAD_RATE_LIMIT") ?? 10,
         );
@@ -104,4 +102,4 @@ import { ScheduleModule } from "@nestjs/schedule";
     { provide: APP_GUARD, useClass: GlobalApiTokenGuard },
   ],
 })
-export class AppModule { }
+export class AppModule {}

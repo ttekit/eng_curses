@@ -33,7 +33,7 @@ export class UserProfile {
 
     const isPasswordValid = await bcrypt.compare(
       dto.currentPassword,
-      user.password,
+      user.password ?? "",
     );
 
     if (!isPasswordValid) {
