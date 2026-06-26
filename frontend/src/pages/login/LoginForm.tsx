@@ -97,7 +97,7 @@ export default function LoginForm() {
 
         const bodyPayload = {
           ...loginData,
-          token: captchaToken,
+          captchaToken: captchaToken,
           ...(show2FA ? { code: twoFactorCode } : {}),
         };
 

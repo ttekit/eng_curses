@@ -33,11 +33,8 @@ export class LoginDto {
   @IsString()
   code?: string;
 
-  @ApiProperty({
-    required: false,
-    description: "Cloudflare Turnstile captcha token",
-  })
+  @ApiProperty({ description: "Cloudflare Turnstile captcha token" })
   @IsOptional()
   @IsString()
-  token?: string;
+  captchaToken?: string;
 }
