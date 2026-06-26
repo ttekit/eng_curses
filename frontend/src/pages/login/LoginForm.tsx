@@ -103,10 +103,6 @@ export default function LoginForm() {
 
         const response = await apiFetch(endpoint, {
           method: "POST",
-          headers: {
-            "cf-turnstile-response": captchaToken,
-            "x-turnstile-token": captchaToken,
-          },
           body: JSON.stringify(bodyPayload),
         });
 
