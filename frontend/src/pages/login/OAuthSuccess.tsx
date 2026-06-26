@@ -16,7 +16,6 @@ export default function OAuthSuccess() {
     const token = searchParams.get("token");
     const isNewUser = searchParams.get("isNewUser") === "true";
 
-
     if (token) {
       setStoredAccessToken(token);
 
@@ -24,7 +23,7 @@ export default function OAuthSuccess() {
       refreshProfile()
         .then((profile) => {
           if (!profile) {
-            navigate("/loginForm", { replace: true });
+            navigate("/login", { replace: true });
             return;
           }
 
@@ -35,7 +34,7 @@ export default function OAuthSuccess() {
             profile.role === "choose" ||
             profile.role === "regular"
           ) {
-            navigate("/registrationDetails", { replace: true });
+            navigate("/register-details", { replace: true });
             return;
           }
 
@@ -44,10 +43,10 @@ export default function OAuthSuccess() {
         })
         .catch((err) => {
           console.error("Помилка завантаження профілю:", err);
-          navigate("/loginForm", { replace: true });
+          navigate("/login", { replace: true });
         });
     } else {
-      navigate("/loginForm", { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [navigate, searchParams, refreshProfile]);
 

@@ -28,6 +28,10 @@ interface ImportMetaEnv {
   readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
   /** Optional Twitter @site handle for social cards (e.g. `explys` or `@explys`). */
   readonly VITE_TWITTER_SITE?: string;
+  /** Optional PostHog project API key; analytics stays disabled when unset. */
+  readonly VITE_PUBLIC_POSTHOG_KEY?: string;
+  /** PostHog API host (e.g. `https://eu.i.posthog.com`) or first-party proxy path (`/ingest`). */
+  readonly VITE_PUBLIC_POSTHOG_HOST?: string;
 }
 
 interface ImportMeta {

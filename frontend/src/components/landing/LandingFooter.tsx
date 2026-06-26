@@ -43,8 +43,8 @@ export function LandingFooter() {
             },
           ]
         : [
-            { label: footer.links.logIn, to: "/loginForm" },
-            { label: footer.links.register, to: "/registrationMain" },
+            { label: footer.links.logIn, to: "/login" },
+            { label: footer.links.register, to: "/register" },
           ],
     },
   ];

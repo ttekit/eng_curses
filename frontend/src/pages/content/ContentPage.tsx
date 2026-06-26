@@ -60,7 +60,11 @@ function ContentWatchHeader({
             <Link to="/catalog">
               <img src="/Icon.svg" className="w-15 h-18 hover:cursor-pointer" />
             </Link>
+<<<<<<< HEAD
             <span className="font-display truncate font-bold text-foreground hidden sm:inline">
+=======
+            <span className="hidden sm:block font-display truncate font-bold text-foreground">
+>>>>>>> 6e044830eb83edd9ae9760ba104de4751896a408
               Explys
             </span>
           </div>

@@ -4,6 +4,8 @@ import { downloadStudentAccountsExcel } from "../../lib/studentAccountsExcel";
 import type { GeneratedStudentAccount } from "../../lib/registerUser";
 import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useEffect } from "react";
+import { captureEvent } from "../../lib/analytics";
 
 type SuccessLocationState = {
   generatedStudents?: GeneratedStudentAccount[];
@@ -18,13 +20,19 @@ export default function RegisterSuccessPage() {
   const state = location.state as SuccessLocationState | null;
   const students = state?.generatedStudents ?? [];
   const hasStudents = students.length > 0;
+  useEffect(() => {
+    captureEvent("registration_completed", {
+      students_count: students.length,
+      has_students: hasStudents,
+    });
+  }, [students.length, hasStudents]);
 
   return (
     <>
       <AuthPageSeo
         title={regSeo.seoTitle}
         description={regSeo.seoDescription}
-        path="/registrationSuccess"
+        path="/register-success"
       />
       <div className="bg-background font-display flex min-h-screen flex-col gap-12 p-8 text-foreground lg:flex-row lg:items-center lg:justify-center lg:gap-16">
         <div className="mx-auto hidden w-full max-w-sm flex-col items-center text-center lg:flex">
@@ -65,7 +73,7 @@ export default function RegisterSuccessPage() {
             <Button
               type="button"
               className="flex w-full items-center justify-center rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
-              onClick={() => navigate("/loginForm")}
+              onClick={() => navigate("/login")}
             >
               {success.goSignIn}
             </Button>

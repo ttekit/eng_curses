@@ -173,7 +173,7 @@ export default function RegistrationMain() {
         confirmPassword,
         token: captchaToken,
       });
-      navigate("/registrationDetails");
+      navigate("/register-details");
     } catch (error) {
       console.error("Error during registration:", error);
       setErrorText(errors.networkError);
@@ -208,7 +208,7 @@ export default function RegistrationMain() {
       <AuthPageSeo
         title={step1.seoTitle}
         description={step1.seoDescription}
-        path="/registrationMain"
+        path="/register"
       />
       <AuthSplitLayout
         progressStep={1}
@@ -408,7 +408,7 @@ export default function RegistrationMain() {
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {step1.haveAccount}{" "}
           <Link
-            to="/loginForm"
+            to="/login"
             className="font-medium text-primary hover:underline"
           >
             {step1.logIn}

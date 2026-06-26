@@ -83,8 +83,10 @@ export const landingEn = {
 
   header: {
     navLinks: [
+      { hash: "pricing", label: "Pricing" },
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
+      { hash: "testimonials", label: "Learners about Explys" },
       { hash: "ready-to-start", label: "Ready to start" },
     ],
     pricing: "Pricing",
@@ -96,17 +98,20 @@ export const landingEn = {
   },
 
   hero: {
-    badge: "Personalized learning",
-    titleBefore: "Learn English",
-    titleAccent: "your way",
-    lead: "Adaptive video lessons that match your interests, level, and learning style — like a chameleon adapting to its environment, we adapt to you.",
-    ctaPrimary: "Start learning free",
-    ctaSecondary: "Browse content",
-    videoMin: "Just 1 min - and you’re ready to start!",
-    videoWatch: "Watch the video",
-    users: "users",
-    videos: "500+ videos",
-    hours: "10k+ hours",
+    badge: "English learning platform",
+    titleBefore: "Understand real English from",
+    titleAccent: "movies & series",
+    lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
+    ctaSecondary: "See how it works",
+    videoCaption: "60-second product demo",
+    videoWatch: "Watch the demo",
+    activeLearnersCount: 3315,
+    users: "learners",
+    videos: "videos",
+    hours: "hours",
+    socialProofLine: "Join {count}+ learners — no credit card required",
+    trustNoCard: "No credit card required",
+    trustPrivacy: "No spam. Your information stays private.",
   },
 
   features: {
@@ -122,14 +127,14 @@ export const landingEn = {
           "Learn from real-world content — movies, series, and educational videos tailored to your interests.",
       },
       {
-        title: "AI personalization",
+        title: "Two-way AI practice",
         description:
-          "Our system adapts to your pace, preferences, and the skills you need most.",
+          "AI adapts to your answers and pronunciation — not one-size-fits-all drills or robotic text-to-speech.",
       },
       {
-        title: "Focused practice",
+        title: "Context-aware subtitles",
         description:
-          "Interactive quizzes after each video reinforce vocabulary, grammar, and listening skills.",
+          "Interactive quizzes and subtitles built for meaning in context — not literal machine translations.",
       },
       {
         title: "For everyone",
@@ -154,7 +159,7 @@ export const landingEn = {
     titleBrand: "Explys",
     titleAfter: "works?",
     subtitle:
-      "Create an account, finish placement when you first open the catalog, then follow your student learning plan with video lessons and quizzes.",
+      "A step-by-step plan for how to start getting real results in language learning",
     stepPrefix: "Step",
     steps: [
       {
@@ -185,12 +190,157 @@ export const landingEn = {
   },
 
   pricingSection: {
-    title: "Simple, transparent pricing",
+    title:
+      "After that, simple and transparent payment to achieve the best results",
     subtitle:
-      "From essentials to adaptive AI and family plans — plus solutions for schools.",
+      "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
-    freeAccess: "Free access in June 2026!",
-    startLearning: "Start learning now",
+    freeHeadline: "Start free in ",
+    freeAccess: "June 2026",
+    freeHeadlineEnd: "No credit card required",
+    freePromo: "Free access in June 2026!",
+  },
+
+  differentiation: {
+    titleBefore: "Why learners choose",
+    titleBrand: "Explys",
+    titleAfter: "over other video apps",
+    subtitle:
+      "Transparent pricing, real practice, and content that fits your level — not hidden paywalls or robotic drills.",
+    items: [
+      {
+        title: "Transparent pricing",
+        description:
+          "Plans and prices are visible before you sign up — no credit card required to start.",
+      },
+      {
+        title: "No card to start",
+        description:
+          "Create an account and begin learning free. Upgrade only when you are ready.",
+      },
+      {
+        title: "Real voices, real context",
+        description:
+          "Learn from authentic video with subtitles and quizzes — not synthetic robot narration.",
+      },
+      {
+        title: "Age-aware personalization",
+        description:
+          "Placement and interests shape what you see — so content matches your level and goals.",
+      },
+    ],
+  },
+
+  testimonials: {
+    title: "Learners about Explys",
+    subtitle: "Real progress from video-based practice.",
+    items: [
+      {
+        name: "vshchypanska",
+        level: "B1 → B2",
+        quote:
+          "A fascinating platform for learning English. It is perfect for anyone who wants to maintain their English level without spending a lot of time. I especially like that you can customize the selection of movies and TV series to your taste and change the choice of genres at any time. The program automatically generates words and explanations for them, and at the end of the lesson, you can take a test. The last task requires writing a short essay and then checks it, which improves writing skills. Besides, it's impossible not to mention the user-friendly interface and how quickly the owners respond to suggestions for development or improvement.",
+        outcome: "",
+      },
+      {
+        name: "oleg p",
+        level: "A2 → B1",
+        quote:
+          "Explys is just a lifesaver for movie buffs! Before, watching movies in the original was stressful, but now it's pure pleasure. I really like that the program highlights new words itself and provides clear explanations right in the process. Tests at the end help to consolidate what you've heard. My level has noticeably improved, and I stopped being afraid of the actors' fast speech.",
+        outcome: "",
+      },
+      {
+        name: "kate_sorok",
+        level: "B1 → B2",
+        quote:
+          "An incredibly convenient platform for daily practice. The main plus for me is the precise customization of content based on my own interests. The program automatically generates vocabulary lists, and the final writing tasks help to immediately apply new expressions in practice. The interface is light and not overloaded at all.",
+        outcome: "",
+      },
+      {
+        name: "sazuyy",
+        level: "B1 → B2",
+        quote:
+          "I've been using this platform to learn English for some time now and I'm very satisfied. Most of all, I like learning through movies/TV shows that you actually enjoy - this way the material is perceived much easier and more interesting. After the lessons, there are tests to check your knowledge and detailed explanations for the answers, which helps you better understand your mistakes. The interface is convenient and clear, so you don't need to waste time looking for the right materials. During my studies, I noticed that I started to understand spoken English better and use new words and expressions more confidently. A great platform for those who want to learn English in an interesting and effective way.",
+        outcome: "",
+      },
+      {
+        name: "alexx",
+        level: "B2 → C1",
+        quote:
+          "An excellent service for supporting and leveling up an Advanced level. The interactive work on mistakes is implemented perfectly. Special respect to the Explys team for the quick feedback and constant technical updates of the site.",
+        outcome: "",
+      },
+      {
+        name: "dan",
+        level: "A1 → A2",
+        quote:
+          "I started learning English almost from scratch. Explys has a very cool division by levels - I was able to find simple videos for my initial stage, so learning is not boring at all. The system automatically tracks progress and motivates you to move forward. Finally, I started confidently recognizing basic phrases by ear!",
+        outcome: "",
+      },
+      {
+        name: "marina_k",
+        level: "B1 → B2",
+        quote:
+          "I've been looking for a platform for a long time where I could combine business with pleasure. Learning through my favorite TV series on Explys was love from the first lesson. Detailed explanations for the answers in the tests help to understand the logic of grammar, rather than just memorizing rules. My vocabulary grew very quickly, I recommend it to everyone.",
+        outcome: "",
+      },
+      {
+        name: "guy",
+        level: "A2 → B1",
+        quote:
+          "The website interface is as clear as possible, without unnecessary visual clutter. Categorization of content by age and interest allows not to waste time on long searches for the right material. Everything works quickly, efficiently, and modernly.",
+        outcome: "",
+      },
+      {
+        name: "stefaniykaa",
+        level: "A2 → B1",
+        quote:
+          "First of all, I liked the convenient and clear interface of the site, which allows you to easily and quickly get acquainted with the learning opportunities. In particular, I want to note the large amount of available content categorized by language level, interests, and age category. The program tracks your progress and provides an opportunity to work on mistakes, which is very important. Overall, a pleasant team works on the site, listening to users and ready to work on improving the program.",
+        outcome: "",
+      },
+      {
+        name: "elenaPoly",
+        level: "B2 → C1",
+        quote:
+          "Explys helped me overcome the language plateau. Thanks to authentic content from movies and automatic essay analysis, I have significantly polished my writing. I really like that the site team actively listens to users' suggestions and constantly improves the functionality.",
+        outcome: "",
+      },
+      {
+        name: "Dmitry",
+        level: "B1 → B2",
+        quote:
+          "A cool site for daily interaction and practice. It doesn't require much time: logged in, watched a short snippet, passed a quick test - and new words are already in your head. The mistake review option helps to effectively close the gaps.",
+        outcome: "",
+      },
+      {
+        name: "Julie",
+        level: "A2 → B1",
+        quote:
+          "For me, Explys has become the main tool for pumping up my language skills. I like that the program adapts to my taste in movies and independently generates vocabularies with context. Interactive tests help a lot to consolidate the covered material. After a few months of regular classes, my listening comprehension has improved significantly.",
+        outcome: "",
+      },
+      {
+        name: "artist",
+        level: "B1 → B2",
+        quote:
+          "The best platform out of all that I've tried recently. Learning through interesting videos really works - the brain doesn't get tired at all, and new words and phrases are remembered naturally thanks to the context of the movies.",
+        outcome: "",
+      },
+      {
+        name: "sqqxiy",
+        level: "A1 → B1",
+        quote:
+          "The platform is just super! I made a huge leap in knowledge thanks to Explys. A large amount of diverse content, divided by topic and age, allows everyone to find something of their own. I am very grateful to the developers for such a cool and easy approach to learning!",
+        outcome: "",
+      },
+      {
+        name: "vlad",
+        level: "B2 → C1",
+        quote:
+          "High-quality interface, great selection of genres, and really useful tasks. The feature with writing essays and their automatic verification is top notch for developing written English skills. The project team is doing great, keep it up!",
+        outcome: "",
+      },
+    ],
   },
 
   marketingFaq: {
@@ -209,7 +359,7 @@ export const landingEn = {
     freeToStart: {
       question: "Is Explys free to start?",
       answer:
-        "Yes. Currently, using Explys is completely free so you can try our approach to language learning.",
+        "Yes. You can create an account and start learning for free without a credit card. Paid plans (Light, Smart, and Family) unlock additional features when you are ready to subscribe.",
     },
     personalize: {
       question: "How does Explys personalize my lessons?",
@@ -223,16 +373,41 @@ export const landingEn = {
     },
   },
 
+  pricingQuestions: {
+    cost: {
+      question: "How much does Explys cost?",
+      answer:
+        "Light (Essentials) is $7 per month, Smart (Adaptive) is $12 per month, and Family (LMS/Pro) is $19 per month. Teacher / Enterprise pricing is custom — contact us for schools and private teachers.",
+    },
+    popular: {
+      question: "Which Explys plan is most popular?",
+      answer:
+        "Smart (Adaptive) is our most popular plan. It includes AI error analysis, unlimited interactive exercises, deep progress analytics, leaderboards, and a personalized growth plan.",
+    },
+    upgrade: {
+      question: "Can I upgrade my plan later?",
+      answer:
+        "Yes. You can upgrade anytime from the pricing page after you sign in. Payments are processed securely by Stripe.",
+    },
+    account: {
+      question: "Do I need an account before subscribing?",
+      answer:
+        "Yes. Sign in to subscribe to Light, Smart, or Family. Family plans include up to three profiles with shared parental controls and all Smart features.",
+    },
+  },
+
   cta: {
+    startFree: "Start for free",
     titleBefore: "Ready to start your",
     titleAccent: "English journey",
     titleAfter: "?",
     subtitle:
       "Join thousands of learners improving their English with personalized video content.",
     catalog: "Catalog",
-    getStartedFree: "Get started free",
     howItWorks: "How it works",
-    footnote: "Free access in June 2026!",
+    trustNoCard: "No credit card required",
+    trustPrivacy: "No spam. Your information stays private.",
+    footnotePromo: "Free access in June 2026!",
   },
 
   pricingCards: {

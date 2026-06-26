@@ -67,7 +67,15 @@ export default function SubscribePage() {
     if (checkoutDone) {
       navigate("/catalog", { replace: true });
     }
-  }, [devSkip, isLoading, navigate, searchParams, user, isTeacherRegistration, sub.thankYouSubscribing]);
+  }, [
+    devSkip,
+    isLoading,
+    navigate,
+    searchParams,
+    user,
+    isTeacherRegistration,
+    sub.thankYouSubscribing,
+  ]);
 
   useEffect(() => {
     if (!consumePendingRegistrationLoginWelcome()) {
@@ -120,14 +128,21 @@ export default function SubscribePage() {
               onlyPlanId={isTeacherRegistration ? "teacher" : undefined}
               onSelectTeacherPlan={
                 isTeacherRegistration
-                  ? () => navigate("/registrationSuccess", { state: { generatedStudents } })
+                  ? () =>
+                      navigate("/register-success", {
+                        state: { generatedStudents },
+                      })
                   : undefined
               }
               onSelectConsumerPlan={(id) =>
                 void startCheckout(id, { isLoggedIn: !!user })
               }
               checkoutDisabled={checkoutLoading}
-              className={isTeacherRegistration ? "" : "mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"}
+              className={
+                isTeacherRegistration
+                  ? ""
+                  : "mx-auto w-full !grid-cols-1 md:!grid-cols-2 xl:!grid-cols-4 xl:gap-6"
+              }
             />
             <p className="mx-auto mt-10 max-w-md text-center text-muted-foreground text-xs">
               {sub.paymentsNote}
@@ -156,7 +171,7 @@ export default function SubscribePage() {
               className="hover:text-foreground underline-offset-4 hover:underline"
               onClick={() => {
                 logout();
-                navigate("/loginForm");
+                navigate("/login");
               }}
             >
               {sub.signOut}

@@ -38,7 +38,7 @@ export class ContentVideoService {
   constructor(
     private prisma: PrismaService,
     @Inject("REDIS_CLIENT") private readonly redis: RedisCatalogCacheClient,
-  ) {}
+  ) { }
 
   async create(createContentVideoDto: CreateContentVideoDto) {
     const maxRow = await this.prisma.contentVideo.aggregate({
@@ -85,23 +85,23 @@ export class ContentVideoService {
     const whereClause = isAdmin
       ? {}
       : {
-          OR: [
-            {
-              content: {
-                category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
-              },
+        OR: [
+          {
+            content: {
+              category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
             },
-            ...(teacherId
-              ? [
-                  {
-                    content: {
-                      category: { ownerUserId: teacherId },
-                    },
-                  },
-                ]
-              : []),
-          ],
-        };
+          },
+          ...(teacherId
+            ? [
+              {
+                content: {
+                  category: { ownerUserId: teacherId },
+                },
+              },
+            ]
+            : []),
+        ],
+      };
 
     const videos = await this.prisma.contentVideo.findMany({
       where: whereClause,
@@ -130,6 +130,22 @@ export class ContentVideoService {
 
     await this.redis.set(cacheKey, JSON.stringify(videos), "EX", 300);
     return videos;
+  }
+
+  async findAllPublicCatalog() {
+    const cacheKey = "catalog:videos:public_safe";
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const allPublicVideos = await this.findAll();
+
+    const safeVideos = allPublicVideos.map((video: any) => {
+      const { videoLink, ...safeData } = video;
+      return safeData;
+    });
+
+    await this.redis.set(cacheKey, JSON.stringify(safeVideos), "EX", 300);
+    return safeVideos;
   }
 
   async findWatchedByUser(userId: number) {
@@ -292,6 +308,7 @@ export class ContentVideoService {
     });
     await this.redis.del("catalog:videos");
     await this.redis.del("catalog:videos:admin");
+    await this.redis.del("catalog:videos:public_safe");
     return deletedVideo;
   }
 }

@@ -1,10 +1,10 @@
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 const stepIcons = [
-  <img src="/LandingProfile.svg" key="0" className="h-16 w-16" loading="lazy" />,
-  <img src="/LandingTest.svg" key="1" className="h-16 w-16" loading="lazy" />,
-  <img src="/LandingPlan.svg" key="2" className="h-16 w-16" loading="lazy" />,
-  <img src="/LandingResult.svg" key="3" className="h-16 w-16" loading="lazy" />,
+  <img src="/LandingProfile.svg" key="0" className="h-20 w-20" />,
+  <img src="/LandingTest.svg" key="1" className="h-20 w-20" />,
+  <img src="/LandingPlan.svg" key="2" className="h-20 w-20" />,
+  <img src="/LandingResult.svg" key="3" className="h-20 w-20" />,
 ];
 
 export function HowItWorksSection() {
@@ -24,7 +24,7 @@ export function HowItWorksSection() {
             <span className="text-primary">{howItWorks.titleBrand}</span>{" "}
             {howItWorks.titleAfter}
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto max-w-2xl font-sans text-lg text-muted-foreground">
             {howItWorks.subtitle}
           </p>
         </div>
@@ -37,7 +37,7 @@ export function HowItWorksSection() {
               )}
 
               <div className="relative flex flex-col items-center text-center">
-                <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-border bg-muted transition-colors group-hover:border-primary">
+                <div className="hover:cursor-pointer mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-border bg-muted transition-colors group-hover:border-primary">
                   {stepIcons[index]}
                 </div>
 
@@ -47,7 +47,7 @@ export function HowItWorksSection() {
                 <h3 className="mb-2 text-lg font-semibold text-foreground">
                   {step.title}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-sans text-sm text-muted-foreground">
                   {step.description}
                 </p>
               </div>

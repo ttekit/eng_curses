@@ -45,10 +45,10 @@ export function resolveRegistrationCompletionPath(
   user: UserData | null,
 ): string {
   if (!user) {
-    return "/loginForm";
+    return "/login";
   }
   if (learnerNeedsRoleSelection(user.role)) {
-    return "/registrationDetails";
+    return "/register-details";
   }
   return "/catalog";
 }
@@ -76,7 +76,7 @@ export function resolvePostLoginPath(
     profile.role === "choose" ||
     profile.role === "regular"
   ) {
-    return "/registrationDetails";
+    return "/register-details";
   }
 
   if (

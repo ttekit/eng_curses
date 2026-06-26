@@ -9,7 +9,7 @@ export default function AnalyticsLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    initPosthog();
+    void initPosthog();
   }, []);
 
   useEffect(() => {

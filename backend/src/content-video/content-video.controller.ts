@@ -42,6 +42,7 @@ import { UpdateContentVideoDto } from "./dto/update-content-video.dto";
 import { VocabularyHintsService } from "src/content-video/vocabulary-hints.service";
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
 import { PrismaService } from "src/prisma.service";
+import { Public } from "src/auth/decorators/public.decorator";
 
 @ApiTags("content-video")
 @Controller("content-video")
@@ -56,7 +57,7 @@ export class ContentVideoController {
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -64,6 +65,17 @@ export class ContentVideoController {
   @ApiOperation({ summary: "Admin: Create a new video entity" })
   create(@Body() createContentVideoDto: CreateContentVideoDto) {
     return this.contentVideoService.create(createContentVideoDto);
+  }
+
+  @Get("public")
+  @Public()
+  @SkipSubscriptionCheck()
+  @ApiOperation({
+    summary: "Public catalog safe preview (no video links)",
+    description: "Returns catalog metadata for unauthenticated users without exposing private HLS streams.",
+  })
+  findPublicCatalog() {
+    return this.contentVideoService.findAllPublicCatalog();
   }
 
   @Get()

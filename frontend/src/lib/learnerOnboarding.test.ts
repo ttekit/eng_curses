@@ -70,9 +70,7 @@ describe("resolvePostLoginPath", () => {
 describe("resolvePlacementPhase", () => {
   it("returns off when placement complete", () => {
     expect(
-      resolvePlacementPhase(
-        mockUser({ hasCompletedPlacement: true }),
-      ),
+      resolvePlacementPhase(mockUser({ hasCompletedPlacement: true })),
     ).toBe("off");
   });
 
@@ -140,12 +138,12 @@ describe("resolveRegistrationCompletionPath", () => {
   it("sends incomplete role back to step 2", () => {
     expect(
       resolveRegistrationCompletionPath(mockUser({ role: "regular" })),
-    ).toBe("/registrationDetails");
+    ).toBe("/register-details");
   });
 
   it("sends completed learner to catalog", () => {
-    expect(
-      resolveRegistrationCompletionPath(mockUser({ role: "adult" })),
-    ).toBe("/catalog");
+    expect(resolveRegistrationCompletionPath(mockUser({ role: "adult" }))).toBe(
+      "/catalog",
+    );
   });
 });

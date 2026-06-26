@@ -385,7 +385,7 @@ export class AuthController {
   ) {
     if (!code) {
       return res.redirect(
-        `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm`,
+        `${this.configService.getOrThrow<string>("FRONTEND_URL")}/login`,
       );
     }
 
@@ -412,7 +412,7 @@ export class AuthController {
       return res.redirect(redirectUrl);
     } catch (error) {
       console.error("OAuth Callback Error:", error);
-      const errorUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=oauth_failed`;
+      const errorUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/login?error=oauth_failed`;
       return res.redirect(errorUrl);
     }
   }

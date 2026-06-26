@@ -1,15 +1,16 @@
 User-agent: *
 Allow: /
 Allow: /pricing
-Disallow: /catalog
-Disallow: /content/
+Allow: /catalog
+Allow: /content/
+
 Disallow: /learning-plan
 Disallow: /subscribe
-Disallow: /loginForm
-Disallow: /registrationMain
-Disallow: /registrationDetails
-Disallow: /registrationPreferences
-Disallow: /registrationSuccess
+Disallow: /login
+Disallow: /register
+Disallow: /register-details
+Disallow: /register-preferences
+Disallow: /register-success
 Disallow: /verify-email
 Disallow: /restore-account
 Disallow: /profileMain

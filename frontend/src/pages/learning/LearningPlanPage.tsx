@@ -24,11 +24,13 @@ import { renderLightMarkdown } from "../../lib/renderLightMarkdown";
 function renderIntroMarkdownish(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g);
   return parts.map((chunk, i) =>
-    i % 2 === 1 ?
+    i % 2 === 1 ? (
       <strong key={i} className="font-semibold text-foreground">
         {chunk}
       </strong>
-    : <span key={i}>{chunk}</span>,
+    ) : (
+      <span key={i}>{chunk}</span>
+    ),
   );
 }
 
@@ -40,24 +42,18 @@ export default function LearningPlanPage() {
 
   const plan = useMemo(
     () =>
-      user ?
-        buildLearningPlanModel(
-          user,
-          locale === "uk" ? LEARNING_PLAN_UK_DEFAULTS : undefined,
-          locale === "uk" ? "uk" : "en",
-        )
-      : null,
+      user
+        ? buildLearningPlanModel(
+            user,
+            locale === "uk" ? LEARNING_PLAN_UK_DEFAULTS : undefined,
+            locale === "uk" ? "uk" : "en",
+          )
+        : null,
     [user, locale],
   );
 
   if (!isLoading && (!isLoggedIn || !user)) {
-    return (
-      <Navigate
-        to="/loginForm"
-        replace
-        state={{ from: "/learning-plan" }}
-      />
-    );
+    return <Navigate to="/login" replace state={{ from: "/learning-plan" }} />;
   }
 
   if (!isLoading && user && !user.hasCompletedPlacement) {
@@ -82,9 +78,12 @@ export default function LearningPlanPage() {
       <ContentHeader />
 
       <main className="relative z-10 mx-auto max-w-3xl px-4 pb-24 pt-28 md:pt-32">
-        {isLoading || !plan || !user ?
-          <p className="text-center text-sm text-muted-foreground">{lp.loading}</p>
-        : <>
+        {isLoading || !plan || !user ? (
+          <p className="text-center text-sm text-muted-foreground">
+            {lp.loading}
+          </p>
+        ) : (
+          <>
             <div className="mb-10 text-center">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
                 <Sparkles className="size-3.5 text-primary" />
@@ -102,10 +101,14 @@ export default function LearningPlanPage() {
                 disabled={isRegenerating}
                 className="mx-auto mt-5 inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card/80 px-4 py-2.5 text-sm font-medium text-foreground/90 shadow-sm transition-colors hover:bg-muted/60 disabled:pointer-events-none disabled:opacity-60"
               >
-                {isRegenerating ?
-                  <Loader2 className="size-4 animate-spin text-primary" aria-hidden
+                {isRegenerating ? (
+                  <Loader2
+                    className="size-4 animate-spin text-primary"
+                    aria-hidden
                   />
-                : <RefreshCw className="size-4 text-primary" aria-hidden />}
+                ) : (
+                  <RefreshCw className="size-4 text-primary" aria-hidden />
+                )}
                 {isRegenerating ? lp.regenerating : lp.regenerateCta}
               </button>
             </div>
@@ -118,7 +121,9 @@ export default function LearningPlanPage() {
                     {lp.goalLabel}
                   </span>
                 </div>
-                <p className="text-lg font-semibold leading-snug">{plan.goal}</p>
+                <p className="text-lg font-semibold leading-snug">
+                  {plan.goal}
+                </p>
               </div>
               <div className="rounded-2xl border border-border bg-card/80 p-5 shadow-sm backdrop-blur-sm">
                 <div className="mb-2 flex items-center gap-2 text-primary">
@@ -134,7 +139,9 @@ export default function LearningPlanPage() {
             </div>
 
             <div className="mb-10 rounded-2xl border border-primary/25 bg-primary/5 p-6 md:p-8">
-              <h2 className="font-display text-xl font-bold">{plan.headline}</h2>
+              <h2 className="font-display text-xl font-bold">
+                {plan.headline}
+              </h2>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">
                 {renderIntroMarkdownish(plan.intro)}
               </p>
@@ -190,7 +197,7 @@ export default function LearningPlanPage() {
               </Link>
             </div>
           </>
-        }
+        )}
       </main>
     </div>
   );

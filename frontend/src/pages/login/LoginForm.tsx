@@ -22,7 +22,7 @@ function safeReturnPath(state: unknown): string | undefined {
   const raw = (state as { from?: unknown }).from;
   if (typeof raw !== "string" || raw.length === 0) return undefined;
   if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
-  if (raw === "/loginForm" || raw.startsWith("/loginForm?")) return undefined;
+  if (raw === "/login" || raw.startsWith("/login?")) return undefined;
   return raw;
 }
 
@@ -57,7 +57,7 @@ export default function LoginForm() {
     if (consumePendingRegistrationLoginWelcome()) {
       toast.success(loginSeo.toastAccountCreated);
     }
-    navigate("/loginForm", {
+    navigate("/login", {
       replace: true,
       state: s.from ? { from: s.from } : undefined,
     });
@@ -78,7 +78,7 @@ export default function LoginForm() {
       toast.error(
         loginSeo.noAccount || "That user does not exist. Please sign up.",
       );
-      navigate("/loginForm", { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [location.search, navigate, loginSeo]);
 
@@ -162,7 +162,7 @@ export default function LoginForm() {
       <AuthPageSeo
         title={loginSeo.seoTitle}
         description={loginSeo.seoDescription}
-        path="/loginForm"
+        path="/login"
       />
       <AuthSplitLayout
         rightTitle={loginSeo.rightTitle}
@@ -361,7 +361,7 @@ export default function LoginForm() {
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {loginSeo.noAccount}{" "}
             <Link
-              to="/registrationMain"
+              to="/register"
               className="font-medium text-primary hover:underline"
             >
               {loginSeo.signUp}

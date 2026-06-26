@@ -67,7 +67,7 @@ export default function EmailConfirmedPage() {
         )}
 
         <button
-          onClick={() => (window.location.href = "/loginForm")}
+          onClick={() => (window.location.href = "/login")}
           className="px-8 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl font-semibold transition-colors w-full"
         >
           {t.goToLogin}

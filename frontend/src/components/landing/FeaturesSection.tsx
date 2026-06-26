@@ -21,7 +21,7 @@ export function FeaturesSection() {
             <span className="text-primary">{features.titleBrand}</span>
             {features.titleAfter}
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto max-w-2xl font-sans text-lg text-muted-foreground">
             {features.subtitle}
           </p>
         </div>
@@ -40,7 +40,7 @@ export function FeaturesSection() {
                 <h3 className="mb-2 text-lg font-semibold text-foreground">
                   {feature.title}
                 </h3>
-                <p className="leading-relaxed text-muted-foreground">
+                <p className="font-sans text-sm leading-relaxed text-muted-foreground">
                   {feature.description}
                 </p>
               </div>

@@ -1,8 +1,8 @@
 const REGISTRATION_PATH_MARKERS = [
-  "/registrationMain",
-  "/registrationDetails",
-  "/registrationPreferences",
-  "/registrationSuccess",
+  "/register",
+  "/register-details",
+  "/register-preferences",
+  "/register-success",
   "/onboarding/dob",
 ] as const;
 
