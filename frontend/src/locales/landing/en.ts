@@ -738,8 +738,10 @@ export const landingEn = {
         colEmail: "Email",
         colPassword: "Password",
         downloadExcel: "Download student accounts (Excel)",
+
         goSignIn: "Go to sign in",
         goCatalog: "Go to catalog",
+        
         continueToSite: "Continue to site",
         show: "Show",
         hide: "Hide",

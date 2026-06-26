@@ -142,7 +142,7 @@ export default function RegistrationDetails() {
     selected: MultiValue<LearningTopicOption>,
   ) => {
     updateFormData({
-      teacherTopics: Array.from(selected ?? []).map((o) => o.label),
+      teacherTopics: Array.from(selected ?? []).map((o) => o.value),
     } as Partial<FormData>);
   };
 
@@ -215,8 +215,7 @@ export default function RegistrationDetails() {
         Array.isArray(formData.teacherTopics) &&
         formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-              const num = parseInt(t.replace("topic:", ""), 10);
-              return isNaN(num) ? t : num;
+              return String(t).replace("topic:", "");
             })
           : undefined;
 
