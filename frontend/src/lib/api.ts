@@ -245,12 +245,12 @@ export async function apiFetch(
     if (response.status === 401) {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
 
-      if (
-        typeof window !== "undefined" &&
-        !window.location.pathname.includes("/login")
-      ) {
-        window.location.href = "/login";
-      }
+      // if (
+      //   typeof window !== "undefined" &&
+      //   !window.location.pathname.includes("/login")
+      // ) {
+      //   window.location.href = "/login";
+      // }
     }
 
     if (!response.ok && isApiErrorLoggingEnabled()) {
