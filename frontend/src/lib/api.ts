@@ -249,7 +249,7 @@ export async function apiFetch(
         typeof window !== "undefined" &&
         !window.location.pathname.includes("/login")
       ) {
-        window.location.href = "/loginForm";
+        window.location.href = "/login";
       }
     }
 

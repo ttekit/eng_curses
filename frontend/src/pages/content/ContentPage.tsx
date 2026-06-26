@@ -60,11 +60,7 @@ function ContentWatchHeader({
             <Link to="/catalog">
               <img src="/Icon.svg" className="w-15 h-18 hover:cursor-pointer" />
             </Link>
-<<<<<<< HEAD
-            <span className="font-display truncate font-bold text-foreground hidden sm:inline">
-=======
             <span className="hidden sm:block font-display truncate font-bold text-foreground">
->>>>>>> 6e044830eb83edd9ae9760ba104de4751896a408
               Explys
             </span>
           </div>
@@ -124,7 +120,6 @@ function ContentWatchHeader({
     </header>
   );
 }
-
 function LoadingView({ L }: { L: LessonLabels }) {
   return (
     <div className="min-h-screen bg-background">
@@ -491,13 +486,13 @@ export default function ContentPage() {
                     ))}
                   {(user?.role?.toLowerCase() === "teacher" ||
                     user?.role?.toLowerCase() === "admin") && (
-                      <div className="ml-2 z-50">
-                        <AssignHomeworkButton
-                          contentId={Number(id)}
-                          contentName={videoData.videoName}
-                        />
-                      </div>
-                    )}
+                    <div className="ml-2 z-50">
+                      <AssignHomeworkButton
+                        contentId={Number(id)}
+                        contentName={videoData.videoName}
+                      />
+                    </div>
+                  )}
                 </div>
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
                   {videoData.videoName}

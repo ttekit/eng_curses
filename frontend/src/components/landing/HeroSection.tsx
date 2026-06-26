@@ -9,6 +9,7 @@ import {
   trackLandingHeroVideoPlay,
 } from "../../lib/landingAnalytics";
 import HeroStats from "./HeroStats";
+import { useABTest } from "../../hooks/useABtest";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
@@ -16,14 +17,15 @@ export function HeroSection() {
   const { user } = useUser();
   const primaryTo = user ? "/profile" : "/register";
 
-
-  const browseVariant = useABTest("hero_browse_cta", ["control", "registration_redirect"]);
+  const browseVariant = useABTest("hero_browse_cta", [
+    "control",
+    "registration_redirect",
+  ]);
 
   const secondaryLink =
     browseVariant === "registration_redirect" && !user
       ? "/registrationMain?from=hero_ab_test"
       : "/catalog";
-
 
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">

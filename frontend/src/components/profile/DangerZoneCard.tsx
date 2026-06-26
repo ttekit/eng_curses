@@ -97,7 +97,7 @@ export function DangerZoneCard() {
 
       toast.success("Your account has been deleted.");
       logout();
-      void navigate("/loginForm", { replace: true });
+      void navigate("/login", { replace: true });
     } catch (err: unknown) {
       setDangerError(getErrorMessage(err, "Something went wrong"));
     } finally {
@@ -141,7 +141,7 @@ export function DangerZoneCard() {
                   logout();
                   setStoredAccessToken(null);
                   toast.success(s?.signOutToast || "Signed out successfully");
-                  navigate("/loginForm", { replace: true });
+                  navigate("/login", { replace: true });
                 }}
               >
                 <LogOut className="size-4 pt-1 pr-1" />

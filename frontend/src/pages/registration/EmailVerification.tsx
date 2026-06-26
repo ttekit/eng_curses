@@ -87,12 +87,7 @@ export const EmailVerification: React.FC = () => {
         }
         const savedStudents = routeState?.generatedStudents || [];
         if (savedStudents.length > 0) {
-<<<<<<< HEAD
-          navigate("/registrationSuccess", {
-            replace: true,
-=======
           navigate("/register-success", {
->>>>>>> 6e044830eb83edd9ae9760ba104de4751896a408
             state: { generatedStudents: savedStudents },
           });
           return;
@@ -103,11 +98,7 @@ export const EmailVerification: React.FC = () => {
           profile.role === "regular" ||
           (!profile.englishLevel && !profile.hasCompletedPlacement)
         ) {
-<<<<<<< HEAD
-          navigate("/registrationDetails", { replace: true });
-=======
-          navigate("/register-details");
->>>>>>> 6e044830eb83edd9ae9760ba104de4751896a408
+        navigate("/register-details");
           return;
         }
 
@@ -142,7 +133,7 @@ export const EmailVerification: React.FC = () => {
         if (userMayUseLearnerApp(profile)) {
           navigate("/catalog", { replace: true });
         } else {
-          navigate("/subscribe", { replace: true }); 
+          navigate("/subscribe", { replace: true });
         }
       } else {
         // ... (дальше твой старый код без изменений)
