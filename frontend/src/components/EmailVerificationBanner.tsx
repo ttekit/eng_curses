@@ -11,11 +11,14 @@ export function EmailVerificationBanner() {
   const { user, isLoggedIn } = useUser();
   const b = useAppMessages().emailVerificationBanner;
   const [resendSent, setResendSent] = useState(false);
-  const isVisible = should_show_email_verification_banner(
-    isLoggedIn,
-    user?.isVerified,
-    user?.hasCompletedPlacement,
-  );
+  const isAdmin = String(user?.role).toUpperCase() === "ADMIN";
+  const isVisible =
+    !isAdmin &&
+    should_show_email_verification_banner(
+      isLoggedIn,
+      user?.isVerified,
+      user?.hasCompletedPlacement,
+    );
   const setBannerRef = useEmailVerificationBannerOffset(isVisible);
 
   if (!isVisible) {
