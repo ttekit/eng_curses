@@ -97,12 +97,16 @@ export default function LoginForm() {
 
         const bodyPayload = {
           ...loginData,
-          token: captchaToken,
+          captchaToken: captchaToken,
           ...(show2FA ? { code: twoFactorCode } : {}),
         };
 
         const response = await apiFetch(endpoint, {
           method: "POST",
+          headers: {
+            "cf-turnstile-response": captchaToken,
+            "x-turnstile-token": captchaToken,
+          },
           body: JSON.stringify(bodyPayload),
         });
 

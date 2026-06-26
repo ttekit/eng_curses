@@ -73,15 +73,15 @@ export default function RegisterSuccessPage() {
             <Button
               type="button"
               className="flex w-full items-center justify-center rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
-              onClick={() => navigate("/login")}
-            >
-              {success.goSignIn}
-            </Button>
-            <a
-              href="/catalog"
-              className="mt-2 block w-full text-center text-sm font-semibold text-primary transition-colors hover:underline hover:text-primary/90"
+              onClick={() => navigate("/catalog")}
             >
               {success.continueToSite}
+            </Button>
+            <a
+              href="/login"
+              className="mt-2 block w-full text-center text-sm font-semibold text-primary transition-colors hover:underline hover:text-primary/90"
+            >
+              {success.goSignIn}
             </a>
           </div>
         </div>
