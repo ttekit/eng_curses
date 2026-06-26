@@ -9,6 +9,7 @@ import {
   trackLandingHeroVideoPlay,
 } from "../../lib/landingAnalytics";
 import HeroStats from "./HeroStats";
+// ИМПОРТ: Добавь правильный путь к своему хуку
 import { useABTest } from "../../hooks/useABtest";
 
 export function HeroSection() {
@@ -22,6 +23,7 @@ export function HeroSection() {
     "registration_redirect",
   ]);
 
+  // ЛОГИКА ССЫЛКИ: Если вариант registration_redirect и юзер не залогинен - кидаем на регу
   const secondaryLink =
     browseVariant === "registration_redirect" && !user
       ? "/registrationMain?from=hero_ab_test"
@@ -61,8 +63,10 @@ export function HeroSection() {
                 >
                   {cta.startFree}
                 </Link>
+
+                {/* ИСПОЛЬЗУЕМ secondaryLink */}
                 <Link
-                  to={{ pathname: "/", hash: "#how-explys-works" }}
+                  to={secondaryLink}
                   onClick={() => trackLandingCtaSecondary("hero")}
                   className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-8 py-4 text-center text-lg font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto"
                 >
