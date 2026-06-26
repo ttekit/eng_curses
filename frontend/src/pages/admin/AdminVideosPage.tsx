@@ -49,6 +49,7 @@ import {
   ADMIN_PAGE_SIZE,
 } from "../../hooks/useAdminVideos";
 
+<<<<<<< Updated upstream
 export const genres = [
   { name: "Action" },
   { name: "Adventure" },
@@ -71,6 +72,89 @@ export const genres = [
   { name: "War" },
   { name: "Western" },
 ];
+=======
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <div className={cn("relative w-full text-sm", className)} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-md border bg-[#161622] px-3 py-2 text-left text-foreground focus:outline-none transition-colors cursor-pointer",
+          isOpen
+            ? "border-primary ring-1 ring-primary"
+            : "border-border hover:border-primary/50",
+        )}
+      >
+        <span className="truncate">{selectedOption?.label || value}</span>
+        <ChevronDown
+          className={cn(
+            "ml-2 size-4 shrink-0 transition-transform opacity-70",
+            isOpen && "rotate-180 text-primary",
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-[#161622] py-1 shadow-xl animate-in fade-in zoom-in-95">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center px-3 py-1.5 text-left transition-colors hover:bg-muted/50 cursor-pointer",
+                value === opt.value
+                  ? "text-primary font-medium bg-primary/10"
+                  : "text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function generateVideoThumbnailBlob(
+  fileOrUrl: File | Blob | string,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.playsInline = true;
+    video.muted = true;
+>>>>>>> Stashed changes
 
 function CustomSelect({
   value,
@@ -660,7 +744,13 @@ export default function AdminVideosPage() {
             />
           </div>
           <div className="space-y-2">
+<<<<<<< Updated upstream
             <label className="text-sm font-medium">Age Restriction</label>
+=======
+            <label className="text-sm font-medium">
+              Age Restriction / Возрастное ограничение
+            </label>
+>>>>>>> Stashed changes
             <CustomSelect
               value={editAge}
               onChange={setEditAge}
