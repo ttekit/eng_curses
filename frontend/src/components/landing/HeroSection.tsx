@@ -30,7 +30,7 @@ export function HeroSection() {
       : "/catalog";
 
   return (
-    <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16">
+    <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16 font-display">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
       <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
@@ -45,12 +45,12 @@ export function HeroSection() {
               </span>
             </div>
 
-            <h1 className="font-display text-4xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
               {hero.titleBefore}{" "}
               <span className="text-primary">{hero.titleAccent}</span>
             </h1>
 
-            <p className="max-w-lg font-sans text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="max-w-lg text-lg leading-relaxed text-muted-foreground sm:text-xl">
               {hero.lead}
             </p>
 
@@ -74,7 +74,7 @@ export function HeroSection() {
                   {hero.ctaSecondary}
                 </Link>
               </div>
-              <p className="font-sans text-sm text-muted-foreground -mb-5">
+              <p className="text-sm text-muted-foreground -mb-5">
                 {hero.trustNoCard}
                 <span aria-hidden="true"> · </span>
                 {hero.trustPrivacy}
@@ -86,7 +86,7 @@ export function HeroSection() {
           <div className="relative flex justify-center lg:justify-end">
             <div className="relative">
               <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
-              <p className="mb-4 items-start text-center font-sans text-3xl sm:text-right">
+              <p className="mb-4 items-start text-center font-display text-3xl sm:text-right">
                 {hero.videoCaption}{" "}
                 <span className="text-primary">{hero.videoWatch}</span>
               </p>
