@@ -374,6 +374,8 @@ export class AuthController {
 
   @Public()
   @SkipSubscriptionCheck()
+  @Public()
+  @SkipSubscriptionCheck()
   @Get("/oauth/callback/:provider")
   @UseGuards(AuthProviderGuard)
   public async callback(
@@ -391,7 +393,6 @@ export class AuthController {
 
     const savedState = req.cookies?.oauth_state;
 
-    // Сразу очищаем её
     res.clearCookie("oauth_state", {
       httpOnly: true,
       secure: true,
@@ -410,6 +411,13 @@ export class AuthController {
         provider,
         code,
       );
+
+      res.cookie("explys_access_token", result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
 
       const isNewUser = result.isNewUser;
       const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.access_token}&isNewUser=${isNewUser}`;
