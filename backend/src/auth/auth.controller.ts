@@ -59,7 +59,7 @@ export class AuthController {
     private readonly smtpService: SmtpService,
     private readonly userProfile: UserProfile,
     private readonly accountManagementService: AccountManagementService,
-  ) {}
+  ) { }
 
   @Public()
   @Post("register")
@@ -389,13 +389,18 @@ export class AuthController {
       );
     }
 
-    const savedState = (req.session as any).oauth_state;
+    const savedState = req.cookies?.oauth_state;
 
-    delete (req.session as any).oauth_state;
+    // Сразу очищаем её
+    res.clearCookie("oauth_state", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
 
     if (!state || state !== savedState) {
       return res.redirect(
-        `${this.configService.getOrThrow<string>("FRONTEND_URL")}/loginForm?error=csrf_failed`,
+        `${this.configService.getOrThrow<string>("FRONTEND_URL")}/login?error=csrf_failed`,
       );
     }
 
@@ -427,10 +432,14 @@ export class AuthController {
     @Res() res: Response,
   ) {
     const providerInstance = this.providerService.findByService(provider);
-
     const state = crypto.randomBytes(16).toString("hex");
 
-    (req.session as any).oauth_state = state;
+    res.cookie("oauth_state", state, {
+      maxAge: 10 * 60 * 1000,
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
 
     return res.redirect(providerInstance!.getAuthUrl(state));
   }
