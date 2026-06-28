@@ -44,6 +44,7 @@ export const appUk = {
     settings: "Налаштування",
     levelWithDot: "• {prefix} {level}",
     appTheme: "Тема: ",
+    navAdmin: "Адмін"
   },
 
   emailVerificationBanner: {
