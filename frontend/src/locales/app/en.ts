@@ -44,6 +44,7 @@ export const appEn = {
     settings: "Settings",
     levelWithDot: "• {prefix} {level}",
     appTheme: "Theme: ",
+    navAdmin: "Admin"
   },
 
   emailVerificationBanner: {

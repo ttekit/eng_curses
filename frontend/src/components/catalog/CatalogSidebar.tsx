@@ -11,6 +11,7 @@ import {
   Trophy,
   User,
   GraduationCap,
+  Shield,
 } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import type { UserData } from "../../context/UserContext";
@@ -28,6 +29,13 @@ const sidebarLinkDefs = [
   { id: "customise" as const, icon: SlidersHorizontal, to: "/customise" },
   { id: "leaderboard" as const, icon: Trophy, to: "/leaderboard" },
   { id: "profile" as const, icon: User, to: "/profile" },
+
+  {
+    id: "admin" as const,
+    icon: Shield,
+    to: "https://explys.com/admin",
+    isExternal: true,
+  },
 ] as const;
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
@@ -51,6 +59,10 @@ function resolveVisibleSidebarLinks(user: UserData | null | undefined) {
     if (link.id === "classroom") {
       return shouldShowClassroomNav(user);
     }
+
+    if (link.id === "admin") {
+      return user?.role?.toLowerCase() === "admin";
+    }
     return true;
   });
 }
@@ -65,9 +77,6 @@ function resolve_sidebar_top_class(reserveTopNavSpace: boolean): string {
 }
 
 interface CatalogSidebarProps {
-  // welcomeName?: string;
-  // englishLevel?: string;
-  // avatarUrl?: string;
   selectedLevel?: string;
   onSelectLevel?: (level: string) => void;
   genres?: string[];
@@ -81,9 +90,6 @@ interface CatalogSidebarProps {
 }
 
 export function CatalogSidebar({
-  // welcomeName,
-  // englishLevel,
-  // avatarUrl,
   selectedLevel = "All",
   onSelectLevel,
   genres = [],
@@ -111,6 +117,7 @@ export function CatalogSidebar({
     customise: shell.navCustomise,
     leaderboard: shell.navLeaderboard,
     profile: shell.navProfile,
+    admin: shell.navAdmin,
   };
 
   const welcomeName = user?.name;
@@ -120,6 +127,7 @@ export function CatalogSidebar({
   const sortedGenres = ["All", ...genres.filter(Boolean).sort()];
 
   const linkActive = (linkId: SidebarLinkId) => {
+    if (linkId === "admin") return false;
     if (linkId === "catalog") {
       return pathname === "/catalog" && !catalogSpotlightOpen;
     }
@@ -176,7 +184,6 @@ export function CatalogSidebar({
             collapsed ? "p-1 items-center" : "pb-2",
           )}
         >
-          {/* Верхняя часть: Аватарка и Имя */}
           <div className={cn("flex items-center gap-3", !collapsed && "p-1")}>
             <Link to="/profile" className="shrink-0">
               <img
@@ -229,6 +236,23 @@ export function CatalogSidebar({
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex-col space-y-1 p-4">
             {visibleSidebarLinks.map((link) => {
+              if ("isExternal" in link && link.isExternal) {
+                return (
+                  <a
+                    key={link.id}
+                    href={link.to}
+                    className={cn(
+                      "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                      "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      collapsed && "justify-center px-2",
+                    )}
+                  >
+                    <link.icon className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                  </a>
+                );
+              }
+
               if (link.id === "search") {
                 const active = linkActive(link.id);
                 const itemClass = cn(
@@ -362,15 +386,22 @@ export function CatalogSidebar({
           {visibleSidebarLinks.map((link) => {
             const active = linkActive(link.id);
 
-            // min-w-0 и flex-1: строго делят экран на равные части (по 16.6% на кнопку)
             const itemClass = cn(
               "flex flex-col flex-1 min-w-0 items-center justify-start gap-1.5 rounded-lg px-0.5 py-1 transition-colors hover:cursor-pointer",
               active ? "text-primary" : "text-muted-foreground",
             );
 
-            // truncate: обрезает длинный текст, tracking-tight: делает буквы чуть плотнее
             const textClass =
               "w-full truncate text-center text-[10px] font-medium tracking-tight";
+
+            if ("isExternal" in link && link.isExternal) {
+              return (
+                <a key={link.id} href={link.to} className={itemClass}>
+                  <link.icon className="h-5 w-5 shrink-0" />
+                  <span className={textClass}>{sidebarLabels[link.id]}</span>
+                </a>
+              );
+            }
 
             if (link.id === "search") {
               return pathname === "/catalog" && onOpenCatalogSpotlight ? (

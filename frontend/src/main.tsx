@@ -45,7 +45,6 @@ import AboutPage from "./pages/legal/AboutPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
 import FeedbackPage from "./pages/legal/FeedbackPage";
-import GoogleDobPrompt from "./components/profile/GoogleDobPrompt";
 import OAuthSuccess from "./pages/login/OAuthSuccess";
 import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -74,7 +73,6 @@ const router = createBrowserRouter([
       {
         element: <RequireAuth />,
         children: [
-          { path: "/onboarding/dob", element: <GoogleDobPrompt /> },
           { path: "/subscribe", element: <SubscribePage /> },
           {
             path: "/admin",
