@@ -78,8 +78,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
           <Link to="/">
             <img
               src="/Icon.svg"
-              alt=""
-              className="m-1 h-17 w-15 shrink-0 rounded-full p-1 hover:cursor-pointer"
+              alt="Explys Logo"
+              className="h-15 w-16 shrink-0 object-contain hover:cursor-pointer"
             />
           </Link>
 
@@ -88,7 +88,6 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
           </p>
         </div>
 
-        {/* Обновленный центральный бар навигации */}
         <nav
           className={cn(
             "absolute left-1/2 hidden lg:flex max-w-[min(100vw-12rem,52rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-full border border-border bg-background/50 px-2 py-1.5 shadow-sm backdrop-blur-md sm:max-w-none sm:flex-nowrap sm:gap-2 sm:px-3",
