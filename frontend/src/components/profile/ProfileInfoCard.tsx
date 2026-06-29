@@ -236,7 +236,7 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
             <InputText
               value={name}
               onChange={(e) => setName(e.target.value)}
-              maxLength={25}
+              maxLength={50}
             />
           </label>
           <label className="space-y-2">

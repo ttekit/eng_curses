@@ -232,7 +232,7 @@ export default function RegistrationMain() {
               type="text"
               placeholder={step1.placeholderUsername}
               autoComplete="username"
-              maxLength={25}
+              maxLength={50}
             />
           </div>
 
