@@ -718,11 +718,10 @@ export const landingUk = {
         goalLead:
           "Опишіть, до чого прагнете, якщо хочете — можна пропустити й одразу продовжити.",
         pointOfLearning: "Навіщо вчитеся",
+        defaultGoal: "Вивчити англійську",
         timeToAchieve: "Термін досягнення",
         placeholderGoal: "напр. Подорож до Великої Британії",
         placeholderTime: "напр. 3 місяці",
-        customiseHint:
-          "Роботу, освіту, хобі та жанри можна налаштувати будь-коли в розділі «Налаштувати».",
         skip: "Пропустити",
         register: "Зареєструватися",
         continueToPlans: "Далі",

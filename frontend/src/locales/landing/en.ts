@@ -710,11 +710,10 @@ export const landingEn = {
         goalLead:
           "Share what you're working toward if you like — you can skip this and continue.",
         pointOfLearning: "Point of learning",
+        defaultGoal: "Learn English",
         timeToAchieve: "Time to achieve",
         placeholderGoal: "e.g. Travel to the UK",
         placeholderTime: "e.g. 3 months",
-        customiseHint:
-          "You can set job, education, hobbies, and genres anytime from Customise in the app.",
         skip: "Skip for now",
         register: "Register",
         continueToPlans: "Continue",
