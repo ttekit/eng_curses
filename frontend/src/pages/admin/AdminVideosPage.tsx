@@ -471,6 +471,7 @@ export default function AdminVideosPage() {
     setEditing(v);
     setEditName(v.videoName);
     setEditDesc(v.videoDescription || v.content.category.description || "");
+    setEditFriendlyLink(v.friendlyLink || slugFriendly(v.videoName));
     setEditAge(v.ageRestriction || "0+");
     setEditThumb(null);
   }, []);
