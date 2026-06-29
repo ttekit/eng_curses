@@ -33,6 +33,8 @@ export function CatalogSpotlight({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const s = useAppMessages().search;
@@ -122,15 +124,31 @@ export function CatalogSpotlight({
   }, [open, activeIndex, results, onClose, goLesson]);
 
   useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
+    if (!visible) return;
+    document.documentElement.style.scrollbarGutter = "stable";
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = "";
+      document.documentElement.style.scrollbarGutter = "";
     };
+  }, [visible]);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => setVisible(true)),
+      );
+    } else {
+      setVisible(false);
+    }
   }, [open]);
 
-  if (!open) return null;
+  const handleTransitionEnd = () => {
+    if (!visible) setMounted(false);
+  };
+
+  if (!mounted) return null;
 
   const shortcutLabel =
     typeof navigator !== "undefined" && navigator.platform.includes("Mac")
@@ -139,13 +157,17 @@ export function CatalogSpotlight({
 
   return (
     <div
-      className="fixed inset-0 z-[140] flex justify-center px-4 pt-[10vh] sm:pt-[14vh]"
+      className="fixed inset-0 z-140 flex justify-center px-4 pt-[10vh] sm:pt-[14vh]"
       role="presentation"
+      onTransitionEnd={handleTransitionEnd}
     >
       <button
         type="button"
         aria-label="Dismiss search"
-        className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-md transition-opacity duration-150"
+        className={cn(
+          "absolute inset-0 cursor-default bg-black/55 backdrop-blur-md transition-opacity duration-500",
+          visible ? "opacity-100" : "opacity-0",
+        )}
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -155,7 +177,10 @@ export function CatalogSpotlight({
       />
 
       <div
-        className="relative z-[141] h-fit w-full max-w-2xl rounded-2xl border border-border shadow-[0_0_0_1px_oklch(0.65_0.25_295/0.12),0_28px_90px_oklch(0_0_0/0.55)]"
+        className={cn(
+          "relative z-141 h-fit w-full max-w-2xl rounded-2xl border border-border transition-all duration-500",
+          visible ? "opacity-100" : "opacity-0",
+        )}
         role="dialog"
         aria-modal="true"
         aria-labelledby="catalog-spotlight-title"
