@@ -8,8 +8,6 @@ import { PrismaService } from "src/prisma.service";
 import { applyListeningBumpToExistingTopics } from "src/user-language-data/user-language-data-mutation.util";
 import {
   PostWatchSurveyGeminiClient,
-  PostWatchSurveyQuestion,
-  fallbackQuestions,
 } from "./post-watch-survey-gemini.client";
 
 @Injectable()
@@ -17,7 +15,7 @@ export class PostWatchSurveyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: PostWatchSurveyGeminiClient,
-  ) {}
+  ) { }
 
   private async incrementUsersWatched(contentMediaId: number): Promise<void> {
     await this.prisma.contentStats.upsert({
@@ -99,7 +97,7 @@ export class PostWatchSurveyService {
     await this.updateUserStreak(userId);
 
     if (isCompleted) {
-      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => {});
+      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
 
       await this.awardXpAndCheckAchievements(userId, 0);
     }
@@ -201,11 +199,11 @@ export class PostWatchSurveyService {
         surveyId,
         user: updatedUser
           ? {
-              ...updatedUser,
-              achievements: updatedUser.achievements.map(
-                (a: any) => a.achievementId,
-              ),
-            }
+            ...updatedUser,
+            achievements: updatedUser.achievements.map(
+              (a: any) => a.achievementId,
+            ),
+          }
           : null,
       };
     }

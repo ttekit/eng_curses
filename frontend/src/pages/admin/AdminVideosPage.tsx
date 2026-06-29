@@ -226,15 +226,14 @@ function slugFriendly(label: string): string {
   const base = label
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-  const suffix = Date.now().toString(36);
-  const slug = `${base}-${suffix}`;
-  const trimmed =
-    slug.length > 100 ? slug.slice(0, 100).replace(/-[^-]*$/, "") : slug;
-  return trimmed?.length >= 4 ? trimmed : `video-${suffix}`;
+    .replace(/\s+/g, "-") // Сначала меняем все пробелы на дефисы
+    .replace(/[^\p{L}\p{N}-]/gu, "") // Удаляем всё, кроме букв, цифр и дефисов
+    .replace(/-+/g, "-") // Схлопываем множественные дефисы в один
+    .replace(/^-|-$/g, ""); // Убираем дефисы по краям
+
+  if (!base) return `video-${Date.now().toString(36)}`;
+
+  return base.length > 100 ? base.slice(0, 100).replace(/-[^-]*$/, "") : base;
 }
 
 type MetadataInspectTab = "themes" | "levels" | "subs";
@@ -284,6 +283,7 @@ export default function AdminVideosPage() {
   const [uploadMode, setUploadMode] = useState<"file" | "link" | "zip">("file");
   const [uploadLink, setUploadLink] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadFriendlyLink, setUploadFriendlyLink] = useState("");
   const [uploadDesc, setUploadDesc] = useState("");
   const [uploadAge, setUploadAge] = useState("0+");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -292,6 +292,7 @@ export default function AdminVideosPage() {
 
   const [editing, setEditing] = useState<AdminCatalogVideoRow | null>(null);
   const [editName, setEditName] = useState("");
+  const [editFriendlyLink, setEditFriendlyLink] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editAge, setEditAge] = useState("0+");
   const [editThumb, setEditThumb] = useState<File | null>(null);
@@ -320,6 +321,7 @@ export default function AdminVideosPage() {
   const [addEpisodeSeries, setAddEpisodeSeries] =
     useState<AdminVideoSeriesGroup | null>(null);
   const [addEpisodeTitle, setAddEpisodeTitle] = useState("");
+  const [addEpisodeFriendlyLink, setAddEpisodeFriendlyLink] = useState("");
   const [addEpisodeDesc, setAddEpisodeDesc] = useState("");
   const [addEpisodeAge, setAddEpisodeAge] = useState("0+");
   const [addEpisodeFile, setAddEpisodeFile] = useState<File | null>(null);
@@ -481,6 +483,7 @@ export default function AdminVideosPage() {
       return;
     }
     setEditSaving(true);
+
     try {
       const resData = await apiFetch(`/content-video/${editing.id}`, {
         method: "PATCH",
@@ -489,6 +492,7 @@ export default function AdminVideosPage() {
           videoName: name,
           videoDescription: editDesc.trim() || null,
           ageRestriction: editAge,
+          friendlyLink: slugFriendly(editFriendlyLink.trim() || name),
         }),
       });
 
@@ -664,7 +668,7 @@ export default function AdminVideosPage() {
 
     const fd = new FormData();
     fd.append("name", name);
-    fd.append("friendlyLink", slugFriendly(name));
+    fd.append("friendlyLink", slugFriendly(uploadFriendlyLink.trim() || name));
     fd.append("ageRestriction", uploadAge);
     fd.append(
       "description",
@@ -803,6 +807,7 @@ export default function AdminVideosPage() {
     (group: AdminVideoSeriesGroup) => {
       setAddEpisodeSeries(group);
       setAddEpisodeTitle("");
+      setAddEpisodeFriendlyLink("");
       setAddEpisodeDesc("");
       setAddEpisodeAge("0+");
       setAddEpisodeFile(null);
@@ -823,7 +828,9 @@ export default function AdminVideosPage() {
 
     const fd = new FormData();
     fd.append("videoName", name);
+    fd.append("friendlyLink", slugFriendly(addEpisodeFriendlyLink.trim() || name));
     fd.append("ageRestriction", addEpisodeAge);
+
     const d = addEpisodeDesc.trim();
     if (d) fd.append("videoDescription", d);
 
@@ -936,7 +943,6 @@ export default function AdminVideosPage() {
       </div>
 
       <AdminModal
-        // ... дальше идет твой код без изменений (AdminModal и т.д.)
 
         open={uploadOpen}
         onClose={() => !uploadSaving && setUploadOpen(false)}
@@ -1070,7 +1076,21 @@ export default function AdminVideosPage() {
                 id="admin-vid-title"
                 placeholder="Title"
                 value={uploadTitle}
-                onChange={(e) => setUploadTitle(e.target.value)}
+                onChange={(e) => {
+                  setUploadTitle(e.target.value);
+                  setUploadFriendlyLink(slugFriendly(e.target.value));
+                }}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium" htmlFor="admin-vid-link">
+                Friendly Link (URL slug)
+              </label>
+              <AdminInput
+                id="admin-vid-link"
+                placeholder="my-awesome-video"
+                value={uploadFriendlyLink}
+                onChange={(e) => setUploadFriendlyLink(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
               />
             </div>
           </div>
@@ -1244,7 +1264,21 @@ export default function AdminVideosPage() {
               id="admin-ep-title"
               placeholder="Episode title"
               value={addEpisodeTitle}
-              onChange={(e) => setAddEpisodeTitle(e.target.value)}
+              onChange={(e) => {
+                setAddEpisodeTitle(e.target.value);
+                setAddEpisodeFriendlyLink(slugFriendly(e.target.value));
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="admin-ep-link">
+              Friendly Link (URL slug)
+            </label>
+            <AdminInput
+              id="admin-ep-link"
+              placeholder="my-episode-link"
+              value={addEpisodeFriendlyLink}
+              onChange={(e) => setAddEpisodeFriendlyLink(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
             />
           </div>
 
@@ -1315,7 +1349,20 @@ export default function AdminVideosPage() {
             <AdminInput
               id="admin-edit-vid-name"
               value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              onChange={(e) => {
+                setEditName(e.target.value);
+                setEditFriendlyLink(slugFriendly(e.target.value));
+              }}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="admin-edit-vid-link">
+              Friendly Link (URL slug)
+            </label>
+            <AdminInput
+              id="admin-edit-vid-link"
+              value={editFriendlyLink}
+              onChange={(e) => setEditFriendlyLink(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
             />
           </div>
 
@@ -1596,7 +1643,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                    null
+                      null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>

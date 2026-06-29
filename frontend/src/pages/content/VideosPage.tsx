@@ -47,6 +47,7 @@ import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
 
 interface ContentVideo {
   id: number;
+  friendlyLink?: string | null;
   videoName: string;
   videoDescription: string | null;
   videoLink: string;
@@ -76,6 +77,7 @@ function toCardVideo(video: ContentVideo): CatalogCardVideo {
 
   return {
     id: video.id,
+    friendlyLink: video.friendlyLink || undefined,
     title: video.videoName,
     categoryLabel: video.content.category.name,
     thumbnailUrl: video.thumbnailUrl,
@@ -460,6 +462,7 @@ export default function VideoPage() {
   const spotlightVideos: CatalogSpotlightItem[] = useMemo(() => {
     return videos.map((v) => ({
       id: v.id,
+      friendlyLink: v.friendlyLink,
       title: v.videoName,
       category: v.content.category.name,
       description: v.videoDescription ?? null,
@@ -517,6 +520,7 @@ export default function VideoPage() {
     return featured
       ? {
         id: featured.id,
+        friendlyLink: featured.friendlyLink,
         title: featured.videoName,
         description:
           featured.videoDescription ??

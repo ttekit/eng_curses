@@ -183,9 +183,12 @@ export class ContentVideoService {
     return videos.sort(compareContentVideosPlaylistOrder);
   }
 
-  async findOne(id: number, reqUserId?: number) {
-    const contentVideo = await this.prisma.contentVideo.findUnique({
-      where: { id },
+  async findOne(idParam: string | number, reqUserId?: number) {
+    const isNumeric = typeof idParam === 'number' || /^\d+$/.test(String(idParam));
+    const whereClause = isNumeric ? { id: Number(idParam) } : { friendlyLink: String(idParam) };
+
+    const contentVideo = await this.prisma.contentVideo.findFirst({
+      where: whereClause,
       include: {
         videoCaption: { select: { subtitlesFileLink: true } },
         content: {
@@ -202,7 +205,7 @@ export class ContentVideoService {
     });
 
     if (!contentVideo) {
-      throw new NotFoundException(`ContentVideo with ID ${id} not found`);
+      throw new NotFoundException(`ContentVideo with ID/slug ${idParam} not found`);
     }
 
     const now = new Date();
@@ -268,7 +271,7 @@ export class ContentVideoService {
   }
 
   async getIframePayload(
-    id: number,
+    id: string | number,
     reqUserId?: number,
   ): Promise<{ iframeHtml: string }> {
     const v = await this.findOne(id, reqUserId);

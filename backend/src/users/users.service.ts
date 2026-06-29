@@ -47,7 +47,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   private readonly userSelect = {
     id: true,
@@ -61,6 +61,9 @@ export class UsersService {
     createdAt: true,
     xp: true,
     currentStreak: true,
+    achievements: {
+      select: { achievementId: true },
+    },
     additionalUserData: {
       select: {
         englishLevel: true,
@@ -164,14 +167,14 @@ export class UsersService {
       favoriteGenres:
         favoriteGenres && favoriteGenres.length > 0
           ? {
-              connect: favoriteGenres.map((id) => ({ id })),
-            }
+            connect: favoriteGenres.map((id) => ({ id })),
+          }
           : undefined,
       hatedGenres:
         hatedGenres && hatedGenres.length > 0
           ? {
-              connect: hatedGenres.map((id) => ({ id })),
-            }
+            connect: hatedGenres.map((id) => ({ id })),
+          }
           : undefined,
     };
 
@@ -301,11 +304,11 @@ export class UsersService {
 
     const firstWatchedVideo = firstWatchSession?.contentVideo
       ? {
-          id: firstWatchSession.contentVideo.id,
-          videoName: firstWatchSession.contentVideo.videoName,
-          thumbnailUrl: firstWatchSession.contentVideo.thumbnailUrl,
-          url: `/content/${firstWatchSession.contentVideo.id}`,
-        }
+        id: firstWatchSession.contentVideo.id,
+        videoName: firstWatchSession.contentVideo.videoName,
+        thumbnailUrl: firstWatchSession.contentVideo.thumbnailUrl,
+        url: `/content/${firstWatchSession.contentVideo.friendlyLink || firstWatchSession.contentVideo.id}`,
+      }
       : null;
 
     return {
@@ -410,31 +413,31 @@ export class UsersService {
 
     const settingsUpsert = hasSettingsRowUpdate
       ? {
-          settings: {
-            upsert: {
-              create: {
-                playbackSpeed:
-                  playbackSpeed === undefined ? null : Number(playbackSpeed),
-                currentResolution:
-                  currentResolution === undefined
-                    ? null
-                    : String(currentResolution),
-              },
-              update: {
-                ...(playbackSpeed !== undefined
-                  ? {
-                      playbackSpeed: Number(playbackSpeed),
-                    }
-                  : {}),
-                ...(currentResolution !== undefined
-                  ? {
-                      currentResolution: String(currentResolution),
-                    }
-                  : {}),
-              },
+        settings: {
+          upsert: {
+            create: {
+              playbackSpeed:
+                playbackSpeed === undefined ? null : Number(playbackSpeed),
+              currentResolution:
+                currentResolution === undefined
+                  ? null
+                  : String(currentResolution),
+            },
+            update: {
+              ...(playbackSpeed !== undefined
+                ? {
+                  playbackSpeed: Number(playbackSpeed),
+                }
+                : {}),
+              ...(currentResolution !== undefined
+                ? {
+                  currentResolution: String(currentResolution),
+                }
+                : {}),
             },
           },
-        }
+        },
+      }
       : {};
 
     let updatedUser: any;
@@ -446,61 +449,61 @@ export class UsersService {
           ...settingsUpsert,
           ...(hasProfileUpdate
             ? {
-                additionalUserData: {
-                  upsert: {
-                    create: {
-                      englishLevel,
-                      nativeLanguage,
-                      knownLanguages: knownLanguages || [],
-                      knownLanguageLevels,
-                      hobbies: hobbies || [],
-                      education,
-                      workField,
-                      learningGoal,
-                      timeToAchieve,
-                      favoriteGenres: favoriteGenres
-                        ? {
-                            connect: favoriteGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                      hatedGenres: hatedGenres
-                        ? {
-                            connect: hatedGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                    },
-                    update: {
-                      englishLevel,
-                      nativeLanguage,
-                      knownLanguages,
-                      knownLanguageLevels,
-                      hobbies,
-                      education,
-                      workField,
-                      learningGoal,
-                      timeToAchieve,
-                      favoriteGenres: favoriteGenres
-                        ? {
-                            set: favoriteGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                      hatedGenres: hatedGenres
-                        ? {
-                            set: hatedGenres.map((genreId: number) => ({
-                              id: genreId,
-                            })),
-                          }
-                        : undefined,
-                    },
+              additionalUserData: {
+                upsert: {
+                  create: {
+                    englishLevel,
+                    nativeLanguage,
+                    knownLanguages: knownLanguages || [],
+                    knownLanguageLevels,
+                    hobbies: hobbies || [],
+                    education,
+                    workField,
+                    learningGoal,
+                    timeToAchieve,
+                    favoriteGenres: favoriteGenres
+                      ? {
+                        connect: favoriteGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                    hatedGenres: hatedGenres
+                      ? {
+                        connect: hatedGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                  },
+                  update: {
+                    englishLevel,
+                    nativeLanguage,
+                    knownLanguages,
+                    knownLanguageLevels,
+                    hobbies,
+                    education,
+                    workField,
+                    learningGoal,
+                    timeToAchieve,
+                    favoriteGenres: favoriteGenres
+                      ? {
+                        set: favoriteGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
+                    hatedGenres: hatedGenres
+                      ? {
+                        set: hatedGenres.map((genreId: number) => ({
+                          id: genreId,
+                        })),
+                      }
+                      : undefined,
                   },
                 },
-              }
+              },
+            }
             : {}),
         },
         select: this.userSelect,
