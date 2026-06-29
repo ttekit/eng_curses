@@ -485,10 +485,11 @@ export function ProfileTeacherVideos() {
                 <tbody>
                   {filteredSeries.map((s) => {
                     const busy = visibilityBusyId === s.contentId;
-                    const vis = s.visibility.trim().toLowerCase();
-                    const tags = [...s.systemTags, ...s.userTags].filter(
-                      Boolean,
-                    );
+                    const vis = s.visibility?.trim().toLowerCase() || "public";
+                    const tags = [
+                      ...(s.systemTags || []),
+                      ...(s.userTags || []),
+                    ].filter(Boolean);
                     const now = new Date(currentTime);
 
                     return (
@@ -726,8 +727,11 @@ export function ProfileTeacherVideos() {
               <tbody>
                 {filteredAssignedSeries.map((s) => {
                   const busy = visibilityBusyId === s.contentId;
-                  const vis = s.visibility.trim().toLowerCase();
-                  const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
+                  const vis = s.visibility?.trim().toLowerCase() || "public";
+                  const tags = [
+                    ...(s.systemTags || []),
+                    ...(s.userTags || []),
+                  ].filter(Boolean);
                   const now = new Date(currentTime);
 
                   return (

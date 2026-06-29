@@ -1013,7 +1013,6 @@ export class ContentsService {
       return [];
     }
 
-    const now = new Date();
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -1023,11 +1022,10 @@ export class ContentsService {
           {
             ownerUserId: student.teacherId,
             classAccesses: { none: {} },
+            visibility: "public",
             OR: [
-              { availableFrom: null, deadline: null, visibility: "public" },
-              { availableFrom: null, deadline: { gt: sevenDaysAgo } },
-              { availableFrom: { lte: now }, deadline: null },
-              { availableFrom: { lte: now }, deadline: { gt: sevenDaysAgo } },
+              { deadline: null },
+              { deadline: { gt: sevenDaysAgo } },
             ],
           },
           ...(student.classId
@@ -1041,13 +1039,8 @@ export class ContentsService {
                     some: {
                       classId: student.classId,
                       OR: [
-                        { availableFrom: null, deadline: null },
-                        { availableFrom: null, deadline: { gt: sevenDaysAgo } },
-                        { availableFrom: { lte: now }, deadline: null },
-                        {
-                          availableFrom: { lte: now },
-                          deadline: { gt: sevenDaysAgo },
-                        },
+                        { deadline: null },
+                        { deadline: { gt: sevenDaysAgo } }, 
                       ],
                     },
                   },
@@ -1083,6 +1076,7 @@ export class ContentsService {
 
       let actualAvailableFrom = c.availableFrom;
       let actualDeadline = c.deadline;
+
       const classAccess = c.classAccesses?.[0];
       if (classAccess) {
         actualAvailableFrom = classAccess.availableFrom;
@@ -1101,7 +1095,6 @@ export class ContentsService {
       };
     });
   }
-
   private async getDistinctCompletedVideosByUser(
     userIds: number[],
   ): Promise<Map<number, number>> {
@@ -1451,7 +1444,7 @@ export class ContentsService {
 
     return { success: true };
   }
-  
+
   async deleteTeacherContent(teacherId: number, contentId: number) {
     const content = await this.prisma.content.findFirst({
       where: { id: contentId, ownerUserId: teacherId },
