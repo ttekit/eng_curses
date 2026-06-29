@@ -221,6 +221,7 @@ export class ContentsService {
                 playlistPosition: 0,
                 thumbnailUrl: thumbnailUrl,
                 ageRestriction: dto.ageRestriction || "0+",
+                friendlyLink: dto.friendlyLink,
               },
             },
           },
@@ -597,6 +598,7 @@ export class ContentsService {
             playlistPosition: 0,
             thumbnailUrl: thumbnailUrl,
             ageRestriction: dto.ageRestriction || "0+",
+            friendlyLink: dto.friendlyLink,
           },
         },
       },
@@ -735,8 +737,8 @@ export class ContentsService {
         classAccesses:
           validClassAssignments.length > 0
             ? {
-                create: validClassAssignments,
-              }
+              create: validClassAssignments,
+            }
             : undefined,
 
         category: {
@@ -818,13 +820,13 @@ export class ContentsService {
       // Возвращаем массив классов для красивого UI
       const classAccesses = c.classAccesses
         ? c.classAccesses.map((a) => ({
-            classId: a.classId,
-            className: a.class.name,
-            availableFrom: a.availableFrom
-              ? a.availableFrom.toISOString()
-              : null,
-            deadline: a.deadline ? a.deadline.toISOString() : null,
-          }))
+          classId: a.classId,
+          className: a.class.name,
+          availableFrom: a.availableFrom
+            ? a.availableFrom.toISOString()
+            : null,
+          deadline: a.deadline ? a.deadline.toISOString() : null,
+        }))
         : [];
 
       return {
@@ -1045,7 +1047,8 @@ export class ContentsService {
                     },
                   },
                 },
-              ]
+              },
+            ]
             : []),
         ],
       },
@@ -1053,9 +1056,9 @@ export class ContentsService {
       include: {
         classAccesses: student.classId
           ? {
-              where: { classId: student.classId },
-              take: 1,
-            }
+            where: { classId: student.classId },
+            take: 1,
+          }
           : false,
         category: {
           orderBy: { playlistPosition: "asc" },
@@ -1199,7 +1202,7 @@ export class ContentsService {
           if (typeof parsed === "string") {
             try {
               parsed = JSON.parse(parsed);
-            } catch (e) {}
+            } catch (e) { }
           }
           return {
             id: a.id,
@@ -1321,7 +1324,7 @@ export class ContentsService {
       if (typeof parsed === "string") {
         try {
           parsed = JSON.parse(parsed);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return {
@@ -1332,14 +1335,14 @@ export class ContentsService {
         className: s.class?.name || null,
         attempt: att
           ? {
-              id: att.id,
-              scorePct: att.scorePct,
-              correct: att.correct,
-              total: att.total,
-              passed: att.passed,
-              answers: parsed,
-              createdAt: att.createdAt.toISOString(),
-            }
+            id: att.id,
+            scorePct: att.scorePct,
+            correct: att.correct,
+            total: att.total,
+            passed: att.passed,
+            answers: parsed,
+            createdAt: att.createdAt.toISOString(),
+          }
           : null,
       };
     });

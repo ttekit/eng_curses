@@ -86,14 +86,14 @@ export function useLessonWatch(id: string | undefined) {
     if (!el || !Number.isFinite(seconds)) return;
     try {
       el.currentTime = Math.max(0, seconds);
-    } catch {}
+    } catch { }
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
     if (watchCompletePostedRef.current || !id || isLocked) return;
     watchCompletePostedRef.current = true;
-    const vid = Number.parseInt(String(id), 10);
-    if (!Number.isFinite(vid) || vid <= 0) return;
+    const vid = videoData?.id;
+    if (!vid) return;
     try {
       await apiFetch(`/content-video/${vid}/watch-complete`, {
         method: "POST",
@@ -138,6 +138,9 @@ export function useLessonWatch(id: string | undefined) {
         if (response.ok) {
           const data = await response.json();
           setVideoData(data);
+          if (data?.friendlyLink && id !== data.friendlyLink) {
+            navigate(`/content/${data.friendlyLink}`, { replace: true });
+          }
         }
       } catch (error) {
         setVideoData(null);
@@ -146,7 +149,7 @@ export function useLessonWatch(id: string | undefined) {
       }
     };
     void fetchVideo();
-  }, [id]);
+  }, [id, navigate]);
 
   useEffect(() => {
     if (!videoData || !id) {
@@ -158,7 +161,7 @@ export function useLessonWatch(id: string | undefined) {
       setPlaylistRibbon(null);
       return;
     }
-    const vid = Number.parseInt(String(id), 10);
+    const vid = videoData.id;
     if (!Number.isFinite(vid) || vid <= 0) {
       setPlaylistRibbon(null);
       return;
@@ -183,9 +186,8 @@ export function useLessonWatch(id: string | undefined) {
             : undefined;
         if (!cancelled) {
           setPlaylistRibbon({
-            friendlyLink: fl,
-            prevVideoId: prevEp ? prevEp.contentVideoId : null,
-            nextVideoId: nextEp ? nextEp.contentVideoId : null,
+            prevVideoId: prevEp ? ((prevEp as any).friendlyLink || prevEp.contentVideoId) : null,
+            nextVideoId: nextEp ? ((nextEp as any).friendlyLink || nextEp.contentVideoId) : null,
             position: idx + 1,
             total: parsed.episodes.length,
           });
@@ -201,8 +203,7 @@ export function useLessonWatch(id: string | undefined) {
 
   useEffect(() => {
     if (!id || !videoData || isLocked) return;
-    const vid = Number.parseInt(String(id), 10);
-    if (!Number.isFinite(vid) || vid <= 0) return;
+    const vid = videoData.id;
     let cancelled = false;
     setSideBundleLoading(true);
     const qs =
@@ -221,8 +222,8 @@ export function useLessonWatch(id: string | undefined) {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-                body.tests as NonNullable<LessonSideBundle["tests"]>,
-              )
+              body.tests as NonNullable<LessonSideBundle["tests"]>,
+            )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -243,8 +244,7 @@ export function useLessonWatch(id: string | undefined) {
 
   useEffect(() => {
     if (!id || !videoData || isLocked) return;
-    const vid = Number.parseInt(String(id), 10);
-    if (!Number.isFinite(vid) || vid <= 0) return;
+    const vid = videoData.id;
     let cancelled = false;
     setTranscriptLoading(true);
     setTranscriptLines([]);
@@ -296,12 +296,12 @@ export function useLessonWatch(id: string | undefined) {
       if (document.hidden || !videoElRef.current || videoElRef.current.paused)
         return;
       try {
-        await apiFetch(`/content-video/${id}/watch-complete`, {
+        await apiFetch(`/content-video/${videoData?.id}//watch-complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ secondsWatched: 20 }),
         });
-      } catch (err) {}
+      } catch (err) { }
     }, 20000);
     return () => {
       if (heartbeatIntervalRef.current)
@@ -330,8 +330,7 @@ export function useLessonWatch(id: string | undefined) {
       sideBundleLoading
     )
       return;
-    const vid = Number.parseInt(String(id), 10);
-    if (!Number.isFinite(vid) || vid <= 0) return;
+    const vid = videoData.id;
     const words = displayVocabularyRef.current
       .map((v) => v.word.trim())
       .filter((w) => w.length >= 2);
@@ -431,7 +430,7 @@ export function useLessonWatch(id: string | undefined) {
   const handleQuizComplete = useCallback(
     async (summary: VideoQuizCompleteSummary) => {
       if (!id || !videoData || isLocked) return;
-      const vid = Number.parseInt(String(id), 10);
+      const vid = videoData?.id;
       let correctCount = summary.correctCount;
       let totalQuestions = summary.totalQuestions;
       const readyBundle = (b: typeof lessonSideBundle) =>
@@ -474,7 +473,7 @@ export function useLessonWatch(id: string | undefined) {
             }),
           });
           if (r.ok) {
-            await refreshProfile().catch(() => {});
+            await refreshProfile().catch(() => { });
             const d = await r.json();
             const fb = readOpenEndedFeedbackFromSubmit(d);
             if (fb !== undefined) writtenSummaryFeedback = fb;
@@ -529,7 +528,7 @@ export function useLessonWatch(id: string | undefined) {
           `${LESSON_SUMMARY_STORAGE}${id}`,
           JSON.stringify(payload),
         );
-      } catch {}
+      } catch { }
       void navigate(`/content/${id}/summary`, { state: payload });
     },
     [

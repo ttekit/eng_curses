@@ -15,12 +15,17 @@ export class AuthProfileService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly studyingPlanRegeneration: StudyingPlanRegenerationService,
-  ) {}
+  ) { }
 
   async get_profile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: userProfileInclude,
+      include: {
+        ...userProfileInclude,
+        achievements: {
+          select: { achievementId: true }
+        }
+      }
     });
     if (!user) {
       throw new NotFoundException("User not found");

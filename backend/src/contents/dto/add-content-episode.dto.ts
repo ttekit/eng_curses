@@ -16,4 +16,8 @@ export class AddContentEpisodeDto {
   @IsString()
   @IsOptional()
   ageRestriction?: string;
+
+  @IsOptional()
+  @IsString()
+  friendlyLink?: string;
 }
