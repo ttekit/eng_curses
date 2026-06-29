@@ -496,46 +496,6 @@ export default function LessonSummaryPage() {
               </p>
             </div>
 
-            {display.summary.writtenSummaryText ||
-            (typeof display.summary.writtenSummaryScore === "number" &&
-              display.summary.writtenSummaryScore >= 1 &&
-              display.summary.writtenSummaryScore <= 10) ||
-            (typeof display.summary.writtenSummaryFeedback === "string" &&
-              display.summary.writtenSummaryFeedback.trim().length > 0) ? (
-              <div className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8">
-                <h2 className="font-display text-lg font-semibold">
-                  {page.writtenSummaryHeading}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {page.writtenSummaryLead}
-                </p>
-                {typeof display.summary.writtenSummaryScore === "number" &&
-                display.summary.writtenSummaryScore >= 1 &&
-                display.summary.writtenSummaryScore <= 10 ? (
-                  <p className="mt-4 text-sm font-semibold tabular-nums text-primary">
-                    {formatMessage(page.summaryScoreLine, {
-                      score: String(display.summary.writtenSummaryScore),
-                    })}
-                  </p>
-                ) : null}
-                {display.summary.writtenSummaryText ? (
-                  <blockquote className="mt-4 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm leading-relaxed text-foreground">
-                    {display.summary.writtenSummaryText}
-                  </blockquote>
-                ) : null}
-                {typeof display.summary.writtenSummaryFeedback === "string" &&
-                display.summary.writtenSummaryFeedback.trim().length > 0 ? (
-                  <p className="mt-4 text-sm leading-relaxed text-foreground">
-                    {display.summary.writtenSummaryFeedback.trim()}
-                  </p>
-                ) : display.summary.writtenSummaryText?.trim() ? (
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    {page.noCoachComment}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-
             {display.summary.quizReview &&
             display.summary.quizReview.wrong.length > 0 ? (
               <div className="mt-8 rounded-2xl border border-destructive/25 bg-destructive/5 p-6 sm:p-8">
