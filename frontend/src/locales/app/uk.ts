@@ -44,7 +44,7 @@ export const appUk = {
     settings: "Налаштування",
     levelWithDot: "• {prefix} {level}",
     appTheme: "Тема: ",
-    navAdmin: "Адмін"
+    navAdmin: "Адмін",
   },
 
   emailVerificationBanner: {
@@ -503,6 +503,7 @@ export const appUk = {
     deleteConfirmPhrase: "delete video",
     deleteWrongPhrase: "Неправильна фраза. Введи «delete video».",
     deleteSuccessToast: "Відео успішно видалено",
+    removeConfirmBody: "Ви впевнені, що хочете видалити це домашнє завдання? Ваші студенти більше не бачитимуть це відео у своїх уроках. Саме відео залишиться в глобальному каталозі.",
     deleteFailed: "Не вдалося видалити",
     emptyBody:
       "Ти ще не завантажив/ла жодного уроку. Натисни «Завантажити урок» вище, щоб опублікувати перше відео.",
@@ -521,6 +522,29 @@ export const appUk = {
     deleteVideoAria: "Видалити відео",
     captionsReady: "Готово",
     captionsPending: "Ще не готово",
+    myUploads: "Мої завантаження",
+    assignedHomework: "Призначені завдання",
+    allClassesGlobal: "Всі класи та Глобальні",
+    assignmentsCol: "Призначення",
+    viewTests: "Переглянути тести",
+    editDeadlines: "Редагувати терміни",
+    classAssignedSingular: "1 КЛАС ПРИЗНАЧЕНО",
+    classesAssignedPlural: "КЛАСІВ ПРИЗНАЧЕНО",
+    opens: "Відкривається: ",
+    closes: "Закривається: ",
+    now: "Зараз",
+    never: "Ніколи",
+    globalCatalog: "Глобальний каталог",
+    availableToEveryone: "Доступно всім",
+    assignmentRemoved: "Завдання успішно видалено!",
+    failedToRemove: "Не вдалося видалити завдання.",
+    removeHomeworkTitle: "Видалити домашнє завдання",
+    removeHomeworkBody:
+      "Ви впевнені, що хочете видалити це домашнє завдання? Ваші студенти більше не бачитимуть це відео у своїх уроках. Саме відео залишиться в глобальному каталозі.",
+    removeAssignmentCta: "Видалити завдання",
+    removing: "Видалення...",
+    emptyAssignedHomework:
+      "Ви ще не призначили жодного уроку з каталогу. Перейдіть до Каталогу, знайдіть відео та натисніть 'Призначити домашнє завдання'.",
   },
 
   profileTeacherStudents: {
@@ -605,6 +629,15 @@ export const appUk = {
     summaryLegacy: "Резюме (legacy)",
     passed: "Зараховано",
     review: "Переглянути",
+    networkError: "Помилка мережі під час завантаження даних",
+    failedToLoadClasses: "Не вдалося завантажити класи: ",
+    searchClasses: "Пошук класів...",
+    allClasses: "Всі класи",
+    noClass: "Без класу",
+    createClass: "+ Створити клас",
+    classCol: "Клас",
+    notStarted: "Не розпочато",
+    generateNewPassword: "Згенерувати новий пароль",
   },
 
   studentTeacherVideos: {
@@ -612,6 +645,17 @@ export const appUk = {
     emptyTitle: "Поки немає уроків від викладача",
     emptyBody:
       "Твій викладач ще не завантажив жодного відеоуроку для твого класу.",
+    loadingLessons: "Завантаження уроків від викладача…",
+    lessonsFromTeacher: "Уроки від вашого викладача",
+    lessonsDescription:
+      "Ексклюзивні відеоматеріали, завантажені вашим викладачем. Дивіться їх та проходьте згенеровані тести.",
+    opens: "Відкривається: ",
+    closed: "Закрито: ",
+    closes: "Закривається: ",
+    openLessonQuiz: "Відкрити урок та тест",
+    lessonLocked: "Урок заблоковано",
+    deadlinePassed: "Термін вийшов",
+    processingVideo: "Обробка відео...",
   },
 
   profileProgress: {

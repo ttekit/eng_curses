@@ -44,7 +44,7 @@ export const appEn = {
     settings: "Settings",
     levelWithDot: "• {prefix} {level}",
     appTheme: "Theme: ",
-    navAdmin: "Admin"
+    navAdmin: "Admin",
   },
 
   emailVerificationBanner: {
@@ -520,6 +520,29 @@ export const appEn = {
     deleteVideoAria: "Delete video",
     captionsReady: "Ready",
     captionsPending: "Not available yet",
+    myUploads: "My Uploads",
+    assignedHomework: "Assigned Homework",
+    allClassesGlobal: "All Classes & Global",
+    assignmentsCol: "Assignments",
+    viewTests: "View Tests",
+    editDeadlines: "Edit Deadlines",
+    classAssignedSingular: "1 CLASS ASSIGNED",
+    classesAssignedPlural: "CLASSES ASSIGNED",
+    opens: "Opens: ",
+    closes: "Closes: ",
+    now: "Now",
+    never: "Never",
+    globalCatalog: "Global Catalog",
+    availableToEveryone: "Available to everyone",
+    assignmentRemoved: "Assignment removed successfully!",
+    failedToRemove: "Failed to remove assignment.",
+    removeHomeworkTitle: "Remove Homework Assignment",
+    removeHomeworkBody:
+      "Are you sure you want to remove this homework assignment? Your students will no longer see this video in their lessons. The video itself will remain in the global catalog.",
+    removeAssignmentCta: "Remove Assignment",
+    removing: "Removing...",
+    emptyAssignedHomework:
+      "You haven't assigned any lessons from the catalog yet. Go to the Catalog, find a video, and click 'Assign Homework'.",
   },
 
   profileTeacherStudents: {
@@ -605,13 +628,12 @@ export const appEn = {
     summaryLegacy: "Summary (Legacy)",
     passed: "Passed",
     review: "Review",
-  },
-
-  studentTeacherVideos: {
-    loadError: "Could not load lessons from your teacher.",
-    emptyTitle: "No teacher lessons yet",
-    emptyBody:
-      "Your assigned teacher hasn't uploaded any custom video lessons for your class yet.",
+    networkError: "Network error while loading data",
+    failedToLoadClasses: "Failed to load classes: ",
+    searchClasses: "Search classes...",
+    allClasses: "All Classes",
+    noClass: "No Class",
+    createClass: "+ Create Class",
   },
 
   profileProgress: {
@@ -1069,6 +1091,22 @@ export const appEn = {
     reviewLesson: "Review lesson",
   },
 
+  studentTeacherVideos: {
+    loadError: "Failed to load lessons.",
+    loadingLessons: "Loading lessons from your teacher…",
+    emptyTitle: "No lessons available",
+    emptyBody: "Your teacher hasn't assigned any lessons yet.",
+    lessonsFromTeacher: "Lessons from your Teacher",
+    lessonsDescription:
+      "Exclusive video materials uploaded by your instructor. Watch them and complete the generated quizzes.",
+    opens: "Opens: ",
+    closed: "Closed: ",
+    closes: "Closes: ",
+    openLessonQuiz: "Open Lesson & Quiz",
+    lessonLocked: "Lesson is locked",
+    deadlinePassed: "Deadline passed",
+    processingVideo: "Processing video...",
+  },
   placementFlow: {
     adult: {
       job: "Job",

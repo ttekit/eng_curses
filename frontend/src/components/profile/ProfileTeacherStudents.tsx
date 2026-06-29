@@ -74,7 +74,7 @@ export function ProfileTeacherStudents() {
 
       if (!resClasses.ok) {
         toast.error(
-          `Failed to load classes: ${await getResponseErrorMessage(resClasses)}`,
+          `${t.failedToLoadClasses}${await getResponseErrorMessage(resClasses)}`,
         );
       } else {
         const clsData = await resClasses.json();
@@ -82,7 +82,7 @@ export function ProfileTeacherStudents() {
       }
     } catch {
       setError(t.loadError);
-      toast.error("Network error while loading data");
+      toast.error(t.networkError);
     } finally {
       setLoading(false);
     }
@@ -153,7 +153,7 @@ export function ProfileTeacherStudents() {
             }}
             className="w-full xl:w-56"
             showSearch={true}
-            searchPlaceholder="Search classes..."
+            searchPlaceholder={t.searchClasses}
             options={[
               { value: "all", label: "All Classes" },
               { value: "none", label: "No Class" },
@@ -166,7 +166,8 @@ export function ProfileTeacherStudents() {
             className="gap-2 w-full sm:w-auto justify-center"
             onClick={() => setClassModalOpen(true)}
           >
-            <Users className="h-4 w-4 shrink-0" />+ Create Class
+            <Users className="h-4 w-4 shrink-0" />
+            {t.createClass}
           </AdminButton>
 
           <AdminButton

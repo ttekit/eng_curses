@@ -198,7 +198,7 @@ export function ProfileTeacherVideos() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      toast.success("Assignment removed successfully!");
+      toast.success(t.assignmentRemoved);
       setRevokeModalOpen(false);
       await loadData();
     } catch (e: unknown) {
@@ -281,7 +281,7 @@ export function ProfileTeacherVideos() {
               )}
             >
               <Video className="size-4" />
-              My Uploads
+              {t.myUploads}
             </button>
             <button
               onClick={() => setActiveTab("assigned")}
@@ -293,7 +293,7 @@ export function ProfileTeacherVideos() {
               )}
             >
               <BookOpen className="size-4" />
-              Assigned Homework
+              {t.assignedHomework}
             </button>
           </div>
 
@@ -419,7 +419,7 @@ export function ProfileTeacherVideos() {
               disabled={isRevoking}
               className="w-full sm:w-auto"
             >
-              Cancel
+              {t.cancel}
             </AdminButton>
             <AdminButton
               onClick={() => void confirmRevokeVideo()}
@@ -430,11 +430,7 @@ export function ProfileTeacherVideos() {
           </>
         }
       >
-        <p className="text-sm text-muted-foreground">
-          Are you sure you want to remove this homework assignment? Your
-          students will no longer see this video in their lessons. The video
-          itself will remain in the global catalog.
-        </p>
+        <p className="text-sm text-muted-foreground">{t.deleteVideoBody}</p>
       </AdminModal>
 
       {/* --- ТАБЛИЦЫ --- */}
@@ -470,7 +466,7 @@ export function ProfileTeacherVideos() {
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                    <th className="p-4 font-semibold text-sm">Assignments</th>
+                    <th className="p-4 font-semibold text-sm">{t.assignmentsCol}</th>
                     <th className="p-4 font-semibold text-sm">
                       {t.colCaptions}
                     </th>
@@ -534,7 +530,7 @@ export function ProfileTeacherVideos() {
                                     </span>
                                     <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                       <span>
-                                        Opens:{" "}
+                                        {t.opens}{" "}
                                         {ca.availableFrom
                                           ? new Date(
                                               ca.availableFrom,
@@ -552,7 +548,7 @@ export function ProfileTeacherVideos() {
                                             : "text-amber-500 font-medium"
                                         }
                                       >
-                                        Closes:{" "}
+                                        {t.closes}{" "}
                                         {ca.deadline
                                           ? new Date(
                                               ca.deadline,
@@ -570,17 +566,17 @@ export function ProfileTeacherVideos() {
                           ) : (
                             <details className="group">
                               <summary className="cursor-pointer text-xs font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
-                                Global Catalog
+                                {t.globalCatalog}
                                 <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
                               </summary>
                               <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-accent/30">
                                 <div className="flex flex-col gap-1">
                                   <span className="text-xs font-bold uppercase text-foreground tracking-wide">
-                                    Available to everyone
+                                    {t.availableToEveryone}
                                   </span>
                                   <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                     <span>
-                                      Opens:{" "}
+                                      {t.opens}{" "}
                                       {s.availableFrom
                                         ? new Date(
                                             s.availableFrom,
@@ -597,7 +593,7 @@ export function ProfileTeacherVideos() {
                                           : "text-amber-500 font-medium"
                                       }
                                     >
-                                      Closes:{" "}
+                                      {t.closes}{" "}
                                       {s.deadline
                                         ? new Date(s.deadline).toLocaleString(
                                             "en-GB",
@@ -713,12 +709,11 @@ export function ProfileTeacherVideos() {
       {/* ТАБЛИЦА ASSIGNED (Практически такая же, как Uploads) */}
       {activeTab === "assigned" &&
         (filteredAssignedSeries.length === 0 ? (
-          <ProfileCard title="Assigned Homework">
+          <ProfileCard title={t.assignedHomework}>
             <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
               <BookOpen className="size-12 text-muted-foreground opacity-50" />
               <p className="max-w-md text-muted-foreground">
-                You haven't assigned any lessons from the catalog yet. Go to the
-                Catalog, find a video, and click "Assign Homework".
+                {t.emptyAssignedHomework}
               </p>
             </div>
           </ProfileCard>
@@ -728,7 +723,7 @@ export function ProfileTeacherVideos() {
               <thead className="sticky top-0 z-20 bg-card border-b border-border">
                 <tr className="text-muted-foreground">
                   <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                  <th className="p-4 font-semibold text-sm">Assignments</th>
+                  <th className="p-4 font-semibold text-sm">{t.assignmentsCol}</th>
                   <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
                   <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
                   <th className="p-4 font-semibold text-sm text-right">
@@ -787,7 +782,7 @@ export function ProfileTeacherVideos() {
                                   </span>
                                   <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                     <span>
-                                      Opens:{" "}
+                                      {t.opens}{" "}
                                       {ca.availableFrom
                                         ? new Date(
                                             ca.availableFrom,
@@ -805,7 +800,7 @@ export function ProfileTeacherVideos() {
                                           : "text-amber-500 font-medium"
                                       }
                                     >
-                                      Closes:{" "}
+                                      {t.closes}{" "}
                                       {ca.deadline
                                         ? new Date(ca.deadline).toLocaleString(
                                             "en-GB",
@@ -824,17 +819,17 @@ export function ProfileTeacherVideos() {
                         ) : (
                           <details className="group">
                             <summary className="cursor-pointer text-xs font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
-                              Global Catalog
+                              {t.globalCatalog}
                               <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
                             </summary>
                             <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-accent/30">
                               <div className="flex flex-col gap-1">
                                 <span className="text-xs font-bold uppercase text-foreground tracking-wide">
-                                  Available to everyone
+                                  {t.availableToEveryone}
                                 </span>
                                 <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                   <span>
-                                    Opens:{" "}
+                                    {t.opens}{" "}
                                     {s.availableFrom
                                       ? new Date(
                                           s.availableFrom,
@@ -851,7 +846,7 @@ export function ProfileTeacherVideos() {
                                         : "text-amber-500 font-medium"
                                     }
                                   >
-                                    Closes:{" "}
+                                    {t.closes}{" "}
                                     {s.deadline
                                       ? new Date(s.deadline).toLocaleString(
                                           "en-GB",
@@ -903,7 +898,7 @@ export function ProfileTeacherVideos() {
                               { value: "public", label: t.visibilityPublic },
                               { value: "unlisted", label: t.visibilityPrivate },
                             ]}
-                             className="h-[32px] min-h-[32px] text-xs font-semibold"
+                            className="h-[32px] min-h-[32px] text-xs font-semibold"
                           />
                           {busy && (
                             <span className="text-muted-foreground inline-flex items-center gap-1.5 text-[11px] font-medium">
