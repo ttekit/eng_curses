@@ -737,8 +737,8 @@ export class ContentsService {
         classAccesses:
           validClassAssignments.length > 0
             ? {
-              create: validClassAssignments,
-            }
+                create: validClassAssignments,
+              }
             : undefined,
 
         category: {
@@ -820,13 +820,13 @@ export class ContentsService {
       // Возвращаем массив классов для красивого UI
       const classAccesses = c.classAccesses
         ? c.classAccesses.map((a) => ({
-          classId: a.classId,
-          className: a.class.name,
-          availableFrom: a.availableFrom
-            ? a.availableFrom.toISOString()
-            : null,
-          deadline: a.deadline ? a.deadline.toISOString() : null,
-        }))
+            classId: a.classId,
+            className: a.class.name,
+            availableFrom: a.availableFrom
+              ? a.availableFrom.toISOString()
+              : null,
+            deadline: a.deadline ? a.deadline.toISOString() : null,
+          }))
         : [];
 
       return {
@@ -840,7 +840,6 @@ export class ContentsService {
         userTags: stats?.userTags ?? [],
         processingComplexity: stats?.processingComplexity ?? null,
         classAccesses,
-        // Оставляем это для обратной совместимости, если глобальные даты есть
         availableFrom: c.availableFrom ? c.availableFrom.toISOString() : null,
         deadline: c.deadline ? c.deadline.toISOString() : null,
       };
@@ -1025,10 +1024,7 @@ export class ContentsService {
             ownerUserId: student.teacherId,
             classAccesses: { none: {} },
             visibility: "public",
-            OR: [
-              { deadline: null },
-              { deadline: { gt: sevenDaysAgo } },
-            ],
+            OR: [{ deadline: null }, { deadline: { gt: sevenDaysAgo } }],
           },
           ...(student.classId
             ? [
@@ -1042,13 +1038,12 @@ export class ContentsService {
                       classId: student.classId,
                       OR: [
                         { deadline: null },
-                        { deadline: { gt: sevenDaysAgo } }, 
+                        { deadline: { gt: sevenDaysAgo } },
                       ],
                     },
                   },
                 },
-              },
-            ]
+              ]
             : []),
         ],
       },
@@ -1056,9 +1051,9 @@ export class ContentsService {
       include: {
         classAccesses: student.classId
           ? {
-            where: { classId: student.classId },
-            take: 1,
-          }
+              where: { classId: student.classId },
+              take: 1,
+            }
           : false,
         category: {
           orderBy: { playlistPosition: "asc" },
@@ -1202,7 +1197,7 @@ export class ContentsService {
           if (typeof parsed === "string") {
             try {
               parsed = JSON.parse(parsed);
-            } catch (e) { }
+            } catch (e) {}
           }
           return {
             id: a.id,
@@ -1324,7 +1319,7 @@ export class ContentsService {
       if (typeof parsed === "string") {
         try {
           parsed = JSON.parse(parsed);
-        } catch (e) { }
+        } catch (e) {}
       }
 
       return {
@@ -1335,14 +1330,14 @@ export class ContentsService {
         className: s.class?.name || null,
         attempt: att
           ? {
-            id: att.id,
-            scorePct: att.scorePct,
-            correct: att.correct,
-            total: att.total,
-            passed: att.passed,
-            answers: parsed,
-            createdAt: att.createdAt.toISOString(),
-          }
+              id: att.id,
+              scorePct: att.scorePct,
+              correct: att.correct,
+              total: att.total,
+              passed: att.passed,
+              answers: parsed,
+              createdAt: att.createdAt.toISOString(),
+            }
           : null,
       };
     });
