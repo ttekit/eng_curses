@@ -70,8 +70,9 @@ model ContentVideo {
   contentId Int          @map("content_id")
   content   ContentMedia @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  /// Zero-based order within the parent `ContentMedia` slot.
   playlistPosition Int @default(0) @map("playlist_position")
+
+  friendlyLink String? @unique @map("friendly_link")
 
   videoLink        String  @map("video_link")
   videoName        String  @map("video_name")

@@ -7,6 +7,7 @@ import { formatMessage } from "../../lib/formatMessage";
 
 type LegacyCatalogVideo = {
   id: number;
+  friendlyLink?: string;
   videoName: string;
   content?: { category?: { name?: string } };
 };
@@ -74,7 +75,7 @@ export default function CatalogPage() {
                     </h3>
                     <div className="mt-auto">
                       <button
-                        onClick={() => navigate(`/content/${video.id}`)}
+                        onClick={() => navigate(`/content/${video.friendlyLink || video.id}`)}
                         className="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-colors"
                       >
                         {t.watchNow}

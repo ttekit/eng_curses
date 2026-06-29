@@ -10,7 +10,8 @@ export class CreateContentDto {
 
   @ApiProperty({ description: 'The friendly link for the content' })
   @IsString()
-  friendlyLink: string;
+  @IsOptional()
+  friendlyLink?: string;
 
   @ApiProperty({ description: 'The description of the content' })
   @IsString()

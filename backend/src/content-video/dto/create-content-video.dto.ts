@@ -34,4 +34,12 @@ export class CreateContentVideoDto {
   @IsString()
   @IsOptional()
   videoDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  friendlyLink?: string;
+
+  @IsOptional()
+  @IsString()
+  ageRestriction?: string;
 }

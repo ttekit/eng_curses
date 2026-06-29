@@ -157,7 +157,7 @@ export class ContentVideoController {
   @SkipSubscriptionCheck()
   @UseGuards(OptionalLearnerJwtGuard)
   getIframe(
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id") id: string,
     @Req() req: Request & { user?: unknown },
   ) {
     const userId = optionalJwtSubToUserId(req.user);
@@ -168,7 +168,7 @@ export class ContentVideoController {
   @SkipSubscriptionCheck()
   @UseGuards(OptionalLearnerJwtGuard)
   findOne(
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id") id: string,
     @Req() req: Request & { user?: unknown },
   ) {
     const userId = optionalJwtSubToUserId(req.user);
@@ -235,13 +235,14 @@ export class ContentVideoController {
   @ApiProduces("text/vtt")
   @Header("Cache-Control", "public, max-age=120")
   async learnerCaptionsVtt(
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id") id: string,
     @Req() req: Request & { user?: unknown },
     @Res() res: Response,
   ): Promise<void> {
     const userId = optionalJwtSubToUserId(req.user);
     await this.contentVideoService.findOne(id, userId);
-    const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(id);
+    const numericId = typeof id === 'number' || /^\d+$/.test(String(id)) ? parseInt(String(id), 10) : (await this.contentVideoService.findOne(id, userId)).id;
+    const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(numericId);
     res.status(200).type("text/vtt; charset=utf-8").send(body);
   }
 
@@ -399,9 +400,7 @@ export class ContentVideoController {
     body: {
       token: string;
       answers: Record<string, number | string>;
-      /** Words from lesson key vocabulary; saved for authenticated learners. */
       keyVocabularyTerms?: string[];
-      /** Optional glosses (native + English) aligned with keyVocabularyTerms. */
       keyVocabularyDetails?: Array<{
         term: string;
         nativeTranslation?: string | null;
