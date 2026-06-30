@@ -231,6 +231,7 @@ export const appEn = {
     photoAria: "Change profile photo",
     learnerFallback: "Learner",
     joinedLine: "Joined {date}",
+    joinedLineWeb: "You've been with us since {date}",
     levelLine: "Level {level}",
     streakLine: "{count}-day streak",
     streakStart: "Streak — start watching today",

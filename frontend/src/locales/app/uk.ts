@@ -232,6 +232,7 @@ export const appUk = {
     photoAria: "Змінити фото профілю",
     learnerFallback: "Учень",
     joinedLine: "З нами з {date}",
+    joinedLineWeb: "Ви з нами з {date}",
     levelLine: "Рівень {level}",
     streakLine: "Серія {count} днів",
     streakStart: "Серія — почни дивитися сьогодні",

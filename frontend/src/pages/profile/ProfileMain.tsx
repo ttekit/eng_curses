@@ -166,11 +166,13 @@ export default function ProfileMain() {
     return {
       name: user.name,
       email: user.email,
+      createdAt: user.createdAt,
       avatarUrl: user.avatarUrl,
       role: normalizeRole(user.role),
       level: user.englishLevel?.trim() || "—",
       joinDateLabel,
       streakDays: user.currentStreak || 0,
+      fullJoinDate: user.createdAt,
     };
   }, [user, joinDateLabel]);
 
