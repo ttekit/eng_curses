@@ -28,18 +28,89 @@ type UsersAheadRow = {
   ahead: bigint;
 };
 
+const FAKE_USERS: LeaderboardQueryRow[] = [
+  {
+    user_id: -1,
+    name: "akinatorPro",
+    avatar_url: "https://kpi-eng-course.s3.us-east-1.amazonaws.com/avatars/1780491771147-Untitled920260526171609.png",
+    xp: 1500,
+    level: 5,
+    english_level: "C1",
+    high_score_videos: 14n,
+  },
+  {
+    user_id: -2,
+    name: "TerryBerry",
+    avatar_url: "https://kpi-eng-course.s3.us-east-1.amazonaws.com/avatars/1780493028277-Untitled1120260529175155.png",
+    xp: 1200,
+    level: 4,
+    english_level: "B1",
+    high_score_videos: 9n,
+  },
+  {
+    user_id: -3,
+    name: "David",
+    avatar_url: "https://kpi-eng-course.s3.us-east-1.amazonaws.com/avatars/1780570252245-Untitled1920260604134537.png",
+    xp: 800,
+    level: 3,
+    english_level: "A2",
+    high_score_videos: 6n,
+  },
+  {
+    user_id: -4,
+    name: "LoveHarry",
+    avatar_url: null,
+    xp: 450,
+    level: 2,
+    english_level: "B1",
+    high_score_videos: 4n,
+  },
+  {
+    user_id: -5,
+    name: "MichaelDeSanta",
+    avatar_url: null,
+    xp: 300,
+    level: 1,
+    english_level: "A1",
+    high_score_videos: 3n,
+  },
+  {
+    user_id: -6,
+    name: "LorenaMoiii",
+    avatar_url: "https://kpi-eng-course.s3.us-east-1.amazonaws.com/avatars/1780997738607-Untitled2220260609123324.png",
+    xp: 200,
+    level: 1,
+    english_level: "A2",
+    high_score_videos: 2n,
+  }
+];
+
 @Injectable()
 export class LeaderboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async get_leaderboard(currentUserId: number): Promise<LeaderboardResponseDto> {
-    const [topRows, currentUserCount, usersAhead] = await Promise.all([
+    const [dbTopRows, currentUserCount, usersAhead] = await Promise.all([
       this.fetch_top_rows(),
       this.fetch_user_high_score_count(currentUserId),
       this.fetch_users_ahead(currentUserId),
     ]);
 
+    // 1. Смешиваем реальных пользователей из БД с фейковыми
+    const allRows = [...dbTopRows, ...FAKE_USERS];
+
+    // 2. Заново сортируем их по количеству видео (по убыванию), затем по имени
+    allRows.sort((a, b) => {
+      const diff = Number(b.high_score_videos) - Number(a.high_score_videos);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
+    });
+
+    // 3. Обрезаем список до лимита (например, топ-10)
+    const topRows = allRows.slice(0, LEADERBOARD_TOP_LIMIT);
+
     const highScoreVideoCount = Number(currentUserCount?.high_score_videos ?? 0);
+
     const entries = build_leaderboard_entries(
       topRows.map((row) => ({
         userId: row.user_id,
@@ -53,13 +124,21 @@ export class LeaderboardService {
       currentUserId,
     );
 
+    // 4. Корректируем ранг для текущего реального пользователя
+    // Добавляем к количеству "людей впереди" фейковых юзеров, у которых счет больше
+    const fakeUsersAheadCount = FAKE_USERS.filter(
+      (fake) => Number(fake.high_score_videos) > highScoreVideoCount
+    ).length;
+
+    const totalUsersAhead = Number(usersAhead?.ahead ?? 0) + fakeUsersAheadCount;
+
     const inTopList = entries.some((entry) => entry.isCurrentUser);
     const currentUserRank = inTopList
       ? (entries.find((entry) => entry.isCurrentUser)?.rank ?? null)
       : resolve_leaderboard_rank(
-          highScoreVideoCount,
-          Number(usersAhead?.ahead ?? 0),
-        );
+        highScoreVideoCount,
+        totalUsersAhead,
+      );
 
     return {
       minScorePct: LEADERBOARD_MIN_SCORE_PCT,
@@ -68,6 +147,8 @@ export class LeaderboardService {
       currentUserHighScoreVideoCount: highScoreVideoCount,
     };
   }
+
+  // ... дальше fetch_top_rows, fetch_user_high_score_count и fetch_users_ahead остаются без изменений ...
 
   private fetch_top_rows(): Promise<LeaderboardQueryRow[]> {
     return this.prisma.$queryRaw<LeaderboardQueryRow[]>`

@@ -486,13 +486,13 @@ export default function ContentPage() {
                     ))}
                   {(user?.role?.toLowerCase() === "teacher" ||
                     user?.role?.toLowerCase() === "admin") && (
-                    <div className="ml-2 z-50">
-                      <AssignHomeworkButton
-                        contentId={Number(id)}
-                        contentName={videoData.videoName}
-                      />
-                    </div>
-                  )}
+                      <div className="ml-2 z-50">
+                        <AssignHomeworkButton
+                          contentId={Number(id)}
+                          contentName={videoData.videoName}
+                        />
+                      </div>
+                    )}
                 </div>
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
                   {videoData.videoName}
