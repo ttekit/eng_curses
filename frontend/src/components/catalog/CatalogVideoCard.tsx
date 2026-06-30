@@ -25,8 +25,8 @@ const badgeClassForLabel = (label: string) => {
   const t = label.trim().toUpperCase();
   if (levelLike.test(t)) {
     const map: Record<string, string> = {
-      A1: "bg-accent text-accent-foreground",
-      A2: "bg-accent text-accent-foreground",
+      A1: "bg-accent text-primary-foreground",
+      A2: "bg-accent text-primary-foreground",
       B1: "bg-primary/80 text-primary-foreground",
       B2: "bg-primary text-primary-foreground",
       C1: "bg-destructive/80 text-destructive-foreground",
@@ -39,12 +39,12 @@ const badgeClassForLabel = (label: string) => {
 
 const ageRestrictionClass = (age: string) => {
   const map: Record<string, string> = {
-    "0+": "bg-accent text-foreground",
-    "6+": "bg-(--light-blue) text-foreground",
-    "12+": "bg-(--yellow) text-foreground",
-    "16+": "bg-(--orange) text-foreground",
-    "18+": "bg-destructive text-foreground",
-    "21+": "bg-primary text-foreground",
+    "0+": "bg-accent text-primary-foreground",
+    "6+": "bg-(--light-blue) text-primary-foreground",
+    "12+": "bg-(--yellow) text-primary-foreground",
+    "16+": "bg-(--orange) text-primary-foreground",
+    "18+": "bg-destructive text-primary-foreground",
+    "21+": "bg-primary text-primary-foreground",
   };
   return map[age] ?? "bg-muted text-muted-foreground";
 };
@@ -101,26 +101,29 @@ export function CatalogVideoCard({
             <div className="absolute inset-0 bg-background/10 transition-colors group-hover:bg-transparent" />
           )}
 
-          {video.ageRestriction ? (
-            <span
-              className={cn(
-                "absolute bottom-2 left-2 rounded px-1.5 py-0.5 text-xs font-bold z-10",
-                ageRestrictionClass(video.ageRestriction),
+          {(video.ageRestriction || video.level) && (
+            <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+              {video.ageRestriction && (
+                <span
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-xs font-bold",
+                    ageRestrictionClass(video.ageRestriction),
+                  )}
+                >
+                  {video.ageRestriction}
+                </span>
               )}
-            >
-              {video.ageRestriction}
-            </span>
-          ) : null}
-
-          {video.level && (
-            <span
-              className={cn(
-                "absolute top-2 left-2 rounded px-2 py-0.5 text-xs font-semibold z-10 backdrop-blur-md shadow-sm",
-                badgeClassForLabel(video.level),
+              {video.level && (
+                <span
+                  className={cn(
+                    "rounded px-2 py-0.5 text-xs font-semibold backdrop-blur-md shadow-sm",
+                    badgeClassForLabel(video.level),
+                  )}
+                >
+                  {video.level}
+                </span>
               )}
-            >
-              {video.level}
-            </span>
+            </div>
           )}
 
           {video.durationLabel ? (

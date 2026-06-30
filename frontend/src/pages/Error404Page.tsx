@@ -1,6 +1,6 @@
 import { useAppMessages } from "../hooks/useAppMessages";
 import { Link } from "react-router";
-import { ArrowLeftToLine } from "lucide-react";
+import { MoveLeft } from "lucide-react";
 
 export function Error404Page() {
   const h = useAppMessages().errorPage;
@@ -30,8 +30,8 @@ export function Error404Page() {
               {h.notFound || "Page not found"}
             </p>
             <Link to="/">
-              <div className="flex flex-row text-primary items-center hover:cursor-pointer rounded-[15px] py-1 px-3 mt-2 hover:underline">
-                <ArrowLeftToLine className="w-5 h-5 mr-2" />
+              <div className="flex flex-row text-primary items-center hover:cursor-pointer px-1 mt-2 border-b-2 border-transparent hover:border-primary/30 transition-all duration-300 ease-in-out">
+                <MoveLeft className="size-4 mr-1" />
                 <p className="">{h.returnToMain || "Return to main page"}</p>
               </div>
             </Link>
