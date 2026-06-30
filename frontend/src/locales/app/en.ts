@@ -152,8 +152,12 @@ export const appEn = {
     emptyNoVideos: "Check back soon for new lessons.",
     emptyFiltered: "Try clearing the category filter.",
     placementProgressAria: "Placement flow progress",
+    placementTakeTestTitle: "Let's find your level",
+    placementTakeTestDesc: "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you.",
+    placementBtnStart: "Start the test",
+    placementBtnSkip: "Skip test (Start at A1)",
     placementStepCounter: "1 / 2",
-    beforeEntryTitle: "Before your entry test",
+    beforeEntryTitle: "Before starting studies",
     beforeEntryAdult:
       "Tell us about your work, education, and native language — then add hobbies and choose how you want to take the entry test.",
     beforeEntryStudent:

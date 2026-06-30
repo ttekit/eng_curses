@@ -153,8 +153,12 @@ export const appUk = {
     emptyNoVideos: "Незабаром з’являться нові уроки — заходь пізніше.",
     emptyFiltered: "Спробуй скинути фільтр категорії.",
     placementProgressAria: "Прогрес підготовки до тесту",
+    placementTakeTestTitle: "Давай визначимо твій рівень",
+    placementTakeTestDesc: "Пройди короткий тест, щоб ми зрозуміли твій поточний рівень англійської та підібрали ідеальні відео та завдання.",
+    placementBtnStart: "Почати тест",
+    placementBtnSkip: "Пропустити (Почати з A1)",
     placementStepCounter: "1 / 2",
-    beforeEntryTitle: "Перед вхідним тестом",
+    beforeEntryTitle: "Перед початком навчання",
     beforeEntryAdult:
       "Розкажи про роботу, освіту та рідну мову — додай хобі й обери, як проходити вхідний тест.",
     beforeEntryStudent:

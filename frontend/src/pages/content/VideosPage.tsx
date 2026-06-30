@@ -11,10 +11,10 @@ import {
   subscriptionEnforcementDisabled,
   userMayUseLearnerApp,
 } from "../../lib/subscriptionAccess";
-import PlacementPreTestStep from "../../components/PlacementPreTestStep";
+// import PlacementPreTestStep from "../../components/PlacementPreTestStep";
 import {
   learnerNeedsPlacement,
-  resolvePlacementPhase,
+  // resolvePlacementPhase,
 } from "../../lib/learnerOnboarding";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
@@ -149,9 +149,12 @@ export default function VideoPage() {
   const levelScrollRef = useRef<HTMLDivElement>(null);
   const genreScrollRef = useRef<HTMLDivElement>(null);
   const ageScrollRef = useRef<HTMLDivElement>(null);
+  const [forceTest, setForceTest] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [ageVerificationTarget, setAgeVerificationTarget] = useState<
     string | null
   >(null);
+
 
   const openAgeVerification = useCallback((ageRestriction: string) => {
     setAgeVerificationTarget(ageRestriction);
@@ -259,17 +262,33 @@ export default function VideoPage() {
   const needsPlacement =
     !userLoading && !!accessToken && !!user && learnerNeedsPlacement(user);
 
-  const placementPhaseResolved = useMemo(() => {
-    if (!needsPlacement || !user) {
-      return "off" as const;
+  // const placementPhaseResolved = useMemo(() => {
+  //   if (!needsPlacement || !user) {
+  //     return "off" as const;
+  //   }
+  //   return resolvePlacementPhase(user);
+  // }, [needsPlacement, user]);
+
+  const handleSkipTest = async () => {
+    setIsSkipping(true);
+    try {
+      await apiFetch("/auth/update-preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ englishLevel: "A1" }),
+      });
+      await refreshProfile();
+    } catch (error) {
+      console.error("Failed to skip test:", error);
+    } finally {
+      setIsSkipping(false);
     }
-    return resolvePlacementPhase(user);
-  }, [needsPlacement, user]);
+  };
 
-  const showPlacementPrepOverlay =
-    placementPhaseResolved === "preferences" && !!user;
-  const showPlacementTest = placementPhaseResolved === "test" && !!accessToken;
+  const showPlacementPrepOverlay = needsPlacement && !forceTest;
 
+  // А сам тест (iframe) загрузится только тогда, когда нажата кнопка
+  const showPlacementTest = needsPlacement && forceTest && !!accessToken;
   useEffect(() => {
     if (!needsPlacement) {
       placementCompleteHandled.current = false;
@@ -643,7 +662,7 @@ export default function VideoPage() {
 
           <main
             className={cn(
-              "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8 relative", // <-- ДОБАВИЛ relative
+              "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8 relative",
               sidebarCollapsed
                 ? "lg:ml-20 lg:max-w-[calc(100vw-5rem)]"
                 : "lg:ml-64 lg:max-w-[calc(100vw-16rem)]",
@@ -967,31 +986,32 @@ export default function VideoPage() {
             </div>
           </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="mx-auto mb-4 w-full max-w-2xl flex flex-col min-h-0 bg-card border border-border rounded-3xl overflow-scroll">
-              <div className="mx-auto w-full max-w-md shrink-0 px-4 pt-2 pb-2">
-                <h2 className="font-display text-xl font-semibold mt-1 tracking-tight text-foreground">
-                  {cb.beforeEntryTitle || "Before you start"}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {user?.role === "adult"
-                    ? cb.beforeEntryAdult || "Let's set up your profile."
-                    : user?.role === "student" && user?.teacherId == null
-                      ? cb.beforeEntryIndependentStudent ||
-                      "Let's personalize your learning."
-                      : cb.beforeEntryStudent || "Let's get everything ready."}
-                </p>
-              </div>
-              <div className="flex-1 pb-6">
-                {user?.role === "adult" ? (
-                  <PlacementPreTestStep
-                    user={user}
-                    onSuccess={(detail) => {
-                      if (detail?.skippedPlacementTest) {
-                        navigate("/learning-plan", { replace: true });
-                      }
-                    }}
-                  />
-                ) : null}
+            <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+              <div className="w-full max-w-lg flex flex-col bg-card border border-border rounded-3xl overflow-hidden shadow-lg p-6 sm:p-10">
+                <div className="w-full text-center">
+                  <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                    {cb.placementTakeTestTitle || "Let's find your level"}
+                  </h2>
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                    {cb.placementTakeTestDesc || "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you."}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 mt-10 w-full">
+                  <button
+                    onClick={() => setForceTest(true)}
+                    className="w-full rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
+                  >
+                    {cb.placementBtnStart || "Start the test"}
+                  </button>
+                  <button
+                    onClick={handleSkipTest}
+                    disabled={isSkipping}
+                    className="w-full rounded-xl border border-border bg-background px-6 py-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted cursor-pointer disabled:opacity-50"
+                  >
+                    {isSkipping ? "..." : cb.placementBtnSkip || "Skip test (Start at A1)"}
+                  </button>
+                </div>
               </div>
             </div>
             <footer className="shrink-0 border-border border-t bg-card">

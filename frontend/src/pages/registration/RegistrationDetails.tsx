@@ -213,10 +213,10 @@ export default function RegistrationDetails() {
     try {
       const formattedTopics =
         Array.isArray(formData.teacherTopics) &&
-        formData.teacherTopics.length > 0
+          formData.teacherTopics.length > 0
           ? formData.teacherTopics.map((t: string) => {
-              return String(t).replace("topic:", "");
-            })
+            return String(t).replace("topic:", "");
+          })
           : undefined;
 
       const accessToken = restoreRegistrationAccessToken();
