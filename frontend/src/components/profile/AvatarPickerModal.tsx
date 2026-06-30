@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Check } from "lucide-react";
 import { fetchAvailableAvatars, type AvatarOption } from "../../lib/api";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 interface AvatarPickerModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export function AvatarPickerModal({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+
+  const t = useAppMessages().avatarPicker;
 
   // Подгружаем аватарки при открытии модалки
   useEffect(() => {
@@ -54,7 +57,7 @@ export function AvatarPickerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-foreground">Choose Avatar</h2>
+          <h2 className="text-xl font-bold text-foreground">{t.title}</h2>
           <button
             onClick={onClose}
             className="rounded-full p-2 hover:bg-muted text-muted-foreground transition-colors hover:cursor-pointer"
@@ -66,11 +69,11 @@ export function AvatarPickerModal({
         <div className="grid grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-2">
           {isFetching ? (
             <div className="col-span-4 text-center text-muted-foreground py-8">
-              Loading avatars...
+              {t.loading}
             </div>
           ) : avatars.length === 0 ? (
             <div className="col-span-4 text-center text-muted-foreground py-8">
-              No avatars available
+              {t.empty}
             </div>
           ) : (
             avatars.map((avatar) => {
@@ -107,7 +110,7 @@ export function AvatarPickerModal({
             className="rounded-[15px] px-4 py-2 text-sm hover:cursor-pointer font-medium text-muted-foreground hover:bg-muted transition-colors"
             disabled={isLoading}
           >
-            Cancel
+            {t.cancel}
           </button>
           <button
             onClick={handleSave}
@@ -118,7 +121,7 @@ export function AvatarPickerModal({
             }
             className="flex rounded-[15px] bg-primary px-6 py-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
           >
-            {isLoading ? "Saving..." : "Save"}
+            {isLoading ? t.saving : t.save}
           </button>
         </div>
       </div>

@@ -16,6 +16,7 @@ import { useUser } from "../../context/UserContext";
 import { pct01, SkillBar } from "./KnowledgeMeters";
 import { subscriptionDevModeEnabled } from "../../lib/subscriptionAccess";
 import { useAppMessages } from "../../hooks/useAppMessages";
+import { formatMessage } from "../../lib/formatMessage";
 
 type KnowledgeTagRow = {
   name: string;
@@ -188,7 +189,7 @@ export function ProfileProgress() {
               ) : (
                 <RefreshCw className="size-3.5" aria-hidden />
               )}
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">{p.refreshBtn}</span>
             </button>
           ) : undefined
         }
@@ -270,11 +271,14 @@ export function ProfileProgress() {
               >
                 {isTagsExpanded ? (
                   <>
-                    Show less <ChevronUp className="size-4" />
+                    {p.showLess} <ChevronUp className="size-4" />
                   </>
                 ) : (
                   <>
-                    Show all {tagRows.length} tags <ChevronDown className="size-4" />
+                    {formatMessage(p.showAllTags, {
+                      count: String(tagRows.length),
+                    })}{" "}
+                    <ChevronDown className="size-4" />
                   </>
                 )}
               </button>

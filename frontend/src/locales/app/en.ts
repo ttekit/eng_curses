@@ -15,6 +15,18 @@ export const appEn = {
     no: "No",
     esc: "Esc",
     enter: "Enter",
+    noCover: "No cover",
+    scrollLeft: "Scroll left",
+    scrollRight: "Scroll right",
+  },
+
+  avatarPicker: {
+    title: "Choose Avatar",
+    loading: "Loading avatars...",
+    empty: "No avatars available",
+    cancel: "Cancel",
+    saving: "Saving...",
+    save: "Save",
   },
 
   appHeader: {
@@ -184,6 +196,9 @@ export const appEn = {
     open: "Open",
     toggle: "Toggle to catalog",
     matchingLess: "Matching lessons",
+    noLessonsCatalog: "No lessons in the catalog yet.",
+    noMatchesFor: "No matches for",
+    startTyping: "Start typing to find a lesson",
   },
 
   videoRow: {
@@ -300,6 +315,11 @@ export const appEn = {
     vocab500Desc: "Learn 500 new words",
     vocab1000Title: "Dictionary deity",
     vocab1000Desc: "Learn 1000 new words",
+    firstVideoModalTitle: "Where It All Began",
+    firstVideoModalDesc:
+      "This was the very first video you watched on Explys. Look how far you've come since then!",
+    watchAgain: "Watch it again",
+    viewBtn: "View",
   },
 
   customisePage: {
@@ -458,6 +478,45 @@ export const appEn = {
     dangerResetBtn: "Reset progress",
     dangerDeleting: "Deleting...",
     dangerDeleteBtn: "Permanently Delete",
+    dateOfBirthLabel: "Date of Birth",
+    dateOfBirthRequired: "Date of birth is required",
+    enterCurrentPassPrompt: "Please enter your current password.",
+    twoFactorEnabled: "Two-factor authentication enabled",
+    twoFactorDisabled: "Two-factor authentication disabled",
+    invalidPassword: "Invalid password",
+    somethingWentWrongTryAgain: "Something went wrong. Please try again.",
+    enter6DigitCode: "Please enter the 6-digit code.",
+    invalidCode: "Invalid code",
+    somethingWentWrong: "Something went wrong",
+    fillAllEmailFields: "Please fill in all email fields.",
+    emailsDoNotMatch: "Emails do not match.",
+    failedToUpdateEmail: "Failed to update email",
+    emailUpdatedSuccess: "Email successfully updated!",
+    failedToSendCode: "Failed to send verification code",
+    codeSentToCurrentEmail: "Verification code sent to your current email!",
+    fillAllFields: "Please fill in all fields.",
+    newPasswordsDoNotMatch: "New passwords do not match.",
+    passwordMinLength: "New password must be at least 8 characters long.",
+    failedToUpdatePassword: "Failed to update password",
+    passwordUpdatedSuccess: "Password updated successfully!",
+    invalidCurrentPassword: "Invalid current password or server error.",
+    placeholderCurrentPass: "Enter your current password",
+    placeholderNewPass: "Enter your new password",
+    placeholderConfirmPass: "Confirm your new password",
+    doneButton: "Done",
+    enable2FATitle: "Enable 2FA",
+    disable2FATitle: "Disable 2FA",
+    confirm2FAChangeText: "Please enter your password to confirm this change.",
+    currentPasswordLabel: "Current Password",
+    placeholderPassword: "Enter your password",
+    confirmingButton: "Confirming...",
+    confirmButton: "Confirm",
+    codeSentToast: "A 6-digit code has been sent to your email.",
+    sendCodeError: "Could not send verification code.",
+    enterCodePrompt: "Please enter the 6-digit code.",
+    progressResetSuccess: "Progress reset successfully.",
+    accountDeletedSuccess: "Your account has been deleted.",
+    sending: "Sending...",
   },
 
   profileTeacherVideos: {
@@ -710,6 +769,9 @@ export const appEn = {
     vocabProgressError: "Could not load vocabulary progress.",
     vocabProgressFootnote:
       "Study language: {lang}. Counts your saved words; mastery uses lesson and topic scores (75%+ = mastered).",
+    refreshBtn: "Refresh",
+    showLess: "Show less",
+    showAllTags: "Show all {count} tags",
   },
 
   profileActivity: {
@@ -1121,8 +1183,8 @@ export const appEn = {
     deadlinePassed: "Deadline passed",
     processingVideo: "Processing video...",
     opensAt: "Opens:",
-  closedAt: "Closed:",
-  closesAt: "Closes:",
+    closedAt: "Closed:",
+    closesAt: "Closes:",
   },
   placementFlow: {
     adult: {

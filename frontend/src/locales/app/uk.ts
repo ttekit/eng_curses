@@ -15,6 +15,18 @@ export const appUk = {
     no: "Ні",
     esc: "Esc",
     enter: "Enter",
+    noCover: "Немає обкладинки",
+    scrollLeft: "Прокрутити ліворуч",
+    scrollRight: "Прокрутити праворуч",
+  },
+
+  avatarPicker: {
+    title: "Оберіть аватар",
+    loading: "Завантаження аватарів...",
+    empty: "Аватари недоступні",
+    cancel: "Скасувати",
+    saving: "Збереження...",
+    save: "Зберегти",
   },
 
   appHeader: {
@@ -185,6 +197,9 @@ export const appUk = {
     open: "Відкрити",
     toggle: "Переключитись на каталог",
     matchingLess: "Уроки",
+    noLessonsCatalog: "У каталозі поки немає уроків.",
+    noMatchesFor: "Немає збігів для",
+    startTyping: "Почніть вводити, щоб знайти урок",
   },
 
   videoRow: {
@@ -301,6 +316,11 @@ export const appUk = {
     vocab500Desc: "Вивчи 500 нових слів",
     vocab1000Title: "Божество словника",
     vocab1000Desc: "Вивчи 1000 нових слів",
+    firstVideoModalTitle: "З чого все почалося",
+    firstVideoModalDesc:
+      "Це найперше відео, яке ви подивилися на Explys. Погляньте, який шлях ви пройшли з того часу!",
+    watchAgain: "Подивитися ще раз",
+    viewBtn: "Переглянути",
   },
 
   customisePage: {
@@ -460,6 +480,45 @@ export const appUk = {
     dangerResetBtn: "Скинути прогрес",
     dangerDeleting: "Видалення...",
     dangerDeleteBtn: "Видалити назавжди",
+    dateOfBirthLabel: "Дата народження",
+    dateOfBirthRequired: "Дата народження обов'язкова",
+    enterCurrentPassPrompt: "Будь ласка, введіть поточний пароль.",
+    twoFactorEnabled: "Двофакторну автентифікацію увімкнено",
+    twoFactorDisabled: "Двофакторну автентифікацію вимкнено",
+    invalidPassword: "Невірний пароль",
+    somethingWentWrongTryAgain: "Щось пішло не так. Спробуйте ще раз.",
+    enter6DigitCode: "Будь ласка, введіть 6-значний код.",
+    invalidCode: "Невірний код",
+    somethingWentWrong: "Щось пішло не так",
+    fillAllEmailFields: "Будь ласка, заповніть усі поля для email.",
+    emailsDoNotMatch: "Email-адреси не збігаються.",
+    failedToUpdateEmail: "Не вдалося оновити email",
+    emailUpdatedSuccess: "Email успішно оновлено!",
+    failedToSendCode: "Не вдалося надіслати код підтвердження",
+    codeSentToCurrentEmail: "Код підтвердження надіслано на поточний email!",
+    fillAllFields: "Будь ласка, заповніть усі поля.",
+    newPasswordsDoNotMatch: "Нові паролі не збігаються.",
+    passwordMinLength: "Новий пароль має містити щонайменше 8 символів.",
+    failedToUpdatePassword: "Не вдалося оновити пароль",
+    passwordUpdatedSuccess: "Пароль успішно оновлено!",
+    invalidCurrentPassword: "Невірний поточний пароль або помилка сервера.",
+    placeholderCurrentPass: "Введіть поточний пароль",
+    placeholderNewPass: "Введіть новий пароль",
+    placeholderConfirmPass: "Підтвердіть новий пароль",
+    doneButton: "Готово",
+    enable2FATitle: "Увімкнути 2FA",
+    disable2FATitle: "Вимкнути 2FA",
+    confirm2FAChangeText: "Будь ласка, введіть пароль для підтвердження.",
+    currentPasswordLabel: "Поточний пароль",
+    placeholderPassword: "Введіть пароль",
+    confirmingButton: "Підтвердження...",
+    confirmButton: "Підтвердити",
+    codeSentToast: "6-значний код надіслано на ваш email.",
+    sendCodeError: "Не вдалося надіслати код підтвердження.",
+    enterCodePrompt: "Будь ласка, введіть 6-значний код.",
+    progressResetSuccess: "Прогрес успішно скинуто.",
+    accountDeletedSuccess: "Ваш акаунт було видалено.",
+    sending: "Надсилання...",
   },
 
   profileTeacherVideos: {
@@ -504,7 +563,8 @@ export const appUk = {
     deleteConfirmPhrase: "delete video",
     deleteWrongPhrase: "Неправильна фраза. Введи «delete video».",
     deleteSuccessToast: "Відео успішно видалено",
-    removeConfirmBody: "Ви впевнені, що хочете видалити це домашнє завдання? Ваші студенти більше не бачитимуть це відео у своїх уроках. Саме відео залишиться в глобальному каталозі.",
+    removeConfirmBody:
+      "Ви впевнені, що хочете видалити це домашнє завдання? Ваші студенти більше не бачитимуть це відео у своїх уроках. Саме відео залишиться в глобальному каталозі.",
     deleteFailed: "Не вдалося видалити",
     emptyBody:
       "Ти ще не завантажив/ла жодного уроку. Натисни «Завантажити урок» вище, щоб опублікувати перше відео.",
@@ -639,7 +699,6 @@ export const appUk = {
     classCol: "Клас",
     notStarted: "Не розпочато",
     generateNewPassword: "Згенерувати новий пароль",
-    
   },
 
   studentTeacherVideos: {
@@ -720,6 +779,9 @@ export const appUk = {
     vocabProgressError: "Не вдалося завантажити прогрес лексики.",
     vocabProgressFootnote:
       "Мова навчання: {lang}. Рахуються збережені слова; рівень опанування — за уроками й темами (від 75% — освоєно).",
+    refreshBtn: "Оновити",
+    showLess: "Показати менше",
+    showAllTags: "Показати всі {count} тегів",
   },
 
   profileActivity: {

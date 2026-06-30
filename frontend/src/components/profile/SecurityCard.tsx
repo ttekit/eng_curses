@@ -68,7 +68,7 @@ export function SecurityCard() {
 
   const handleConfirm2FAToggle = async () => {
     if (!twoFactorPassword) {
-      setError("Please enter your current password.");
+      setError(s.enterCurrentPassPrompt);
       return;
     }
 
@@ -90,16 +90,14 @@ export function SecurityCard() {
         setIsToggling2FA(false);
         setTwoFactorPassword("");
         toast.success(
-          target2FAState
-            ? "Two-factor authentication enabled"
-            : "Two-factor authentication disabled",
+          target2FAState ? s.twoFactorEnabled : s.twoFactorDisabled,
         );
       } else {
         const data = await response.json();
-        setError(data.message || "Invalid password");
+        setError(data.message || s.invalidPassword);
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(s.somethingWentWrongTryAgain);
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +108,7 @@ export function SecurityCard() {
 
     if (emailChangeStep === 1) {
       if (emailChangeCode.length !== 6) {
-        return setError("Please enter the 6-digit code.");
+        return setError(s.enter6DigitCode);
       }
 
       setIsLoading(true);
@@ -122,22 +120,21 @@ export function SecurityCard() {
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
-          throw new Error(data.message || "Invalid code");
+          throw new Error(data.message || s.invalidCode);
         }
 
         setEmailChangeStep(2);
         setError("");
       } catch (err: unknown) {
-        setError(getErrorMessage(err, "Something went wrong"));
+        setError(getErrorMessage(err, s.somethingWentWrong));
       } finally {
         setIsLoading(false);
       }
       return;
     }
 
-    if (!newEmail || !confirmNewEmail)
-      return setError("Please fill in all email fields.");
-    if (newEmail !== confirmNewEmail) return setError("Emails do not match.");
+    if (!newEmail || !confirmNewEmail) return setError(s.fillAllEmailFields);
+    if (newEmail !== confirmNewEmail) return setError(s.emailsDoNotMatch);
 
     setIsLoading(true);
     try {
@@ -150,14 +147,13 @@ export function SecurityCard() {
       });
 
       const data = await response.json().catch(() => ({}));
-      if (!response.ok)
-        throw new Error(data.message || "Failed to update email");
+      if (!response.ok) throw new Error(data.message || s.failedToUpdateEmail);
 
-      toast.success("Email successfully updated!");
+      toast.success(s.emailUpdatedSuccess);
       await refreshProfile();
       setIsChangingEmail(false);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Something went wrong"));
+      setError(getErrorMessage(err, s.somethingWentWrong));
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +168,7 @@ export function SecurityCard() {
       });
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || "Failed to send verification code");
+        throw new Error(data.message || s.failedToSendCode);
       }
 
       setEmailChangeStep(1);
@@ -181,9 +177,9 @@ export function SecurityCard() {
       setConfirmNewEmail("");
       setIsChangingEmail(true);
 
-      toast.success("Verification code sent to your current email!");
+      toast.success(s.codeSentToCurrentEmail);
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err, "Something went wrong"));
+      toast.error(getErrorMessage(err, s.somethingWentWrong));
     } finally {
       setIsLoading(false);
     }
@@ -193,15 +189,15 @@ export function SecurityCard() {
     setError("");
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setError("Please fill in all fields.");
+      setError(s.fillAllFields);
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
+      setError(s.newPasswordsDoNotMatch);
       return;
     }
     if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters long.");
+      setError(s.passwordMinLength);
       return;
     }
 
@@ -219,17 +215,15 @@ export function SecurityCard() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to update password");
+        throw new Error(data.message || s.failedToUpdatePassword);
       }
       setIsChangingPassword(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      toast.success("Password updated successfully!");
+      toast.success(s.passwordUpdatedSuccess);
     } catch (err: unknown) {
-      setError(
-        getErrorMessage(err, "Invalid current password or server error."),
-      );
+      setError(getErrorMessage(err, s.invalidCurrentPassword));
     } finally {
       setIsLoading(false);
     }
@@ -383,7 +377,7 @@ export function SecurityCard() {
                           ? s.processing
                           : emailChangeStep === 1
                             ? s.next
-                            : s.done}
+                            : s.doneButton}
                       </button>
                     </div>
                   </div>
@@ -459,7 +453,7 @@ export function SecurityCard() {
                     <input
                       type="password"
                       autoComplete="current-password"
-                      placeholder="Enter your current password"
+                      placeholder={s.placeholderCurrentPass}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
@@ -472,7 +466,7 @@ export function SecurityCard() {
                     <input
                       type="password"
                       autoComplete="new-password"
-                      placeholder="Enter your new password"
+                      placeholder={s.placeholderNewPass}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
@@ -485,7 +479,7 @@ export function SecurityCard() {
                     <input
                       type="password"
                       autoComplete="new-password"
-                      placeholder="Confirm your new password"
+                      placeholder={s.placeholderConfirmPass}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="flex h-12 w-full mt-3 rounded-xl border border-input bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2"
@@ -511,7 +505,7 @@ export function SecurityCard() {
                     disabled={isLoading}
                     className="flex items-center justify-center rounded-[15px] bg-primary px-6 py-2 text-sm font-bold text-white transition-all cursor-pointer disabled:opacity-50 shadow-[inset_0_0_20px_4px_rgba(255,255,255,0.85)] dark:shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)] hover:bg-purple-hover"
                   >
-                    {isLoading ? s.saving : "Done"}
+                    {isLoading ? s.saving : s.doneButton}
                   </button>
                 </div>
               </div>
@@ -537,10 +531,10 @@ export function SecurityCard() {
                 <div className="flex items-start justify-between p-8 pb-6">
                   <div>
                     <h2 className="text-3xl font-bold">
-                      {target2FAState ? "Enable" : "Disable"} 2FA
+                      {target2FAState ? s.enable2FATitle : s.disable2FATitle}
                     </h2>
                     <p className="text-base text-muted-foreground mt-2">
-                      Please enter your password to confirm this change.
+                      {s.confirm2FAChangeText}
                     </p>
                   </div>
                   <button
@@ -574,7 +568,8 @@ export function SecurityCard() {
                   )}
                   <div className="space-y-3">
                     <label className="mb-4 block text-sm font-bold text-muted-foreground uppercase tracking-wider">
-                      Current Password <span className="text-red-500">*</span>
+                      {s.currentPasswordLabel}{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="password"
@@ -586,7 +581,7 @@ export function SecurityCard() {
                       autoComplete="new-password"
                       value={twoFactorPassword}
                       onChange={(e) => setTwoFactorPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder={s.placeholderPassword}
                       autoFocus
                       className="flex h-14 w-full rounded-lg border border-input bg-background px-4 py-3 text-lg ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       onKeyDown={(e) => {
@@ -624,7 +619,7 @@ export function SecurityCard() {
                     disabled={isLoading || !twoFactorPassword}
                     className="rounded-xl bg-primary px-8 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
-                    {isLoading ? "Confirming..." : "Confirm"}
+                    {isLoading ? s.confirmingButton : s.confirmButton}
                   </button>
                 </div>
               </div>
