@@ -94,6 +94,13 @@ export default function RegistrationMain() {
         'input[name="password"]',
       )?.value ?? formData.password;
 
+    if (type === "email") {
+      if (errorText === errors.emailInvalid) {
+        setErrorText(null);
+      }
+      return;
+    }
+
     if (type === "confirmPassword") {
       validateField(value, "confirmPassword", passFromForm);
     } else {
@@ -232,6 +239,7 @@ export default function RegistrationMain() {
               type="text"
               placeholder={step1.placeholderUsername}
               autoComplete="username"
+              maxLength={50}
             />
           </div>
 
@@ -241,6 +249,11 @@ export default function RegistrationMain() {
               name="email"
               value={formData.email}
               onChange={(e) => handleChange(e, "email")}
+              onBlur={(e) => {
+                if (e.target.value.trim() !== "") {
+                  validateField(e.target.value, "email");
+                }
+              }}
               type="email"
               placeholder={step1.placeholderEmail}
               autoComplete="email"

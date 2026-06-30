@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Calendar, Edit2, Flame } from "lucide-react";
 import { formatMessage } from "../../lib/formatMessage";
 import { useAppMessages } from "../../hooks/useAppMessages";
-import { updateUserAvatar } from "../../lib/api"; // Импортируем нашу функцию
-import { AvatarPickerModal } from "./AvatarPickerModal"; // Импортируем модалку
+import { updateUserAvatar } from "../../lib/api";
+import { AvatarPickerModal } from "./AvatarPickerModal";
 
 export type ProfileHeaderRole = "adult" | "student" | "teacher" | "admin";
 
@@ -14,6 +14,7 @@ export interface ProfileHeaderModel {
   role: ProfileHeaderRole;
   level: string;
   joinDateLabel: string | null;
+  fullJoinDate?: string | Date;
   streakDays: number | null;
 }
 
@@ -27,7 +28,6 @@ function initialsFromName(name: string): string {
 export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
   const h = useAppMessages().profileHeader;
 
-  // Добавляем стейт для управления модалкой
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const initials = initialsFromName(user.name);
@@ -40,11 +40,20 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
           ? h.roleAdmin || "Admin"
           : h.roleAdult || "Learner";
 
-  // Функция, которая сработает, когда юзер нажмет "Save" в модалке
+  let displayDate = user.joinDateLabel;
+
+  if (user.fullJoinDate) {
+    const dateObj = new Date(user.fullJoinDate);
+    displayDate = dateObj.toLocaleDateString("uk-UA", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
   const handleAvatarSave = async (newUrl: string) => {
     try {
       await updateUserAvatar(newUrl);
-      window.location.reload(); // Перезагружаем страницу, чтобы профиль обновился
+      window.location.reload();
     } catch (error) {
       console.error(error);
       alert(h.avatarSaveError);
@@ -102,12 +111,13 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
             <p className="text-muted-foreground">{user.email}</p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground sm:justify-start">
-              {user.joinDateLabel ? (
+              {/* Ищем этот блок ниже в возвращаемом JSX и заменяем: */}
+              {user.joinDateLabel || user.fullJoinDate ? (
                 <div className="flex items-center gap-1.5">
                   <Calendar className="size-4 shrink-0" />
                   <span>
-                    {formatMessage(h.joinedLine || "Joined {date}", {
-                      date: user.joinDateLabel,
+                    {formatMessage(h.joinedLineWeb || "Ви з нами {date}", {
+                      date: displayDate || "—",
                     })}
                   </span>
                 </div>

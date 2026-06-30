@@ -26,6 +26,7 @@ export type UserProfileResponse = {
   name: string;
   email: string;
   dateOfBirth: Date | null;
+  createdAt: Date;
   avatarUrl: string | null;
   isTwoFactorEnable: boolean;
   isVerified: boolean;
@@ -100,6 +101,7 @@ export function map_user_profile_response(
     name: user.name,
     email: user.email,
     dateOfBirth: user.dateOfBirth,
+    createdAt: user.createdAt,
     avatarUrl: user.avatarUrl,
     isTwoFactorEnable: user.isTwoFactorEnable,
     isVerified: user.isVerified,

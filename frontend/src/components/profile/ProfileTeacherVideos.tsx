@@ -198,7 +198,7 @@ export function ProfileTeacherVideos() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error(await getResponseErrorMessage(res));
-      toast.success("Assignment removed successfully!");
+      toast.success(t.assignmentRemoved);
       setRevokeModalOpen(false);
       await loadData();
     } catch (e: unknown) {
@@ -281,7 +281,7 @@ export function ProfileTeacherVideos() {
               )}
             >
               <Video className="size-4" />
-              My Uploads
+              {t.myUploads}
             </button>
             <button
               onClick={() => setActiveTab("assigned")}
@@ -293,7 +293,7 @@ export function ProfileTeacherVideos() {
               )}
             >
               <BookOpen className="size-4" />
-              Assigned Homework
+              {t.assignedHomework}
             </button>
           </div>
 
@@ -419,7 +419,7 @@ export function ProfileTeacherVideos() {
               disabled={isRevoking}
               className="w-full sm:w-auto"
             >
-              Cancel
+              {t.cancel}
             </AdminButton>
             <AdminButton
               onClick={() => void confirmRevokeVideo()}
@@ -430,11 +430,7 @@ export function ProfileTeacherVideos() {
           </>
         }
       >
-        <p className="text-sm text-muted-foreground">
-          Are you sure you want to remove this homework assignment? Your
-          students will no longer see this video in their lessons. The video
-          itself will remain in the global catalog.
-        </p>
+        <p className="text-sm text-muted-foreground">{t.deleteVideoBody}</p>
       </AdminModal>
 
       {/* --- ТАБЛИЦЫ --- */}
@@ -448,7 +444,7 @@ export function ProfileTeacherVideos() {
           </ProfileCard>
         ) : (
           <div
-            className="w-full rounded-xl border border-border/50 bg-card/50 shadow-sm"
+            className="w-full rounded-xl border border-border bg-card shadow-sm"
             style={{ maxWidth: "100%", overflow: "hidden" }}
           >
             <div
@@ -468,9 +464,11 @@ export function ProfileTeacherVideos() {
                 }}
               >
                 <thead>
-                  <tr className="border-border bg-muted/30 border-b text-muted-foreground">
+                  <tr className="border-b border-border text-muted-foreground">
                     <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                    <th className="p-4 font-semibold text-sm">Assignments</th>
+                    <th className="p-4 font-semibold text-sm">
+                      {t.assignmentsCol}
+                    </th>
                     <th className="p-4 font-semibold text-sm">
                       {t.colCaptions}
                     </th>
@@ -482,13 +480,15 @@ export function ProfileTeacherVideos() {
                     </th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredSeries.map((s) => {
                     const busy = visibilityBusyId === s.contentId;
-                    const vis = s.visibility.trim().toLowerCase();
-                    const tags = [...s.systemTags, ...s.userTags].filter(
-                      Boolean,
-                    );
+                    const vis = s.visibility?.trim().toLowerCase() || "public";
+                    const tags = [
+                      ...(s.systemTags || []),
+                      ...(s.userTags || []),
+                    ].filter(Boolean);
                     const now = new Date(currentTime);
 
                     return (
@@ -532,7 +532,7 @@ export function ProfileTeacherVideos() {
                                     </span>
                                     <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                       <span>
-                                        Opens:{" "}
+                                        {t.opens}{" "}
                                         {ca.availableFrom
                                           ? new Date(
                                               ca.availableFrom,
@@ -550,7 +550,7 @@ export function ProfileTeacherVideos() {
                                             : "text-amber-500 font-medium"
                                         }
                                       >
-                                        Closes:{" "}
+                                        {t.closes}{" "}
                                         {ca.deadline
                                           ? new Date(
                                               ca.deadline,
@@ -566,41 +566,50 @@ export function ProfileTeacherVideos() {
                               </div>
                             </details>
                           ) : (
-                            <div className="flex flex-col gap-1.5 text-sm font-medium text-muted-foreground">
-                              <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
-                                Global Catalog
-                              </span>
-                              <span>
-                                Opens:{" "}
-                                {s.availableFrom
-                                  ? new Date(s.availableFrom).toLocaleString(
-                                      "en-GB",
-                                      {
-                                        dateStyle: "short",
-                                        timeStyle: "short",
-                                      },
-                                    )
-                                  : "Now"}
-                              </span>
-                              <span
-                                className={
-                                  s.deadline && new Date(s.deadline) < now
-                                    ? "text-destructive font-medium"
-                                    : "text-amber-500 font-medium"
-                                }
-                              >
-                                Closes:{" "}
-                                {s.deadline
-                                  ? new Date(s.deadline).toLocaleString(
-                                      "en-GB",
-                                      {
-                                        dateStyle: "short",
-                                        timeStyle: "short",
-                                      },
-                                    )
-                                  : "Never"}
-                              </span>
-                            </div>
+                            <details className="group">
+                              <summary className="cursor-pointer text-xs font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
+                                {t.globalCatalog}
+                                <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+                              </summary>
+                              <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-accent/30">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-xs font-bold uppercase text-foreground tracking-wide">
+                                    {t.availableToEveryone}
+                                  </span>
+                                  <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
+                                    <span>
+                                      {t.opens}{" "}
+                                      {s.availableFrom
+                                        ? new Date(
+                                            s.availableFrom,
+                                          ).toLocaleString("en-GB", {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          })
+                                        : "Now"}
+                                    </span>
+                                    <span
+                                      className={
+                                        s.deadline && new Date(s.deadline) < now
+                                          ? "text-destructive font-medium"
+                                          : "text-amber-500 font-medium"
+                                      }
+                                    >
+                                      {t.closes}{" "}
+                                      {s.deadline
+                                        ? new Date(s.deadline).toLocaleString(
+                                            "en-GB",
+                                            {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            },
+                                          )
+                                        : "Never"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </details>
                           )}
                         </td>
 
@@ -618,8 +627,9 @@ export function ProfileTeacherVideos() {
                               : t.captionsPending}
                           </span>
                         </td>
+
                         <td className="p-4 align-top">
-                          <div className="flex flex-col items-start gap-1.5 w-[130px]">
+                          <div className="flex flex-col items-start gap-1.5 w-[120px]">
                             <CustomSelect
                               value={vis}
                               disabled={
@@ -640,40 +650,41 @@ export function ProfileTeacherVideos() {
                                   label: t.visibilityPrivate,
                                 },
                               ]}
-                              className="py-1.5 font-semibold"
+                              className="h-[32px] min-h-[32px] text-xs font-semibold"
                             />
                             {busy && (
-                              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                                <Loader2 className="size-3.5 animate-spin shrink-0" />
+                              <span className="text-muted-foreground inline-flex items-center gap-1.5 text-[11px] font-medium">
+                                <Loader2 className="size-3 animate-spin shrink-0" />
                                 {t.visibilitySaving}
                               </span>
                             )}
                           </div>
                         </td>
+
                         <td className="p-4 align-top text-right">
-                          <div className="flex items-center justify-end gap-1 sm:gap-2">
+                          <div className="inline-flex items-center justify-end gap-0.5 rounded-lg border border-border/50 bg-muted/20 p-1">
                             {s.contentVideoId != null && (
                               <Link
                                 to={`/content/${s.contentVideoId}`}
-                                className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
-                                title={t.watchLesson}
+                                className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
+                                title={t.watchLesson || "Watch Lesson"}
                               >
-                                <Video className="size-4.5" />
+                                <Video className="size-4" />
                               </Link>
                             )}
                             <button
                               onClick={() => openResultsModal(s.contentId)}
-                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
                               title="View Tests"
                             >
-                              <FileText className="size-4.5" />
+                              <FileText className="size-4" />
                             </button>
                             <button
                               onClick={() => openEditDeadlineModal(s)}
-                              className="rounded-lg p-2 text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors inline-flex"
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all inline-flex"
                               title="Edit Deadlines"
                             >
-                              <Clock className="size-4.5" />
+                              <Clock className="size-4" />
                             </button>
                             <button
                               onClick={() => {
@@ -681,10 +692,10 @@ export function ProfileTeacherVideos() {
                                 setDeletePhrase("");
                                 setDeleteModalOpen(true);
                               }}
-                              className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors inline-flex"
-                              title={t.deleteVideoAria}
+                              className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:shadow-sm transition-all inline-flex"
+                              title={t.deleteVideoAria || "Delete Video"}
                             >
-                              <Trash2 className="size-4.5" />
+                              <Trash2 className="size-4" />
                             </button>
                           </div>
                         </td>
@@ -700,22 +711,23 @@ export function ProfileTeacherVideos() {
       {/* ТАБЛИЦА ASSIGNED (Практически такая же, как Uploads) */}
       {activeTab === "assigned" &&
         (filteredAssignedSeries.length === 0 ? (
-          <ProfileCard title="Assigned Homework">
+          <ProfileCard title={t.assignedHomework}>
             <div className="flex flex-col items-center gap-3 py-8 text-center px-4">
               <BookOpen className="size-12 text-muted-foreground opacity-50" />
               <p className="max-w-md text-muted-foreground">
-                You haven't assigned any lessons from the catalog yet. Go to the
-                Catalog, find a video, and click "Assign Homework".
+                {t.emptyAssignedHomework}
               </p>
             </div>
           </ProfileCard>
         ) : (
-          <div className="w-full max-w-full overflow-auto rounded-xl border border-border/50 bg-card/50 max-h-[65vh] relative shadow-sm">
+          <div className="w-full max-w-full overflow-auto rounded-xl border border-border bg-card min-h-[240px] max-h-[65vh] relative shadow-sm">
             <table className="w-full min-w-[1000px] text-left text-sm whitespace-nowrap">
-              <thead className="sticky top-0 z-20 bg-card shadow-sm outline outline-1 outline-border/50">
+              <thead className="sticky top-0 z-20 bg-card border-b border-border">
                 <tr className="text-muted-foreground">
                   <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                  <th className="p-4 font-semibold text-sm">Assignments</th>
+                  <th className="p-4 font-semibold text-sm">
+                    {t.assignmentsCol}
+                  </th>
                   <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
                   <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
                   <th className="p-4 font-semibold text-sm text-right">
@@ -726,8 +738,11 @@ export function ProfileTeacherVideos() {
               <tbody>
                 {filteredAssignedSeries.map((s) => {
                   const busy = visibilityBusyId === s.contentId;
-                  const vis = s.visibility.trim().toLowerCase();
-                  const tags = [...s.systemTags, ...s.userTags].filter(Boolean);
+                  const vis = s.visibility?.trim().toLowerCase() || "public";
+                  const tags = [
+                    ...(s.systemTags || []),
+                    ...(s.userTags || []),
+                  ].filter(Boolean);
                   const now = new Date(currentTime);
 
                   return (
@@ -771,7 +786,7 @@ export function ProfileTeacherVideos() {
                                   </span>
                                   <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
                                     <span>
-                                      Opens:{" "}
+                                      {t.opens}{" "}
                                       {ca.availableFrom
                                         ? new Date(
                                             ca.availableFrom,
@@ -789,7 +804,7 @@ export function ProfileTeacherVideos() {
                                           : "text-amber-500 font-medium"
                                       }
                                     >
-                                      Closes:{" "}
+                                      {t.closes}{" "}
                                       {ca.deadline
                                         ? new Date(ca.deadline).toLocaleString(
                                             "en-GB",
@@ -806,35 +821,50 @@ export function ProfileTeacherVideos() {
                             </div>
                           </details>
                         ) : (
-                          <div className="flex flex-col gap-1.5 text-sm font-medium text-muted-foreground">
-                            <span className="inline-flex w-fit bg-accent/10 text-accent px-2.5 py-1 rounded-md font-bold uppercase tracking-wider text-xs mb-1">
-                              Global Catalog
-                            </span>
-                            <span>
-                              Opens:{" "}
-                              {s.availableFrom
-                                ? new Date(s.availableFrom).toLocaleString(
-                                    "en-GB",
-                                    { dateStyle: "short", timeStyle: "short" },
-                                  )
-                                : "Now"}
-                            </span>
-                            <span
-                              className={
-                                s.deadline && new Date(s.deadline) < now
-                                  ? "text-destructive font-medium"
-                                  : "text-amber-500 font-medium"
-                              }
-                            >
-                              Closes:{" "}
-                              {s.deadline
-                                ? new Date(s.deadline).toLocaleString("en-GB", {
-                                    dateStyle: "short",
-                                    timeStyle: "short",
-                                  })
-                                : "Never"}
-                            </span>
-                          </div>
+                          <details className="group">
+                            <summary className="cursor-pointer text-xs font-bold tracking-wider text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 select-none transition-colors w-fit uppercase">
+                              {t.globalCatalog}
+                              <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+                            </summary>
+                            <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-accent/30">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs font-bold uppercase text-foreground tracking-wide">
+                                  {t.availableToEveryone}
+                                </span>
+                                <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
+                                  <span>
+                                    {t.opens}{" "}
+                                    {s.availableFrom
+                                      ? new Date(
+                                          s.availableFrom,
+                                        ).toLocaleString("en-GB", {
+                                          dateStyle: "short",
+                                          timeStyle: "short",
+                                        })
+                                      : "Now"}
+                                  </span>
+                                  <span
+                                    className={
+                                      s.deadline && new Date(s.deadline) < now
+                                        ? "text-destructive font-medium"
+                                        : "text-amber-500 font-medium"
+                                    }
+                                  >
+                                    {t.closes}{" "}
+                                    {s.deadline
+                                      ? new Date(s.deadline).toLocaleString(
+                                          "en-GB",
+                                          {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          },
+                                        )
+                                      : "Never"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </details>
                         )}
                       </td>
 
@@ -854,7 +884,7 @@ export function ProfileTeacherVideos() {
                       </td>
 
                       <td className="p-4 align-top">
-                        <div className="flex flex-col items-start gap-1.5 w-[130px]">
+                        <div className="flex flex-col items-start gap-1.5 w-[120px]">
                           <CustomSelect
                             value={vis}
                             disabled={
@@ -872,11 +902,11 @@ export function ProfileTeacherVideos() {
                               { value: "public", label: t.visibilityPublic },
                               { value: "unlisted", label: t.visibilityPrivate },
                             ]}
-                            className="py-1.5 font-semibold"
+                            className="h-[32px] min-h-[32px] text-xs font-semibold"
                           />
                           {busy && (
-                            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
-                              <Loader2 className="size-3.5 animate-spin shrink-0" />
+                            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-[11px] font-medium">
+                              <Loader2 className="size-3 animate-spin shrink-0" />
                               {t.visibilitySaving}
                             </span>
                           )}

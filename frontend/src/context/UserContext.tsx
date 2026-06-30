@@ -20,6 +20,7 @@ export interface UserData {
   name: string;
   email: string;
   dateOfBirth: string;
+  createdAt: string;
   role: string;
   isVerified: boolean;
   isTwoFactorEnable: boolean;
@@ -110,6 +111,7 @@ function normalizeProfile(raw: unknown): UserData | null {
     name: String(r.name ?? ""),
     email: String(r.email ?? ""),
     dateOfBirth: String(r.dateOfBirth ?? ""),
+    createdAt: String(r.createdAt ?? ""),
     role: normalizeLearnerRole(r.role),
     isVerified: r.isVerified === true,
     isTwoFactorEnable: Boolean(r.isTwoFactorEnable),

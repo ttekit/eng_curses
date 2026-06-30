@@ -58,7 +58,7 @@ export function StudentTeacherVideos() {
     return (
       <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="size-8 animate-spin text-primary" />
-        <p>Loading lessons from your teacher…</p>
+        <p>{t.loadingLessons}</p>
       </div>
     );
   }
@@ -86,11 +86,10 @@ export function StudentTeacherVideos() {
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
           <Video className="size-6 text-primary" />
-          Lessons from your Teacher
+          {t.lessonsFromTeacher}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Exclusive video materials uploaded by your instructor. Watch them and
-          complete the generated quizzes.
+          {t.lessonsDescription}
         </p>
       </div>
 
@@ -196,19 +195,19 @@ export function StudentTeacherVideos() {
                     to={`/content/${video.contentVideoId}`}
                     className="inline-flex w-full items-center justify-center rounded-lg bg-muted px-4 py-2 text-sm font-medium hover:bg-muted/80 transition-colors text-primary"
                   >
-                    Open Lesson & Quiz
+                    {t.openLessonQuiz}
                   </Link>
                 ) : isLocked ? (
                   <div className="inline-flex w-full items-center justify-center rounded-lg bg-muted/50 px-4 py-2 text-sm font-medium text-muted-foreground cursor-not-allowed">
-                    Lesson is locked
+                    {t.lessonLocked}
                   </div>
                 ) : isClosed ? (
                   <div className="inline-flex w-full items-center justify-center rounded-lg bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive cursor-not-allowed">
-                    Deadline passed
+                    {t.deadlinePassed}
                   </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">
-                    Processing video...
+                    {t.processingVideo}
                   </span>
                 )}
               </div>

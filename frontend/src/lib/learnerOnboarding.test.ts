@@ -14,6 +14,7 @@ function mockUser(partial: Partial<UserData>): UserData {
     name: "Test",
     email: "t@example.com",
     dateOfBirth: "",
+    createdAt: "",
     role: "adult",
     isVerified: true,
     isTwoFactorEnable: false,

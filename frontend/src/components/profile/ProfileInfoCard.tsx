@@ -219,25 +219,29 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
       title={
         <span className="flex items-center gap-2">
           <User className="size-5 text-primary" />
-          {s.cardProfileInfo || "Profile Information"}
+          {s.cardProfileInfo}
         </span>
       }
     >
       <p className="mb-6 text-sm text-muted-foreground">
-        {s.cardProfileInfoLead || "Manage your profile details."}
+        {s.cardProfileInfoLead}
       </p>
 
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm font-medium text-foreground">
-              {s.labelFullName || "Full Name"}
+              {s.labelFullName}
             </span>
-            <InputText value={name} onChange={(e) => setName(e.target.value)} />
+            <InputText
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={50}
+            />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-foreground">
-              {s.labelEmail || "Email Address"}
+              {s.labelEmail}
             </span>
             <InputText value={email} disabled className="opacity-70" />
           </label>
@@ -246,22 +250,22 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm font-medium text-foreground">
-              {s.labelJob || "Field of Work / Profession"}
+              {s.labelJob}
             </span>
             <InputText
               value={job}
               onChange={(e) => setJob(e.target.value)}
-              placeholder={s.placeholderJob || "e.g., Software Engineer"}
+              placeholder={s.placeholderJob}
             />
           </label>
           <label className="space-y-2">
             <span className="text-sm font-medium text-foreground">
-              {s.labelEducation || "Education"}
+              {s.labelEducation}
             </span>
             <InputText
               value={education}
               onChange={(e) => setEducation(e.target.value)}
-              placeholder={s.placeholderEducation || "e.g., Bachelor's Degree"}
+              placeholder={s.placeholderEducation}
             />
           </label>
         </div>
@@ -316,12 +320,9 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
                   onClick={() =>
                     setHobbies((prev) => prev.filter((h) => h !== hobby))
                   }
-                  aria-label={formatMessage(
-                    s.removeHobbyAria || "Remove {name}",
-                    {
-                      name: hobby,
-                    },
-                  )}
+                  aria-label={formatMessage(s.removeHobbyAria, {
+                    name: hobby,
+                  })}
                 >
                   <X className="size-3" />
                 </button>
@@ -340,7 +341,7 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
               type="button"
               onClick={addHobby}
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary text-foreground hover:bg-muted"
-              aria-label={s.addHobbyAria || "Add hobby"}
+              aria-label={s.addHobbyAria}
             >
               <Plus className="size-4" />
             </button>
@@ -351,11 +352,9 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
 
         <div>
           <span className="mb-1 block text-sm font-medium text-foreground">
-            {s.genresHeading || "Genres"}
+            {s.genresHeading}
           </span>
-          <p className="mb-4 text-sm text-muted-foreground">
-            {s.genresLead || "Select your preferred or avoided genres."}
-          </p>
+          <p className="mb-4 text-sm text-muted-foreground">{s.genresLead}</p>
           <div className="flex flex-wrap gap-2">
             {genreOptions.map((g) => {
               const loved = favoriteGenreIds.includes(g.id);
@@ -397,11 +396,11 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <span className="size-3 rounded bg-accent" />{" "}
-              {s.genreLegendPrefer || "Preferred"}
+              {s.genreLegendPrefer}
             </span>
             <span className="flex items-center gap-1">
               <span className="size-3 rounded bg-destructive" />{" "}
-              {s.genreLegendAvoid || "Avoided"}
+              {s.genreLegendAvoid}
             </span>
           </div>
         </div>
@@ -423,7 +422,7 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
           onClick={() => void saveProfile()}
         >
           <Save className="size-4 mr-2" />
-          {saving ? s.saving || "Saving..." : s.saveChanges || "Save Changes"}
+          {saving ? s.saving : s.saveChanges}
         </button>
       </div>
     </ProfileCard>

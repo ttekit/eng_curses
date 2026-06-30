@@ -159,7 +159,8 @@ export function EditDeadlineModal({
           <h4 className="text-sm font-bold mb-3 text-foreground">
             Global Rules (Applies to links)
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Убрали sm:grid-cols-2, теперь поля на всю ширину */}
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase">
                 Opening Date
@@ -233,7 +234,7 @@ export function EditDeadlineModal({
                 <span className="text-sm font-bold text-primary mb-3 block">
                   {cls.className}
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">
                       Opening Date

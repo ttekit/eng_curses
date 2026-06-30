@@ -16,6 +16,7 @@ import { useUser } from "../context/UserContext";
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
   (props, ref) => {
+    // Вытаскиваем onClick, чтобы повесить его только на иконку
     const { onClick, value, onChange, onKeyDown, id } = props;
 
     return (
@@ -23,20 +24,24 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
         <input
           id={id}
           type="datetime-local"
+          max="9999-12-31T23:59" // Ограничиваем год 4 цифрами
           ref={ref}
           value={value || ""}
           onChange={onChange}
           onKeyDown={onKeyDown}
-          onClick={(e) => e.stopPropagation()}
+          // Убрали onClick отсюда, чтобы календарь не открывался при вводе текста
           onFocus={(e) => e.stopPropagation()}
           autoComplete="off"
-          className="w-full bg-[#161622] border border-[#2a2b36] hover:border-primary/50 rounded-xl pl-4 pr-12 py-3.5 text-[15px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0"
+          // Заменили жесткие темные цвета на адаптивные bg-background и border-input
+          // Увеличили pr-16 и скрыли системные браузерные крестики
+          className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-16 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-clear-button]:hidden [&::-webkit-inner-spin-button]:hidden"
         />
         <button
           type="button"
+          // Календарь открывается только при клике сюда
           onClick={onClick}
           tabIndex={-1}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center cursor-pointer"
         >
           <CalendarIcon className="size-5" />
         </button>
