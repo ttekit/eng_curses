@@ -466,7 +466,9 @@ export function ProfileTeacherVideos() {
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                    <th className="p-4 font-semibold text-sm">{t.assignmentsCol}</th>
+                    <th className="p-4 font-semibold text-sm">
+                      {t.assignmentsCol}
+                    </th>
                     <th className="p-4 font-semibold text-sm">
                       {t.colCaptions}
                     </th>
@@ -723,7 +725,9 @@ export function ProfileTeacherVideos() {
               <thead className="sticky top-0 z-20 bg-card border-b border-border">
                 <tr className="text-muted-foreground">
                   <th className="p-4 font-semibold text-sm">{t.colSeries}</th>
-                  <th className="p-4 font-semibold text-sm">{t.assignmentsCol}</th>
+                  <th className="p-4 font-semibold text-sm">
+                    {t.assignmentsCol}
+                  </th>
                   <th className="p-4 font-semibold text-sm">{t.colCaptions}</th>
                   <th className="p-4 font-semibold text-sm">{t.colCatalog}</th>
                   <th className="p-4 font-semibold text-sm text-right">

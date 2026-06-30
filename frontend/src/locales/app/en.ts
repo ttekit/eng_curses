@@ -544,6 +544,16 @@ export const appEn = {
     removing: "Removing...",
     emptyAssignedHomework:
       "You haven't assigned any lessons from the catalog yet. Go to the Catalog, find a video, and click 'Assign Homework'.",
+    revokeModalTitle: "Remove Homework Assignment",
+
+    removeAssignment: "Remove Assignment",
+    revokeError: "Failed to remove assignment.",
+    oneClassAssigned: "1 CLASS ASSIGNED",
+    classesAssigned: "CLASSES ASSIGNED",
+
+    viewTestsTitle: "View Tests",
+    editDeadlinesTitle: "Edit Deadlines",
+    removeAssignmentTitle: "Remove Assignment",
   },
 
   profileTeacherStudents: {
@@ -635,6 +645,9 @@ export const appEn = {
     allClasses: "All Classes",
     noClass: "No Class",
     createClass: "+ Create Class",
+    classCol: "Class",
+    notStarted: "Not started",
+    generateNewPassword: "Generate New Password",
   },
 
   profileProgress: {
@@ -1107,6 +1120,9 @@ export const appEn = {
     lessonLocked: "Lesson is locked",
     deadlinePassed: "Deadline passed",
     processingVideo: "Processing video...",
+    opensAt: "Opens:",
+  closedAt: "Closed:",
+  closesAt: "Closes:",
   },
   placementFlow: {
     adult: {

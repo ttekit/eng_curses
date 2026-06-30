@@ -155,8 +155,8 @@ export function ProfileTeacherStudents() {
             showSearch={true}
             searchPlaceholder={t.searchClasses}
             options={[
-              { value: "all", label: "All Classes" },
-              { value: "none", label: "No Class" },
+              { value: "all", label: t.allClasses },
+              { value: "none", label: t.noClass },
               ...classes.map((c) => ({ value: c.id, label: c.name })),
             ]}
           />
@@ -244,8 +244,11 @@ export function ProfileTeacherStudents() {
             <thead className="sticky top-0 z-20 bg-card shadow-sm outline outline-1 outline-border/50">
               <tr className="text-muted-foreground">
                 <th className="p-4 font-medium w-[280px]">{t.colStudent}</th>
-                <th className="p-4 font-medium w-[180px]">Class</th>
+                <th className="p-4 font-medium w-[180px]">
+                  {t.classCol || "Class"}
+                </th>
                 <th className="p-4 font-medium w-[120px]">{t.colLevel}</th>
+
                 <th className="p-4 text-center font-medium w-[120px]">
                   {t.colVideosDone}
                 </th>
@@ -274,6 +277,7 @@ export function ProfileTeacherStudents() {
                       {s.email}
                     </div>
                   </td>
+
                   <td className="p-4 align-middle">
                     {s.className ? (
                       <span className="inline-flex rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -281,14 +285,15 @@ export function ProfileTeacherStudents() {
                       </span>
                     ) : (
                       <span className="text-muted-foreground font-medium text-xs bg-muted/50 px-2.5 py-1 rounded-md border border-border/50">
-                        No class
+                        {t.noClass}
                       </span>
                     )}
                   </td>
+
                   <td className="text-foreground p-4 align-middle font-medium">
                     {s.englishLevel?.trim() || (
                       <span className="text-muted-foreground text-xs">
-                        Not started
+                        {t.notStarted}
                       </span>
                     )}
                   </td>
@@ -323,7 +328,7 @@ export function ProfileTeacherStudents() {
                       <button
                         onClick={() => setResetCandidate(s)}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-background hover:text-primary hover:shadow-sm transition-all"
-                        title="Generate New Password"
+                        title={t.generateNewPassword}
                       >
                         <KeyRound className="size-4" />
                       </button>

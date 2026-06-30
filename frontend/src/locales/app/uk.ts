@@ -639,6 +639,7 @@ export const appUk = {
     classCol: "Клас",
     notStarted: "Не розпочато",
     generateNewPassword: "Згенерувати новий пароль",
+    
   },
 
   studentTeacherVideos: {
