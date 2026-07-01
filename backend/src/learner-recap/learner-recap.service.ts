@@ -25,7 +25,10 @@ import {
 } from "src/datetime/utc-period.util";
 import { PrismaService } from "src/prisma.service";
 import { UserVocabularyService } from "src/user-vocabulary/user-vocabulary.service";
-import { fallbackRecapTests, LEARNER_RECAP_MCQ_COUNT } from "./learner-recap-fallback.tests";
+import {
+  fallbackRecapTests,
+  LEARNER_RECAP_MCQ_COUNT,
+} from "./learner-recap-fallback.tests";
 import { LearnerRecapGeminiClient } from "./learner-recap-gemini.client";
 import {
   createRecapGradingToken,
@@ -71,6 +74,13 @@ export type SubmitRecapResponse = {
   message: string;
 };
 
+export type RecapReasonCode =
+  | "NEED_LESSONS_FOR_MISTAKES"
+  | "WEEKLY_ALREADY_COMPLETED"
+  | "NEED_LESSONS_FOR_WEEKLY"
+  | "MONTHLY_ALREADY_COMPLETED"
+  | "NEED_LESSONS_FOR_MONTHLY";
+
 @Injectable()
 export class LearnerRecapService {
   constructor(
@@ -103,12 +113,9 @@ export class LearnerRecapService {
         (mistakesNext === null || mistakesNext.getTime() <= now),
       nextAvailableAt: mistakesNext?.toISOString() ?? null,
       lastScorePct: null,
-      reason: mistakesCtx.eligible
-        ? null
-        : "Complete at least one lesson quiz to bank mistakes to practise.",
+      reason: mistakesCtx.eligible ? null : "NEED_LESSONS_FOR_MISTAKES",
     };
-    const weeklyCompleted =
-      user.weeklyReviewCompletedWeekStart === weekKey;
+    const weeklyCompleted = user.weeklyReviewCompletedWeekStart === weekKey;
     const weekly: RecapStatusItem = {
       kind: "weekly",
       lessonCount: weeklyCtx.lessonCount,
@@ -120,12 +127,11 @@ export class LearnerRecapService {
       lastScorePct: user.weeklyReviewLastScorePct ?? null,
       reason: weeklyCtx.eligible
         ? weeklyCompleted
-          ? "You already finished this week’s summary."
+          ? "WEEKLY_ALREADY_COMPLETED"
           : null
-        : "Watch at least one lesson this week (Mon–Sun UTC) to unlock.",
+        : "NEED_LESSONS_FOR_WEEKLY",
     };
-    const monthlyCompleted =
-      user.monthlyReviewCompletedMonth === monthKey;
+    const monthlyCompleted = user.monthlyReviewCompletedMonth === monthKey;
     const monthly: RecapStatusItem = {
       kind: "monthly",
       lessonCount: monthlyCtx.lessonCount,
@@ -137,14 +143,17 @@ export class LearnerRecapService {
       lastScorePct: user.monthlyReviewLastScorePct ?? null,
       reason: monthlyCtx.eligible
         ? monthlyCompleted
-          ? "You already finished this month’s summary."
+          ? "MONTHLY_ALREADY_COMPLETED"
           : null
-        : "Watch at least one lesson this calendar month (UTC) to unlock.",
+        : "NEED_LESSONS_FOR_MONTHLY",
     };
     return { mistakes, weekly, monthly };
   }
 
-  async generate(userId: number, kind: RecapKind): Promise<GenerateRecapResponse> {
+  async generate(
+    userId: number,
+    kind: RecapKind,
+  ): Promise<GenerateRecapResponse> {
     const status = await this.getStatus(userId);
     const item = status[kind];
     if (!item.available) {
@@ -172,7 +181,8 @@ export class LearnerRecapService {
       timeToAchieve: learner.timeToAchieve,
       hobbies: learner.hobbies,
     });
-    const source = geminiTests && geminiTests.length >= 6 ? "gemini" : "fallback";
+    const source =
+      geminiTests && geminiTests.length >= 6 ? "gemini" : "fallback";
     const tests =
       source === "gemini"
         ? geminiTests!
@@ -185,8 +195,12 @@ export class LearnerRecapService {
     const exp = Date.now() + GRADING_TTL_MS;
     const items: GradingItem[] = tests
       .filter(
-        (t): t is Extract<ComprehensionTestItem, { questionType: "multiple_choice" }> =>
-          t.questionType === "multiple_choice",
+        (
+          t,
+        ): t is Extract<
+          ComprehensionTestItem,
+          { questionType: "multiple_choice" }
+        > => t.questionType === "multiple_choice",
       )
       .map((t) => ({
         kind: "mcq" as const,
@@ -328,9 +342,10 @@ export class LearnerRecapService {
       stemSnippet: r.stemSnippet,
       missCount: r.missCount,
     }));
-    const videoIds = [
-      ...new Set(weakRows.map((r) => r.contentVideoId)),
-    ].slice(0, 8);
+    const videoIds = [...new Set(weakRows.map((r) => r.contentVideoId))].slice(
+      0,
+      8,
+    );
     const { lessonTitles, combinedTranscript } =
       await this.loadLessonBundle(videoIds);
     const attemptCount = await this.prisma.comprehensionTestAttempt.count({
@@ -367,7 +382,8 @@ export class LearnerRecapService {
     const end =
       period === "weekly"
         ? (range as ReturnType<typeof getUtcMondayWeekRange>).weekEndExclusive
-        : (range as ReturnType<typeof getUtcCalendarMonthRange>).monthEndExclusive;
+        : (range as ReturnType<typeof getUtcCalendarMonthRange>)
+            .monthEndExclusive;
     const sessions = await this.prisma.watchSession.findMany({
       where: {
         userId,

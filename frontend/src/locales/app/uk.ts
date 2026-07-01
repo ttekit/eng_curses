@@ -184,6 +184,7 @@ export const appUk = {
     filterRecommendedForYou: "Рекомендовано для вас",
     filterFilteredResults: "Результати фільтра",
     filterLevel: "Рівень",
+    filterAge: "Вік",
     filterGenre: "Жанр",
     next: "Далі",
     prev: "Назад",
@@ -1295,4 +1296,14 @@ export const appUk = {
     notFound: "Сторінка не знайдена",
     returnToMain: "Повернутись на головну сторінку",
   },
+
+  recaps: {
+    reasons: {
+      "NEED_LESSONS_FOR_MISTAKES": "Пройди хоча б один тест уроку, щоб накопичити помилки для тренування.",
+      "WEEKLY_ALREADY_COMPLETED": "Ти вже завершив підсумок цього тижня.",
+      "NEED_LESSONS_FOR_WEEKLY": "Подивись хоча б один урок цього тижня (пн-нд, UTC), щоб розблокувати.",
+      "MONTHLY_ALREADY_COMPLETED": "Ти вже завершив підсумок цього місяця.",
+      "NEED_LESSONS_FOR_MONTHLY": "Подивись хоча б один урок цього календарного місяця (UTC), щоб розблокувати."
+    }
+  }
 } as const;

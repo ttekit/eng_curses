@@ -183,6 +183,7 @@ export const appEn = {
     filterRecommendedForYou: "Recommended For You",
     filterFilteredResults: "Filtered Results",
     filterLevel: "Level",
+    filterAge: "Age",
     filterGenre: "Genre",
     next: "Next",
     prev: "Prev",
@@ -1298,4 +1299,14 @@ export const appEn = {
     notFound: "Page not found",
     returnToMain: "Return to main page",
   },
+
+  recaps: {
+    reasons: {
+      "NEED_LESSONS_FOR_MISTAKES": "Complete at least one lesson quiz to bank mistakes to practise.",
+      "WEEKLY_ALREADY_COMPLETED": "You already finished this week’s summary.",
+      "NEED_LESSONS_FOR_WEEKLY": "Watch at least one lesson this week (Mon–Sun UTC) to unlock.",
+      "MONTHLY_ALREADY_COMPLETED": "You already finished this month’s summary.",
+      "NEED_LESSONS_FOR_MONTHLY": "Watch at least one lesson this calendar month (UTC) to unlock."
+    }
+  }
 } as const;

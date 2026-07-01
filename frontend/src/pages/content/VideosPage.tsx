@@ -708,7 +708,7 @@ export default function VideoPage() {
                   {/* 2. ФИЛЬТР ВОЗРАСТА */}
                   <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                     <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                      <Lock className="size-3.5 opacity-70" /> Age
+                      <Lock className="size-3.5 opacity-70" /> {cb.filterAge}
                     </span>
                     <div className="relative group/age flex w-full items-center">
                       <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent z-10" />
