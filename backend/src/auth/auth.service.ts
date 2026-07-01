@@ -158,6 +158,35 @@ export class AuthService {
     );
 
     if (userExists) {
+      if (userExists.role === UserRole.REGULAR) {
+        const outboundMailDisabled = isOutboundMailDisabled(this.configService);
+        const newHashedPassword = await bcrypt.hash(dto.password, 10);
+
+        const updatedUser = await prisma.user.update({
+          where: { id: userExists.id },
+          data: {
+            password: newHashedPassword,
+            name: dto.name,
+          },
+          select: { id: true, email: true, name: true, isVerified: true },
+        });
+
+        const payload = { sub: updatedUser.id, email: updatedUser.email };
+
+        return {
+          access_token: await this.jwtService.signAsync(payload),
+          isVerified: updatedUser.isVerified,
+          user: {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            name: updatedUser.name,
+          },
+          message: outboundMailDisabled
+            ? "You have successfully registered."
+            : "Account updated. A confirmation code was sent to your email...",
+        };
+      }
+
       throw new ConflictException(
         "User with this email already exists. Please use another email or log in",
       );
@@ -300,7 +329,10 @@ export class AuthService {
       }
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password ?? "");
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.password ?? "",
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException("Invalid email or password");
