@@ -25,6 +25,8 @@ export function CatalogVideoRow({
   const scrollRef = useRef<HTMLDivElement>(null);
   const cb = useAppMessages().videoRow;
 
+  const common = useAppMessages().common;
+
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
       const scrollAmount = 320;
@@ -61,7 +63,7 @@ export function CatalogVideoRow({
           ) : null}
           <button
             type="button"
-            aria-label="Scroll left"
+            aria-label={common.scrollLeft}
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             onClick={() => scroll("left")}
           >
@@ -69,7 +71,7 @@ export function CatalogVideoRow({
           </button>
           <button
             type="button"
-            aria-label="Scroll right"
+            aria-label={common.scrollRight}
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             onClick={() => scroll("right")}
           >

@@ -64,6 +64,7 @@ function RecapActionCard(props: {
     done: string;
     lastScore: string;
     lessons: string;
+    reasons: Record<string, string>; // 1. Добавили типизацию
   };
 }) {
   const { config, status, locale, labels } = props;
@@ -73,13 +74,20 @@ function RecapActionCard(props: {
     !available && status?.nextAvailableAt
       ? formatRecapCooldown(status.nextAvailableAt, locale)
       : null;
+
+  // 2. Ищем перевод по ключу. Если ключа почему-то нет — отдаем сырой reason
+  const translatedReason = status?.reason
+    ? labels.reasons[status.reason] || status.reason
+    : labels.done;
+
+  // 3. Подставляем переведенный текст
   const ctaLabel = available
     ? labels.start
     : status?.completedInPeriod
       ? labels.done
       : cooldown
         ? formatMessage(labels.cooldown, { time: cooldown })
-        : (status?.reason ?? labels.done);
+        : translatedReason;
 
   return (
     <article
@@ -136,11 +144,12 @@ function RecapActionCard(props: {
 
 export default function WatchedLessonsPage() {
   const { locale } = useLandingLocale();
-  const M = locale === "uk" ? appUk.myLessonsPage : appEn.myLessonsPage;
-  const browseCatalog =
-    locale === "uk"
-      ? appUk.catalogSpotlight.browseCatalog
-      : appEn.catalogSpotlight.browseCatalog;
+  const dict = locale === "uk" ? appUk : appEn;
+
+  // 2. Дістаємо потрібні шматки
+  const M = dict.myLessonsPage;
+  const browseCatalog = dict.catalogSpotlight.browseCatalog;
+  const reasonsDict = dict.recaps.reasons; // <-- Ось наші переклади причин!
 
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,8 +223,9 @@ export default function WatchedLessonsPage() {
       done: M.recapDonePeriod,
       lastScore: M.recapLastScore,
       lessons: M.recapLessonsHint,
+      reasons: reasonsDict,
     }),
-    [M],
+    [M, reasonsDict],
   );
 
   return (

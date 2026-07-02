@@ -33,14 +33,14 @@ export function DangerZoneCard() {
         body: JSON.stringify({ action }),
       });
 
-      if (!response.ok) throw new Error("Failed to send code");
+      if (!response.ok) throw new Error(s.sendCodeError);
 
       setDangerOpen(action);
       setDangerCode("");
       setDangerError("");
-      toast.success("A 6-digit code has been sent to your email.");
+      toast.success(s.codeSentToast);
     } catch {
-      toast.error("Could not send verification code.");
+      toast.error(s.sendCodeError);
     } finally {
       setIsSendingCode(false);
     }
@@ -48,7 +48,7 @@ export function DangerZoneCard() {
 
   const handleResetProgress = async () => {
     if (dangerCode.length !== 6) {
-      return setDangerError("Please enter the 6-digit code.");
+      return setDangerError(s.enterCodePrompt);
     }
 
     setIsResetting(true);
@@ -65,7 +65,7 @@ export function DangerZoneCard() {
         throw new Error(data.message || "Failed to reset progress");
       }
 
-      toast.success("Progress reset successfully.");
+      toast.success(s.progressResetSuccess);
       setDangerOpen(null);
       setDangerCode("");
       await refreshProfile();
@@ -78,7 +78,7 @@ export function DangerZoneCard() {
 
   const handleDeleteAccount = async () => {
     if (dangerCode.length !== 6) {
-      return setDangerError("Please enter the 6-digit code.");
+      return setDangerError(s.enterCodePrompt);
     }
 
     setIsDeleting(true);
@@ -95,11 +95,11 @@ export function DangerZoneCard() {
         throw new Error(data.message || "Failed to delete account");
       }
 
-      toast.success("Your account has been deleted.");
+      toast.success(s.accountDeletedSuccess);
       logout();
       void navigate("/login", { replace: true });
     } catch (err: unknown) {
-      setDangerError(getErrorMessage(err, "Something went wrong"));
+      setDangerError(getErrorMessage(err, s.somethingWentWrong));
     } finally {
       setIsDeleting(false);
     }
@@ -165,7 +165,7 @@ export function DangerZoneCard() {
               disabled={isSendingCode}
             >
               {isSendingCode && dangerOpen !== "reset"
-                ? "Sending..."
+                ? s.sending
                 : s.resetProgressCta || "Reset Progress"}
             </button>
           </div>
@@ -188,7 +188,7 @@ export function DangerZoneCard() {
                   disabled={isSendingCode}
                 >
                   {isSendingCode && dangerOpen !== "delete"
-                    ? "Sending..."
+                    ? s.sending
                     : s.deleteAccountCta || "Delete Account"}
                 </button>
               </div>

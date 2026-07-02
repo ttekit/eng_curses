@@ -272,7 +272,7 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-muted-foreground">
-            Date of Birth <span className="text-destructive">*</span>
+            {s.dateOfBirthLabel} <span className="text-destructive">*</span>
           </label>
           <DatePicker
             selected={dateOfBirth ? new Date(dateOfBirth) : null}
@@ -298,7 +298,7 @@ export function ProfileInfoCard({ onSaved }: { onSaved: () => Promise<void> }) {
           />
           {!dateOfBirth && (
             <p className="text-[13px] font-medium text-destructive mt-1">
-              Date of birth is required
+              {s.dateOfBirthRequired}
             </p>
           )}
         </div>

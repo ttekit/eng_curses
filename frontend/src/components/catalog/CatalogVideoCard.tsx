@@ -5,6 +5,7 @@ import { useUser } from "../../context/UserContext";
 import { AssignHomeworkButton } from "../AssignHomeworkButton";
 import { useMemo } from "react";
 import { resolveVideoAgeAccess } from "../../lib/ageEligibility";
+import { useAppMessages } from "../../hooks/useAppMessages";
 
 export interface CatalogCardVideo {
   id: number;
@@ -65,6 +66,8 @@ export function CatalogVideoCard({
     user?.role?.toLowerCase() === "teacher" ||
     user?.role?.toLowerCase() === "admin";
 
+  const common = useAppMessages().common;
+
   const ageAccess = useMemo(
     () => resolveVideoAgeAccess(user, video.ageRestriction),
     [user, video.ageRestriction],
@@ -93,7 +96,9 @@ export function CatalogVideoCard({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <span className="text-muted-foreground text-sm">No cover</span>
+              <span className="text-muted-foreground text-sm">
+                {common.noCover}
+              </span>
             </div>
           )}
 

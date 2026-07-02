@@ -48,8 +48,9 @@ export function ProfileAchievements() {
   const p = useAppMessages().profileAchievements;
 
   // Добавляем стейт для выбранного видео
-  const [selectedFirstVideo, setSelectedFirstVideo] =
-    useState<NonNullable<UserData["firstWatchedVideo"]> | null>(null);
+  const [selectedFirstVideo, setSelectedFirstVideo] = useState<NonNullable<
+    UserData["firstWatchedVideo"]
+  > | null>(null);
 
   const firstWatchedVideo = user?.firstWatchedVideo ?? null;
   const [learnedWords, setLearnedWords] = useState(0);
@@ -239,7 +240,7 @@ export function ProfileAchievements() {
               {isClickable && (
                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <span className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-                    <Play className="size-3" /> View
+                    <Play className="size-3" /> {p.viewBtn}
                   </span>
                 </div>
               )}
@@ -316,7 +317,7 @@ export function ProfileAchievements() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <Flame className="size-5 text-orange-500" />
-                Where It All Began
+                {p.firstVideoModalTitle}
               </h3>
               <button
                 onClick={() => setSelectedFirstVideo(null)}
@@ -327,8 +328,7 @@ export function ProfileAchievements() {
             </div>
 
             <p className="text-sm text-muted-foreground mb-6">
-              This was the very first video you watched on Explys. Look how far
-              you've come since then!
+              {p.firstVideoModalDesc}
             </p>
 
             <div className="group relative overflow-hidden rounded-xl bg-muted aspect-video mb-6 border border-border/50 shadow-inner">
@@ -359,7 +359,7 @@ export function ProfileAchievements() {
               to={selectedFirstVideo.url}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 cursor-pointer hover:shadow-primary/20 hover:shadow-lg"
             >
-              Watch it again
+              {p.watchAgain}
               <Play className="size-4" />
             </Link>
           </div>

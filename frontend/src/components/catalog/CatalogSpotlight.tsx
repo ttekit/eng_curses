@@ -249,10 +249,10 @@ export function CatalogSpotlight({
                 <img src="/SadIcon.svg" className="w-20 h-25" alt="sad" />
                 <p className="text-muted-foreground text-sm">
                   {videos.length === 0
-                    ? "No lessons in the catalog yet."
+                    ? s.noLessonsCatalog
                     : query.trim().length
-                      ? `No matches for "${query.trim()}"`
-                      : "Start typing to find a lesson"}
+                      ? `${s.noMatchesFor} "${query.trim()}"`
+                      : s.startTyping}
                 </p>
               </div>
             ) : (
