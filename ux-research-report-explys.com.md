@@ -1,35 +1,36 @@
 # UX Research Report: explys.com
 
-**Audit date:** 2026-06-18  
-**Scope:** Public marketing site + auth gates (`/`, `/pricing`, `/about`, `/loginForm`, `/registrationMain`, `/catalog`, legal pages). Authenticated catalog/lesson player not accessible without credentials in this fetch.
+**Audit date:** 2026-07-02  
+**Scope:** Public marketing site + auth gates (`/`, `/pricing`, `/about`, `/login`, `/register`, `/catalog`, legal pages). Authenticated lesson player not accessible without credentials in this fetch.
 
 ---
 
 ## 1. Desk Research
 
 ### Product positioning
-Explys positions as a **personalized English learning platform** using adaptive video lessons (movies, series, educational clips), subtitles, in-lesson comprehension quizzes, AI-assisted grading (Gemini per Terms), placement testing, and phased student learning plans. Tiers: Light ($7/mo), Smart ($12/mo, “Most popular”), Family ($19/mo), Teacher (custom/enterprise LMS).
+Explys positions as a **personalized English learning platform** using adaptive video lessons (movies, series, educational clips), subtitles, in-lesson comprehension quizzes, AI-assisted practice (Gemini per Terms), placement testing, and phased student learning plans. Tiers: Light ($7/mo), Smart ($12/mo, “Most popular”), Family ($19/mo), Teacher (custom/enterprise LMS).
 
 **Sources:** [explys.com](https://explys.com/), [explys.com/pricing](https://explys.com/pricing), [explys.com/terms](https://explys.com/terms), [explys.com/about](https://explys.com/about)
 
 ### Domain / brand signals
 | Signal | Finding |
 |--------|---------|
-| User scale (marketing) | “3315 users”, “500+ videos”, “10k+ hours” on homepage hero |
-| Free vs paid | FAQ states use is “completely free” today; pricing page says “Sign in to subscribe”; banner “Free access in June 2026!” |
-| Locale | EN primary; demo player shows Ukrainian `-10 сек` on homepage; `uk_UA` alternate referenced in site metadata |
-| Platform | React SPA (thin HTML shell); Stripe on pricing |
-| SEO / crawl | `sitemap.xml` returns **500**; `/login` returns **404** (working login: `/loginForm`) |
+| User scale (marketing) | “3315 learners”, “500+ videos”, “10,000+ hours” on homepage hero (static fallback; live count may differ) |
+| Free vs paid | Homepage: “Start free in June 2026”, “No credit card required”; `/pricing`: “Free access in June 2026!” + “Sign in to subscribe” on paid tiers |
+| Locale | EN primary; demo player shows Ukrainian `-10 сек` / `+10 сек` on EN homepage |
+| Platform | React SPA (Cloudflare); Stripe on pricing |
+| SEO / crawl | `sitemap.xml` returns **500**; `robots.txt` **Disallow** `/login` and `/register` while marketing links to them |
+| Social proof | New **15 on-site testimonials** with CEFR level deltas (e.g. B1 → B2); no third-party review corpus |
 
 ### Forum / social sentiment
-**No dedicated public review corpus found** for Explys (English video EdTech) in App Store, Trustpilot, or Reddit at audit time. Search surfaces **Exply** (BI analytics, docs.exply.io) and tutoring marketplaces (Preply, iTalki)—name collision risk for brand discovery and trust.
+**No dedicated public review corpus** found for Explys (English video EdTech) in App Store, Trustpilot, or Reddit at audit time. Search surfaces **Exply** (BI analytics, docs.exply.io), tutoring marketplaces (Preply, iTalki), and generic “best apps 2026” lists that omit Explys.
 
-**Implication:** Social proof relies entirely on on-site counters (3,315 users) without third-party validation; Explorer personas lack external reassurance.
+**Implication:** On-site testimonials partially address Explorer trust, but lack external validation; brand collision with “Exply” remains a discovery risk.
 
 ### Industry trends (2026)
 - Digital English learning market expanding ~15–17% CAGR; shift toward **AI personalization** and **mobile-first** delivery ([GII Research 2026](https://www.giiresearch.com/report/tbrc1960554-digital-english-language-learning-global-market.html)).
-- Category leaders (Duolingo, Babbel) emphasize **freemium scale**, **app store presence**, and **documented learner outcomes**; AI conversation/video features now table stakes ([LingoBright 2026 stats](https://www.lingobright.com/statistics/language-learning-apps/)).
-- Hybrid learning (self-study + structured paths + optional live/B2B) is the norm; Explys competes in **media-native self-study** niche closest to ELSA “Media Learners” segment rather than tutoring marketplaces.
+- Category leaders (Duolingo, Babbel) emphasize **freemium scale**, **app store presence**, and **documented learner outcomes**; AI/video features are table stakes ([LingoBright 2026 stats](https://www.lingobright.com/statistics/language-learning-apps/)).
+- Explys competes in **media-native self-study** (closest to ELSA “Media Learners”) rather than tutoring marketplaces.
 
 ---
 
@@ -37,18 +38,18 @@ Explys positions as a **personalized English learning platform** using adaptive 
 
 | # | Heuristic | Rating | Site-specific evidence |
 |---|-----------|--------|------------------------|
-| 1 | Visibility of system status | **Mixed** | Homepage demo player shows `0:00/0:00` static state; “Free access in June 2026!” vs FAQ “completely free” vs paid tier cards creates ambiguous billing state. **Interactive State Uniformity:** Primary CTAs use consistent pill/button styling on homepage/pricing; sign-in form shows clear field labels and Google OAuth alternative. Focus/disabled/loading states not observable on marketing pages. `/catalog` unauthenticated shows login—not a catalog preview—without explaining the gate. |
-| 2 | Match between system and real world | **Mixed** | “Browse content” implies open catalog; live behavior is sign-in wall. URLs use legacy paths (`/loginForm`, `/registrationMain`) while users expect `/login`, `/register` (404 on `/login`). |
-| 3 | User control and freedom | **Good** | Footer links to About, Privacy, Terms, Feedback; pricing FAQ expandable; “Full pricing page” from homepage. |
-| 4 | Consistency and standards | **Weak** | EN homepage with Ukrainian `-10 сек` in demo controls; “Sign in to subscribe” vs “completely free” messaging; camelCase routes vs kebab-case expectations. |
-| 5 | Error prevention | **Mixed** | Registration form collects password + confirm; login offers forgot password. No preview of placement length before signup. |
-| 6 | Recognition rather than recall | **Good** | Four-step “How Explys works” with numbered steps; tier feature bullets on homepage and `/pricing`. |
-| 7 | Flexibility and efficiency | **Mixed** | Google OAuth on login/register. Search/Cmd+K not advertised on marketing site. Teacher “Contact us” for enterprise—no self-serve demo scheduler visible. |
-| 8 | Aesthetic and minimalist design | **Good** | Clean dark marketing aesthetic; scannable feature grid (“Why choose Explys?”); hero chameleon metaphor supports brand. |
-| 9 | Help users recognize, diagnose, recover from errors | **Weak** | `/login` 404 offers only “Return to main page”—no link to `/loginForm`. `sitemap.xml` 500—no user-facing recovery. |
-| 10 | Help and documentation | **Partial** | FAQ on homepage/pricing; About + Feedback form; Telegram in footer (from About copy). No header Help/Docs link; privacy policy contains outdated Facebook permission boilerplate. |
+| 1 | Visibility of system status | **Mixed** | Demo player shows `0:00/0:00`; promo “Start free in June 2026” vs tier prices creates time-bound ambiguity. **Interactive State Uniformity:** Primary CTAs use consistent pill styling; hero adds “No credit card required” microcopy. Focus/disabled/loading states not observable on marketing pages. `/catalog` unauthenticated shows login without explaining the gate. |
+| 2 | Match between system and real world | **Mixed** | “Browse content” implies open catalog; live behavior is sign-in wall. `/login` and `/register` now resolve (fixed since June 2026 audit). |
+| 3 | User control and freedom | **Good** | Footer links to About, Privacy, Terms, Feedback; pricing FAQ expandable; anchor links (#how-explys-works, #testimonials). |
+| 4 | Consistency and standards | **Mixed** | EN homepage with Ukrainian `-10 сек` on demo controls; “Sign in to subscribe” on tier buttons vs “No credit card required” on hero; robots disallow URLs that marketing promotes. |
+| 5 | Error prevention | **Mixed** | Registration collects password + confirm; Google OAuth on login/register. No preview of placement length before signup. |
+| 6 | Recognition rather than recall | **Good** | Four-step “How Explys works”; tier feature bullets on homepage and `/pricing`; 15 testimonial cards with level progression. |
+| 7 | Flexibility and efficiency | **Mixed** | Google OAuth. Teacher “Contact us” for enterprise—no self-serve demo scheduler. |
+| 8 | Aesthetic and minimalist design | **Good** | Clean dark marketing aesthetic; scannable feature grid and differentiation block vs Lingopie/FluentU pain points. |
+| 9 | Help users recognize, diagnose, recover from errors | **Weak** | `sitemap.xml` 500—no crawler recovery. Catalog gate offers login but not “why sign in first.” |
+| 10 | Help and documentation | **Partial** | FAQ on homepage/pricing; About + Feedback; Telegram in footer. No header Help/Docs link. |
 
-**Interactive State Uniformity (Heuristic #1 detail):** Hero CTAs (“Start learning free”, “Browse content”) share visual weight; secondary CTA does not signal authentication requirement. Pricing tier buttons (“Select Light”, “Start with Smart”) appear actionable but copy says sign-in required—hover/active distinction not verifiable in fetch; risk of **false affordance** on plan CTAs during free-promo period.
+**Interactive State Uniformity (Heuristic #1 detail):** Hero CTAs (“Start for free”, “Browse content”) share visual weight; secondary CTA does not signal authentication requirement. Pricing tier buttons appear actionable; copy says sign-in required for paid tiers—risk of **false affordance** during free-promo period.
 
 ---
 
@@ -57,71 +58,75 @@ Explys positions as a **personalized English learning platform** using adaptive 
 ### Informational Hierarchy
 | Zone | High-intent anchors visible? | Issue |
 |------|------------------------------|-------|
-| Homepage hero | **Yes:** dual CTAs, social proof counts | Price not above fold (Explorer-friendly); Fast Buyer must scroll to pricing section or visit `/pricing` |
-| Homepage pricing strip | **Yes:** $7 / $12 / $19 + “Most popular” | “Sign in to subscribe” de-emphasized vs button labels; free FAQ contradicts paid framing |
+| Homepage hero | **Yes:** dual CTAs, social proof, “No credit card required” | Price below fold on homepage (Explorer-friendly); Fast Buyer must scroll to pricing strip |
+| Homepage pricing strip | **Yes:** $7 / $12 / $19 + “Most popular” + June 2026 promo | Tier CTAs vs “Sign in to subscribe” on `/pricing` |
 | `/pricing` | **Yes:** tier matrix, FAQ, Stripe trust line | Teacher row “Custom / Enterprise” without price anchor |
-| `/catalog` (unauth) | **No:** login form replaces expected catalog | **Critical:** decision data (content taste) buried behind auth |
+| `/catalog` (unauth) | **No:** login form replaces expected catalog | **Critical:** “Browse content” breaks at first click |
 
-**Verdict:** Marketing hierarchy serves **Explorer** (story → features → steps) adequately; **Fast Buyer** price/time-to-first-lesson requires scroll or second page. **Browse content** promises catalog preview but delivers login—hierarchy breaks at first secondary CTA click.
+**Verdict:** Marketing hierarchy serves **Explorer** (story → differentiation → testimonials → steps) well. **Fast Buyer** gets pricing on homepage but still hits auth gate on browse. Secondary CTA hierarchy breaks at catalog login wall.
 
 ### De-duplication of Navigation
 | Element | Occurrences | Recommendation |
 |---------|-------------|----------------|
-| “Start learning free” / “Get started” | Hero, CTA section, pricing banner, footer account links | Consolidate to one primary + one secondary per viewport |
-| Pricing summary | Homepage mid-page + `/pricing` + footer “Pricing” | Acceptable if homepage block is teaser; ensure tier copy identical (verified: aligned) |
-| Login / register paths | Footer, header (in app shell), `/loginForm`, broken `/login` | **P0:** Redirect `/login` → `/loginForm`; single canonical URL |
-| FAQ content | Homepage accordion + pricing FAQ | Partial overlap (“What is Explys?”, personalization)—merge or cross-link once |
+| “Start for free” / “Get started” | Hero, CTA section, pricing strip, footer | Acceptable if one primary per viewport; audit scroll depth |
+| Pricing summary | Homepage mid-page + `/pricing` + footer “Pricing” | Teaser + full page OK if copy identical |
+| Login / register | Header, footer, auth pages | Canonical `/login`, `/register` — good |
+| FAQ content | Homepage accordion + pricing FAQ | Partial overlap—merge or cross-link once |
+| Testimonials | 15 cards on homepage | High scroll cost on mobile—consider carousel with 3 featured + link |
 
-**Count:** ~4 parallel entry paths to signup/login; ~2 broken/conventional URL mismatches.
+**Count:** ~3 parallel signup paths (hero, bottom CTA, pricing); legacy URL issues largely resolved.
 
 ### Additional UX laws
 
-**Hick’s Law — role/plan choice:** Four B2C tiers + Teacher row on first pricing view increases decision load. “Most popular” on Smart helps; Family vs Smart distinction requires reading four bullets each.
+**Hick’s Law:** Four B2C tiers + Teacher row on first pricing view. “Most popular” on Smart helps.
 
-**Jakob’s Law — URL expectations:** `/login` 404 violates convention; increases cognitive friction for returning users and ad/email links.
+**Jakob’s Law:** `/login` and `/register` now match conventions (improved since June 2026).
 
-**Peak–end rule:** Homepage ends with strong CTA (“Get started free” + “How it works”); positive. Unauthenticated `/catalog` peak is **login wall** after “Browse content”—likely negative peak if user expected clips.
+**Peak–end rule:** Homepage ends with strong CTA + testimonials—positive peak. Unauthenticated `/catalog` after “Browse content” is likely **negative peak**.
 
-**Fitts’s Law:** Mobile header CTAs (from marketing shell) appear in top bar; primary hero buttons full-width on small screens—good target size on homepage; pricing tier buttons stacked on mobile—acceptable.
+**Fitts’s Law:** Full-width hero buttons on mobile—good target size.
+
+**Miller’s Law:** 15 testimonials exceed working-memory scan—group or paginate.
 
 ---
 
 ## 4. Competitive Analysis
 
 ### Named competitors
-1. **Duolingo** — [duolingo.com](https://www.duolingo.com) — freemium gamified scale, app-first, Duolingo Max AI/video call  
-2. **Babbel** — [babbel.com/prices](https://www.babbel.com/prices) — structured subscription courses, 14 languages, 1.6M 5-star ratings cited  
-3. **ELSA Speak** — [elsaspeak.com](https://elsaspeak.com/en) — AI speaking + **Media Learners** segment, 92M+ downloads, free tier + B2B/schools  
+1. **Duolingo** — [duolingo.com](https://www.duolingo.com) — freemium gamified scale, app-first  
+2. **Babbel** — [babbel.com/prices](https://www.babbel.com/prices) — structured subscription courses  
+3. **ELSA Speak** — [elsaspeak.com](https://elsaspeak.com/en) — AI speaking + media learners segment  
 
-Explys is closest to **ELSA / media-native** positioning (video/listening) rather than Duolingo drills or Babbel lesson modules.
+Explys is closest to **ELSA / media-native** positioning (video/listening) rather than Duolingo drills.
 
 ### Feature comparison
 
 | Capability | Explys | Duolingo | Babbel | ELSA Speak |
 |------------|---------|----------|--------|------------|
-| Video/movie-based lessons | **Core** (500+ videos claimed) | Limited (Max video call) | Some video content | Media learner persona |
-| Placement / level test | Yes (step 2 in How it works) | Yes | Yes | Yes |
-| In-content quizzes | Yes (step 4) | Yes | Yes | Role-play / speaking |
-| Free start | Claimed (FAQ: completely free) | Strong freemium | Trial/subscription | Free tier listed |
-| App store presence | Not prominent on marketing site | App Store + Play badges | App CTAs + download stats | 92M+ downloads cited |
-| Social proof | 3,315 users (on-site) | “World’s most popular” | 1.6M ratings / 47.4M downloads | 90M+ learners testimonials |
-| Family plan | $19/mo, 3 profiles | Duolingo Super Family | Group plans | Individual focus |
-| Teacher / school LMS | Teacher tier + dashboard features | Duolingo for Schools (free) | Enterprise pivot | ELSA Schools/Business |
-| Public pricing | $7 / $12 / $19 + custom | Freemium + Super | Subscription tiers | Free + custom B2B |
-| Browse without account | **No** (`/catalog` → login) | Partial marketing preview | Marketing + trial | Marketing + app download |
+| Video/movie-based lessons | **Core** (500+ videos claimed) | Limited (Max features) | Some video | Media learner persona |
+| Placement / level test | Yes (step 2) | Yes | Yes | Yes |
+| In-content quizzes | Yes (step 4) | Yes | Yes | Speaking focus |
+| Free start | “Start free in June 2026”; no card on hero | Strong freemium | Trial/subscription | Free tier |
+| App store presence | Not on marketing site | Prominent | Prominent | 90M+ learners cited |
+| Social proof | 15 on-site testimonials + 3315 users | Mass scale | Millions of ratings | External testimonials |
+| Family plan | $19/mo, 3 profiles | Super Family | Group plans | Individual focus |
+| Teacher / school LMS | Teacher tier + dashboard features | Duolingo for Schools | Enterprise | ELSA Schools/Business |
+| Public pricing | $7 / $12 / $19 + custom | Freemium + Super | Subscription tiers | Free + B2B |
+| Browse without account | **No** (`/catalog` → login) | Partial preview | Marketing + trial | Marketing + app |
+| vs Lingopie/FluentU | Transparent pricing, no card to start, context-aware subtitles (claimed) | — | — | — |
 
-**Explys differentiation:** CEFR-aligned **video catalog + comprehension loop + AI learning plan** in one product. **Gap vs leaders:** app distribution, third-party reviews, and pre-auth content sampling.
+**Explys differentiation:** Video catalog + comprehension loop + AI learning plan + new competitive differentiation block. **Gap vs leaders:** app distribution, third-party reviews, pre-auth content sampling.
 
 ---
 
 ## 5. Google Analytics (Simulated)
 
-*Simulated until GA4/PostHog production access. Instrumentation recommendations included.*
+*Simulated until GA4/PostHog production dashboards are confirmed. Instrumentation recommendations included.*
 
 ### Assumed traffic mix
 | Channel | Share | Notes |
 |---------|-------|-------|
-| Organic search | 35% | Risk from `/login` 404, `sitemap.xml` 500 |
+| Organic search | 35% | Risk from `sitemap.xml` 500, robots disallow auth URLs |
 | Direct / brand | 25% | Exply vs Exply BI confusion |
 | Paid social | 20% | Landing on homepage; track CTA variant |
 | Referral (Telegram, teachers) | 15% | Footer/About Telegram |
@@ -131,41 +136,43 @@ Explys is closest to **ELSA / media-native** positioning (video/listening) rathe
 | Step | Users | Conv. | Drop-off signal |
 |------|-------|-------|-----------------|
 | Homepage view | 10,000 | — | |
-| CTA click (any) | 2,200 | 22% | Browse vs Start split |
-| Registration start | 1,100 | 50% of clicks | `/registrationMain` |
-| Registration complete | 660 | 60% | Multi-step wizard |
-| First catalog open | 660 | 100% | Gated |
-| Placement complete | 462 | 70% | In-app (not in fetch) |
-| First lesson complete | 277 | 60% | In-app |
-| Paid subscribe | 42 | 15% of activated | If free promo ends |
+| CTA click (any) | 2,400 | 24% | Browse vs Start split |
+| Registration start | 1,200 | 50% of clicks | `/register` |
+| Registration complete | 720 | 60% | Multi-step wizard |
+| First catalog open | 720 | 100% | Gated |
+| Placement complete | 504 | 70% | In-app |
+| First lesson complete | 302 | 60% | In-app |
+| Paid subscribe | 45 | 15% of activated | Post–June 2026 promo |
 
 ### Events to instrument (P0)
-- `cta_click` {label: start_free | browse_content | pricing_tier}
+- `landing_cta_primary_click` {source: hero | bottom | pricing}
+- `landing_cta_secondary_click` {source: hero | bottom}
+- `landing_hero_video_play`
+- `landing_pricing_plan_click` {planId}
 - `auth_gate_hit` {from_url: /catalog}
 - `registration_step` {step: 1|2|3}
 - `placement_started` / `placement_completed`
 - `lesson_started` / `lesson_completed` / `quiz_submitted`
 - `checkout_started` / `checkout_success`
-- `404_hit` {path: /login | /register | ...}
 
 ---
 
 ## 6. Research Hypotheses
 
-1. **H1:** Users who click “Browse content” before registering abandon at higher rates than “Start learning free” because `/catalog` shows login without explaining value behind the gate.  
-   *Metric:* Gate bounce rate; time on login page by referrer CTA.
+1. **H1:** Users who click “Browse content” before registering abandon at higher rates than “Start for free” because `/catalog` shows login without sample clips.  
+   *Metric:* Gate bounce rate by referrer CTA.
 
-2. **H2:** Contradictory free vs paid messaging (FAQ “completely free” + tier prices + June 2026 banner) reduces paid conversion when promo ends.  
-   *Metric:* Pricing page scroll depth → checkout start; survey trust score.
+2. **H2:** June 2026 free-promo messaging reduces paid conversion clarity when promo ends.  
+   *Metric:* Pricing page → checkout start; survey trust score.
 
-3. **H3:** Placement described only post-signup causes signup drop for Fast Buyers who want duration estimate upfront.  
-   *Metric:* Signup completion when hero subcopy includes “~5 min placement” vs control.
+3. **H3:** Adding placement duration (“~5–10 min”) to Step 02 increases signup completion for Fast Buyers.  
+   *Metric:* Registration complete rate with/without duration copy.
 
-4. **H4:** Legacy URLs (`/loginForm`) increase support contacts and 404s on `/login`.  
-   *Metric:* 404 rate; successful login by entry URL.
+4. **H4:** 15 testimonials improve Explorer trust vs June audit (0 external reviews), but mobile scroll depth drops.  
+   *Metric:* Scroll to testimonials; signup rate vs control without section.
 
 5. **H5:** Lack of app store badges reduces mobile signup vs competitors.  
-   *Metric:* Mobile registration rate after adding App/Play CTAs with deep links.
+   *Metric:* Mobile registration rate after adding store CTAs.
 
 ---
 
@@ -175,7 +182,7 @@ Explys is closest to **ELSA / media-native** positioning (video/listening) rathe
 | Segment | Criteria | Focus |
 |---------|----------|-------|
 | A1 | Adult learner, 15 min/day, job-related English | Fast Buyer path, pricing, placement |
-| A2 | Student 16–22, consumes English media | Explorer path, content taste |
+| A2 | Student 16–22, consumes English media | Explorer path, testimonials, content taste |
 | A3 | Parent considering Family tier | Profiles, controls, price |
 | A4 | Private English teacher, 10–40 students | Teacher tier, LMS features |
 | A5 | Returning user lapsed 30+ days | Re-entry, learning plan |
@@ -185,15 +192,15 @@ Explys is closest to **ELSA / media-native** positioning (video/listening) rathe
 ### 60-minute session flow
 1. Context questions (5 min)  
 2. Homepage think-aloud → first CTA (10 min)  
-3. Task: “Find a lesson that matches your interests without creating an account” (fail expected—observe reaction) (5 min)  
+3. Task: “Find a lesson that matches your interests without creating an account” (observe reaction) (5 min)  
 4. Registration + placement (15 min)  
 5. First lesson + quiz (15 min)  
 6. Pricing comprehension (5 min)  
 7. Debrief + SUS (5 min)
 
 ### Card-sorting protocol
-- **Closed sort:** Homepage sections (Hero, Why choose, How it works, Pricing, FAQ, Footer)—ask optimal order for “deciding to try Explys.”  
-- **Open sort:** 12 feature cards (video library, AI plan, quizzes, XP, teacher dashboard, family profiles, etc.) into “Must have before signup” / “Nice later” / “Don’t care.”
+- **Closed sort:** Homepage sections (Hero, Why choose, Differentiation, How it works, Testimonials, Pricing, FAQ)—optimal order for “deciding to try Explys.”  
+- **Open sort:** 12 feature cards into “Must have before signup” / “Nice later” / “Don’t care.”
 
 ---
 
@@ -208,7 +215,7 @@ Explys is closest to **ELSA / media-native** positioning (video/listening) rathe
 
 ### Likert blocks (1–7)
 - “I understood how Explys personalizes lessons before signing up.”  
-- “I trust the price shown matches what I will pay.”  
+- “I trust the price shown matches what I will pay after June 2026.”  
 - “I could find content that matches my interests easily.”  
 - “The signup process felt appropriately short.”  
 - “I would recommend Explys to a colleague.” (NPS follow-up)
@@ -218,7 +225,7 @@ Explys is closest to **ELSA / media-native** positioning (video/listening) rathe
 - “What did you expect ‘Browse content’ to do?”
 
 ### Optional card-sort validation (remote)
-Mirror interview card sort via OptimalSort; n≥30 for segment comparison (Fast Buyer vs Explorer).
+Mirror interview card sort via OptimalSort; n≥30 for Fast Buyer vs Explorer segments.
 
 ---
 
@@ -226,22 +233,22 @@ Mirror interview card sort via OptimalSort; n≥30 for segment comparison (Fast 
 
 | Cluster | Findings | Impact | Action |
 |---------|----------|--------|--------|
-| **Gate mismatch** | `/catalog` → login; “Browse content” breaks promise | High abandonment at exploration CTA | Public catalog teaser (3 clips) or rename CTA to “Sign in to browse” |
-| **Messaging trust** | Free FAQ + paid tiers + promo banner | Conversion cliff when promo ends | Single source of truth on pricing hero; date-bound promo module |
-| **Wayfinding** | `/login` 404; camelCase URLs | SEO, email links, support load | Redirects + canonical URLs |
-| **Social proof gap** | 3,315 users only; no external reviews | Explorer hesitation | Testimonials, teacher quotes, or pilot metrics |
-| **Locale quality** | `-10 сек` on EN homepage | Trust for EN-first users | Fix i18n on demo widget |
-| **B2B path** | Teacher tier features listed; “Contact us” only | Medium pipeline quality | Calendar embed + feature PDF for schools |
-| **Technical SEO** | `sitemap.xml` 500 | Organic discovery | Fix sitemap generation |
-| **Competitive parity** | No app store CTAs vs Duolingo/ELSA | Mobile acquisition gap | Add store badges when apps live |
+| **Gate mismatch** | `/catalog` → login; “Browse content” breaks promise | High abandonment at exploration CTA | Public catalog teaser (3 clips) or rename CTA |
+| **Promo clarity** | “Start free in June 2026” + tier prices | Conversion cliff when promo ends | Single promo module with post-promo pricing |
+| **Social proof** | 15 testimonials added; still no external reviews | Explorer trust improved vs June | Add 2–3 verifiable names/links or video quotes |
+| **Locale quality** | `-10 сек` on EN homepage demo | Trust for EN-first users | Fix i18n on demo widget |
+| **SEO** | `sitemap.xml` 500; robots disallow `/login` `/register` | Organic + crawl issues | Fix sitemap; allow canonical auth URLs |
+| **B2B path** | Teacher tier + “Contact us” | Medium pipeline quality | `/for-teachers` landing + calendar embed |
+| **Competitive parity** | Differentiation block vs Lingopie/FluentU | Strong messaging | Pair with sample clip proof |
+| **Mobile acquisition** | No app store CTAs | Mobile gap | Add badges when apps live |
 
 ---
 
 ## 10. Persona & JTBD
 
-**Persona A (Fast Buyer):** Olena, 29, marketing coordinator in Kyiv, 20 min/day on phone. Needs **price**, **free start without card**, and **time to first lesson** before committing. Frustrated by login walls, unclear placement length, and `/login` 404 from bookmarked link. Needs pricing table and “Start free → placement (~5 min) → first clip” above the fold.
+**Persona A (Fast Buyer):** Olena, 29, marketing coordinator in Kyiv, 20 min/day on phone. Needs **price**, **free start without card**, and **time to first lesson**. Frustrated by login walls and unclear post–June 2026 pricing. Needs pricing strip + “No credit card required” (now on hero—good) and placement duration.
 
-**Persona B (Explorer):** Marco, 22, film student in Milan, learns English through series. Needs **proof of content taste** (genres, sample clip, how quizzes tie to scenes) and **brand story** before price. Abandons if “Browse content” hits a login form without a trailer or sample lesson. Needs embedded sample video on homepage and explicit “movies & series” examples.
+**Persona B (Explorer):** Marco, 22, film student in Milan, learns English through series. Needs **proof of content taste** and **peer stories** before price. New testimonials help; still needs sample clip browse without account. Abandons if “Browse content” hits login without trailer.
 
 **JTBD:** “When I want English that fits how I actually consume media, I want lessons built around videos I enjoy and quizzes that prove I understood, so I can improve listening and vocabulary without a boring textbook app.”
 
@@ -250,19 +257,19 @@ Mirror interview card sort via OptimalSort; n≥30 for segment comparison (Fast 
 ## 11. HMW & Crazy 8
 
 ### HMW (from top pain points)
-1. HMW let Explorers ** taste the catalog** before creating an account?  
-2. HMW make **free vs paid status** obvious at every CTA?  
-3. HMW reduce **auth friction** for returning users with conventional URLs and clear next steps?
+1. HMW let Explorers **taste the catalog** before creating an account?  
+2. HMW make **June 2026 free → paid transition** obvious at every CTA?  
+3. HMW reduce **scroll fatigue** from 15 testimonials without losing social proof?
 
 ### Crazy 8 — HMW #1 (public catalog taste)
 1. Homepage embed: 60s featured clip with 2 quiz questions (no account).  
 2. “Preview mode” on `/catalog`: 5 public trailers; rest blurred.  
-3. YouTube-style row of genres on landing with 1 free episode each.  
-4. Interactive hero: play demo quiz on marketing video already on homepage.  
-5. Email capture → magic link to one full lesson (no password yet).  
-6. Teacher-shared deep links that open one assignment publicly.  
-7. “Try placement preview” — 3 questions without account, then signup to save.  
-8. Sticky mini-player persisting across marketing pages until signup.
+3. Genre row on landing with 1 free episode each.  
+4. Interactive quiz on existing hero demo video.  
+5. Magic link to one full lesson (email only).  
+6. Teacher-shared public assignment links.  
+7. “Try placement preview” — 3 questions without account.  
+8. Sticky mini-player across marketing pages until signup.
 
 ---
 
@@ -270,17 +277,17 @@ Mirror interview card sort via OptimalSort; n≥30 for segment comparison (Fast 
 
 | Initiative | Impact | Effort | Priority |
 |------------|--------|--------|----------|
-| Fix `/login` → `/loginForm` redirect + canonical URLs | High | Low | **P0** |
 | Align “Browse content” with behavior (teaser or rename) | High | Medium | **P0** |
-| Unify free/paid messaging (FAQ + banner + pricing) | High | Low | **P0** |
-| Fix homepage demo locale (`-10 сек`) | Medium | Low | **P1** |
-| Repair `sitemap.xml` 500 | Medium | Low | **P1** |
-| Add placement duration to step 2 marketing copy | Medium | Low | **P1** |
+| Unify June 2026 promo + post-promo pricing messaging | High | Low | **P0** |
+| Fix `sitemap.xml` 500 | Medium | Low | **P0** |
 | Public sample lesson / video row on homepage | High | Medium | **P1** |
+| Fix homepage demo locale (`-10 сек`) | Medium | Low | **P1** |
+| Add placement duration to Step 02 copy | Medium | Low | **P1** |
+| Testimonials: feature 3 + “read more” | Medium | Low | **P1** |
+| `/for-teachers` B2B landing + Calendly | Medium | Medium | **P2** |
 | App store CTAs when available | Medium | Medium | **P2** |
-| Teacher tier: Calendly + one-pager PDF | Medium | Medium | **P2** |
-| External testimonial / review strip | Medium | High | **P2** |
-| Privacy policy refresh (remove stale Facebook scopes) | Low | Medium | **P3** |
+| Fix robots.txt disallow on `/login` `/register` | Medium | Low | **P2** |
+| External review collection (Trustpilot) | Medium | High | **P2** |
 
 ---
 
@@ -288,16 +295,16 @@ Mirror interview card sort via OptimalSort; n≥30 for segment comparison (Fast 
 
 | Stage | Actions | Touchpoints | Pain | Opportunity | Emotional / Transactional note |
 |-------|---------|-------------|------|-------------|-------------------------------|
-| **Awareness** | Search “learn English with movies”, land on hero | Google, social, Telegram | Brand confusion with Exply BI | Clarify tagline in meta/ads | **Emotional:** chameleon/adaptation story works for Explorer |
-| **Consideration** | Read features, How it works, FAQ | Homepage sections | No third-party reviews | Add 2–3 learner quotes | **Emotional** before **transactional** — good order on homepage |
-| **Intent** | Click “Browse content” or “Start learning free” | Hero CTAs | Browse → login shock | Teaser or honest CTA label | **Transactional break:** promise vs gate mismatch |
-| **Signup** | `/registrationMain`, Google OAuth | Auth forms | Legacy URL if shared `/register` | Redirects + progress indicator | Mixed: welcome copy emotional; fields transactional |
-| **Onboarding** | Placement + learning plan (post-login) | Catalog overlay (per marketing copy) | Length unknown pre-signup | State duration in marketing | **Transactional** dominates; needs reassurance |
-| **First value** | Watch lesson + quiz | Lesson player (gated) | Not verifiable in public audit | Instrument time-to-first-quiz | Target **peak:** quiz win moment |
-| **Conversion** | Choose Light/Smart/Family | `/pricing`, `/subscribe` | “Sign in to subscribe” vs “free” | Promo countdown + tier anchor | **Transactional** — trust critical |
-| **Retention** | Learning plan, streak, profile | App shell | — | Email streak reminders | Balance gamification preview on marketing (EDU-06) |
+| **Awareness** | Search “learn English with movies” | Google, social | Exply BI name collision | Clarify “movies & series” in meta/ads | **Emotional:** hero + differentiation block |
+| **Consideration** | Read features, testimonials, How it works | Homepage sections | No App Store proof | Testimonials + demo video | **Emotional** before pricing strip |
+| **Intent** | Click “Browse content” or “Start for free” | Hero CTAs | Browse → login shock | Teaser or honest CTA label | **Transactional break** on browse |
+| **Signup** | `/register`, Google OAuth | Auth forms | Multi-step wizard | Progress indicator | Welcome copy emotional; fields transactional |
+| **Onboarding** | Placement + learning plan | Post-login catalog | Length unknown pre-signup | State duration in Step 02 | Transactional dominates |
+| **First value** | Watch lesson + quiz | Lesson player | Not verifiable publicly | Instrument time-to-first-quiz | Target **peak:** quiz win |
+| **Conversion** | Choose tier post-promo | `/pricing`, `/subscribe` | Promo end confusion | Countdown + tier anchor | Transactional — trust critical |
+| **Retention** | Learning plan, streak | App shell | — | Email streak reminders | EDU-06 gamification preview |
 
-**Emotional vs transactional balance:** Homepage earns **Explorer** engagement (video metaphor, features, steps) before pricing section—appropriate. **Gap:** secondary CTA triggers **transactional gate** too early without emotional sampling (no clip browse). Pricing section introduces tiers before some users experience product—acceptable for Fast Buyer if free period is real, risky if messaging conflicts.
+**Emotional vs transactional balance:** Homepage earns Explorer engagement (video metaphor, differentiation, testimonials) before pricing—appropriate. **Gap:** secondary CTA triggers transactional gate too early without sampling.
 
 ---
 
@@ -306,17 +313,16 @@ Mirror interview card sort via OptimalSort; n≥30 for segment comparison (Fast 
 ### Observed public sitemap (ASCII)
 ```text
 explys.com/
-├── / (landing: hero, why, how, pricing strip, FAQ, CTA)
+├── / (landing: hero, pricing strip, features, differentiation, how, testimonials, FAQ, CTA)
 ├── /pricing
 ├── /about
 ├── /feedback
 ├── /privacy
 ├── /terms
-├── /loginForm          ← working auth
-├── /registrationMain   ← working signup
-├── /catalog            ← unauthenticated → login content
-├── /learning-plan      ← likely gated (site instructions)
-├── /login              ← 404
+├── /login              ← working (200)
+├── /register           ← working (200)
+├── /catalog            ← unauthenticated → login
+├── /learning-plan      ← unauthenticated → login
 └── /sitemap.xml        ← 500
 ```
 
@@ -326,28 +332,28 @@ explys.com/
 ├── / (marketing)
 ├── /pricing
 ├── /sample             ← 1–3 public preview lessons (NEW)
-├── /how-it-works       ← optional dedicated page from anchor
 ├── /for-teachers       ← B2B landing (NEW)
 ├── /about | /feedback | /legal/*
-├── /login              ← redirect → /login (canonical)
-├── /register           ← redirect → /registration (canonical)
-└── app.explys.com/     ← optional split: authenticated app (future)
+├── /login | /register  ← canonical auth (allow in robots.txt)
+└── app (authenticated)
     ├── /catalog
     ├── /learning-plan
-    ├── /profile
     └── /content/:id
 ```
 
-### Scalable modular blocks (marketing system)
+### Scalable modular blocks
 | Block | Reuse |
 |-------|-------|
-| Hero + dual CTA + social proof | All landing variants |
-| 4-step “How it works” | Home, teacher page, ads |
+| Hero + dual CTA + social proof + trust microcopy | All landing variants |
+| Pricing strip + June promo module | Home, retargeting |
+| Differentiation vs competitors | Home, ads |
+| 4-step “How it works” | Home, teacher page |
+| Testimonials carousel | Home, `/sample` |
 | Tier comparison table | Home teaser + `/pricing` full |
-| FAQ accordion | Pricing objections, teacher page |
-| Sample video + micro-quiz | Home, `/sample`, retargeting |
-| Trust strip | Stripe, terms, privacy, support email |
-| Sticky mobile CTA | “Start free” after scroll 40% |
+| FAQ accordion | Pricing objections |
+| Sample video + micro-quiz | Home, `/sample` |
+| Trust strip | Stripe, terms, privacy |
+| Sticky mobile CTA | “Start for free” after 40% scroll |
 
 ---
 
@@ -361,10 +367,10 @@ explys.com/
 ### Hallway test (n=5, 10 min each)
 **Tasks:**
 1. Find monthly price for one person.  
-2. Explain what happens after you create an account (in your own words).  
+2. Explain what happens after you create an account.  
 3. Browse a lesson without signing up.  
 
-**Pass criteria:** Task 1 ≥80% success ≤60s; Task 2 ≥60% mention placement/plan; Task 3 **expected fail today**—document frustration verbatim for P0 case.
+**Pass criteria:** Task 1 ≥80% success ≤60s; Task 2 ≥60% mention placement/plan; Task 3 **expected fail today**—document frustration for P0 case.
 
 ---
 
@@ -372,63 +378,62 @@ explys.com/
 
 ### Design
 - [ ] Redesign hero secondary CTA label or add public sample module  
-- [ ] Pricing promo module: single timeline (free until X → tier Y)  
-- [ ] Fix demo player i18n; add EN-only screenshot for ads  
-- [ ] 404 page: suggest `/loginForm` and `/registrationMain`  
-- [ ] Teacher page wireframe: dashboard screenshots + contact CTA  
-- [ ] Optional: app store badge row  
+- [ ] Promo module: “Free through June 2026 → then from $7/mo”  
+- [ ] Fix demo player i18n; EN controls on EN homepage  
+- [ ] Testimonials: 3 featured + expand  
+- [ ] Teacher page wireframe + dashboard screenshots  
+- [ ] App store badge row (when live)
 
 ### Engineering
-- [ ] Redirect `/login`, `/register`, `/signup` → canonical auth routes  
 - [ ] Fix `sitemap.xml` 500  
-- [ ] `robots.txt` audit (timeout on fetch—verify allow/disallow)  
-- [ ] GA4/PostHog events per §5  
-- [ ] A/B infra for Browse CTA variants  
-- [ ] Public read-only catalog endpoint or static preview pages  
+- [ ] Update `robots.txt` — allow `/login`, `/register`  
+- [ ] PostHog events per §5 (landing analytics partially wired in codebase)  
+- [ ] Public read-only catalog endpoint or `/sample` pages  
+- [ ] Public stats endpoint (remove admin fetch from hero — see CODE_REVIEW.md S1)
 
 ### Stakeholder
 - [ ] Align promo policy: free through June 2026 vs tier launch  
-- [ ] Approve public sample content licensing for marketing clips  
-- [ ] Define review collection plan (Trustpilot / app store)  
-- [ ] Teacher sales: contact routing (email vs calendar)  
+- [ ] Approve public sample content licensing  
+- [ ] Testimonial verification policy (usernames only vs full names)  
+- [ ] Teacher sales routing (email vs calendar)
 
 ### Release acceptance criteria
-- `/login` resolves without 404  
 - “Browse content” behavior matches label OR label updated  
-- Homepage FAQ pricing language consistent with `/pricing`  
-- Five-second test pass rate ≥70% on value prop  
+- Homepage promo language consistent with `/pricing`  
+- Five-second test ≥70% on value prop  
 - `sitemap.xml` returns 200 valid XML  
+- Demo player shows EN controls on EN locale
 
 ---
 
 ## 17. Industry Playbook
 
-**Classification:** [edtech-language-learning.md](file:///Users/ttekit/.cursor/skills/ux-research-pipeline/industries/edtech-language-learning.md) (primary) | [b2b-saas.md](file:///Users/ttekit/.cursor/skills/ux-research-pipeline/industries/b2b-saas.md) (secondary — Teacher LMS tier) | **Confidence:** **High** (video catalog, placement, learning plan, quizzes, tiered pricing, Teacher enterprise row)
+**Classification:** edtech-language-learning (primary) | b2b-saas (secondary — Teacher LMS tier) | **Confidence:** **High** — see `~/.cursor/skills/ux-research-pipeline/industries/sites/explys.com.md`
 
 | Tactic | Do this | Typical uplift | Source | Site status | Evidence on explys.com |
 |--------|---------|----------------|--------|-------------|------------------------|
-| EDU-08 | Sample genres + browse path on homepage | ~5–12% Explorer conversion | Content-based EdTech marketing tests | **Gap** | “Browse content” CTA → `/catalog` shows **login**, not clips/genres |
-| EDU-01 | “Start free” above fold; no credit card; time-to-account <2 min stated | ~15–30% signup completion | PLG / EdTech onboarding benchmarks | **Partial** | “Start learning free” prominent; FAQ says free; no explicit “no credit card” on hero; tier CTAs say “Sign in to subscribe” |
-| EDU-02 | Placement explained on homepage + step 2; show duration | ~10–20% activation after signup | Duolingo/Babbel-style onboarding research | **Partial** | Step 02 “Complete placement” in How it works; **no duration** (e.g. “5 min”) on marketing pages |
-| EDU-04 | Scannable tiers; highlight most popular; feature bullets | ~5–12% paid conversion | Baymard-style plan comparison (adapted subscriptions) | **Met** | Light/Smart/Family/Teacher on `/pricing`; **“Most popular”** on Smart; bullet lists per tier |
-| EDU-12 | Stripe/trust copy + terms near plan buttons | ~3–6% checkout completion | Subscription trust patterns | **Met** | “Payments are processed securely by Stripe… agree to our terms” on `/pricing` |
-| EDU-03 | Show roadmap/phases before paywall | ~8–15% week-1 retention | Learning science — goal visibility | **Partial** | Step 03 describes student learning plan; full plan **not visible** until post-login |
-| EDU-05 | Video + subtitles + quiz while clip fresh | ~10–18% lesson completion | MOOC/video-course UX studies | **Partial** | Step 04 describes loop; **not observable** on public site without account |
-| EDU-09 | Learner vs teacher split + Teacher pricing with sales CTA | ~10–20% B2B pipeline quality | B2B EdTech funnel benchmarks | **Partial** | Registration/marketing mentions teachers; Teacher tier + **“Contact us”**; no `/for-teachers` landing |
-| EDU-06 | XP/achievements preview on marketing | ~5–10% DAU | Gamified learning engagement literature | **Partial** | “Gamified progress” feature bullet; **no screenshot/streak preview** on marketing |
-| EDU-07 | Progress analytics promise tied to mid tier | ~4–8% upgrade to mid tier | Subscription upsell patterns | **Partial** | Smart tier lists “Deep progress analytics”; **no sample dashboard** on site |
-| EDU-10 | Family profiles, parental controls visible | ~3–8% ARPU (family attach) | Consumer subscription family plans | **Met** | Family tier: “Up to 3 profiles”, parental controls, tournaments |
-| EDU-11 | Mobile lesson ergonomics; app links | ~8–15% mobile completion | Mobile learning UX composite | **Gap** | No App Store / Google Play CTAs on fetched marketing pages |
-| SaaS-02 | Demo vs trial split for enterprise | ~8–15% lead quality | Gartner / PLG benchmarks | **Partial** | Learner self-serve signup vs Teacher **“Contact us”**; no “Book demo” calendar |
-| SaaS-06 | Feature comparison table with checkmarks | ~5–12% paid conversion | Baymard-style comparison (adapted B2B) | **Partial** | Tier bullets yes; **no side-by-side checkmark matrix** across all four tiers |
-| SaaS-08 | Docs link in header | ~3–7% trial retention | SaaS support deflection metrics | **Gap** | No Help/Docs in marketing header; Feedback form only |
-| SaaS-03 | Security/compliance strip for enterprise | ~5–10% enterprise trust | B2B buyer surveys | **Gap** | Teacher tier lacks SOC2/GDPR/SSO trust strip; Terms mention COPPA/GDPR in legal prose only |
+| EDU-08 | Sample genres + browse path on homepage | ~5–12% Explorer conversion | Content-based EdTech marketing tests | **Gap** | “Browse content” → `/catalog` shows **login**, not clips |
+| EDU-01 | “Start free” above fold; no credit card | ~15–30% signup completion | PLG / EdTech onboarding benchmarks | **Partial** | “Start for free” + “No credit card required” on hero; tier buttons still “Sign in to subscribe” |
+| EDU-02 | Placement explained + duration on homepage | ~10–20% activation after signup | Duolingo/Babbel-style onboarding research | **Partial** | Step 02 describes placement; **no duration** stated |
+| EDU-04 | Scannable tiers; “most popular” badge | ~5–12% paid conversion | Baymard-style plan comparison (adapted subscriptions) | **Met** | Light/Smart/Family/Teacher; **“Most popular”** on Smart |
+| EDU-12 | Stripe/trust copy + terms near plans | ~3–6% checkout completion | Subscription trust patterns | **Met** | Stripe + terms copy on `/pricing` |
+| EDU-03 | Learning plan visibility before paywall | ~8–15% week-1 retention | Learning science — goal visibility | **Partial** | Step 03 describes plan; full plan post-login only |
+| EDU-05 | Video + quiz while clip fresh | ~10–18% lesson completion | MOOC/video-course UX studies | **Partial** | Step 04 describes loop; not observable without account |
+| EDU-09 | Learner vs teacher + Teacher sales CTA | ~10–20% B2B pipeline quality | B2B EdTech funnel benchmarks | **Partial** | Teacher tier + “Contact us”; no `/for-teachers` page |
+| EDU-06 | Gamification preview on marketing | ~5–10% DAU | Gamified learning engagement literature | **Partial** | “Gamified progress” bullet; no streak/XP preview |
+| EDU-07 | Analytics promise on mid tier | ~4–8% upgrade to mid tier | Subscription upsell patterns | **Partial** | Smart lists “Deep progress analytics”; no dashboard sample |
+| EDU-10 | Family plan benefits visible | ~3–8% ARPU (family attach) | Consumer subscription family plans | **Met** | 3 profiles, parental controls, tournaments |
+| EDU-11 | Mobile ergonomics; app links | ~8–15% mobile completion | Mobile learning UX composite | **Gap** | No App Store / Play CTAs on marketing pages |
+| SaaS-02 | Demo vs trial split for enterprise | ~8–15% lead quality | Gartner / PLG benchmarks | **Partial** | Learner self-serve vs Teacher “Contact us”; no calendar |
+| SaaS-06 | Feature comparison table | ~5–12% paid conversion | Baymard-style comparison (adapted B2B) | **Partial** | Tier bullets yes; no full checkmark matrix |
+| SaaS-08 | Docs link in header | ~3–7% trial retention | SaaS support deflection metrics | **Gap** | No Help/Docs in header; Feedback only |
+| SaaS-03 | Security/compliance strip (enterprise) | ~5–10% enterprise trust | B2B buyer surveys | **Gap** | Teacher tier lacks SOC2/GDPR/SSO strip |
 
 **Top 3 playbook-backed P0 actions (cross-link §12):**
-1. **EDU-08 — Public content taste:** Fix Browse CTA / add sample clips so Explorers see media proof before auth (§12 P0).  
-2. **EDU-01 — Frictionless free start clarity:** Reconcile FAQ “completely free”, June 2026 banner, and tier pricing in one promo module; add “No credit card required” if true (§12 P0).  
-3. **EDU-02 + wayfinding:** Add placement duration to Step 02 marketing copy; redirect `/login` → canonical login (§12 P0/P1).
+1. **EDU-08 — Public content taste:** Fix Browse CTA or add sample clips (§12 P0).  
+2. **EDU-01 + promo clarity:** Single “Free through June 2026, no card” module aligned with tier pricing (§12 P0).  
+3. **EDU-02 — Placement duration:** Add “~5–10 min” to Step 02 + fix sitemap (§12 P0/P1).
 
 ---
 
-*Sources:* https://explys.com/ · https://explys.com/pricing · https://explys.com/about · https://explys.com/loginForm · https://explys.com/registrationMain · https://explys.com/catalog · https://explys.com/login · https://explys.com/terms · https://explys.com/privacy · https://explys.com/feedback · https://explys.com/sitemap.xml · https://www.duolingo.com · https://www.babbel.com/prices · https://elsaspeak.com/en · https://www.lingobright.com/statistics/language-learning-apps/ · https://www.giiresearch.com/report/tbrc1960554-digital-english-language-learning-global-market.html · Site instructions: `~/.cursor/skills/ux-research-pipeline/industries/sites/explys.com.md` · **Fetch date:** 2026-06-18
+*Sources:* https://explys.com/ · https://explys.com/pricing · https://explys.com/about · https://explys.com/login · https://explys.com/register · https://explys.com/catalog · https://explys.com/learning-plan · https://explys.com/robots.txt · https://explys.com/sitemap.xml · https://www.duolingo.com · https://www.babbel.com/prices · https://elsaspeak.com/en · https://www.lingobright.com/statistics/language-learning-apps/ · https://www.giiresearch.com/report/tbrc1960554-digital-english-language-learning-global-market.html · Site instructions: `~/.cursor/skills/ux-research-pipeline/industries/sites/explys.com.md` · **Fetch date:** 2026-07-02

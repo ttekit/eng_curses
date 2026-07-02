@@ -1,276 +1,253 @@
-# Explys Code Review
+# Explys Thermo-Nuclear Code Review
 
-**Project:** eng_curses (backend + frontend)  
-**Date:** 2026-05-25  
-**Scope:** Security, bugs, architecture, code quality, tests
+**Project:** eng_curses (backend + frontend + mobile)  
+**Date:** 2026-07-02  
+**Branch:** `product`  
+**Scope:** Full codebase health, security, structural quality, maintainability, tests  
+**Verdict:** **BLOCK** for production hardening — merge marketing work only after resolving blockers below
 
 ---
 
 ## Executive Summary
 
-The codebase delivers a full learning platform (NestJS + Prisma backend, React + Vite frontend), but **authorization is the primary risk**. Many write endpoints lack role checks, users can patch privileged fields on their own account, and the frontend relies on client-side paywall logic. Several **confirmed functional bugs** exist in registration and content flows. **Test coverage is essentially absent** on both sides.
+Explys is a full learning platform (NestJS 11 + Prisma 7, React 19 + Vite, Expo mobile). The May 2025 review flagged authorization and registration bugs. **Several of those are fixed** on `product`: suspension re-check in `AuthGuard`, CSPRNG OTPs, OAuth CSRF state, `ValidationPipe` whitelisting, content-recommendations auth, canonical `/login` and `/register` routes, `ProfileSettings` decomposition, vocabulary-hints logic.
+
+**What still blocks approval:**
+
+1. **Taxonomy and content-stats mutations remain unguarded** — production relies on `x-api-token` extracted from the SPA bundle.
+2. **`HeroStats` couples public marketing to admin analytics** and applies a magic `+3259` user offset.
+3. **Client paywall bypass** via `/catalog?checkout=success` without server verification.
+4. **`hasCompletedPlacement` still writable via profile PATCH** (privilege strip incomplete).
+5. **Dead experiment code** — `useABtest.ts` orphaned with `any` casts and no consumers.
 
 **Recommended fix order:**
 
-1. Authorization (DTOs, guards, remove secrets from SPA bundle)
-2. Confirmed frontend bugs (token key, navigation, vocabulary hints, paywall)
-3. Auth hardening (OTP, suspension checks, OAuth state)
-4. Token/credential storage (httpOnly cookies, no passwords in sessionStorage)
-5. Tests (guard matrix, registration flow, billing)
+1. Security guards on all write endpoints; remove API token as sole mutation gate  
+2. Public stats endpoint; delete admin fetch and `+3259` from hero  
+3. Server-verified checkout; remove query-param paywall bypass  
+4. Strip `hasCompletedPlacement` from user-facing DTOs  
+5. Delete or wire `useABtest.ts`; consolidate analytics module  
+6. Backend tests on PR CI; guard-matrix test suite  
 
 ---
 
-## Critical Issues
+## Approval Bar
 
-### 1. Self-service privilege escalation
-
-**Severity:** Critical  
-**Files:**
-
-- `backend/src/users/dto/update-user.dto.ts`
-- `backend/src/users/users.service.ts`
-- `backend/src/users/users.controller.ts`
-
-**Problem:** `UpdateUserDto` inherits `role` from `CreateUserDto` and exposes `isSuspended` and `hasCompletedPlacement`. Authenticated users can patch their own record via `PATCH /users/:id` or `PATCH /users/profile`.
-
-**Impact:** A learner JWT could set `role: "admin"`, clear suspension, or skip placement.
-
-**Fix:** Split DTOs. User-facing updates should allow only safe fields. Admin-only fields behind `JwtAdminGuard`. Server-side allowlist in `update()`.
+| Gate | Status |
+|------|--------|
+| No structural regression in shared paths | ❌ Admin API on public landing |
+| No obvious code-judo path ignored | ❌ Public `/public/stats` would delete hero hack |
+| No unjustified >1k-line files | ✅ `ProfileSettings` refactored to 23-line shell |
+| No spaghetti special-case branching | ❌ Paywall query bypass |
+| No hacky abstractions | ❌ `+3259` offset, dead A/B hook |
+| Security blockers addressed | ❌ Taxonomy CRUD open |
+| Tests cover guard matrix + paywall | ❌ Missing |
 
 ---
 
-### 2. Unauthenticated or weakly protected write endpoints
+## 1. Structural Regressions (Blockers)
 
-**Severity:** Critical  
-**Files:**
+### S1. Public landing calls admin analytics + magic offset
 
-- `backend/src/contents/contents.controller.ts`
-- `backend/src/content/content-video/content-video.controller.ts`
-- Tags, categories, topics, content-stats, content-media controllers
+**Severity:** Blocker  
+**Status:** OPEN  
+**Files:** `frontend/src/components/landing/HeroStats.tsx`, `frontend/src/lib/adminAnalyticsApi.ts`
 
-**Problem:** Many mutation endpoints have no route-level auth guard. In development, `GlobalApiTokenGuard` is skipped. In production, protection relies on `x-api-token`, which the SPA ships via `VITE_API_TOKEN`.
+On every homepage load, `HeroStats` calls `fetchAdminOverview()` (route guarded by `JwtAdminGuard`). For anonymous visitors the call fails silently; on success it renders `totalUsers + 3259`.
 
-**Impact:** Anyone with the token from the built JS can upload/delete content, mutate taxonomy, and trigger expensive AI generation.
+This is feature logic leaking into a shared marketing path, with a non-auditable magic number baked into social proof.
 
-**Fix:** Require JWT + role on all mutations. Never embed API tokens in the frontend bundle.
-
----
-
-### 3. User data exposed without auth
-
-**Severity:** Critical  
-**File:** `backend/src/content-recommendations/content-recommendations.controller.ts`
-
-**Problem:** `GET /content-recommendations/for-user/:userId` has no guard.
-
-**Impact:** Personalized recommendations for arbitrary user IDs can be fetched.
-
-**Fix:** Require `AuthGuard`; enforce `userId === req.user.sub` (or admin).
+**Code-judo fix:** Add `GET /public/stats` returning `{ activeLearners, videoCount, watchHours }`. Hero reads one endpoint. Delete `+3259`. Remove `adminAnalyticsApi` import from landing entirely.
 
 ---
 
-### 4. Auth guard does not re-check account status
+### S2. Dead A/B experiment module
 
-**Severity:** Critical  
-**File:** `backend/src/auth/auth.guard.ts`
+**Severity:** High  
+**Status:** OPEN  
+**Files:** `frontend/src/hooks/useABtest.ts` (37 lines, **zero imports**)
 
-**Problem:** JWT signature is verified, but `isSuspended` and `isVerified` are not re-checked.
+Orphan hook uses `localStorage` + `Math.random()`, `(window as any).posthog`, Russian comments, and bypasses typed `captureEvent`. `HeroSection` no longer references it — good — but the file remains as dead weight and invites reintroduction without wiring.
 
-**Impact:** Suspended users keep API access until token expiry. Combined with issue #1, suspension is ineffective.
-
-**Fix:** Load user status in guard and reject suspended/unverified users.
-
----
-
-### 5. OTP brute-force surface
-
-**Severity:** Critical  
-**Files:**
-
-- `backend/src/auth/auth.service.ts`
-- `backend/src/auth/email-confirmation/email-confirmation.service.ts`
-
-**Problem:** 6-digit codes use `Math.random()` (not CSPRNG). Verification endpoints lack rate limiting; only login/register use Turnstile.
-
-**Impact:** ~1M guesses per account; feasible at scale.
-
-**Fix:** Use `crypto.randomInt()`, per-email/IP throttling, lockout after N failures, captcha on verification endpoints.
+**Code-judo fix:** Delete `useABtest.ts` until PostHog feature flags are enabled in `analytics.ts` (`advanced_disable_feature_flags: true` today). When experiments return, one `experiments.ts` module owns variant + capture.
 
 ---
 
-### 6. Wrong token key breaks registration preferences
+### S3. Analytics layered three ways
 
-**Severity:** Critical (bug)  
-**File:** `frontend/src/pages/registration/RegistrationPreferences.tsx`
+**Severity:** High  
+**Status:** OPEN  
+**Files:** `frontend/src/lib/analytics.ts`, `landingAnalytics.ts`, `posthogReachability.ts`
 
-**Problem:** App stores JWT as `exply_access_token` (`lib/api.ts`), but preferences step reads `access_token`.
+Bootstrap, reachability probe, GA pageviews, and thin landing wrappers coexist. PostHog flags disabled; landing events duplicate patterns.
 
-**Impact:** `Authorization: Bearer null` — registration step 3 fails.
-
-**Fix:** Use `getStoredAccessToken()` from `lib/api.ts`; let `apiFetch` attach auth.
-
----
-
-### 7. Duplicate navigation after email verification
-
-**Severity:** Critical (bug)  
-**File:** `frontend/src/pages/registration/EmailVerification.tsx`
-
-**Problem:** Login flow navigates to `/`, then a second block always runs and overwrites with registration routes.
-
-**Impact:** Login-after-verification users are sent to registration instead of home.
-
-**Fix:** Remove duplicate block (lines 75–83) or wrap in `else if (!isLoginFlow)`.
+**Code-judo fix:** `lib/analytics/` with `bootstrap.ts`, `events.ts` (typed event catalog). Delete pass-through wrappers that only rename `captureEvent`.
 
 ---
 
-### 8. Inverted vocabulary-hints logic
+### S4. Locale files at decomposition threshold
 
-**Severity:** Critical (bug)  
-**File:** `frontend/src/pages/content/ContentPage.tsx`
+**Severity:** Medium  
+**Status:** OPEN  
+**Files:** `frontend/src/locales/landing/en.ts` (863 lines), `uk.ts` (868 lines)
 
-**Problem:** `if (user?.id != null) return;` — hints only load when user is **not** logged in.
+Every landing edit touches two 800+ line parallel blobs. Testimonials alone added 15 quote objects.
 
-**Impact:** Logged-in learners never get vocabulary hints.
-
-**Fix:** Change to `if (user?.id == null) return;`.
-
----
-
-### 9. Subscription paywall bypass via query string
-
-**Severity:** Critical  
-**Files:**
-
-- `frontend/src/components/RequireSubscriberAccess.tsx`
-- `frontend/src/pages/subscription/SubscribePage.tsx`
-
-**Problem:** `/catalog?checkout=success` bypasses paywall without server verification.
-
-**Impact:** Any logged-in user without subscription can browse catalog.
-
-**Fix:** Verify checkout server-side (Stripe session/webhook); use short-lived signed token instead of guessable query param.
+**Code-judo fix:** Split by section (`hero.en.ts`, `testimonials.en.ts`, `pricing.en.ts`) with shared key types and barrel exports.
 
 ---
 
-### 10. Rules of Hooks violation in ProfileSettings
+## 2. Security Findings
 
-**Severity:** Critical (bug)  
-**File:** `frontend/src/components/profile/ProfileSettings.tsx`
-
-**Problem:** Early `if (!user) return null;` before ~20 hook calls.
-
-**Impact:** React hooks-order error if `user` becomes null after mount.
-
-**Fix:** Move guard after all hooks, or split into wrapper + inner component.
-
----
-
-## High Severity
-
-| # | Issue | Location | Fix |
-|---|--------|----------|-----|
-| H1 | JWT in `localStorage` — XSS → account takeover | `frontend/src/lib/api.ts` | Prefer httpOnly cookies; tighten CSP |
-| H2 | Registration passwords in `sessionStorage` | `RegistrationContext.tsx` | Exclude passwords from draft persistence |
-| H3 | Unsandboxed placement iframe + unvalidated `postMessage` | `VideosPage.tsx` | Add `sandbox`; validate `ev.origin` |
-| H4 | OAuth missing `state` (CSRF) | `google-provider.ts` | Generate/store/validate OAuth state |
-| H5 | Legacy email confirmation has no expiry | `auth.service.ts` `confirmEmail()` | Unify on expiry-checked path |
-| H6 | Plaintext student passwords in registration response | `auth.service.ts` | Email credentials; never return in JSON |
-| H7 | Stale JWT after failed profile fetch | `UserContext.tsx` | Clear token on 401/403 |
-| H8 | Login succeeds without token | `LoginForm.tsx` | Treat missing token as error |
-| H9 | Placement skippable with empty draft → B1 default | `placement-test.service.ts` | Require valid draft before completion |
-| H10 | `toggleTwoFactor` crashes for OAuth-only users | `auth.service.ts` | Handle null password |
-| H11 | Hardcoded localhost restore URL in emails | `auth.service.ts` | Use `FRONTEND_URL` from config |
-| H12 | 512MB global JSON body limit | `backend/src/main.ts` | Lower default; scope to specific routes |
-| H13 | Stripe webhooks not idempotent | `billing.service.ts` | Store processed `event.id` |
-| H14 | Token table: one row per email | Prisma schema | Separate by purpose or composite key |
-| H15 | Admin auth is client-side only | `RequireAdmin.tsx` | Backend must enforce on all `/admin/*` |
-| H16 | `VITE_API_BASIC_AUTH_*` bundled in client | `lib/api.ts`, `.env.example` | Dev proxy only; never in prod builds |
-
----
-
-## Medium / Code Quality
-
-### Backend
-
-- `ValidationPipe` without `forbidNonWhitelisted: true` — extra body fields accepted
-- Inconsistent password rules: register `MinLength(6)` vs login `MinLength(8)`
-- `updatePreferences(@Body() body: any)` — no DTO validation
-- `@Cron` cleanup in `users.service.ts` but no `ScheduleModule` — job never runs
-- Throttling only on contents module; auth endpoints unthrottled
-- Widespread `prisma as any` — hides schema drift
-- Swagger at `/api` in all environments
-- Default CSP `frame-ancestors *` when env unset (placement/comprehension tests)
-- JWT in query string for placement iframe — referrer/log leakage
-- Mixed RU/UK/EN error strings
-
-### Frontend
-
-- Heavy `as any` usage — type safety gaps
-- `alert()` for errors in registration preferences
-- Hardcoded Turnstile site key; env var unused
-- Dead `CatalogPage.tsx` with mixed RU strings
-- Split auth state: `isLoggedIn: !!user` vs token in storage
-- Forgot password link non-functional (`href="#"` in `LoginForm.tsx`)
-- Fetch effects without cancellation flags
-- Catalog loads full videos as thumbnails when `thumbnailUrl` missing
-- Entire video library fetched on mount — no pagination
-
----
-
-## Testing & Observability
-
-| Layer | State |
-|-------|--------|
-| Frontend | **0** test files |
-| Backend | ~3 unit specs + 1 stale e2e |
-| Guards, billing, auth, privilege escalation | Untested |
-| Logging | Ad hoc `console.error`; no admin audit trail |
-| Health checks | Shallow — no deep DB/Redis/Stripe checks |
-
-### Priority tests
-
-1. Guard matrix — route → required auth
-2. User self-update cannot change `role`, `isSuspended`, `hasCompletedPlacement`
-3. Registration token key consistency
-4. Email verification navigation branches
-5. Stripe webhook idempotency
-6. Paywall cannot be bypassed via `?checkout=success`
-
----
-
-## Auth Architecture (Current)
+### Auth stack (current)
 
 ```
 HTTP Request
     ↓
-RequireActiveSubscriptionGuard (global)
+RequireActiveSubscriptionGuard (production only)
     ↓
 GlobalApiTokenGuard
-    ├── dev: skipped
-    └── prod: x-api-token (from SPA bundle)
+    ├── non-production: skipped entirely
+    └── production: x-api-token (VITE_API_TOKEN in SPA bundle)
     ↓
-Route Guard (often missing on writes)
+Route Guard (missing on several write controllers)
     ↓
 Controller Handler
 ```
 
-**Main risks:** missing route-level authorization on writes, self-service privilege escalation, auth endpoints without rate limiting.
+### Critical / high — OPEN
+
+| ID | Finding | Files | Status |
+|----|---------|-------|--------|
+| SEC-1 | Tags/categories/topics `POST`/`PATCH`/`DELETE` have **no `@UseGuards`** | `tags.controller.ts`, `categories.controller.ts`, `topics.controller.ts` | **OPEN** |
+| SEC-2 | `ContentStatsController` fully unguarded CRUD | `content-stats.controller.ts` | **OPEN** |
+| SEC-3 | `VITE_API_TOKEN` in bundle is production write gate for taxonomy | `lib/api.ts`, `global-api-token.guard.ts` | **OPEN** |
+| SEC-4 | Paywall bypass: `/catalog?checkout=success` | `RequireSubscriberAccess.tsx` | **OPEN** |
+| SEC-5 | `hasCompletedPlacement` passes through `updateProfile` | `users.service.ts`, `update-user.dto.ts` | **PARTIAL** (role/suspension stripped) |
+| SEC-6 | Unauthenticated Gemini endpoints (cost abuse) | `content-video.controller.ts` | **OPEN** |
+| SEC-7 | JWT in `localStorage`; `api.ts` header comment claims httpOnly cookies | `lib/api.ts` | **OPEN** |
+
+### Fixed since May 2025 ✅
+
+| ID | Finding | Status |
+|----|---------|--------|
+| SEC-F1 | `AuthGuard` re-checks `isSuspended` | **FIXED** |
+| SEC-F2 | OTP uses `crypto.randomInt` | **FIXED** |
+| SEC-F3 | Core auth endpoints have `@Throttle` | **FIXED** |
+| SEC-F4 | OAuth CSRF `state` in session | **FIXED** |
+| SEC-F5 | Content recommendations require `AuthGuard` | **FIXED** |
+| SEC-F6 | `ValidationPipe` + `forbidNonWhitelisted: true` | **FIXED** |
+| SEC-F7 | `ScheduleModule.forRoot()` | **FIXED** |
+| SEC-F8 | Contents mutations use `JwtAdminGuard` | **FIXED** |
+| SEC-F9 | Registration token key / `apiFetch` on preferences | **FIXED** |
+| SEC-F10 | Email verification navigation (single flow) | **FIXED** |
+| SEC-F11 | Vocabulary hints inverted guard | **FIXED** (`useLessonWatch.ts`) |
+| SEC-F12 | Canonical `/login`, `/register` routes | **FIXED** |
+| SEC-F13 | `ProfileSettings` hooks-order / 1531-line monolith | **FIXED** (split into cards) |
+
+### Medium — OPEN
+
+| ID | Finding | Fix |
+|----|---------|-----|
+| SEC-M1 | `JwtAdminGuard` skips `isSuspended` check | Add suspension to admin guard |
+| SEC-M2 | OTP plaintext in DB | Hash at rest |
+| SEC-M3 | Email resend endpoints without throttle | Add `@Throttle` |
+| SEC-M4 | Stripe webhooks lack `event.id` dedup | Redis idempotency key |
+| SEC-M5 | Default 500 MB JSON body limit | Default 10 MB; override per route |
+| SEC-M6 | `GlobalApiTokenGuard` uses `!==` not timing-safe compare | `timingSafeEqual` |
+| SEC-M7 | Registration passwords in sessionStorage | Exclude from draft persistence |
+| SEC-M8 | Commented-out test documents `hasCompletedPlacement: true` allowed | Remove from DTO; uncomment test as regression guard |
 
 ---
 
-## Checklist for Production Hardening
+## 3. Functional Bugs
 
-- [ ] Strip `role`, `isSuspended`, `hasCompletedPlacement` from user-facing DTOs
-- [ ] Add `JwtAdminGuard` (or equivalent) on all mutation routes
-- [ ] Remove `VITE_API_TOKEN` from production frontend builds
-- [ ] Fix registration token key + email verification navigation
-- [ ] Fix vocabulary hints inverted condition
-- [ ] Replace paywall query-param bypass with server-verified checkout
-- [ ] Fix ProfileSettings hooks order
-- [ ] OTP: CSPRNG + rate limits
-- [ ] Re-check suspension/verification in `AuthGuard`
-- [ ] OAuth `state` parameter
-- [ ] Move JWT out of `localStorage` (httpOnly cookies)
-- [ ] Stop persisting passwords in sessionStorage
-- [ ] Add guard matrix + registration flow tests
+| ID | Issue | Location | Status |
+|----|-------|----------|--------|
+| BUG-1 | Hero stats fail for anonymous users; fallback hides failure | `HeroStats.tsx` | **OPEN** |
+| BUG-2 | Paywall bypass via query param | `RequireSubscriberAccess.tsx` | **OPEN** |
+| BUG-3 | `useABtest.ts` dead code | `hooks/useABtest.ts` | **OPEN** |
+| BUG-4 | `sitemap.xml` returns 500 in production | `seo.service.ts` | **OPEN** |
+| BUG-5 | Dual token keys on login (`explys_` + `exply_`) | `LoginForm.tsx` | **OPEN** |
+
+---
+
+## 4. Spaghetti & Branching Complexity
+
+| Pattern | Where | Verdict |
+|---------|-------|---------|
+| Paywall policy scattered | `subscriptionAccess.ts`, `RequireSubscriberAccess.tsx`, backend guard | Extract `SubscriptionAccessPolicy` object |
+| Post-verification routing tree | `EmailVerification.tsx` | Use `resolveRegistrationCompletionPath` consistently |
+| `(req.session as any).oauth_state` | `auth.controller.ts` | Typed session interface |
+| `prisma as any` in services | `users.service.ts` | Typed selects; delete casts |
+| Commented test + Russian note in spec | `users.service.spec.ts` | Remove dead commented block; enforce DTO boundary in test |
+
+---
+
+## 5. Testing & CI
+
+| Layer | State |
+|-------|--------|
+| Test files | **25** total (~10 frontend, ~15 backend) |
+| Guard matrix | **Untested** |
+| Paywall bypass | **Untested** |
+| HeroStats / landing | **Untested** |
+| PR CI | Frontend test + build only |
+| Backend `test:ci` | Runs on deploy workflow, **not on PR** |
+| Type-check | `continue-on-error: true` in CI |
+
+### Priority tests
+
+1. Guard matrix snapshot — route → required auth  
+2. `updateProfile` cannot set `hasCompletedPlacement`  
+3. `RequireSubscriberAccess` — `?checkout=success` blocked when enforcement on  
+4. Stripe webhook idempotency  
+5. Public stats endpoint (once added) returns stable shape without auth  
+
+---
+
+## 6. Code-Judo Opportunities (Preserve Behavior, Delete Complexity)
+
+| Current | Reframe |
+|---------|---------|
+| Admin fetch + fallback + offset in hero | Single public stats endpoint |
+| Three analytics files + dead A/B hook | One typed analytics module |
+| Runtime strip of privileged fields in service | Separate `ProfileUpdateDto` with explicit allowlist |
+| Class-level guards per controller | `@Controller('admin/...')` + class `@UseGuards(JwtAdminGuard)` convention |
+| Client + server paywall bypass paths | Server checkout session token; client reads profile only |
+
+---
+
+## 7. Production Hardening Checklist
+
+### Blockers
+
+- [ ] `@UseGuards(JwtAdminGuard)` on tags/categories/topics/content-stats mutations  
+- [ ] Public stats endpoint; remove admin fetch and `+3259` from `HeroStats`  
+- [ ] Delete or properly wire `useABtest.ts`  
+- [ ] Remove `hasCompletedPlacement` from user-facing `UpdateUserDto`  
+- [ ] Remove paywall `?checkout=success` bypass  
+
+### High priority
+
+- [ ] Stop relying on `VITE_API_TOKEN` for taxonomy writes  
+- [ ] Auth + throttle on Gemini proxy endpoints  
+- [ ] Fix `sitemap.xml` 500  
+- [ ] Backend tests block PR merges  
+- [ ] Split landing locale files by section  
+
+### Medium backlog
+
+- [ ] OTP hash-at-rest; resend throttling; webhook idempotency  
+- [ ] httpOnly cookie migration (fix misleading `api.ts` comment)  
+- [ ] JwtAdminGuard suspension check  
+- [ ] Studying plan v2 bulk migration verification (`STUDYING_PLAN_V2_CUTOVER.md`)  
+
+---
+
+## Document History
+
+| Date | Scope |
+|------|-------|
+| 2026-05-25 | Initial security-focused review |
+| 2026-07-02 | Thermo-nuclear rewrite on `product` branch |
