@@ -20,11 +20,25 @@ import {
   RotateCw,
   Loader2,
   Captions,
+  Check,
 } from "lucide-react";
+
+export interface SubtitleCue {
+  startSec?: number;
+  endSec?: number;
+  text: string;
+}
+
+export interface SubtitleTrack {
+  id: string;
+  label: string;
+  cues: SubtitleCue[];
+}
 
 interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
   src: string;
-  transcript?: { startSec?: number; endSec?: number; text: string }[];
+  transcript?: SubtitleCue[];
+  transcripts?: SubtitleTrack[];
   onEnded?: () => void;
   onPlay?: () => void;
   onPlaybackTime?: (seconds: number) => void;
@@ -36,6 +50,7 @@ interface VideoPlayerProps extends HTMLAttributes<HTMLDivElement> {
 export default function VideoPlayer({
   src,
   transcript,
+  transcripts,
   onEnded,
   onPlay,
   onPlaybackTime,
@@ -99,7 +114,9 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [subtitlesEnabled, setSubtitlesEnabled] = useState(true);
+
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>("auto");
+  const [showSubtitlesMenu, setShowSubtitlesMenu] = useState(false);
 
   const [showLeftAnimation, setShowLeftAnimation] = useState(false);
   const [showRightAnimation, setShowRightAnimation] = useState(false);
@@ -118,18 +135,42 @@ export default function VideoPlayer({
 
   const [bufferedProgress, setBufferedProgress] = useState(0);
 
+  const availableTracks = useMemo(() => {
+    if (transcripts && transcripts.length > 0) return transcripts;
+    if (transcript && transcript.length > 0) {
+      return [{ id: "default", label: "Субтитри", cues: transcript }];
+    }
+    return [];
+  }, [transcripts, transcript]);
+
+  const activeTrack = useMemo(() => {
+    if (availableTracks.length === 0 || selectedTrackId === null) return null;
+    if (selectedTrackId === "auto") {
+      const ukTrack = availableTracks.find(
+        (t) =>
+          t.id === "uk" ||
+          t.id === "ua" ||
+          t.id.includes("uk") ||
+          t.id.includes("ua") ||
+          t.label.toLowerCase().includes("укр")
+      );
+      return ukTrack || availableTracks[0];
+    }
+    return availableTracks.find((t) => t.id === selectedTrackId) || null;
+  }, [availableTracks, selectedTrackId]);
+
   const activeSubtitle = useMemo(() => {
-    if (!subtitlesEnabled || !transcript || transcript.length === 0) return null;
-    for (let i = 0; i < transcript.length; i++) {
-      const cue = transcript[i];
-      if (typeof cue.startSec === 'number' && typeof cue.endSec === 'number') {
+    if (!activeTrack || !activeTrack.cues || activeTrack.cues.length === 0) return null;
+    for (let i = 0; i < activeTrack.cues.length; i++) {
+      const cue = activeTrack.cues[i];
+      if (typeof cue.startSec === "number" && typeof cue.endSec === "number") {
         if (currentTime >= cue.startSec && currentTime <= cue.endSec) {
           return cue.text;
         }
       }
     }
     return null;
-  }, [currentTime, transcript, subtitlesEnabled]);
+  }, [currentTime, activeTrack]);
 
   const setBufferingState = useCallback((val: boolean) => {
     setIsBuffering(val);
@@ -139,6 +180,9 @@ export default function VideoPlayer({
   const setControlsVisible = (val: boolean) => {
     showControlsRef.current = val;
     setShowControls(val);
+    if (!val) {
+      setShowSubtitlesMenu(false);
+    }
   };
 
   const clearHideTimer = () => {
@@ -248,7 +292,7 @@ export default function VideoPlayer({
       }
       showControlsTemporarily();
     },
-    [showControlsTemporarily],
+    [showControlsTemporarily]
   );
 
   const evaluatePosition = (clientX: number) => {
@@ -332,7 +376,7 @@ export default function VideoPlayer({
         }, DOUBLE_TAP_MS);
       }
     },
-    [handleSkip, onClose, showControlsTemporarily],
+    [handleSkip, onClose, showControlsTemporarily]
   );
 
   useEffect(() => {
@@ -377,7 +421,7 @@ export default function VideoPlayer({
             }
           )
             .lock("landscape")
-            .catch(() => {});
+            .catch(() => { });
         }
       } catch {
         /* ignore fullscreen errors */
@@ -446,24 +490,47 @@ export default function VideoPlayer({
           break;
         case "c":
           e.preventDefault();
-          setSubtitlesEnabled((prev) => !prev);
+          setSelectedTrackId((prev) => {
+            if (prev !== null) return null;
+            const ukTrack = availableTracks.find(
+              (t) =>
+                t.id === "uk" ||
+                t.id === "ua" ||
+                t.id.includes("uk") ||
+                t.id.includes("ua") ||
+                t.label.toLowerCase().includes("укр")
+            );
+            return ukTrack ? ukTrack.id : availableTracks[0]?.id || null;
+          });
           showControlsTemporarily();
           break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleToggle, handleSkip, volume, showControlsTemporarily, toggleMute]);
+  }, [
+    handleToggle,
+    handleSkip,
+    volume,
+    showControlsTemporarily,
+    toggleMute,
+    availableTracks,
+  ]);
 
   return (
     <div
       ref={containerRef}
       className={cn(
         "relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-gray-950 select-none",
-        className,
+        className
       )}
       onMouseMove={showControlsTemporarily}
-      onMouseLeave={() => playing && setControlsVisible(false)}
+      onMouseLeave={() => {
+        if (playing) {
+          setControlsVisible(false);
+        }
+        setShowSubtitlesMenu(false);
+      }}
       {...rest}
     >
       <video
@@ -524,7 +591,7 @@ export default function VideoPlayer({
       <div
         className={cn(
           "absolute left-0 top-0 bottom-0 w-1/2 flex items-center justify-center bg-black/20 rounded-r-full pointer-events-none transition-all duration-300 transform -translate-x-10 opacity-0 backdrop-blur-xs z-10",
-          showLeftAnimation && "translate-x-0 opacity-100 duration-150",
+          showLeftAnimation && "translate-x-0 opacity-100 duration-150"
         )}
       >
         <div className="flex flex-col items-center text-white text-center">
@@ -539,7 +606,7 @@ export default function VideoPlayer({
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center bg-black/20 rounded-l-full pointer-events-none transition-all duration-300 transform translate-x-10 opacity-0 backdrop-blur-xs z-10",
-          showRightAnimation && "translate-x-0 opacity-100 duration-150",
+          showRightAnimation && "translate-x-0 opacity-100 duration-150"
         )}
       >
         <div className="flex flex-col items-center text-white text-center">
@@ -554,7 +621,7 @@ export default function VideoPlayer({
       <div
         className={cn(
           "absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-300 z-30 pointer-events-none",
-          showControls ? "opacity-100" : "opacity-0",
+          showControls ? "opacity-100" : "opacity-0"
         )}
       >
         <button
@@ -585,7 +652,7 @@ export default function VideoPlayer({
             "w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/25 active:scale-95 transition-all shadow-lg backdrop-blur-sm",
             showControls
               ? "pointer-events-auto cursor-pointer"
-              : "pointer-events-none",
+              : "pointer-events-none"
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -622,12 +689,13 @@ export default function VideoPlayer({
           </span>
         </button>
       </div>
+
       <div
         className={cn(
           "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-20 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
           showControls
             ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none",
+            : "opacity-0 pointer-events-none"
         )}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
@@ -703,18 +771,69 @@ export default function VideoPlayer({
               <option value="2">2.0x</option>
             </select>
 
-            {transcript && transcript.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSubtitlesEnabled((prev) => !prev)}
-                className={cn(
-                  "transition-colors",
-                  subtitlesEnabled ? "text-white drop-shadow-md" : "text-white/50 hover:text-white/80"
+            {availableTracks.length > 0 && (
+              <div className="relative flex items-center">
+                {showSubtitlesMenu && (
+                  <div className="absolute bottom-9 right-0 bg-zinc-900/95 border border-white/20 rounded-lg shadow-xl py-1 min-w-[130px] backdrop-blur-md z-50 flex flex-col text-xs text-white overflow-hidden">
+                    <div className="px-3 py-1.5 font-semibold text-white/50 border-b border-white/10 select-none">
+                      Субтитри
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTrackId(null);
+                        setShowSubtitlesMenu(false);
+                      }}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-1.5 hover:bg-white/10 transition-colors text-left cursor-pointer",
+                        selectedTrackId === null &&
+                        "text-(--purple-default) font-semibold"
+                      )}
+                    >
+                      <span>Вимкнено</span>
+                      {selectedTrackId === null && (
+                        <Check className="size-3.5" />
+                      )}
+                    </button>
+                    {availableTracks.map((track) => {
+                      const isSelected = activeTrack?.id === track.id;
+                      return (
+                        <button
+                          key={track.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTrackId(track.id);
+                            setShowSubtitlesMenu(false);
+                          }}
+                          className={cn(
+                            "flex items-center justify-between px-3 py-1.5 hover:bg-white/10 transition-colors text-left cursor-pointer",
+                            isSelected &&
+                            "text-(--purple-default) font-semibold"
+                          )}
+                        >
+                          <span className="truncate pr-2">{track.label}</span>
+                          {isSelected && (
+                            <Check className="size-3.5 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-                title="Toggle Captions (C)"
-              >
-                <Captions className="size-5.5 hover:cursor-pointer" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSubtitlesMenu((prev) => !prev)}
+                  className={cn(
+                    "transition-colors",
+                    activeTrack !== null
+                      ? "text-white drop-shadow-md"
+                      : "text-white/50 hover:text-white/80"
+                  )}
+                  title="Toggle Captions (C)"
+                >
+                  <Captions className="size-5.5 hover:cursor-pointer" />
+                </button>
+              </div>
             )}
 
             <button

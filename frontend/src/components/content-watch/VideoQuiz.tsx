@@ -6,7 +6,7 @@ import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
 import type { QuizQuestion } from "./defaultLessonSides";
 
-const OPEN_MIN_CHARS = 40;
+const OPEN_MIN_CHARS = 20;
 
 function isOpenQuestion(q: QuizQuestion): boolean {
   return q.questionType === "open" || q.category === "open";
@@ -17,12 +17,12 @@ function sentenceCount(text: string): number {
     .trim()
     .split(/[.!?]+/)
     .map((s) => s.trim())
-    .filter((s) => s.length >= 8).length;
+    .filter((s) => s.length >= 3).length;
 }
 
 function openAnswerIsValid(text: string): boolean {
   const t = text.trim();
-  return t.length >= OPEN_MIN_CHARS && sentenceCount(t) >= 2;
+  return t.length >= OPEN_MIN_CHARS && sentenceCount(t) >= 1;
 }
 
 export type QuizWrongReviewItem = {
@@ -188,7 +188,7 @@ export function VideoQuiz({
             total: String(questions.length),
           })}
         </span>
-      {/* иконки */}
+        {/* иконки */}
         {/* <span className="flex items-center gap-1 text-muted-foreground">
           <Clock className="h-3 w-3" />≈ {question?.timestamp}
         </span> */}

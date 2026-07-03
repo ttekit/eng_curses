@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -120,6 +121,7 @@ function ContentWatchHeader({
     </header>
   );
 }
+
 function LoadingView({ L }: { L: LessonLabels }) {
   return (
     <div className="min-h-screen bg-background">
@@ -289,6 +291,41 @@ export default function ContentPage() {
     quizServerFailed,
   } = useLessonWatch(id);
 
+  const playerTranscripts = useMemo(() => {
+    if (!transcriptLines || !Array.isArray(transcriptLines) || transcriptLines.length === 0) {
+      return undefined;
+    }
+
+    const tracks = [];
+    const hasUkTranslation = transcriptLines.some(
+      (cue: any) => cue.ukText || cue.translation || cue.textUk
+    );
+
+    if (hasUkTranslation) {
+      tracks.push({
+        id: "uk",
+        label: "Українська",
+        cues: transcriptLines.map((cue: any) => ({
+          startSec: cue.startSec,
+          endSec: cue.endSec,
+          text: cue.ukText || cue.translation || cue.textUk || "",
+        })),
+      });
+    }
+
+    tracks.push({
+      id: "en",
+      label: "English",
+      cues: transcriptLines.map((cue: any) => ({
+        startSec: cue.startSec,
+        endSec: cue.endSec,
+        text: cue.text || "",
+      })),
+    });
+
+    return tracks;
+  }, [transcriptLines]);
+
   if (loading)
     return (
       <>
@@ -457,6 +494,7 @@ export default function ContentPage() {
                   <VideoPlayer
                     src={videoData.videoLink}
                     transcript={transcriptLines}
+                    transcripts={playerTranscripts}
                     onEnded={handleVideoEnded}
                     onPlay={handleVideoPlay}
                     onPlaybackTime={(t) => setPlaybackSec(t)}
