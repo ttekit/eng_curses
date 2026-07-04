@@ -79,7 +79,7 @@ export const landingUk = {
     signInPromptAfter: ", щоб оформити Light, Smart або Family.",
     stripeTerms:
       "Оплата захищена Stripe. Продовжуючи, ви погоджуєтесь з умовами обраного тарифу.",
-    freeAccess: "Безкоштовний доступ у червні 2026!",
+    freeAccess: "Безкоштовний доступ у липні 2026!",
     startLearning: "Почати навчання зараз",
   },
 
@@ -196,9 +196,9 @@ export const landingUk = {
       "Обирай, що підходить саме тобі: базовий доступ, адаптивний AI, сімейний план або рішення для навчальних закладів.",
     fullPageLink: "Усі тарифи на окремій сторінці",
     freeHeadline: "Почни безкоштовно у",
-    freeAccess: "червні 2026",
+    freeAccess: "липні 2026",
     freeHeadlineEnd: "Без банківської картки",
-    freePromo: "Безкоштовний доступ у червні 2026!",
+    freePromo: "Безкоштовний доступ у липні 2026!",
   },
 
   differentiation: {
@@ -407,7 +407,7 @@ export const landingUk = {
     howItWorks: "Як це працює?",
     trustNoCard: "Без банківської картки",
     trustPrivacy: "Без спаму. Твої дані залишаються приватними.",
-    footnotePromo: "Безкоштовний доступ у червні 2026!",
+    footnotePromo: "Безкоштовний доступ у липні 2026!",
   },
 
   pricingCards: {
