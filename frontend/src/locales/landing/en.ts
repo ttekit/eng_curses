@@ -77,7 +77,7 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
-    freeAccess: "Free access in June 2026!",
+    freeAccess: "Free access in July 2026!",
     startLearning: "Start learning now",
   },
 
@@ -196,9 +196,9 @@ export const landingEn = {
       "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
     freeHeadline: "Start free in ",
-    freeAccess: "June 2026",
+    freeAccess: "July 2026",
     freeHeadlineEnd: "No credit card required",
-    freePromo: "Free access in June 2026!",
+    freePromo: "Free access in July 2026!",
   },
 
   differentiation: {
@@ -407,7 +407,7 @@ export const landingEn = {
     howItWorks: "How it works",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
-    footnotePromo: "Free access in June 2026!",
+    footnotePromo: "Free access in July 2026!",
   },
 
   pricingCards: {
