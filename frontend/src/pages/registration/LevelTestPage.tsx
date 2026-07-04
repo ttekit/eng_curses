@@ -77,7 +77,10 @@ export default function LevelTestPage() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.25_295/_20%)_0%,transparent_50%)]" />
       <div className="absolute inset-0 bg-card/60" />
       <ContentHeader />
-      <div className="max-w-2xl z-10 w-full bg-card border border-border rounded-3xl p-8 sm:p-10 shadow-lg">
+      <div
+        translate="no"
+        className="max-w-2xl z-10 w-full bg-card border border-border rounded-3xl p-8 sm:p-10 shadow-lg notranslate"
+      >
         {!showResult ? (
           <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center mb-2">
