@@ -116,6 +116,7 @@ export class PlacementTestService {
       where: { id: userId },
       select: {
         name: true,
+        role: true,
         additionalUserData: {
           select: {
             nativeLanguage: true,
@@ -131,7 +132,7 @@ export class PlacementTestService {
       throw new NotFoundException("User not found");
     }
     const p = user.additionalUserData;
-    const knowledgeTags = this.buildKnowledgeTags(p);
+    const knowledgeTags = this.buildKnowledgeTags(p, user.role);
     const cefrHint = p?.englishLevel?.trim() || "unknown (treat as mixed B1–B2)";
     const target = this.getTargetQuestionCount(this.themes);
 
@@ -351,22 +352,36 @@ export class PlacementTestService {
       workField: string | null;
       hobbies: string[];
     } | null,
+    role?: string,
   ): string[] {
     const tags: string[] = [];
     if (p?.workField?.trim()) {
-      tags.push(`work:${p.workField.trim()}`);
+      tags.push(`work: ${p.workField.trim()}`);
     }
     if (p?.education?.trim()) {
-      tags.push(`education:${p.education.trim()}`);
+      tags.push(`education: ${p.education.trim()}`);
     }
     for (const h of p?.hobbies ?? []) {
       const t = h?.trim();
       if (t) {
-        tags.push(`hobby:${t}`);
+        tags.push(`hobby: ${t}`);
       }
     }
     if (tags.length === 0) {
-      return ["general English learner (no extra profile context)"];
+      if (role === UserRole.STUDENT || role === "STUDENT") {
+        return [
+          "student life and university studies",
+          "everyday social interactions and friendships",
+          "modern technology, apps and social media",
+          "travel, entertainment and pop culture",
+        ];
+      }
+      return [
+        "everyday social and practical communication",
+        "travel, navigation and cultural experiences",
+        "modern workplace and digital communication",
+        "daily routines, hobbies and entertainment",
+      ];
     }
     return tags;
   }
@@ -422,18 +437,50 @@ export class PlacementTestService {
       {
         id: "e1",
         type: "grammar",
+        level: "A2",
+        skill: "present_simple_vs_continuous",
         themeId: "daily_life",
-        prompt:
-          "Choose the best completion: I have been studying English ____ three years.",
+        prompt: "Choose the best completion: I usually ____ coffee in the morning, but today I am drinking tea.",
+        options: ["drink", "am drinking", "drank", "have drunk"],
+        correctIndex: 0,
+      },
+      {
+        id: "e2",
+        type: "vocabulary",
+        level: "A2",
+        skill: "quantifiers_some_any",
+        themeId: "daily_life",
+        prompt: "Choose the best word: We need to buy ____ fresh bread and cheese for the sandwiches.",
+        options: ["some", "any", "a", "many"],
+        correctIndex: 0,
+      },
+      {
+        id: "e3",
+        type: "grammar",
+        level: "A2",
+        skill: "present_perfect_continuous",
+        themeId: "daily_life",
+        prompt: "Choose the best completion: I have been studying English ____ three years.",
         options: ["since", "for", "from", "during"],
         correctIndex: 1,
       },
       {
-        id: "e2",
+        id: "e4",
+        type: "vocabulary",
+        level: "A2",
+        skill: "contextual_vocabulary",
+        themeId: "travel",
+        prompt: "Best word: Our flight was ____ because of heavy fog at the airport.",
+        options: ["delayed", "postponed", "advanced", "cancelled"],
+        correctIndex: 0,
+      },
+      {
+        id: "e5",
         type: "grammar",
+        level: "B1",
+        skill: "passive_modals",
         themeId: "workplace",
-        prompt:
-          "Choose the best phrase: The report ____ by Friday afternoon.",
+        prompt: "Choose the best phrase: The annual financial report ____ by Friday afternoon.",
         options: [
           "must be finished",
           "must finished",
@@ -443,130 +490,122 @@ export class PlacementTestService {
         correctIndex: 0,
       },
       {
-        id: "e3",
+        id: "e6",
         type: "vocabulary",
+        level: "B1",
+        skill: "phrasal_verbs",
         themeId: "education",
         prompt: "Closest meaning to postpone:",
-        options: ["cancel forever", "put off until later", "speed up", "delete"],
-        correctIndex: 1,
-      },
-      {
-        id: "e4",
-        type: "vocabulary",
-        themeId: "travel",
-        prompt: "Best word: Our flight was ____ because of heavy fog.",
-        options: ["delayed", "postponed", "advanced", "cancelled"],
+        options: ["put off until later", "cancel forever", "speed up", "leave out"],
         correctIndex: 0,
       },
       {
-        id: "e5",
-        type: "grammar",
-        themeId: "hobbies",
-        prompt: "Sheʼs keen ____ improving her pronunciation.",
-        options: ["of", "on", "for", "by"],
-        correctIndex: 1,
-      },
-      {
-        id: "e6",
-        type: "grammar",
-        themeId: "daily_life",
-        prompt: "If I ____ the earlier train, I would have arrived on time.",
-        options: ["took", "had taken", "have taken", "will take"],
-        correctIndex: 1,
-      },
-      {
         id: "e7",
-        type: "vocabulary",
-        themeId: "workplace",
-        prompt: "Polite critique: “I think the memo could read ____”.",
-        options: ["more stronger", "stronger a bit", "a bit clearer", "more clearer"],
-        correctIndex: 2,
+        type: "grammar",
+        level: "B1",
+        skill: "dependent_prepositions",
+        themeId: "hobbies",
+        prompt: "She is really keen ____ improving her pronunciation this term.",
+        options: ["of", "on", "for", "at"],
+        correctIndex: 1,
       },
       {
         id: "e8",
-        type: "grammar",
+        type: "vocabulary",
+        level: "B1",
+        skill: "collocations",
         themeId: "education",
-        prompt: "Choose the best completion: By next month I ____ the prerequisites.",
-        options: [
-          "will have completed",
-          "complete",
-          "have been completing",
-          "completed",
-        ],
+        prompt: "Best collocation: We need to make ____ before leaving the office.",
+        options: ["arrangements", "a homework", "a progress", "an advice"],
         correctIndex: 0,
       },
       {
         id: "e9",
-        type: "vocabulary",
-        themeId: "daily_life",
-        prompt: "“Reliable” in a gadget review implies:",
-        options: [
-          "trend-hopping",
-          "likely to glitch",
-          "consistently trustworthy",
-          "ultra pricey",
-        ],
+        type: "grammar",
+        level: "B2",
+        skill: "quantifiers_so_such",
+        themeId: "travel",
+        prompt: "We had ____ terrible weather in London that the outdoor event was cancelled.",
+        options: ["so", "such a", "such", "so much"],
         correctIndex: 2,
       },
       {
         id: "e10",
-        type: "grammar",
-        themeId: "workplace",
-        prompt: "____ setbacks, release stayed on schedule.",
-        options: ["Although", "However", "Despite", "Because"],
-        correctIndex: 2,
+        type: "vocabulary",
+        level: "B2",
+        skill: "adjective_nuance",
+        themeId: "daily_life",
+        prompt: "“Reliable” in a modern gadget review implies that the device is:",
+        options: [
+          "consistently trustworthy",
+          "likely to glitch",
+          "trend-hopping",
+          "ultra pricey",
+        ],
+        correctIndex: 0,
       },
       {
         id: "e11",
-        type: "vocabulary",
-        themeId: "education",
-        prompt: "Best collocation: We need to make ____ before leaving.",
-        options: ["arrangements", "a homework", "many fun", "a damage"],
-        correctIndex: 0,
+        type: "grammar",
+        level: "B2",
+        skill: "conjunctions_of_contrast",
+        themeId: "workplace",
+        prompt: "____ unexpected technical setbacks, the software release stayed on schedule.",
+        options: ["Although", "However", "Despite", "Even though"],
+        correctIndex: 2,
       },
       {
         id: "e12",
         type: "grammar",
-        themeId: "travel",
-        prompt: "Select the sentence with correct article use.",
+        level: "B2",
+        skill: "future_perfect",
+        themeId: "education",
+        prompt: "Choose the best completion: By next month, I ____ all the course prerequisites.",
         options: [
-          "I led an important the meeting",
-          "I led an important meeting",
-          "I led important a meeting",
-          "I led the important an meeting",
+          "will have completed",
+          "complete",
+          "have been completing",
+          "will complete",
         ],
-        correctIndex: 1,
+        correctIndex: 0,
       },
       {
         id: "e13",
-        type: "vocabulary",
-        themeId: "hobbies",
-        prompt: "In casual English, “to pull off” most often means:",
-        options: [
-          "to cancel abruptly",
-          "to achieve something tricky successfully",
-          "to escalate an argument",
-          "to stop trying",
-        ],
+        type: "grammar",
+        level: "C1",
+        skill: "third_conditional",
+        themeId: "daily_life",
+        prompt: "If I ____ the earlier train, I would have arrived before the presentation started.",
+        options: ["took", "had taken", "would take", "have taken"],
         correctIndex: 1,
       },
       {
         id: "e14",
-        type: "grammar",
-        themeId: "workplace",
-        prompt: "The director, ____ team shipped early, thanked everyone.",
-        options: ["which", "whose", "whom", "where"],
-        correctIndex: 1,
+        type: "vocabulary",
+        level: "C1",
+        skill: "idiomatic_phrasal_verbs",
+        themeId: "hobbies",
+        prompt: "In casual spoken English, “to pull something off” most often means:",
+        options: [
+          "to achieve something tricky successfully",
+          "to cancel a plan abruptly",
+          "to escalate an argument",
+          "to give up after trying",
+        ],
+        correctIndex: 0,
       },
       {
         id: "e15",
         type: "vocabulary",
+        level: "C1",
+        skill: "advanced_adjectives",
         themeId: "education",
-        prompt: "Best word: The lecture felt so ____ that half the class drifted.",
-        options: ["fascinated", "tedious", "tediously", "bored"],
+        prompt: "Best word: The guest lecture felt so ____ that half the audience drifted away.",
+        options: ["fascinated", "tedious", "tediously", "overwhelm"],
         correctIndex: 1,
       },
     ];
+
     const normalized = this.normalizeQuestions(bank);
     const slice = normalized.length ? normalized : bank;
     return this.sliceAndRenumberQuestions(slice, safe);
@@ -589,19 +628,19 @@ export class PlacementTestService {
 
     const themeSummary = themes
       ? JSON.stringify(
-          {
-            themes: themes.themes.map((t) => ({
-              id: t.id,
-              label: t.label,
-              sampleVocabulary: t.vocabulary.slice(0, 6),
-              scenarios: (t.scenarios ?? []).slice(0, 3),
-            })),
-            grammarFoci: themes.grammarFoci.map((g) => g.id + ": " + g.label),
-            vocabularyFoci: themes.vocabularyFoci,
-          },
-          null,
-          0,
-        )
+        {
+          themes: themes.themes.map((t) => ({
+            id: t.id,
+            label: t.label,
+            sampleVocabulary: t.vocabulary.slice(0, 6),
+            scenarios: (t.scenarios ?? []).slice(0, 3),
+          })),
+          grammarFoci: themes.grammarFoci.map((g) => g.id + ": " + g.label),
+          vocabularyFoci: themes.vocabularyFoci,
+        },
+        null,
+        0,
+      )
       : "[]";
 
     const grammarCount = Math.ceil(target * 0.5);
@@ -704,6 +743,8 @@ export class PlacementTestService {
         id: String(q.id || `temp-${i}`),
         type,
         themeId,
+        level: (q as any).level,
+        skill: (q as any).skill,
         prompt: String(q.prompt).trim().replace(/\s+/g, " ").slice(0, 2000),
         options: [o0, o1, o2, o3] as [
           string,
@@ -712,7 +753,7 @@ export class PlacementTestService {
           string,
         ],
         correctIndex: idx,
-      });
+      } as any);
     }
     return out;
   }
@@ -726,138 +767,176 @@ export class PlacementTestService {
       "education",
       "hobbies",
     ];
-    const tagLine = ctx.knowledgeTags[0] ?? "general";
     const mix: PlacementQuestion[] = [
       {
         id: "x1",
         type: "grammar",
-        themeId: themeIds[0],
-        prompt: `Choose the best completion: By next month I ____ the prerequisites. (${tagLine})`,
-        options: [
-          "will have completed",
-          "complete",
-          "have been completing",
-          "completed",
-        ],
+        level: "A2",
+        skill: "present_simple_vs_continuous",
+        themeId: themeIds[0] ?? "daily_life",
+        prompt: "Choose the best completion: I usually ____ coffee in the morning, but today I am drinking tea.",
+        options: ["drink", "am drinking", "drank", "have drunk"],
         correctIndex: 0,
       },
       {
         id: "x2",
-        type: "grammar",
+        type: "vocabulary",
+        level: "A2",
+        skill: "quantifiers_some_any",
         themeId: themeIds[1] ?? "daily_life",
-        prompt: `Select correct article use.`,
-        options: [
-          "I led an important the meeting",
-          "I led an important meeting",
-          "I led important a meeting",
-          "I led the important an meeting",
-        ],
-        correctIndex: 1,
+        prompt: "Choose the best word: We need to buy ____ fresh bread and cheese for the sandwiches.",
+        options: ["some", "any", "a", "many"],
+        correctIndex: 0,
       },
       {
         id: "x3",
-        type: "vocabulary",
-        themeId: themeIds[2] ?? "hobbies",
-        prompt: `In casual English, "to pull off" most often means:`,
-        options: [
-          "to cancel abruptly",
-          "to achieve something tricky successfully",
-          "to escalate an argument",
-          "to stop trying",
-        ],
+        type: "grammar",
+        level: "A2",
+        skill: "present_perfect_continuous",
+        themeId: themeIds[2] ?? "daily_life",
+        prompt: "Choose the best completion: I have been studying English ____ three years.",
+        options: ["since", "for", "from", "during"],
         correctIndex: 1,
       },
       {
         id: "x4",
         type: "vocabulary",
-        themeId: "daily_life",
-        prompt: `Choose best collocation: We need to make ____ before leaving.`,
-        options: [
-          "arrangements",
-          "a homework",
-          "many fun",
-          "a damage",
-        ],
+        level: "A2",
+        skill: "contextual_vocabulary",
+        themeId: "travel",
+        prompt: "Best word: Our flight was ____ because of heavy fog at the airport.",
+        options: ["delayed", "postponed", "advanced", "cancelled"],
         correctIndex: 0,
       },
       {
         id: "x5",
         type: "grammar",
-        themeId: "travel",
-        prompt: `If I ____ the earlier train, I would have arrived on time.`,
-        options: ["took", "had taken", "have taken", "will take"],
-        correctIndex: 1,
+        level: "B1",
+        skill: "passive_modals",
+        themeId: "workplace",
+        prompt: "Choose the best phrase: The annual financial report ____ by Friday afternoon.",
+        options: [
+          "must be finished",
+          "must finished",
+          "must finishing",
+          "must be finishing",
+        ],
+        correctIndex: 0,
       },
       {
         id: "x6",
-        type: "grammar",
-        themeId: "workplace",
-        prompt: `The director, ____ team shipped early, thanked everyone.`,
-        options: ["which", "whose", "whom", "where"],
-        correctIndex: 1,
+        type: "vocabulary",
+        level: "B1",
+        skill: "phrasal_verbs",
+        themeId: "education",
+        prompt: "Closest meaning to postpone:",
+        options: ["put off until later", "cancel forever", "speed up", "leave out"],
+        correctIndex: 0,
       },
       {
         id: "x7",
-        type: "vocabulary",
-        themeId: "education",
-        prompt: `Best word: The lecture felt so ____ that half the class drifted.`,
-        options: ["fascinated", "tedious", "tediously", "bored"],
+        type: "grammar",
+        level: "B1",
+        skill: "dependent_prepositions",
+        themeId: "hobbies",
+        prompt: "She is really keen ____ improving her pronunciation this term.",
+        options: ["of", "on", "for", "at"],
         correctIndex: 1,
       },
       {
         id: "x8",
         type: "vocabulary",
-        themeId: "workplace",
-        prompt: `Polite critique: “I think the memo could read ____”.`,
-        options: [
-          "more stronger",
-          "stronger a bit",
-          "a bit clearer",
-          "more clearer",
-        ],
-        correctIndex: 2,
+        level: "B1",
+        skill: "collocations",
+        themeId: "education",
+        prompt: "Best collocation: We need to make ____ before leaving the office.",
+        options: ["arrangements", "a homework", "a progress", "an advice"],
+        correctIndex: 0,
       },
       {
         id: "x9",
         type: "grammar",
-        themeId: "hobbies",
-        prompt: `Sheʼs keen ____ improving her pronunciation.`,
-        options: ["of", "on", "for", "by"],
-        correctIndex: 1,
+        level: "B2",
+        skill: "quantifiers_so_such",
+        themeId: "travel",
+        prompt: "We had ____ terrible weather in London that the outdoor event was cancelled.",
+        options: ["so", "such a", "such", "so much"],
+        correctIndex: 2,
       },
       {
         id: "x10",
         type: "vocabulary",
+        level: "B2",
+        skill: "adjective_nuance",
         themeId: "daily_life",
-        prompt: `“Reliable” in a gadget review implies:`,
+        prompt: "“Reliable” in a modern gadget review implies that the device is:",
         options: [
-          "trend-hopping",
-          "likely to glitch",
           "consistently trustworthy",
+          "likely to glitch",
+          "trend-hopping",
           "ultra pricey",
         ],
-        correctIndex: 2,
+        correctIndex: 0,
       },
       {
         id: "x11",
         type: "grammar",
+        level: "B2",
+        skill: "conjunctions_of_contrast",
         themeId: "workplace",
-        prompt: `____ setbacks, release stayed on schedule.`,
-        options: [
-          "Although",
-          "However",
-          "Despite",
-          "Because",
-        ],
+        prompt: "____ unexpected technical setbacks, the software release stayed on schedule.",
+        options: ["Although", "However", "Despite", "Even though"],
         correctIndex: 2,
       },
       {
         id: "x12",
-        type: "vocabulary",
+        type: "grammar",
+        level: "B2",
+        skill: "future_perfect",
         themeId: "education",
-        prompt: `Closest meaning to postpone:`,
-        options: ["shrink", "permanently delete", "put off later", "speed up"],
-        correctIndex: 2,
+        prompt: "Choose the best completion: By next month, I ____ all the course prerequisites.",
+        options: [
+          "will have completed",
+          "complete",
+          "have been completing",
+          "will complete",
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: "x13",
+        type: "grammar",
+        level: "C1",
+        skill: "third_conditional",
+        themeId: "daily_life",
+        prompt: "If I ____ the earlier train, I would have arrived before the presentation started.",
+        options: ["took", "had taken", "would take", "have taken"],
+        correctIndex: 1,
+      },
+      {
+        id: "x14",
+        type: "vocabulary",
+        level: "C1",
+        skill: "idiomatic_phrasal_verbs",
+        themeId: "hobbies",
+        prompt: "In casual spoken English, “to pull something off” most often means:",
+        options: [
+          "to achieve something tricky successfully",
+          "to cancel a plan abruptly",
+          "to escalate an argument",
+          "to give up after trying",
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: "x15",
+        type: "vocabulary",
+        level: "C1",
+        skill: "advanced_adjectives",
+        themeId: "education",
+        prompt: "Best word: The guest lecture felt so ____ that half the audience drifted away.",
+        options: ["fascinated", "tedious", "tediously", "overwhelm"],
+        correctIndex: 1,
       },
     ];
     void ctx.cefrHint;

@@ -589,7 +589,6 @@ export function renderPlacementHtml(
         <div class="progress-fill" id="progressFill"></div>
       </div>
     </div>
-    <div class="tags-hint" id="tagRow" aria-label="Practice focus tags"></div>
     <main class="quiz-main" aria-live="polite">
       <div class="placement-load-error" id="placementLoadError" hidden role="alert"></div>
       <div class="q-type-pill" id="qKind"></div>

@@ -7,6 +7,8 @@ export type PlacementQuestion = {
   prompt: string;
   options: [string, string, string, string];
   correctIndex: 0 | 1 | 2 | 3;
+  level?: string;
+  skill?: string;
 };
 
 export type PlacementTestPayload = {
@@ -18,6 +20,7 @@ export type PlacementTestPayload = {
   completePath?: string;
   /** Override `postMessage` type after success (default `placement_test_complete`). */
   completeEventType?: string;
+
 };
 
 export type ThemesFile = {
