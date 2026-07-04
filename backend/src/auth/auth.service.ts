@@ -46,18 +46,16 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly alcorythmService: AlcorythmService,
     private readonly userService: UsersService,
     private readonly configService: ConfigService,
     private readonly providerService: ProviderService,
-    private readonly emailConfirmationService: EmailConfirmationService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
     private readonly mailService: MailService,
     private readonly authProfileService: AuthProfileService,
     private readonly authLearningStatsService: AuthLearningStatsService,
     private readonly authKnowledgeTagsService: AuthKnowledgeTagsService,
     private readonly authProgressDetailsService: AuthProgressDetailsService,
-  ) { }
+  ) {}
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -131,8 +129,8 @@ export class AuthService {
         method: "CREDENTIALS",
         teacherId,
         isVerified: true,
-        subscriptionPlan: "smart",
-        subscriptionStatus: "active",
+        // subscriptionPlan: "smart",
+        // subscriptionStatus: "active",
       },
     });
 
@@ -239,8 +237,8 @@ export class AuthService {
         role: roleLabel as any,
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
-        subscriptionPlan: "smart",
-        subscriptionStatus: "active",
+        // subscriptionPlan: "smart",
+        // subscriptionStatus: "active",
         hasCompletedPlacement: roleLabel === "TEACHER",
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
@@ -467,15 +465,17 @@ export class AuthService {
           ? { dateOfBirth: new Date(data.dateOfBirth) }
           : {}),
 
-        ...((data as any).englishLevel !== undefined ? { hasCompletedPlacement: true } : {}),
+        ...((data as any).englishLevel !== undefined
+          ? { hasCompletedPlacement: true }
+          : {}),
 
         additionalUserData: hasAdditionalData
           ? {
-            upsert: {
-              create: createData,
-              update: updateData,
-            },
-          }
+              upsert: {
+                create: createData,
+                update: updateData,
+              },
+            }
           : undefined,
       },
     });
