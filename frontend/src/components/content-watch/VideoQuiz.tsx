@@ -84,7 +84,7 @@ export function VideoQuiz({
 
   if (!isVideoComplete) {
     return (
-      <div className="py-8 text-center">
+      <div translate="no" className="py-8 text-center notranslate">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
           <Lock className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -180,7 +180,7 @@ export function VideoQuiz({
             : null;
 
   return (
-    <div className="space-y-4">
+    <div translate="no" className="space-y-4 notranslate">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
           {formatMessage(L.questionOf, {
@@ -300,7 +300,7 @@ export function LessonCompleteBanner({ xpEarned }: { xpEarned: number }) {
   const L = useAppMessages().lesson;
   const summary = useAppMessages().lessonSummaryPage;
   return (
-    <div className="rounded-xl border border-accent/20 bg-accent/10 p-4 text-center">
+    <div translate="no" className="rounded-xl border border-accent/20 bg-accent/10 p-4 text-center notranslate">
       <img src="/ResultHappy.svg" className="w-20 h-20" alt="" />
       <p className="font-semibold text-foreground">{L.completeBannerTitle}</p>
       <p className="mb-3 text-sm text-muted-foreground">

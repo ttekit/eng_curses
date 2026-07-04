@@ -57,7 +57,7 @@ export class AuthService {
     private readonly authLearningStatsService: AuthLearningStatsService,
     private readonly authKnowledgeTagsService: AuthKnowledgeTagsService,
     private readonly authProgressDetailsService: AuthProgressDetailsService,
-  ) {}
+  ) { }
 
   private async filterExistingGenreIds(
     ids: number[] | undefined,
@@ -239,8 +239,6 @@ export class AuthService {
         role: roleLabel as any,
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
-        //verificationCode: ,
-        //verificationCodeExpires:,
         subscriptionPlan: "smart",
         subscriptionStatus: "active",
         hasCompletedPlacement: roleLabel === "TEACHER",
@@ -255,7 +253,6 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
-        //verificationCode: true,
       },
     });
 
@@ -425,6 +422,8 @@ export class AuthService {
       baseData.nativeLanguage = data.nativeLanguage;
     if (data.knownLanguages !== undefined)
       baseData.knownLanguages = data.knownLanguages;
+    if ((data as any).englishLevel !== undefined)
+      baseData.englishLevel = (data as any).englishLevel;
 
     const createData: any = { ...baseData };
     const updateData: any = { ...baseData };
@@ -468,13 +467,15 @@ export class AuthService {
           ? { dateOfBirth: new Date(data.dateOfBirth) }
           : {}),
 
+        ...((data as any).englishLevel !== undefined ? { hasCompletedPlacement: true } : {}),
+
         additionalUserData: hasAdditionalData
           ? {
-              upsert: {
-                create: createData,
-                update: updateData,
-              },
-            }
+            upsert: {
+              create: createData,
+              update: updateData,
+            },
+          }
           : undefined,
       },
     });

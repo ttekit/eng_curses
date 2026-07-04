@@ -80,4 +80,8 @@ export class UpdatePreferencesDto {
   @IsArray()
   @IsNumber({}, { each: true })
   hatedGenres?: number[];
+
+  @IsOptional()
+  @IsString()
+  englishLevel?: string;
 }

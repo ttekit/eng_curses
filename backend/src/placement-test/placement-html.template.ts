@@ -569,7 +569,7 @@ export function renderPlacementHtml(
 
   
 </head>
-<body>
+<body translate="no">
   <div id="view-quiz">
     <header class="top-bar">
       <div class="top-inner">
