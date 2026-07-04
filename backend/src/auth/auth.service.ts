@@ -129,8 +129,8 @@ export class AuthService {
         method: "CREDENTIALS",
         teacherId,
         isVerified: true,
-        // subscriptionPlan: "smart",
-        // subscriptionStatus: "active",
+        subscriptionPlan: "smart",
+        subscriptionStatus: "active",
       },
     });
 
@@ -237,8 +237,8 @@ export class AuthService {
         role: roleLabel as any,
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
-        // subscriptionPlan: "smart",
-        // subscriptionStatus: "active",
+        subscriptionPlan: "smart",
+        subscriptionStatus: "active",
         hasCompletedPlacement: roleLabel === "TEACHER",
         additionalUserData: {
           create: this.pickDefinedFields(additionalDataPayload) as Record<
