@@ -73,8 +73,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
 
   return (
     <>
-      <header className="fixed top-[var(--email-verification-banner-height,0px)] z-999 flex h-18 w-full items-center justify-between border-b border-border bg-[--header-background] px-3 font-display backdrop-blur-md md:px-4">
-        <div className="flex min-w-0 shrink items-center gap-2 sm:gap-3">
+      <header className="fixed top-[var(--email-verification-banner-height,0px)] z-999 flex h-18 w-full items-center gap-2 border-b border-border bg-[--header-background] px-3 font-display backdrop-blur-md md:px-4">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <Link to="/">
             <img
               src="/Icon.svg"
@@ -88,49 +88,51 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
           </p>
         </div>
 
-        <nav
-          className={cn(
-            "absolute left-1/2 hidden lg:flex max-w-[min(100vw-12rem,52rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-full border border-border bg-background/50 px-2 py-1.5 shadow-sm backdrop-blur-md sm:max-w-none sm:flex-nowrap sm:gap-2 sm:px-3",
-            variant === "landing" && "md:gap-1 lg:gap-1.5",
-          )}
-        >
-          {variant === "landing" ? (
-            <>
-              {landingI18n.navLinks.map((link) => {
-                const active = pathname === "/" && hash === `#${link.hash}`;
-                return (
-                  <Link
-                    key={link.hash}
-                    to={{ pathname: "/", hash: `#${link.hash}` }}
-                    className={cn(
-                      linkLanding,
-                      active
-                        ? "bg-secondary text-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </>
-          ) : (
-            appNavLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={cn(
-                  linkApp,
-                  pathname === link.to
-                    ? "bg-secondary text-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))
-          )}
-        </nav>
+        <div className="flex min-w-0 flex-1 items-center justify-center overflow-x-auto">
+          <nav
+            className={cn(
+              "hidden lg:flex min-w-0 max-w-full flex-nowrap items-center gap-1 overflow-x-auto rounded-full border border-border bg-background/50 px-2 py-1.5 shadow-sm backdrop-blur-md sm:gap-2 sm:px-3 scrollbar-hide",
+              variant === "landing" && "md:gap-1 lg:gap-1.5",
+            )}
+          >
+            {variant === "landing" ? (
+              <>
+                {landingI18n.navLinks.map((link) => {
+                  const active = pathname === "/" && hash === `#${link.hash}`;
+                  return (
+                    <Link
+                      key={link.hash}
+                      to={{ pathname: "/", hash: `#${link.hash}` }}
+                      className={cn(
+                        linkLanding,
+                        active
+                          ? "bg-secondary text-foreground shadow-sm"
+                          : "text-muted-foreground bg-secondary/20 hover:bg-secondary/60 hover:text-foreground",
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </>
+            ) : (
+              appNavLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={cn(
+                    linkApp,
+                    pathname === link.to
+                      ? "bg-secondary text-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))
+            )}
+          </nav>
+        </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {/* Блок с переключателями темы и языка */}
