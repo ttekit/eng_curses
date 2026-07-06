@@ -4,6 +4,7 @@ import { formatMessage } from "../../lib/formatMessage";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { updateUserAvatar } from "../../lib/api";
 import { AvatarPickerModal } from "./AvatarPickerModal";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 export type ProfileHeaderRole = "adult" | "student" | "teacher" | "admin";
 
@@ -27,6 +28,7 @@ function initialsFromName(name: string): string {
 
 export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
   const h = useAppMessages().profileHeader;
+  const { locale } = useLandingLocale();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -44,11 +46,10 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
 
   if (user.fullJoinDate) {
     const dateObj = new Date(user.fullJoinDate);
-    displayDate = dateObj.toLocaleDateString("uk-UA", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    displayDate = dateObj.toLocaleDateString(
+      locale === "uk" ? "uk-UA" : "en-US",
+      { day: "numeric", month: "long", year: "numeric" },
+    );
   }
   const handleAvatarSave = async (newUrl: string) => {
     try {
