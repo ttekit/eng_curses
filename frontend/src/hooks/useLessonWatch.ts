@@ -91,9 +91,10 @@ export function useLessonWatch(id: string | undefined) {
 
   const postWatchCompleteOnce = useCallback(async () => {
     if (watchCompletePostedRef.current || !id || isLocked) return;
-    watchCompletePostedRef.current = true;
     const vid = videoData?.id;
     if (!vid) return;
+
+    watchCompletePostedRef.current = true;
     try {
       await apiFetch(`/content-video/${vid}/watch-complete`, {
         method: "POST",
@@ -103,7 +104,7 @@ export function useLessonWatch(id: string | undefined) {
     } catch (error) {
       watchCompletePostedRef.current = false;
     }
-  }, [id, isLocked]);
+  }, [id, isLocked, videoData?.id]);
 
   const ensureLessonWatched = useCallback(() => {
     if (progressedToWatchedRef.current) return;
@@ -291,12 +292,12 @@ export function useLessonWatch(id: string | undefined) {
   useEffect(() => {
     if (heartbeatIntervalRef.current)
       clearInterval(heartbeatIntervalRef.current);
-    if (isLocked) return;
+    if (isLocked || !videoData?.id) return;
     heartbeatIntervalRef.current = setInterval(async () => {
       if (document.hidden || !videoElRef.current || videoElRef.current.paused)
         return;
       try {
-        await apiFetch(`/content-video/${videoData?.id}//watch-complete`, {
+        await apiFetch(`/content-video/${videoData.id}/watch-complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ secondsWatched: 20 }),
@@ -307,7 +308,7 @@ export function useLessonWatch(id: string | undefined) {
       if (heartbeatIntervalRef.current)
         clearInterval(heartbeatIntervalRef.current);
     };
-  }, [id, isLocked]);
+  }, [id, isLocked, videoData?.id]);
 
   const displayVocabulary = useMemo((): VocabularyItem[] => {
     if (lessonSideBundle?.vocabulary && lessonSideBundle.vocabulary.length > 0)
@@ -350,7 +351,7 @@ export function useLessonWatch(id: string | undefined) {
     } catch {
       vocabPersonalizeDoneRef.current = false;
     }
-  }, [user?.id, id, sideBundleLoading, isLocked]);
+  }, [user?.id, id, sideBundleLoading, isLocked, videoData?.id]);
 
   const handleVideoPlay = useCallback(() => {
     playbackStartedForPersonalizeRef.current = true;

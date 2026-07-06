@@ -6,6 +6,7 @@ import {
 import { LEARNER_RECAP_MCQ_COUNT } from "./learner-recap-fallback.tests";
 
 export type LearnerRecapGeminiInput = {
+  kind: "mistakes" | "weekly" | "monthly";
   recapLabel: string;
   lessonTitles: string[];
   combinedTranscript: string;
@@ -79,9 +80,6 @@ function normalizeMcqTests(raw: unknown): ComprehensionTestItem[] {
   return out;
 }
 
-/**
- * Gemini client for weekly / monthly / mistakes recap quizzes (MCQ only).
- */
 @Injectable()
 export class LearnerRecapGeminiClient {
   async generateRecapTests(
@@ -105,31 +103,53 @@ export class LearnerRecapGeminiClient {
     const weak =
       input.priorWeakSpots.length > 0
         ? input.priorWeakSpots
-            .slice(0, 8)
-            .map(
-              (w) =>
-                `- [${w.category}] (missed ${w.missCount}x) ${w.stemSnippet.slice(0, 200)}`,
-            )
-            .join("\n")
+          .slice(0, 8)
+          .map(
+            (w) =>
+              `- [${w.category}] (missed ${w.missCount}x) ${w.stemSnippet.slice(0, 200)}`,
+          )
+          .join("\n")
         : "(no prior misses on record)";
     const transcript =
       input.combinedTranscript.trim().length >= 40
         ? input.combinedTranscript.trim().slice(0, 14000)
         : "(no transcript — use lesson titles only; do not invent specific plot details.)";
-    const prompt = `You create an English learner ${input.recapLabel} quiz: exactly ${LEARNER_RECAP_MCQ_COUNT} multiple-choice questions ONLY (no open-ended items).
-Return ONLY valid JSON: {"tests":[...${LEARNER_RECAP_MCQ_COUNT} items...]}
-Each MCQ: {"id":"r1","questionType":"multiple_choice","category":"grammar"|"vocabulary"|"comprehension","question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}
-Mix roughly 3 grammar, 3 vocabulary, 4 comprehension. Ground questions in the transcript and/or lesson titles. For "mistakes" style recaps, retest similar skills to PRIOR MISSES in new wording.
-Learner level: ${level}
-Goal: ${input.learningGoal}
-Horizon: ${input.timeToAchieve}
-Hobbies: ${input.hobbies.join(", ") || "(none)"}
-Saved vocabulary: ${input.vocabularyTerms.slice(0, 30).join(", ") || "(none)"}
-Lessons in this period: ${titles}
-PRIOR MISSES:
-${weak}
-TRANSCRIPT EXCERPT:
-${transcript}`;
+
+    let prompt = "";
+
+    if (input.kind === "mistakes") {
+      const template =
+        process.env.GEMINI_PROMPT_RECAP_MISTAKES ||
+        `You create a targeted "Work on mistakes" English quiz: exactly {{MCQ_COUNT}} multiple-choice questions ONLY (no open-ended items).\nReturn ONLY valid JSON: {"tests":[...{{MCQ_COUNT}} items...]}\nEach MCQ: {"id":"r1","questionType":"multiple_choice","category":"grammar"|"vocabulary","question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}\n\nCRITICAL RULES:\n- Focus STRICTLY on the user's PRIOR MISSES provided below. Create NEW questions testing the exact same grammar rules or vocabulary meanings that the user previously failed.\n- Do NOT ask about video plots or stories.\n- If there are fewer than {{MCQ_COUNT}} prior misses, fill the rest with general grammar/vocabulary questions suited to the learner level and goal.\n\nLearner level: {{LEARNER_LEVEL}}\nGoal: {{LEARNING_GOAL}}\nSaved vocabulary: {{VOCABULARY_TERMS}}\n\nPRIOR MISSES:\n{{WEAK_SPOTS}}`;
+
+      prompt = template
+        .replace(/\{\{MCQ_COUNT\}\}/g, String(LEARNER_RECAP_MCQ_COUNT))
+        .replace(/\{\{LEARNER_LEVEL\}\}/g, level)
+        .replace(/\{\{LEARNING_GOAL\}\}/g, input.learningGoal)
+        .replace(
+          /\{\{VOCABULARY_TERMS\}\}/g,
+          input.vocabularyTerms.slice(0, 30).join(", ") || "(none)",
+        )
+        .replace(/\{\{WEAK_SPOTS\}\}/g, weak);
+    } else {
+      const template =
+        process.env.GEMINI_PROMPT_RECAP_PERIOD ||
+        `You create an English learner {{RECAP_LABEL}} quiz: exactly {{MCQ_COUNT}} multiple-choice questions ONLY (no open-ended items).\nReturn ONLY valid JSON: {"tests":[...{{MCQ_COUNT}} items...]}\nEach MCQ: {"id":"r1","questionType":"multiple_choice","category":"grammar"|"vocabulary"|"comprehension","question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}\n\nCRITICAL RULES:\n- Mix roughly 3 grammar, 3 vocabulary, 4 comprehension questions.\n- Ground questions strictly in the TRANSCRIPT EXCERPT and/or lesson titles provided below.\n- Test actual comprehension of the videos watched this period.\n\nLearner level: {{LEARNER_LEVEL}}\nGoal: {{LEARNING_GOAL}}\nHorizon: {{TIME_TO_ACHIEVE}}\nHobbies: {{HOBBIES}}\nSaved vocabulary: {{VOCABULARY_TERMS}}\nLessons in this period: {{LESSON_TITLES}}\n\nTRANSCRIPT EXCERPT:\n{{TRANSCRIPT}}`;
+
+      prompt = template
+        .replace(/\{\{RECAP_LABEL\}\}/g, input.recapLabel)
+        .replace(/\{\{MCQ_COUNT\}\}/g, String(LEARNER_RECAP_MCQ_COUNT))
+        .replace(/\{\{LEARNER_LEVEL\}\}/g, level)
+        .replace(/\{\{LEARNING_GOAL\}\}/g, input.learningGoal)
+        .replace(/\{\{TIME_TO_ACHIEVE\}\}/g, input.timeToAchieve)
+        .replace(/\{\{HOBBIES\}\}/g, input.hobbies.join(", ") || "(none)")
+        .replace(
+          /\{\{VOCABULARY_TERMS\}\}/g,
+          input.vocabularyTerms.slice(0, 30).join(", ") || "(none)",
+        )
+        .replace(/\{\{LESSON_TITLES\}\}/g, titles)
+        .replace(/\{\{TRANSCRIPT\}\}/g, transcript);
+    }
 
     try {
       const res = await fetch(`${apiUrl}?key=${encodeURIComponent(apiKey)}`, {

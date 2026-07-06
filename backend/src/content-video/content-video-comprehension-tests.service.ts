@@ -53,7 +53,6 @@ import { PostWatchSurveyService } from "./post-watch-survey.service";
 
 const GRADING_TTL_MS = 2 * 60 * 60 * 1000;
 
-/** Stored on each attempt row; aligns with coarse "passed" KPI in admin dashboards. */
 const COMPREHENSION_PASS_SCORE_PCT = 70;
 
 const MAX_PRIOR_WEAK_SPOTS = 8;
@@ -63,17 +62,11 @@ export type GenerateComprehensionTestsResult = {
   videoName: string;
   source: "gemini" | "fallback";
   tests: ComprehensionTestItem[];
-  /** Same Gemini payload as comprehension tests — grounded in transcript, tuned to level + themes. */
   keyVocabulary: KeyVocabularyItem[];
-  /** HMAC token (≈2h) to submit answers without re-running the model. */
   gradingToken: string;
-  /** Profile English / CEFR when `userId` was sent and the user exists. */
   learnerCefr: string | null;
-  /** Whether WebVTT was fetched and had enough text to ground questions. */
   usedTranscript: boolean;
-  /** How many of the user’s saved vocabulary terms (study language) were available. */
   vocabularyTermsUsed: number;
-  /** Up to 50 terms from the user’s list used for this test (empty if anonymous / none). */
   vocabularyTerms: string[];
 };
 
@@ -93,10 +86,9 @@ export type SubmitComprehensionTestResult = {
   message: string;
   learnerCefr: string | null;
   vocabularyTerms: string[];
-  /** Coach-style feedback for the written summary (Gemini when configured, else heuristic). */
   openEndedFeedback: string | null;
-  /** 1–10 from the model when the open summary was graded; null if offline/heuristic/no open item. */
   writtenSummaryScore: number | null;
+
 };
 
 function weakSpotStemHash(category: string, stemSnippet: string): string {
@@ -161,11 +153,8 @@ export class ContentVideoComprehensionTestsService {
     private readonly openAnswerGrader: ContentVideoOpenAnswerGraderClient,
     private readonly userVocabulary: UserVocabularyService,
     private readonly postWatchSurveyService: PostWatchSurveyService,
-  ) {}
+  ) { }
 
-  /**
-   * Always generates fresh tests (no server-side cache). Issues a new `gradingToken` each time.
-   */
   async getOrLoadTests(
     contentVideoId: number,
     userId?: number | null,
@@ -173,7 +162,6 @@ export class ContentVideoComprehensionTestsService {
     return this.loadTests(contentVideoId, userId ?? null);
   }
 
-  /** Same behaviour as `getOrLoadTests` (cache removed). Kept for API compatibility. */
   async generate(
     contentVideoId: number,
     userId?: number | null,
@@ -191,7 +179,7 @@ export class ContentVideoComprehensionTestsService {
         videoCaption: true,
         content: {
           include: {
-            stats: { select: { userTags: true } },
+            stats: { select: { userTags: true, systemTags: true } },
           },
         },
       },
@@ -235,6 +223,10 @@ export class ContentVideoComprehensionTestsService {
       ),
     ];
 
+    const systemTags = (video as any).content?.stats?.systemTags ?? [];
+    const videoLevelMatch = (Array.isArray(systemTags) ? systemTags : []).find((t: string) => /^(A1|A2|B1|B2|C1|C2)$/i.test(t));
+    const videoLevel = videoLevelMatch ? videoLevelMatch.toUpperCase() : null;
+
     const {
       source,
       tests,
@@ -251,6 +243,7 @@ export class ContentVideoComprehensionTestsService {
       learningGoal,
       timeToAchieve,
       hobbies,
+      videoLevel,
     );
     let keyVocabulary = rawKeyVocab;
     if (!keyVocabulary.length) {
@@ -259,6 +252,7 @@ export class ContentVideoComprehensionTestsService {
         videoName: video.videoName,
         videoDescription: video.videoDescription,
         learnerCefr: cefr,
+        videoLevel,
         vocabularyTerms,
         learnerThemeKnowledge,
         videoThemeTags,
@@ -325,6 +319,7 @@ export class ContentVideoComprehensionTestsService {
     learningGoal: string,
     timeToAchieve: string,
     hobbies: string[],
+    videoLevel: string | null,
   ): Promise<{
     source: "gemini" | "fallback";
     tests: ComprehensionTestItem[];
@@ -335,6 +330,7 @@ export class ContentVideoComprehensionTestsService {
       videoDescription,
       transcriptPlain,
       learnerCefr: cefr,
+      videoLevel,
       vocabularyTerms,
       videoThemeTags,
       learnerThemeKnowledge,
@@ -357,6 +353,7 @@ export class ContentVideoComprehensionTestsService {
         videoName,
         transcriptPlain,
         learnerCefr: cefr,
+        videoLevel,
         vocabularyTerms,
         priorWeakSpots,
         learningGoal,
@@ -368,6 +365,7 @@ export class ContentVideoComprehensionTestsService {
         videoName,
         videoDescription,
         learnerCefr: cefr,
+        videoLevel,
         vocabularyTerms,
         learnerThemeKnowledge,
         videoThemeTags,
@@ -394,18 +392,18 @@ export class ContentVideoComprehensionTestsService {
     const items: GradingItem[] = p.tests.map((t) =>
       t.questionType === "open"
         ? {
-            kind: "open" as const,
-            id: t.id,
-            category: "open" as const,
-            questionStem: t.question.slice(0, 400),
-          }
+          kind: "open" as const,
+          id: t.id,
+          category: "open" as const,
+          questionStem: t.question.slice(0, 400),
+        }
         : {
-            kind: "mcq" as const,
-            id: t.id,
-            correctIndex: t.correctIndex,
-            category: t.category,
-            questionStem: t.question.slice(0, 400),
-          },
+          kind: "mcq" as const,
+          id: t.id,
+          correctIndex: t.correctIndex,
+          category: t.category,
+          questionStem: t.question.slice(0, 400),
+        },
     );
     const gradingToken = createGradingToken(
       { contentVideoId: p.contentVideoId, userId: p.userId, exp, items },
@@ -425,10 +423,6 @@ export class ContentVideoComprehensionTestsService {
     };
   }
 
-  /**
-   * Grades a submitted attempt, updates `UserLanguageData` for topics linked to this
-   * video’s `ContentStats` when the signed token includes a `userId`.
-   */
   async submit(
     contentVideoId: number,
     body: {
@@ -951,7 +945,6 @@ export class ContentVideoComprehensionTestsService {
     return "en";
   }
 
-  /** Job, education, hobbies from `AdditionalUserData` for open-summary coaching. */
   private async loadAdditionalProfileForOpenGrading(
     userId: number | null,
   ): Promise<{

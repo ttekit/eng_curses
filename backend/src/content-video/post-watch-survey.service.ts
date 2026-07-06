@@ -82,7 +82,8 @@ export class PostWatchSurveyService {
       },
       update: {
         secondsWatched: { increment: duration },
-        ...(isCompleted ? { completed: true, endedAt: new Date() } : {}),
+        endedAt: new Date(),
+        ...(isCompleted ? { completed: true } : {}),
       },
       create: {
         userId,

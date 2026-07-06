@@ -175,7 +175,7 @@ function readStoredSummary(videoId: string): LessonSummaryState | null {
           : undefined,
       writtenSummaryFeedback:
         typeof p.writtenSummaryFeedback === "string" &&
-        p.writtenSummaryFeedback.trim()
+          p.writtenSummaryFeedback.trim()
           ? p.writtenSummaryFeedback.trim()
           : p.writtenSummaryFeedback === null
             ? null
@@ -272,7 +272,7 @@ function coerceSummary(
         : undefined,
     writtenSummaryFeedback:
       typeof s.writtenSummaryFeedback === "string" &&
-      s.writtenSummaryFeedback.trim()
+        s.writtenSummaryFeedback.trim()
         ? s.writtenSummaryFeedback.trim()
         : s.writtenSummaryFeedback === null
           ? null
@@ -497,7 +497,7 @@ export default function LessonSummaryPage() {
             </div>
 
             {display.summary.quizReview &&
-            display.summary.quizReview.wrong.length > 0 ? (
+              display.summary.quizReview.wrong.length > 0 ? (
               <div className="mt-8 rounded-2xl border border-destructive/25 bg-destructive/5 p-6 sm:p-8">
                 <h2 className="font-display text-center text-lg font-semibold">
                   {page.reviewWrongHeading}
@@ -522,10 +522,10 @@ export default function LessonSummaryPage() {
                                 : row.category}
                         </span>
                       ) : null}
-                      <p className="mt-2 text-sm font-medium text-foreground">
+                      <p className="mt-2 text-sm font-medium text-foreground" translate="no">
                         {row.question}
                       </p>
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className="mt-2 text-sm text-muted-foreground" translate="no">
                         {page.yourAnswer}{" "}
                         <span className="font-medium text-destructive">
                           {row.options[row.selectedIndex] ?? page.answerDash}
@@ -560,7 +560,7 @@ export default function LessonSummaryPage() {
                   {page.wordsEmpty}
                 </p>
               ) : (
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-4 space-y-3" translate="no">
                   {display.summary.learnedWords.map((w) => (
                     <li
                       key={w.word}
@@ -570,7 +570,7 @@ export default function LessonSummaryPage() {
                         {w.word}
                       </span>
                       <span className="text-muted-foreground"> — </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground" translate="yes">
                         {w.definition}
                       </span>
                     </li>
@@ -638,8 +638,8 @@ export default function LessonSummaryPage() {
               ) : null}
 
               {display.summary.lessonTopics.length === 0 &&
-              display.summary.themeTags.length === 0 &&
-              display.summary.levelTags.length === 0 ? (
+                display.summary.themeTags.length === 0 &&
+                display.summary.levelTags.length === 0 ? (
                 <p className="mt-4 text-sm text-muted-foreground">
                   {page.untaggedClipLead}
                   <strong>{display.summary.categoryName}</strong>

@@ -180,7 +180,7 @@ export class ContentVideoService {
       },
     });
 
-    return videos.sort(compareContentVideosPlaylistOrder);
+    return videos.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
   }
 
   async findOne(idParam: string | number, reqUserId?: number) {

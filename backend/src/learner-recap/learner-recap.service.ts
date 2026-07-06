@@ -44,7 +44,6 @@ export type RecapStatusItem = {
   kind: RecapKind;
   available: boolean;
   completedInPeriod: boolean;
-  /** ISO instant when the learner may start again (cooldown / next period). */
   nextAvailableAt: string | null;
   lastScorePct: number | null;
   lessonCount: number;
@@ -88,7 +87,7 @@ export class LearnerRecapService {
     private readonly config: ConfigService,
     private readonly gemini: LearnerRecapGeminiClient,
     private readonly userVocabulary: UserVocabularyService,
-  ) {}
+  ) { }
 
   async getStatus(userId: number): Promise<LearnerRecapStatusResponse> {
     const user = await this.loadUserRecapFields(userId);
@@ -171,6 +170,7 @@ export class LearnerRecapService {
           : "Monthly summary";
     const learner = await this.loadLearnerContext(userId);
     const geminiTests = await this.gemini.generateRecapTests({
+      kind,
       recapLabel,
       lessonTitles: ctx.lessonTitles,
       combinedTranscript: ctx.combinedTranscript,
@@ -187,10 +187,10 @@ export class LearnerRecapService {
       source === "gemini"
         ? geminiTests!
         : fallbackRecapTests({
-            recapLabel,
-            lessonTitles: ctx.lessonTitles,
-            priorWeakSpots: ctx.priorWeakSpots,
-          });
+          recapLabel,
+          lessonTitles: ctx.lessonTitles,
+          priorWeakSpots: ctx.priorWeakSpots,
+        });
     const secret = this.config.getOrThrow<string>("JWT_SECRET");
     const exp = Date.now() + GRADING_TTL_MS;
     const items: GradingItem[] = tests
@@ -383,7 +383,7 @@ export class LearnerRecapService {
       period === "weekly"
         ? (range as ReturnType<typeof getUtcMondayWeekRange>).weekEndExclusive
         : (range as ReturnType<typeof getUtcCalendarMonthRange>)
-            .monthEndExclusive;
+          .monthEndExclusive;
     const sessions = await this.prisma.watchSession.findMany({
       where: {
         userId,
