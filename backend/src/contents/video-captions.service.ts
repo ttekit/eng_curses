@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -21,6 +22,8 @@ import { randomUUID } from "crypto";
 import { PrismaService } from "src/prisma.service";
 import { publicS3ObjectUrl } from "src/common/s3-key.util";
 import { VideoTranscriptTagsService } from "./video-transcript-tags.service";
+import { DeepSeekService } from "./deepseek.service";
+import { buildVtt, parseVtt } from "src/common/utils/vtt.utils";
 
 const DEEPGRAM_LISTEN = "https://api.deepgram.com/v1/listen";
 const execFileAsync = promisify(execFile);
@@ -66,7 +69,10 @@ async function ffmpegRun(bin: string, args: string[]): Promise<void> {
   });
 }
 
-async function downloadHlsToLocalTemp(m3u8Url: string, tmpDir: string): Promise<string> {
+async function downloadHlsToLocalTemp(
+  m3u8Url: string,
+  tmpDir: string,
+): Promise<string> {
   let playlistUrl = m3u8Url;
   let res = await fetch(playlistUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -139,21 +145,20 @@ async function extractMp4AudioToPcmWav(args: {
     mp4Path,
   ];
 
-  const wavSuffix = (wavPath: string, mapMiddle: string[]): string[] =>
-    [
-      ...robustPrefix(),
-      ...mapMiddle,
-      "-vn",
-      "-ac",
-      "1",
-      "-ar",
-      "16000",
-      "-acodec",
-      "pcm_s16le",
-      "-f",
-      "wav",
-      wavPath,
-    ];
+  const wavSuffix = (wavPath: string, mapMiddle: string[]): string[] => [
+    ...robustPrefix(),
+    ...mapMiddle,
+    "-vn",
+    "-ac",
+    "1",
+    "-ar",
+    "16000",
+    "-acodec",
+    "pcm_s16le",
+    "-f",
+    "wav",
+    wavPath,
+  ];
 
   const pushFail = (a: FfmpegAttemptTrace, ex: unknown) => {
     a.err = execErrText(ex).slice(0, 450);
@@ -168,7 +173,7 @@ async function extractMp4AudioToPcmWav(args: {
     try {
       buf = await readFile(wavPath);
     } finally {
-      await rm(wavPath, { force: true }).catch(() => { });
+      await rm(wavPath, { force: true }).catch(() => {});
     }
     if (buf.length < MIN_WAV_BYTES) {
       trace.push({
@@ -187,10 +192,7 @@ async function extractMp4AudioToPcmWav(args: {
     const wavPath = join(tmpDir, `pcm-${randomUUID()}.wav`);
     const meta = { name: "direct-default-audio" } as const;
     try {
-      await ffmpegRun(
-        ffmpegBin,
-        wavSuffix(wavPath, []),
-      );
+      await ffmpegRun(ffmpegBin, wavSuffix(wavPath, []));
       const buf = await finishIfValidWav(wavPath, meta);
       if (buf) return { wavBuf: buf, trace };
     } catch (ex) {
@@ -250,12 +252,12 @@ async function extractMp4AudioToPcmWav(args: {
         "wav",
         wavPath,
       ]);
-      await rm(aacPath, { force: true }).catch(() => { });
+      await rm(aacPath, { force: true }).catch(() => {});
       const buf = await finishIfValidWav(wavPath, meta);
       if (buf) return { wavBuf: buf, trace };
     } catch (ex) {
-      await rm(aacPath, { force: true }).catch(() => { });
-      await rm(wavPath, { force: true }).catch(() => { });
+      await rm(aacPath, { force: true }).catch(() => {});
+      await rm(wavPath, { force: true }).catch(() => {});
       pushFail({ ...meta, ok: false }, ex);
     }
   }
@@ -274,6 +276,7 @@ export class VideoCaptionsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly videoTranscriptTags: VideoTranscriptTagsService,
+    private deepSeekService: DeepSeekService,
   ) {
     this.bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET_NAME");
     this.region =
@@ -340,13 +343,20 @@ export class VideoCaptionsService {
         wavBuf = extracted;
 
         if (wavBuf.length < MIN_WAV_BYTES) {
-          const hint = process.env.FFMPEG_PATH?.trim() ? "" : " Try setting FFMPEG_PATH to a newer ffmpeg build.";
-          const tail = trace.slice(-4).map((t) => `${t.name}${t.err ? `: ${t.err.slice(0, 120)}` : ""}`).join(" | ");
+          const hint = process.env.FFMPEG_PATH?.trim()
+            ? ""
+            : " Try setting FFMPEG_PATH to a newer ffmpeg build.";
+          const tail = trace
+            .slice(-4)
+            .map((t) => `${t.name}${t.err ? `: ${t.err.slice(0, 120)}` : ""}`)
+            .join(" | ");
           throw new Error(`FFmpeg HLS audio extract failed.${hint} ${tail}`);
         }
       } else {
         const maxBytes = deepgramCaptionMaxVideoBytes();
-        const videoUp = await fetch(videoUrl, { signal: AbortSignal.timeout(600_000) });
+        const videoUp = await fetch(videoUrl, {
+          signal: AbortSignal.timeout(600_000),
+        });
         if (!videoUp.ok) {
           throw new Error(
             `Failed to download video for Deepgram: HTTP ${videoUp.status}`,
@@ -376,10 +386,9 @@ export class VideoCaptionsService {
         wavBuf = extracted;
 
         if (wavBuf.length < MIN_WAV_BYTES) {
-          const hint =
-            process.env.FFMPEG_PATH?.trim() ?
-              ""
-              : " Try setting FFMPEG_PATH to a newer ffmpeg build.";
+          const hint = process.env.FFMPEG_PATH?.trim()
+            ? ""
+            : " Try setting FFMPEG_PATH to a newer ffmpeg build.";
           const tail = trace
             .slice(-4)
             .map((t) => `${t.name}${t.err ? `: ${t.err.slice(0, 120)}` : ""}`)
@@ -390,7 +399,7 @@ export class VideoCaptionsService {
         }
       }
     } finally {
-      await rm(tmpDir, { recursive: true, force: true }).catch(() => { });
+      await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }
 
     const dgRes = await fetch(`${DEEPGRAM_LISTEN}?${params.toString()}`, {
@@ -466,18 +475,148 @@ export class VideoCaptionsService {
     return row;
   }
 
+  async syncUkrainianSubtitles(contentVideoId: number): Promise<void> {
+    const video = await this.prisma.contentVideo.findUnique({
+      where: { id: contentVideoId },
+      include: {
+        content: { include: { stats: true, category: true } },
+        videoCaption: true,
+      },
+    });
+
+    if (!video || !video.videoCaption) return;
+
+    const isGlobal = video.content.category.ownerUserId === null;
+    if (!isGlobal) return;
+
+    const systemTags = video.content.stats?.systemTags || [];
+    const needsUk = systemTags.some((tag) =>
+      ["A1", "A2", "B1"].includes(tag.toUpperCase()),
+    );
+
+    if (needsUk) {
+      if (video.videoCaption.subtitlesUkLink) return;
+
+      const enVttRes = await fetch(video.videoCaption.subtitlesFileLink);
+      if (!enVttRes.ok) throw new Error("Failed to fetch EN VTT from S3");
+      const enVttText = await enVttRes.text();
+
+      const vttBlocks = parseVtt(enVttText);
+      const englishLines = vttBlocks.map((b) => b.text);
+
+      const ukrainianLines =
+        await this.deepSeekService.translateSubtitles(englishLines);
+
+      const ukVtt = buildVtt(vttBlocks, ukrainianLines);
+
+      const ukKey = `uploads/captions/${randomUUID()}-uk.vtt`;
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: ukKey,
+          Body: Buffer.from(ukVtt, "utf8"),
+          ContentType: "text/vtt; charset=utf-8",
+        }),
+      );
+
+      const subtitlesUkLink = publicS3ObjectUrl(
+        this.bucket,
+        this.region,
+        ukKey,
+      );
+
+      await this.prisma.videoCaptions.update({
+        where: { id: video.videoCaption.id },
+        data: { subtitlesUkLink },
+      });
+    } else {
+      if (video.videoCaption.subtitlesUkLink) {
+        await this.deleteS3ObjectByPublicUrl(
+          video.videoCaption.subtitlesUkLink,
+        );
+
+        await this.prisma.videoCaptions.update({
+          where: { id: video.videoCaption.id },
+          data: { subtitlesUkLink: null },
+        });
+      }
+    }
+  }
+
+  async generateUkrainianSubtitlesManual(
+    contentVideoId: number,
+  ): Promise<void> {
+    const video = await this.prisma.contentVideo.findUnique({
+      where: { id: contentVideoId },
+      include: { videoCaption: true },
+    });
+
+    if (!video || !video.videoCaption?.subtitlesFileLink) {
+      throw new BadRequestException(
+        "Спочатку згенеруйте англійські субтитри (English captions must exist first)",
+      );
+    }
+
+    const enVttRes = await fetch(video.videoCaption.subtitlesFileLink);
+    if (!enVttRes.ok) throw new Error("Failed to fetch EN VTT from S3");
+    const enVttText = await enVttRes.text();
+
+    const vttBlocks = parseVtt(enVttText);
+    const englishLines = vttBlocks.map((b) => b.text);
+
+    const ukrainianLines =
+      await this.deepSeekService.translateSubtitles(englishLines);
+    const ukVtt = buildVtt(vttBlocks, ukrainianLines);
+
+    const ukKey = `uploads/captions/${randomUUID()}-uk.vtt`;
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: ukKey,
+        Body: Buffer.from(ukVtt, "utf8"),
+        ContentType: "text/vtt; charset=utf-8",
+      }),
+    );
+
+    const subtitlesUkLink = publicS3ObjectUrl(this.bucket, this.region, ukKey);
+
+    if (video.videoCaption.subtitlesUkLink) {
+      await this.deleteS3ObjectByPublicUrl(video.videoCaption.subtitlesUkLink);
+    }
+
+    await this.prisma.videoCaptions.update({
+      where: { id: video.videoCaption.id },
+      data: { subtitlesUkLink },
+    });
+  }
+
   /** Load WebVTT text from S3 URL stored on `VideoCaptions` (same-origin admin proxy). */
-  async fetchStoredSubtitlesVtt(contentVideoId: number): Promise<string> {
+  async fetchStoredSubtitlesVtt(
+    contentVideoId: number,
+    lang?: string,
+  ): Promise<string> {
     const row = await this.prisma.videoCaptions.findUnique({
       where: { contentVideoId },
-      select: { subtitlesFileLink: true },
+      select: { subtitlesFileLink: true, subtitlesUkLink: true }, // Достаем обе ссылки
     });
-    const url = row?.subtitlesFileLink?.trim();
-    if (!url) {
+
+    if (!row) {
       throw new NotFoundException(
         `No captions row for ContentVideo ${contentVideoId}`,
       );
     }
+
+    let url = row.subtitlesFileLink?.trim();
+    if (lang === "uk" && row.subtitlesUkLink?.trim()) {
+      url = row.subtitlesUkLink.trim();
+    }
+
+    if (!url) {
+      throw new NotFoundException(
+        `No captions found for the requested language`,
+      );
+    }
+
     const res = await fetch(url, { signal: AbortSignal.timeout(120_000) });
     if (!res.ok) {
       throw new BadGatewayException(

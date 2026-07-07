@@ -32,13 +32,15 @@ export class DeepSeekService {
     batch: string[],
     retries = 3,
   ): Promise<string[]> {
-    const prompt = `You are a professional subtitle translator. Translate the following JSON array of strings from English to Ukrainian.
-STRICT RULES:
-1. Return ONLY a valid JSON array of strings.
-2. Do NOT merge or split lines.
-3. The output array MUST have exactly ${batch.length} elements.
-4. Keep the exact same order.
-5. Provide NO conversational text.`;
+    const editorPrompt = process.env.SUBTITLE_TRANSLATE_PROMPT;
+    const prompt = `${editorPrompt}
+      You will receive a JSON array of strings to translate.
+      STRICT TECHNICAL RULES:
+      1. Return ONLY a valid JSON array of strings.
+      2. Do NOT merge or split lines.
+      3. The output array MUST have exactly ${batch.length} elements.
+      4. Keep the exact same order.
+      5. Provide NO conversational text, markdown formatting, or explanations. Just the JSON array.`;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
@@ -53,7 +55,7 @@ STRICT RULES:
           },
           signal: controller.signal,
           body: JSON.stringify({
-            model: "deepseek-chat",
+            model: "deepseek-v4-flash",
             messages: [
               { role: "system", content: prompt },
               { role: "user", content: JSON.stringify(batch) },
