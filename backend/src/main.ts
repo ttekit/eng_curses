@@ -69,9 +69,9 @@ function resolveCorsOrigin():
   | string[]
   | RegExp
   | ((
-    requestOrigin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void,
-  ) => void) {
+      requestOrigin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => void) {
   const isProd = process.env.NODE_ENV === "production";
   const raw = process.env.CORS_ORIGINS;
 
@@ -108,7 +108,7 @@ async function bootstrap() {
     bodyParser: false,
   });
 
-  app.set('trust proxy', 1)
+  app.set("trust proxy", 1);
 
   app.enableCors({
     origin: resolveCorsOrigin(),
@@ -159,15 +159,15 @@ async function bootstrap() {
     sessionStoreRaw === "memory"
       ? "memory"
       : sessionStoreRaw === "redis" ||
-        sessionStoreRaw === "" ||
-        sessionStoreRaw == null
+          sessionStoreRaw === "" ||
+          sessionStoreRaw == null
         ? "redis"
         : ((): "redis" => {
-          bootstrapLogger.warn(
-            `Unknown SESSION_STORE="${sessionStoreRaw}" — using redis`,
-          );
-          return "redis";
-        })();
+            bootstrapLogger.warn(
+              `Unknown SESSION_STORE="${sessionStoreRaw}" — using redis`,
+            );
+            return "redis";
+          })();
 
   if (process.env.NODE_ENV === "production" && sessionStore === "memory") {
     throw new Error(
@@ -262,6 +262,11 @@ async function bootstrap() {
   SwaggerModule.setup("api", app, document);
 
   const port = Number(process.env.PORT) || 4200;
+  const server = app.getHttpServer();
+
+  server.keepAliveTimeout = 600000;
+  server.headersTimeout = 601000;
+  server.setTimeout(600000);
   await app.listen(port);
 }
 
