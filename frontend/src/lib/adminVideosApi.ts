@@ -12,7 +12,7 @@ export type AdminCatalogVideoRow = {
 
   /** Order within the parent `ContentMedia` when multiple clips share a slot. */
   playlistPosition?: number;
-  videoCaption: { subtitlesFileLink: string; subtitlesUkLink: string } | null;
+  videoCaption: { subtitlesFileLink: string } | null;
   content: {
     id: number;
     /** `ContentMedia` playlist index within the series. */
@@ -34,9 +34,7 @@ export type AdminCatalogVideoRow = {
   };
 };
 
-export async function fetchAdminCatalogVideos(): Promise<
-  AdminCatalogVideoRow[]
-> {
+export async function fetchAdminCatalogVideos(): Promise<AdminCatalogVideoRow[]> {
   const res = await adminApiFetch("/content-video", { method: "GET" });
   if (!res.ok) {
     throw new Error(await readApiErrorBody(res));
@@ -103,9 +101,7 @@ export async function deleteAdminCatalogContent(
 }
 
 /** Multipart POST /contents/create — field `file`, body name / friendlyLink / description. */
-export async function createAdminCatalogVideo(
-  form: FormData,
-): Promise<unknown> {
+export async function createAdminCatalogVideo(form: FormData): Promise<unknown> {
   const res = await adminApiFetch("/contents/create", {
     method: "POST",
     body: form,
@@ -157,12 +153,9 @@ export type RegenerateTagsResponse = {
 export async function regenerateAdminVideoThemeTags(
   contentVideoId: number,
 ): Promise<RegenerateTagsResponse> {
-  const res = await adminApiFetch(
-    `/content-video/${contentVideoId}/regenerate-tags`,
-    {
-      method: "POST",
-    },
-  );
+  const res = await adminApiFetch(`/content-video/${contentVideoId}/regenerate-tags`, {
+    method: "POST",
+  });
   if (!res.ok) {
     throw new Error(await readApiErrorBody(res));
   }
@@ -173,12 +166,9 @@ export async function regenerateAdminVideoThemeTags(
 export async function regenerateAdminVideoLevelTags(
   contentVideoId: number,
 ): Promise<RegenerateTagsResponse> {
-  const res = await adminApiFetch(
-    `/content-video/${contentVideoId}/regenerate-genres`,
-    {
-      method: "POST",
-    },
-  );
+  const res = await adminApiFetch(`/content-video/${contentVideoId}/regenerate-genres`, {
+    method: "POST",
+  });
   if (!res.ok) {
     throw new Error(await readApiErrorBody(res));
   }
@@ -194,12 +184,9 @@ export type RegenerateCaptionsResponse = {
 export async function regenerateAdminVideoCaptions(
   contentVideoId: number,
 ): Promise<RegenerateCaptionsResponse> {
-  const res = await adminApiFetch(
-    `/content-video/${contentVideoId}/regenerate-captions`,
-    {
-      method: "POST",
-    },
-  );
+  const res = await adminApiFetch(`/content-video/${contentVideoId}/regenerate-captions`, {
+    method: "POST",
+  });
   if (!res.ok) {
     throw new Error(await readApiErrorBody(res));
   }
@@ -207,30 +194,12 @@ export async function regenerateAdminVideoCaptions(
 }
 
 /** GET `text/vtt` via API proxy (requires `x-api-token`; avoids browser CORS to S3). */
-export async function fetchAdminVideoSubtitlesVtt(
-  contentVideoId: number,
-): Promise<string> {
-  const res = await adminApiFetch(
-    `/content-video/${contentVideoId}/subtitles`,
-    {
-      method: "GET",
-    },
-  );
+export async function fetchAdminVideoSubtitlesVtt(contentVideoId: number): Promise<string> {
+  const res = await adminApiFetch(`/content-video/${contentVideoId}/subtitles`, {
+    method: "GET",
+  });
   if (!res.ok) {
     throw new Error(await readApiErrorBody(res));
   }
   return res.text();
-}
-
-export async function regenerateAdminVideoUkrainianCaptions(
-  contentVideoId: number,
-): Promise<RegenerateCaptionsResponse> {
-  const res = await adminApiFetch(
-    `/content-video/${contentVideoId}/regenerate-captions-uk`,
-    { method: "POST" },
-  );
-  if (!res.ok) {
-    throw new Error(await readApiErrorBody(res));
-  }
-  return (await res.json()) as RegenerateCaptionsResponse;
 }

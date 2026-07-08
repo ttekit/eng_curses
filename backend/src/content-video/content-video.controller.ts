@@ -29,10 +29,7 @@ import { OptionalLearnerJwtGuard } from "src/auth/guards/optional-learner-jwt.gu
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
 import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
 import { resolveFrameAncestorsCsp } from "src/common/utils/frame-ancestors-csp.util";
-import {
-  jwtSubToUserId,
-  optionalJwtSubToUserId,
-} from "src/auth/jwt-subject.util";
+import { jwtSubToUserId, optionalJwtSubToUserId } from "src/auth/jwt-subject.util";
 import { renderComprehensionTestsIframeHtml } from "src/content-video/content-video-comprehension-tests-html";
 import { ContentVideoComprehensionTestsService } from "src/content-video/content-video-comprehension-tests.service";
 import { PostWatchSurveyService } from "src/content-video/post-watch-survey.service";
@@ -60,7 +57,7 @@ export class ContentVideoController {
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -75,8 +72,7 @@ export class ContentVideoController {
   @SkipSubscriptionCheck()
   @ApiOperation({
     summary: "Public catalog safe preview (no video links)",
-    description:
-      "Returns catalog metadata for unauthenticated users without exposing private HLS streams.",
+    description: "Returns catalog metadata for unauthenticated users without exposing private HLS streams.",
   })
   findPublicCatalog() {
     return this.contentVideoService.findAllPublicCatalog();
@@ -160,7 +156,10 @@ export class ContentVideoController {
   @Get(":id/iframe")
   @SkipSubscriptionCheck()
   @UseGuards(OptionalLearnerJwtGuard)
-  getIframe(@Param("id") id: string, @Req() req: Request & { user?: unknown }) {
+  getIframe(
+    @Param("id") id: string,
+    @Req() req: Request & { user?: unknown },
+  ) {
     const userId = optionalJwtSubToUserId(req.user);
     return this.contentVideoService.getIframePayload(id, userId);
   }
@@ -168,7 +167,10 @@ export class ContentVideoController {
   @Get(":id")
   @SkipSubscriptionCheck()
   @UseGuards(OptionalLearnerJwtGuard)
-  findOne(@Param("id") id: string, @Req() req: Request & { user?: unknown }) {
+  findOne(
+    @Param("id") id: string,
+    @Req() req: Request & { user?: unknown },
+  ) {
     const userId = optionalJwtSubToUserId(req.user);
     return this.contentVideoService.findOne(id, userId);
   }
@@ -215,30 +217,10 @@ export class ContentVideoController {
         "Caption generation could not run. Set DEEPGRAM_API_KEY and ensure FFmpeg can decode the video’s audio (see server logs). Optional: FFMPEG_PATH, DEEPGRAM_TRANSCRIBE_MODEL.",
       );
     }
-
     return {
       ok: true,
       contentVideoId: id,
       subtitlesFileLink: row.subtitlesFileLink,
-      subtitlesUkLink: (
-        await this.prisma.videoCaptions.findUnique({
-          where: { contentVideoId: id },
-        })
-      )?.subtitlesUkLink,
-    };
-  }
-
-  @Post(":id/regenerate-captions-uk")
-  @UseGuards(JwtAdminGuard)
-  @ApiOperation({
-    summary: "Manually generate Ukrainian subtitles",
-    description: "Translates existing English captions to Ukrainian.",
-  })
-  async regenerateUkrainianCaptions(@Param("id", ParseIntPipe) id: number) {
-    await this.videoCaptionsService.generateUkrainianSubtitlesManual(id);
-    return {
-      ok: true,
-      contentVideoId: id,
     };
   }
 
@@ -254,22 +236,13 @@ export class ContentVideoController {
   @Header("Cache-Control", "public, max-age=120")
   async learnerCaptionsVtt(
     @Param("id") id: string,
-    @Query("lang") lang: string | undefined,
     @Req() req: Request & { user?: unknown },
     @Res() res: Response,
   ): Promise<void> {
     const userId = optionalJwtSubToUserId(req.user);
-    const video = await this.contentVideoService.findOne(id, userId);
-
-    const numericId =
-      typeof id === "number" || /^\d+$/.test(String(id))
-        ? parseInt(String(id), 10)
-        : video.id;
-
-    const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(
-      numericId,
-      lang,
-    );
+    await this.contentVideoService.findOne(id, userId);
+    const numericId = typeof id === 'number' || /^\d+$/.test(String(id)) ? parseInt(String(id), 10) : (await this.contentVideoService.findOne(id, userId)).id;
+    const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(numericId);
     res.status(200).type("text/vtt; charset=utf-8").send(body);
   }
 
@@ -284,15 +257,10 @@ export class ContentVideoController {
   @Header("Cache-Control", "no-store")
   async adminSubtitlesText(
     @Param("id", ParseIntPipe) id: number,
-    @Query("lang") lang: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
     await this.contentVideoService.findOne(id);
-
-    const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(
-      id,
-      lang,
-    );
+    const body = await this.videoCaptionsService.fetchStoredSubtitlesVtt(id);
     res.status(200).type("text/vtt; charset=utf-8").send(body);
   }
 
@@ -345,7 +313,8 @@ export class ContentVideoController {
       userIdRaw != null && userIdRaw !== ""
         ? Number.parseInt(userIdRaw, 10)
         : Number.NaN;
-    const fromQuery = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    const fromQuery =
+      Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     const userId = fromJwt > 0 ? fromJwt : fromQuery;
     return this.comprehensionTestsService.getOrLoadTests(id, userId);
   }
@@ -404,7 +373,8 @@ export class ContentVideoController {
       userIdRaw != null && userIdRaw !== ""
         ? Number.parseInt(userIdRaw, 10)
         : Number.NaN;
-    const fromQuery = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    const fromQuery =
+      Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     const userId = fromJwt > 0 ? fromJwt : fromQuery;
     const result = await this.comprehensionTestsService.getOrLoadTests(
       id,
