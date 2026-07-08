@@ -55,6 +55,9 @@ export function useLessonWatch(id: string | undefined) {
   } | null>(null);
   const [sideBundleLoading, setSideBundleLoading] = useState(false);
   const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
+  const [ukTranscriptLines, setUkTranscriptLines] = useState<TranscriptLine[]>(
+    [],
+  );
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [playbackSec, setPlaybackSec] = useState(0);
   const [vocabularyHintMap, setVocabularyHintMap] = useState<
@@ -86,7 +89,7 @@ export function useLessonWatch(id: string | undefined) {
     if (!el || !Number.isFinite(seconds)) return;
     try {
       el.currentTime = Math.max(0, seconds);
-    } catch { }
+    } catch {}
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
@@ -187,8 +190,12 @@ export function useLessonWatch(id: string | undefined) {
             : undefined;
         if (!cancelled) {
           setPlaylistRibbon({
-            prevVideoId: prevEp ? ((prevEp as any).friendlyLink || prevEp.contentVideoId) : null,
-            nextVideoId: nextEp ? ((nextEp as any).friendlyLink || nextEp.contentVideoId) : null,
+            prevVideoId: prevEp
+              ? (prevEp as any).friendlyLink || prevEp.contentVideoId
+              : null,
+            nextVideoId: nextEp
+              ? (nextEp as any).friendlyLink || nextEp.contentVideoId
+              : null,
             position: idx + 1,
             total: parsed.episodes.length,
           });
@@ -223,8 +230,8 @@ export function useLessonWatch(id: string | undefined) {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -249,31 +256,42 @@ export function useLessonWatch(id: string | undefined) {
     let cancelled = false;
     setTranscriptLoading(true);
     setTranscriptLines([]);
-    void apiFetch(`/content-video/${vid}/captions`)
-      .then(async (r) => {
+    setUkTranscriptLines([]); // Очищаем старые укр сабы
+
+    // Скачиваем английский и украинский параллельно
+    Promise.all([
+      apiFetch(`/content-video/${vid}/captions`)
+        .then((r) => (r.ok ? r.text() : ""))
+        .catch(() => ""),
+      apiFetch(`/content-video/${vid}/captions?lang=uk`)
+        .then((r) => (r.ok ? r.text() : ""))
+        .catch(() => ""),
+    ])
+      .then(([enText, ukText]) => {
         if (cancelled) return;
-        if (!r.ok) {
-          setTranscriptLines([]);
-          return;
+
+        // Парсим английский
+        if (enText) {
+          setTranscriptLines(
+            splitLongTranscriptLines(parseWebVttTranscriptLines(enText), 80),
+          );
         }
-        setTranscriptLines(
-          splitLongTranscriptLines(
-            parseWebVttTranscriptLines(await r.text()),
-            80,
-          ),
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setTranscriptLines([]);
+
+        // Парсим украинский (только если он пришел и отличается от английского)
+        if (ukText && ukText.trim().length > 0 && ukText !== enText) {
+          setUkTranscriptLines(
+            splitLongTranscriptLines(parseWebVttTranscriptLines(ukText), 80),
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setTranscriptLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, [id, videoData, isLocked]);
-
   useEffect(() => {
     setIsVideoComplete(false);
     setActiveTab("vocabulary");
@@ -302,7 +320,7 @@ export function useLessonWatch(id: string | undefined) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ secondsWatched: 20 }),
         });
-      } catch (err) { }
+      } catch (err) {}
     }, 20000);
     return () => {
       if (heartbeatIntervalRef.current)
@@ -474,7 +492,7 @@ export function useLessonWatch(id: string | undefined) {
             }),
           });
           if (r.ok) {
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
             const d = await r.json();
             const fb = readOpenEndedFeedbackFromSubmit(d);
             if (fb !== undefined) writtenSummaryFeedback = fb;
@@ -529,7 +547,7 @@ export function useLessonWatch(id: string | undefined) {
           `${LESSON_SUMMARY_STORAGE}${id}`,
           JSON.stringify(payload),
         );
-      } catch { }
+      } catch {}
       void navigate(`/content/${id}/summary`, { state: payload });
     },
     [
@@ -572,6 +590,7 @@ export function useLessonWatch(id: string | undefined) {
     lessonSideBundle,
     sideBundleLoading,
     transcriptLines,
+    ukTranscriptLines,
     transcriptLoading,
     playbackSec,
     setPlaybackSec,
