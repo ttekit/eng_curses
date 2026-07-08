@@ -156,11 +156,9 @@ model VideoCaptions {
   contentVideoId Int          @unique @map("content_video_id")
   contentVideo   ContentVideo @relation(fields: [contentVideoId], references: [id], onDelete: Cascade)
 
-  subtitlesFileLink String  @map("subtitles_file_link")
-  subtitlesUkLink   String? @map("subtitles_uk_link")
-
-  createAt DateTime @default(now()) @map("create_at")
-  updateAt DateTime @updatedAt @map("update_at")
+  subtitlesFileLink String   @map("subtitles_file_link")
+  createAt          DateTime @default(now()) @map("create_at")
+  updateAt          DateTime @updatedAt @map("update_at")
 
   @@map("video_captions")
 }
