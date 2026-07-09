@@ -404,7 +404,7 @@ export const landingEn = {
     subtitle:
       "Join thousands of learners improving their English with personalized video content.",
     catalog: "Catalog",
-    howItWorks: "How it works",
+    howItWorks: "Try demo lesson",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
     footnotePromo: "Free access in July 2026!",
@@ -859,5 +859,38 @@ export const landingEn = {
     submit: "Send feedback",
     submitting: "Sending…",
     successToast: "Thanks for your feedback! (Demo — not sent to server yet.)",
+  },
+
+  demoLessonPage: {
+    quickTry: "Quick Try",
+    wholeLesson: "Full-length lesson",
+    createAccount: "Create an account",
+    returnBack: "Return back",
+    createDescription: "Proceed to create an account",
+
+    quickTryContent: {
+      title: "Give it a quick try",
+      describtion: "Try out the platform's features with a shortened lesson",
+    },
+    wholeLessonContent: {
+      title: "Full-length lesson",
+      describtion: "Try out the platform's full functionality",
+    },
+
+    howToUse: "How do I complete the lesson?",
+
+    instructions: {
+      title: "How to take the demo lesson?",
+      stepName: "Step",
+      steps: [
+        { step: "Choose the demo lesson mode" },
+        { step: "Watch the video with subtitles" },
+        { step: "Review the vocabulary" },
+        { step: "Take the test" },
+        { step: "Review your mistakes (if you have)" },
+        { step: "Create an account to continue learning" },
+        { step: "Achieve the best results" },
+      ],
+    },
   },
 } as const;

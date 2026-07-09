@@ -47,11 +47,12 @@ export function CtaSection() {
             </button>
           </Link>
           <Link
-            to={{ pathname: "/", hash: "#how-explys-works" }}
+            to="/demo-lesson"
             onClick={() => trackLandingCtaSecondary("bottom")}
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-4 text-lg font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto"
           >
             {cta.howItWorks}
+            <ArrowRight className="h-5 w-5 shrink-0" />
           </Link>
         </div>
 
