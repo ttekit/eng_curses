@@ -14,7 +14,15 @@ import {
 } from "@aws-sdk/client-s3";
 import { execFile } from "node:child_process";
 import type { ExecException } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile, appendFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+  appendFile,
+  stat,
+  open,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -23,7 +31,11 @@ import { PrismaService } from "src/prisma.service";
 import { publicS3ObjectUrl } from "src/common/s3-key.util";
 import { VideoTranscriptTagsService } from "./video-transcript-tags.service";
 import { DeepSeekService } from "./deepseek.service";
-import { buildVtt, parseVtt } from "src/common/utils/vtt.utils";
+import { buildVtt, buildVttChunk, parseVtt } from "src/common/utils/vtt.utils";
+import { createReadStream, createWriteStream } from "node:fs";
+import type { Readline } from "node:readline/promises";
+import { Readable } from "node:stream";
+import * as readline from "node:readline";
 
 const DEEPGRAM_LISTEN = "https://api.deepgram.com/v1/listen";
 const execFileAsync = promisify(execFile);
@@ -497,44 +509,12 @@ export class VideoCaptionsService {
     if (needsUk) {
       if (video.videoCaption.subtitlesUkLink) return;
 
-      const enVttRes = await fetch(video.videoCaption.subtitlesFileLink);
-      if (!enVttRes.ok) throw new Error("Failed to fetch EN VTT from S3");
-      const enVttText = await enVttRes.text();
-
-      const vttBlocks = parseVtt(enVttText);
-      const englishLines = vttBlocks.map((b) => b.text);
-
-      const ukrainianLines =
-        await this.deepSeekService.translateSubtitles(englishLines);
-
-      const ukVtt = buildVtt(vttBlocks, ukrainianLines);
-
-      const ukKey = `uploads/captions/${randomUUID()}-uk.vtt`;
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: ukKey,
-          Body: Buffer.from(ukVtt, "utf8"),
-          ContentType: "text/vtt; charset=utf-8",
-        }),
-      );
-
-      const subtitlesUkLink = publicS3ObjectUrl(
-        this.bucket,
-        this.region,
-        ukKey,
-      );
-
-      await this.prisma.videoCaptions.update({
-        where: { id: video.videoCaption.id },
-        data: { subtitlesUkLink },
-      });
+      await this.generateUkrainianSubtitlesManual(contentVideoId);
     } else {
       if (video.videoCaption.subtitlesUkLink) {
         await this.deleteS3ObjectByPublicUrl(
           video.videoCaption.subtitlesUkLink,
         );
-
         await this.prisma.videoCaptions.update({
           where: { id: video.videoCaption.id },
           data: { subtitlesUkLink: null },
@@ -552,42 +532,154 @@ export class VideoCaptionsService {
     });
 
     if (!video || !video.videoCaption?.subtitlesFileLink) {
-      throw new BadRequestException(
-        "Спочатку згенеруйте англійські субтитри (English captions must exist first)",
-      );
+      throw new BadRequestException("English captions must exist first");
     }
 
     const enVttRes = await fetch(video.videoCaption.subtitlesFileLink);
-    if (!enVttRes.ok) throw new Error("Failed to fetch EN VTT from S3");
-    const enVttText = await enVttRes.text();
+    if (!enVttRes.ok || !enVttRes.body)
+      throw new Error("Failed to fetch EN VTT from S3");
 
-    const vttBlocks = parseVtt(enVttText);
-    const englishLines = vttBlocks.map((b) => b.text);
-
-    const ukrainianLines =
-      await this.deepSeekService.translateSubtitles(englishLines);
-    const ukVtt = buildVtt(vttBlocks, ukrainianLines);
-
-    const ukKey = `uploads/captions/${randomUUID()}-uk.vtt`;
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: ukKey,
-        Body: Buffer.from(ukVtt, "utf8"),
-        ContentType: "text/vtt; charset=utf-8",
-      }),
-    );
-
-    const subtitlesUkLink = publicS3ObjectUrl(this.bucket, this.region, ukKey);
-
-    if (video.videoCaption.subtitlesUkLink) {
-      await this.deleteS3ObjectByPublicUrl(video.videoCaption.subtitlesUkLink);
-    }
-
-    await this.prisma.videoCaptions.update({
-      where: { id: video.videoCaption.id },
-      data: { subtitlesUkLink },
+    const rl = readline.createInterface({
+      input: Readable.fromWeb(enVttRes.body as any),
+      crlfDelay: Infinity,
     });
+
+    const tmpVttPath = join(tmpdir(), `uk-captions-${randomUUID()}.vtt`);
+    const writeStream = createWriteStream(tmpVttPath, {
+      flags: "w",
+      encoding: "utf8",
+    });
+    writeStream.write("WEBVTT\n\n");
+
+    const BATCH_SIZE = 25;
+    const chunks: import("src/common/utils/vtt.utils").VttBlock[][] = [];
+
+    let currentBlocks: import("src/common/utils/vtt.utils").VttBlock[] = [];
+    let currentStart = "",
+      currentEnd = "";
+    let currentTextLines: string[] = [];
+    let inBlock = false;
+
+    for await (const line of rl) {
+      const trimmed = line.trim();
+      if (trimmed.includes("-->")) {
+        if (inBlock) {
+          currentBlocks.push({
+            start: currentStart,
+            end: currentEnd,
+            text: currentTextLines.join(" "),
+          });
+        }
+        const [s, e] = trimmed.split(/\s*-->\s*/);
+        currentStart = s;
+        currentEnd = e;
+        currentTextLines = [];
+        inBlock = true;
+      } else if (trimmed === "") {
+        if (inBlock) {
+          currentBlocks.push({
+            start: currentStart,
+            end: currentEnd,
+            text: currentTextLines.join(" "),
+          });
+          inBlock = false;
+          if (currentBlocks.length === BATCH_SIZE) {
+            chunks.push(currentBlocks);
+            currentBlocks = [];
+          }
+        }
+      } else if (inBlock) {
+        currentTextLines.push(trimmed);
+      }
+    }
+    if (inBlock) {
+      currentBlocks.push({
+        start: currentStart,
+        end: currentEnd,
+        text: currentTextLines.join(" "),
+      });
+    }
+    if (currentBlocks.length > 0) chunks.push(currentBlocks);
+
+    let nextToWrite = 0;
+    const pendingWrites = new Map<number, string>();
+    const executing = new Set<Promise<void>>();
+
+    const processChunk = async (
+      chunk: import("src/common/utils/vtt.utils").VttBlock[],
+      index: number,
+    ) => {
+      const texts = chunk.map((c) => c.text);
+      const translated =
+        await this.deepSeekService.translateBatchWithRetry(texts);
+      const chunkVtt = buildVttChunk(chunk, translated);
+
+      pendingWrites.set(index, chunkVtt);
+      while (pendingWrites.has(nextToWrite)) {
+        writeStream.write(pendingWrites.get(nextToWrite)!);
+        pendingWrites.delete(nextToWrite);
+        nextToWrite++;
+      }
+    };
+
+    for (let i = 0; i < chunks.length; i++) {
+      const p = processChunk(chunks[i], i);
+      executing.add(p);
+      p.finally(() => executing.delete(p));
+      if (executing.size >= 4) {
+        await Promise.race(executing);
+      }
+    }
+    await Promise.all(executing);
+
+    writeStream.end();
+    await new Promise((resolve) => writeStream.on("finish", resolve));
+
+    try {
+      const fileStats = await stat(tmpVttPath);
+      if (fileStats.size < 20)
+        throw new Error("Generated file is abnormally small");
+
+      const fd = await open(tmpVttPath, "r");
+      try {
+        const headerBuffer = Buffer.alloc(6);
+        await fd.read(headerBuffer, 0, 6, 0);
+        if (headerBuffer.toString("utf8") !== "WEBVTT") {
+          throw new Error("Integrity check failed: VTT header missing");
+        }
+      } finally {
+        await fd.close();
+      }
+
+      const ukKey = `uploads/captions/${randomUUID()}-uk.vtt`;
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: ukKey,
+          Body: createReadStream(tmpVttPath),
+          ContentType: "text/vtt; charset=utf-8",
+        }),
+      );
+
+      const subtitlesUkLink = publicS3ObjectUrl(
+        this.bucket,
+        this.region,
+        ukKey,
+      );
+
+      if (video.videoCaption.subtitlesUkLink) {
+        await this.deleteS3ObjectByPublicUrl(
+          video.videoCaption.subtitlesUkLink,
+        );
+      }
+
+      await this.prisma.videoCaptions.update({
+        where: { contentVideoId },
+        data: { subtitlesUkLink },
+      });
+    } finally {
+      await rm(tmpVttPath, { force: true });
+    }
   }
 
   /** Load WebVTT text from S3 URL stored on `VideoCaptions` (same-origin admin proxy). */

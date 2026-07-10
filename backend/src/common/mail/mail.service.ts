@@ -126,7 +126,7 @@ export class MailService implements OnModuleInit {
       );
     }
   }
-
+ 
   private async sendMail(email: string, subject: string, html: string) {
     try {
       const result = await this.mailerService.sendMail({
@@ -222,8 +222,7 @@ export class MailService implements OnModuleInit {
 
       return true;
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error";
+      const message = error instanceof Error ? error.message : "Unknown error";
       this.logger.warn(`Validation failed for ${email}: ${message}`);
       return false;
     }

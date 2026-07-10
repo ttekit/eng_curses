@@ -38,3 +38,12 @@ export function buildVtt(
   });
   return vtt;
 }
+
+export function buildVttChunk(blocks: VttBlock[], translatedTexts: string[]): string {
+  let vtt = "";
+  blocks.forEach((block, index) => {
+    vtt += `${block.start} --> ${block.end}\n`;
+    vtt += `${translatedTexts[index]}\n\n`;
+  });
+  return vtt;
+}

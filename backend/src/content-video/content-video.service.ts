@@ -49,8 +49,11 @@ export class ContentVideoService {
     const newVideo = await this.prisma.contentVideo.create({
       data: { ...createContentVideoDto, playlistPosition },
     });
-    await this.redis.del("catalog:videos");
-    await this.redis.del("catalog:videos:admin");
+    try {
+      await this.redis.del("catalog:videos");
+      await this.redis.del("catalog:videos:admin");
+      await this.redis.del("catalog:videos:public_safe");
+    } catch (e) {}
     return newVideo;
   }
 
@@ -77,10 +80,12 @@ export class ContentVideoService {
         ? `catalog:videos:teacher:${teacherId}`
         : "catalog:videos";
 
-    const cachedVideos = await this.redis.get(cacheKey);
-    if (cachedVideos) {
-      return JSON.parse(cachedVideos);
-    }
+    try {
+      const cachedVideos = await this.redis.get(cacheKey);
+      if (cachedVideos) {
+        return JSON.parse(cachedVideos);
+      }
+    } catch (e) {}
 
     const whereClause = isAdmin
       ? {}
@@ -128,14 +133,19 @@ export class ContentVideoService {
       },
     });
 
-    await this.redis.set(cacheKey, JSON.stringify(videos), "EX", 300);
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(videos), "EX", 300);
+    } catch (e) {}
     return videos;
   }
 
   async findAllPublicCatalog() {
     const cacheKey = "catalog:videos:public_safe";
-    const cached = await this.redis.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
 
     const allPublicVideos = await this.findAll();
 
@@ -144,7 +154,10 @@ export class ContentVideoService {
       return safeData;
     });
 
-    await this.redis.set(cacheKey, JSON.stringify(safeVideos), "EX", 300);
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(safeVideos), "EX", 300);
+    } catch (e) {}
+
     return safeVideos;
   }
 
@@ -168,7 +181,9 @@ export class ContentVideoService {
     const videos = await this.prisma.contentVideo.findMany({
       where: { id: { in: orderedIds } },
       include: {
-        videoCaption: { select: { subtitlesFileLink: true } },
+        videoCaption: {
+          select: { subtitlesFileLink: true, subtitlesUkLink: true },
+        },
         content: {
           include: {
             category: true,
@@ -180,7 +195,14 @@ export class ContentVideoService {
       },
     });
 
-    return videos.sort(compareContentVideosPlaylistOrder);
+    const orderMap = new Map<number, number>();
+    orderedIds.forEach((id, index) => orderMap.set(id, index));
+
+    return videos.sort((a, b) => {
+      const indexA = orderMap.has(a.id) ? orderMap.get(a.id)! : Infinity;
+      const indexB = orderMap.has(b.id) ? orderMap.get(b.id)! : Infinity;
+      return indexA - indexB;
+    });
   }
 
   async findOne(idParam: string | number, reqUserId?: number) {
@@ -193,7 +215,9 @@ export class ContentVideoService {
     const contentVideo = await this.prisma.contentVideo.findFirst({
       where: whereClause,
       include: {
-        videoCaption: { select: { subtitlesFileLink: true } },
+        videoCaption: {
+          select: { subtitlesFileLink: true, subtitlesUkLink: true },
+        },
         content: {
           include: {
             category: {
@@ -298,8 +322,11 @@ export class ContentVideoService {
       where: { id },
       data: updateContentVideoDto,
     });
-    await this.redis.del("catalog:videos");
-    await this.redis.del("catalog:videos:admin");
+    try {
+      await this.redis.del("catalog:videos");
+      await this.redis.del("catalog:videos:admin");
+      await this.redis.del("catalog:videos:public_safe");
+    } catch (e) {}
     return updatedVideo;
   }
 
@@ -314,9 +341,11 @@ export class ContentVideoService {
     const deletedVideo = await this.prisma.contentVideo.delete({
       where: { id },
     });
-    await this.redis.del("catalog:videos");
-    await this.redis.del("catalog:videos:admin");
-    await this.redis.del("catalog:videos:public_safe");
+    try {
+      await this.redis.del("catalog:videos");
+      await this.redis.del("catalog:videos:admin");
+      await this.redis.del("catalog:videos:public_safe");
+    } catch (e) {}
     return deletedVideo;
   }
 }
