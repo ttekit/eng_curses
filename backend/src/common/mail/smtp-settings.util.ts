@@ -52,6 +52,7 @@ export function resolveSmtpSettings(
 export function buildNodemailerTransportOptions(
   smtp: ResolvedSmtpSettings,
 ): Record<string, unknown> {
+  console.log(`DEBUG SMTP: host=${smtp.host}, user=${smtp.user}, pass_len=${smtp.pass.length}`); // <--- ДОБАВЬ ЭТО
   return {
     host: smtp.host,
     port: smtp.port,
@@ -63,3 +64,4 @@ export function buildNodemailerTransportOptions(
     },
   };
 }
+
