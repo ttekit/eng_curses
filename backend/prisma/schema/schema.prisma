@@ -81,6 +81,9 @@ model User {
   class          Class?  @relation("ClassStudents", fields: [classId], references: [id], onDelete: SetNull)
   teacherClasses Class[] @relation("TeacherClasses")
 
+  constellationProgress UserConstellationProgress[]
+  starProgress          UserStarProgress[]
+
   @@index([teacherId], map: "users_teacher_id_idx")
   @@map("users")
 }
@@ -367,4 +370,80 @@ model ClassContentAccess {
 
   @@unique([classId, contentId])
   @@map("class_content_accesses")
+}
+
+// Star Path
+
+enum ProgressStatus {
+  LOCKED
+  AVAILABLE
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Constellation {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  rewardId    Int?    @map("reward_id")
+
+  stars        Star[]
+  userProgress UserConstellationProgress[]
+
+  @@map("constellations")
+}
+
+model Star {
+  id              Int     @id @default(autoincrement())
+  constellationId Int     @map("constellation_id")
+  name            String
+  description     String?
+  contentVideoId  Int?    @map("content_video_id")
+
+  constellation Constellation @relation(fields: [constellationId], references: [id], onDelete: Cascade)
+
+  prerequisites StarPrerequisite[] @relation("DependentStars")
+  dependents    StarPrerequisite[] @relation("PrerequisiteStars")
+
+  userProgress UserStarProgress[]
+
+  @@map("stars")
+}
+
+model StarPrerequisite {
+  prerequisiteId Int @map("prerequisite_id")
+  dependentId    Int @map("dependent_id")
+
+  prerequisite Star @relation("PrerequisiteStars", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+  dependent    Star @relation("DependentStars", fields: [dependentId], references: [id], onDelete: Cascade)
+
+  @@id([prerequisiteId, dependentId])
+  @@map("star_prerequisites")
+}
+
+model UserConstellationProgress {
+  userId          Int            @map("user_id")
+  constellationId Int            @map("constellation_id")
+  status          ProgressStatus @default(LOCKED)
+  completedAt     DateTime?      @map("completed_at")
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  constellation Constellation @relation(fields: [constellationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, constellationId])
+  @@map("user_constellation_progress")
+}
+
+model UserStarProgress {
+  userId      Int            @map("user_id")
+  starId      Int            @map("star_id")
+  status      ProgressStatus @default(LOCKED)
+  startedAt   DateTime?      @map("started_at")
+  completedAt DateTime?      @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  star Star @relation(fields: [starId], references: [id], onDelete: Cascade)
+
+  @@id([userId, starId])
+  @@map("user_star_progress")
 }
