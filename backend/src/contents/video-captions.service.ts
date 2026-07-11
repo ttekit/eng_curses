@@ -31,9 +31,8 @@ import { PrismaService } from "src/prisma.service";
 import { publicS3ObjectUrl } from "src/common/s3-key.util";
 import { VideoTranscriptTagsService } from "./video-transcript-tags.service";
 import { DeepSeekService } from "./deepseek.service";
-import { buildVtt, buildVttChunk, parseVtt } from "src/common/utils/vtt.utils";
+import { buildVttChunk } from "src/common/utils/vtt.utils";
 import { createReadStream, createWriteStream } from "node:fs";
-import type { Readline } from "node:readline/promises";
 import { Readable } from "node:stream";
 import * as readline from "node:readline";
 
@@ -288,7 +287,7 @@ export class VideoCaptionsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly videoTranscriptTags: VideoTranscriptTagsService,
-    private deepSeekService: DeepSeekService,
+    private readonly deepSeekService: DeepSeekService,
   ) {
     this.bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET_NAME");
     this.region =
@@ -683,32 +682,17 @@ export class VideoCaptionsService {
   }
 
   /** Load WebVTT text from S3 URL stored on `VideoCaptions` (same-origin admin proxy). */
-  async fetchStoredSubtitlesVtt(
-    contentVideoId: number,
-    lang?: string,
-  ): Promise<string> {
+  async fetchStoredSubtitlesVtt(contentVideoId: number): Promise<string> {
     const row = await this.prisma.videoCaptions.findUnique({
       where: { contentVideoId },
-      select: { subtitlesFileLink: true, subtitlesUkLink: true }, // Достаем обе ссылки
+      select: { subtitlesFileLink: true },
     });
-
-    if (!row) {
+    const url = row?.subtitlesFileLink?.trim();
+    if (!url) {
       throw new NotFoundException(
         `No captions row for ContentVideo ${contentVideoId}`,
       );
     }
-
-    let url = row.subtitlesFileLink?.trim();
-    if (lang === "uk" && row.subtitlesUkLink?.trim()) {
-      url = row.subtitlesUkLink.trim();
-    }
-
-    if (!url) {
-      throw new NotFoundException(
-        `No captions found for the requested language`,
-      );
-    }
-
     const res = await fetch(url, { signal: AbortSignal.timeout(120_000) });
     if (!res.ok) {
       throw new BadGatewayException(

@@ -159,7 +159,7 @@ export function VideoTranscript({
   const seeks = typeof onSeek === "function";
 
   return (
-    <div className="space-y-4 relative">
+    <div className="space-y-4 relative" translate="no">
       <h3 className="mb-4 text-lg font-semibold text-foreground">Transcript</h3>
 
       <div ref={listRef} className="space-y-2 relative">

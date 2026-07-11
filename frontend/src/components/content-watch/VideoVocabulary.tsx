@@ -75,6 +75,7 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
           <div
             key={index}
             className="overflow-hidden rounded-lg border border-border"
+            translate="no"
           >
             <div className="flex w-full items-center justify-between p-3 transition-colors hover:bg-muted/50">
               <div
@@ -120,7 +121,7 @@ export function VideoVocabulary({ vocabulary }: VideoVocabularyProps) {
                     {gray || summary.answerDash}
                   </p>
                   <div className="mt-2 rounded-lg bg-muted/50 p-2">
-                    <p className="text-sm leading-relaxed text-foreground">
+                    <p className="text-sm leading-relaxed text-foreground" translate="yes">
                       {meaning || summary.answerDash}
                     </p>
                   </div>

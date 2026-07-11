@@ -55,9 +55,6 @@ export function useLessonWatch(id: string | undefined) {
   } | null>(null);
   const [sideBundleLoading, setSideBundleLoading] = useState(false);
   const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
-  const [ukTranscriptLines, setUkTranscriptLines] = useState<TranscriptLine[]>(
-    [],
-  );
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [playbackSec, setPlaybackSec] = useState(0);
   const [vocabularyHintMap, setVocabularyHintMap] = useState<
@@ -89,14 +86,15 @@ export function useLessonWatch(id: string | undefined) {
     if (!el || !Number.isFinite(seconds)) return;
     try {
       el.currentTime = Math.max(0, seconds);
-    } catch {}
+    } catch { }
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
     if (watchCompletePostedRef.current || !id || isLocked) return;
-    watchCompletePostedRef.current = true;
     const vid = videoData?.id;
     if (!vid) return;
+
+    watchCompletePostedRef.current = true;
     try {
       await apiFetch(`/content-video/${vid}/watch-complete`, {
         method: "POST",
@@ -106,7 +104,7 @@ export function useLessonWatch(id: string | undefined) {
     } catch (error) {
       watchCompletePostedRef.current = false;
     }
-  }, [id, isLocked]);
+  }, [id, isLocked, videoData?.id]);
 
   const ensureLessonWatched = useCallback(() => {
     if (progressedToWatchedRef.current) return;
@@ -189,12 +187,8 @@ export function useLessonWatch(id: string | undefined) {
             : undefined;
         if (!cancelled) {
           setPlaylistRibbon({
-            prevVideoId: prevEp
-              ? (prevEp as any).friendlyLink || prevEp.contentVideoId
-              : null,
-            nextVideoId: nextEp
-              ? (nextEp as any).friendlyLink || nextEp.contentVideoId
-              : null,
+            prevVideoId: prevEp ? ((prevEp as any).friendlyLink || prevEp.contentVideoId) : null,
+            nextVideoId: nextEp ? ((nextEp as any).friendlyLink || nextEp.contentVideoId) : null,
             position: idx + 1,
             total: parsed.episodes.length,
           });
@@ -229,8 +223,8 @@ export function useLessonWatch(id: string | undefined) {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-                body.tests as NonNullable<LessonSideBundle["tests"]>,
-              )
+              body.tests as NonNullable<LessonSideBundle["tests"]>,
+            )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -255,42 +249,31 @@ export function useLessonWatch(id: string | undefined) {
     let cancelled = false;
     setTranscriptLoading(true);
     setTranscriptLines([]);
-    setUkTranscriptLines([]); // Очищаем старые укр сабы
-
-    // Скачиваем английский и украинский параллельно
-    Promise.all([
-      apiFetch(`/content-video/${vid}/captions`)
-        .then((r) => (r.ok ? r.text() : ""))
-        .catch(() => ""),
-      apiFetch(`/content-video/${vid}/captions?lang=uk`)
-        .then((r) => (r.ok ? r.text() : ""))
-        .catch(() => ""),
-    ])
-      .then(([enText, ukText]) => {
+    void apiFetch(`/content-video/${vid}/captions`)
+      .then(async (r) => {
         if (cancelled) return;
-
-        // Парсим английский
-        if (enText) {
-          setTranscriptLines(
-            splitLongTranscriptLines(parseWebVttTranscriptLines(enText), 80),
-          );
+        if (!r.ok) {
+          setTranscriptLines([]);
+          return;
         }
-
-        // Парсим украинский (только если он пришел и отличается от английского)
-        if (ukText && ukText.trim().length > 0 && ukText !== enText) {
-          setUkTranscriptLines(
-            splitLongTranscriptLines(parseWebVttTranscriptLines(ukText), 80),
-          );
-        }
+        setTranscriptLines(
+          splitLongTranscriptLines(
+            parseWebVttTranscriptLines(await r.text()),
+            80,
+          ),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setTranscriptLines([]);
       })
       .finally(() => {
         if (!cancelled) setTranscriptLoading(false);
       });
-
     return () => {
       cancelled = true;
     };
   }, [id, videoData, isLocked]);
+
   useEffect(() => {
     setIsVideoComplete(false);
     setActiveTab("vocabulary");
@@ -309,23 +292,23 @@ export function useLessonWatch(id: string | undefined) {
   useEffect(() => {
     if (heartbeatIntervalRef.current)
       clearInterval(heartbeatIntervalRef.current);
-    if (isLocked) return;
+    if (isLocked || !videoData?.id) return;
     heartbeatIntervalRef.current = setInterval(async () => {
       if (document.hidden || !videoElRef.current || videoElRef.current.paused)
         return;
       try {
-        await apiFetch(`/content-video/${videoData?.id}//watch-complete`, {
+        await apiFetch(`/content-video/${videoData.id}/watch-complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ secondsWatched: 20 }),
         });
-      } catch (err) {}
+      } catch (err) { }
     }, 20000);
     return () => {
       if (heartbeatIntervalRef.current)
         clearInterval(heartbeatIntervalRef.current);
     };
-  }, [id, isLocked]);
+  }, [id, isLocked, videoData?.id]);
 
   const displayVocabulary = useMemo((): VocabularyItem[] => {
     if (lessonSideBundle?.vocabulary && lessonSideBundle.vocabulary.length > 0)
@@ -368,7 +351,7 @@ export function useLessonWatch(id: string | undefined) {
     } catch {
       vocabPersonalizeDoneRef.current = false;
     }
-  }, [user?.id, id, sideBundleLoading, isLocked]);
+  }, [user?.id, id, sideBundleLoading, isLocked, videoData?.id]);
 
   const handleVideoPlay = useCallback(() => {
     playbackStartedForPersonalizeRef.current = true;
@@ -491,7 +474,7 @@ export function useLessonWatch(id: string | undefined) {
             }),
           });
           if (r.ok) {
-            await refreshProfile().catch(() => {});
+            await refreshProfile().catch(() => { });
             const d = await r.json();
             const fb = readOpenEndedFeedbackFromSubmit(d);
             if (fb !== undefined) writtenSummaryFeedback = fb;
@@ -546,7 +529,7 @@ export function useLessonWatch(id: string | undefined) {
           `${LESSON_SUMMARY_STORAGE}${id}`,
           JSON.stringify(payload),
         );
-      } catch {}
+      } catch { }
       void navigate(`/content/${id}/summary`, { state: payload });
     },
     [
@@ -589,7 +572,6 @@ export function useLessonWatch(id: string | undefined) {
     lessonSideBundle,
     sideBundleLoading,
     transcriptLines,
-    ukTranscriptLines,
     transcriptLoading,
     playbackSec,
     setPlaybackSec,

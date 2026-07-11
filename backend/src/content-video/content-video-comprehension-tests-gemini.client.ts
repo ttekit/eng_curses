@@ -17,22 +17,21 @@ export type McqCategory = "grammar" | "vocabulary" | "comprehension";
 
 export type ComprehensionTestItem =
   | {
-      questionType: "multiple_choice";
-      id: string;
-      question: string;
-      options: string[];
-      correctIndex: number;
-      category: McqCategory;
-      explanation: string;
-    }
+    questionType: "multiple_choice";
+    id: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    category: McqCategory;
+    explanation: string;
+  }
   | {
-      questionType: "open";
-      id: string;
-      question: string;
-      category: "open";
-      /** Model rubric / sample points for review UI. */
-      explanation: string;
-    };
+    questionType: "open";
+    id: string;
+    question: string;
+    category: "open";
+    explanation: string;
+  };
 
 export type PriorWeakSpot = {
   category: string;
@@ -45,11 +44,11 @@ export type ComprehensionTestsGenerationContext = {
   videoDescription: string | null;
   transcriptPlain: string | null;
   learnerCefr: string | null;
+  videoLevel: string | null;
   vocabularyTerms: string[];
   videoThemeTags: string[];
   learnerThemeKnowledge: string[];
   priorWeakSpots: PriorWeakSpot[];
-  /** Profile studying plan — `AdditionalUserData` with app defaults. */
   learningGoal: string;
   timeToAchieve: string;
   hobbies: string[];
@@ -77,10 +76,11 @@ export class ContentVideoComprehensionTestsGeminiClient {
 
     const hasTranscript =
       input.transcriptPlain != null && input.transcriptPlain.trim().length >= 40;
-    const stretch = cefrStretchForKeyVocabulary(input.learnerCefr);
-    const level =
-      input.learnerCefr?.trim() ||
-      "Unknown — assume high B1: clear sentences, common idioms, no specialist jargon.";
+
+    const explicitCefr = input.learnerCefr?.trim() || input.videoLevel || null;
+    const stretch = cefrStretchForKeyVocabulary(explicitCefr);
+    const level = explicitCefr || "Unknown — assume high B1: clear sentences, common idioms, no specialist jargon.";
+
     const vocabList =
       input.vocabularyTerms.length > 0
         ? input.vocabularyTerms.slice(0, 50).join(", ")
@@ -99,12 +99,12 @@ export class ContentVideoComprehensionTestsGeminiClient {
     const weakSpots =
       input.priorWeakSpots.length > 0
         ? input.priorWeakSpots
-            .slice(0, 8)
-            .map(
-              (w) =>
-                `- [${w.category}] missed ${w.missCount}x: ${w.stemSnippet.slice(0, 220)}`,
-            )
-            .join("\n")
+          .slice(0, 8)
+          .map(
+            (w) =>
+              `- [${w.category}] missed ${w.missCount}x: ${w.stemSnippet.slice(0, 220)}`,
+          )
+          .join("\n")
         : "(none — first attempt or no recorded misses for this user on this clip.)";
 
     const hobbyLine =
@@ -114,9 +114,9 @@ export class ContentVideoComprehensionTestsGeminiClient {
 
     const transcriptBlock = hasTranscript
       ? [
-          "VIDEO TRANSCRIPT (ground truth; every fact and quoted word must come from here):",
-          input.transcriptPlain!.slice(0, 14_000),
-        ].join("\n")
+        "VIDEO TRANSCRIPT (ground truth; every fact and quoted word must come from here):",
+        input.transcriptPlain!.slice(0, 14_000),
+      ].join("\n")
       : "No transcript is available. Use only the title and description; keep questions general and do not invent specific facts.";
 
     const prompt = buildAiPrompt(
@@ -185,6 +185,7 @@ export class ContentVideoComprehensionTestsGeminiClient {
           videoName: input.videoName,
           videoDescription: input.videoDescription,
           learnerCefr: input.learnerCefr,
+          videoLevel: input.videoLevel,
           vocabularyTerms: input.vocabularyTerms,
           learnerThemeKnowledge: input.learnerThemeKnowledge,
           videoThemeTags: input.videoThemeTags,
@@ -371,12 +372,12 @@ function themeRelevanceScore(word: string, themes: string[]): number {
   return score;
 }
 
-/** When Gemini is off or omitted `keyVocabulary` in JSON. */
 export function fallbackKeyVocabulary(ctx: {
   transcriptPlain: string | null;
   videoName: string;
   videoDescription?: string | null;
   learnerCefr: string | null;
+  videoLevel?: string | null;
   vocabularyTerms: string[];
   learnerThemeKnowledge?: string[];
   videoThemeTags?: string[];
@@ -387,7 +388,7 @@ export function fallbackKeyVocabulary(ctx: {
   const plain = ctx.transcriptPlain?.trim() ?? "";
   const title = ctx.videoName?.trim() ?? "";
   const desc = (ctx.videoDescription ?? "").trim();
-  const stretch = cefrStretchForKeyVocabulary(ctx.learnerCefr);
+  const stretch = cefrStretchForKeyVocabulary(ctx.learnerCefr || ctx.videoLevel);
   const targetBand = stretch.vocabularyTargetBand;
   const planGoal = ctx.learningGoal?.trim() ?? "";
   const planHorizon = ctx.timeToAchieve?.trim() ?? "";
@@ -502,7 +503,6 @@ const STOP = new Set(
   ),
 );
 
-/** Letters from any script (Cyrillic, Latin, etc.) — Latin-only regex missed non-English captions. */
 function pickTranscriptContentWords(text: string, max: number): string[] {
   const found = new Set<string>();
   const re = /\p{L}[\p{L}\p{M}'-]{1,30}\p{L}|\p{L}{3,32}/gu;
@@ -525,13 +525,11 @@ function pickTranscriptContentWords(text: string, max: number): string[] {
   return [...found].slice(0, max);
 }
 
-/**
- * 9 MCQ (3 grammar, 3 vocabulary, 3 comprehension) + 1 open — when Gemini is unavailable.
- */
 export function fallbackComprehensionTests(ctx: {
   videoName: string;
   transcriptPlain: string | null;
   learnerCefr: string | null;
+  videoLevel?: string | null;
   vocabularyTerms: string[];
   priorWeakSpots: PriorWeakSpot[];
   learningGoal?: string;
@@ -544,6 +542,10 @@ export function fallbackComprehensionTests(ctx: {
   const v0 = words[0] ?? (ctx.vocabularyTerms[0] ?? "key idea");
   const v1 = words[1] ?? (ctx.vocabularyTerms[1] ?? "main idea");
   const v2 = words[2] ?? (ctx.vocabularyTerms[2] ?? "detail");
+
+  const effectiveLevel = ctx.learnerCefr?.trim() || ctx.videoLevel || "";
+  const isBasic = effectiveLevel === "A1" || effectiveLevel === "A2";
+
   const level = ctx.learnerCefr?.trim() || "the learner’s level";
   const goal = ctx.learningGoal?.trim() || "steady English progress";
   const horizon = ctx.timeToAchieve?.trim() || "your plan horizon";
@@ -555,37 +557,37 @@ export function fallbackComprehensionTests(ctx: {
   mcq.push(
     firstWeak?.category === "comprehension"
       ? {
-          questionType: "multiple_choice" as const,
-          id: "c1",
-          category: "comprehension" as const,
-          question: `You missed a similar idea before (“${firstWeak.stemSnippet.slice(0, 140)}…”). What is the safest paraphrase of the speaker’s main focus?`,
-          options: [
-            "A clear, topic-relevant idea that fits the video",
-            "A detail that contradicts the clip",
-            "A guess unrelated to the content",
-            "Only music credits, not ideas",
-          ],
-          correctIndex: 0,
-          explanation:
-            "Choose the option that matches what the lesson is actually about.",
-        }
+        questionType: "multiple_choice" as const,
+        id: "c1",
+        category: "comprehension" as const,
+        question: `You missed a similar idea before (“${firstWeak.stemSnippet.slice(0, 140)}…”). What is the safest paraphrase of the speaker’s main focus?`,
+        options: [
+          "A clear, topic-relevant idea that fits the video",
+          "A detail that contradicts the clip",
+          "A guess unrelated to the content",
+          "Only music credits, not ideas",
+        ],
+        correctIndex: 0,
+        explanation:
+          "Choose the option that matches what the lesson is actually about.",
+      }
       : {
-          questionType: "multiple_choice" as const,
-          id: "c1",
-          category: "comprehension" as const,
-          question:
-            plain.length >= 40
-              ? `In this video, what does “${v0}” most likely refer to?`
-              : `What is “${label}” mainly about?`,
-          options: [
-            "Something central to the lesson topic",
-            "An unrelated object",
-            "A random character from fiction",
-            "Only background music",
-          ],
-          correctIndex: 0,
-          explanation: "The best answer ties the phrase to the lesson topic.",
-        },
+        questionType: "multiple_choice" as const,
+        id: "c1",
+        category: "comprehension" as const,
+        question:
+          plain.length >= 40
+            ? `In this video, what does “${v0}” most likely refer to?`
+            : `What is “${label}” mainly about?`,
+        options: [
+          "Something central to the lesson topic",
+          "An unrelated object",
+          "A random character from fiction",
+          "Only background music",
+        ],
+        correctIndex: 0,
+        explanation: "The best answer ties the phrase to the lesson topic.",
+      },
   );
 
   mcq.push({
@@ -637,20 +639,37 @@ export function fallbackComprehensionTests(ctx: {
     explanation: "Context fixes which sense of a word is active in the clip.",
   });
 
-  mcq.push({
-    questionType: "multiple_choice",
-    id: "v2",
-    category: "vocabulary",
-    question: "Which collocation sounds natural for formal workplace English?",
-    options: [
-      "We need to meet the deadline.",
-      "We need meet the deadline.",
-      "We needing meet the deadline.",
-      "We meets the deadline.",
-    ],
-    correctIndex: 0,
-    explanation: "Subject + need + to-infinitive is the standard pattern.",
-  });
+  mcq.push(
+    isBasic
+      ? {
+        questionType: "multiple_choice",
+        id: "v2",
+        category: "vocabulary",
+        question: "Which phrase is correct for finishing work?",
+        options: [
+          "We need to finish the job.",
+          "We need finish the job.",
+          "We needing finish the job.",
+          "We finishes the job."
+        ],
+        correctIndex: 0,
+        explanation: "Use 'need to' before a verb.",
+      }
+      : {
+        questionType: "multiple_choice",
+        id: "v2",
+        category: "vocabulary",
+        question: "Which collocation sounds natural for formal workplace English?",
+        options: [
+          "We need to meet the deadline.",
+          "We need meet the deadline.",
+          "We needing meet the deadline.",
+          "We meets the deadline.",
+        ],
+        correctIndex: 0,
+        explanation: "Subject + need + to-infinitive is the standard pattern.",
+      }
+  );
 
   mcq.push({
     questionType: "multiple_choice",
@@ -673,20 +692,35 @@ export function fallbackComprehensionTests(ctx: {
   mcq.push(
     grammarWeak
       ? {
+        questionType: "multiple_choice" as const,
+        id: "g1",
+        category: "grammar" as const,
+        question: `Grammar recap (“${grammarWeak.stemSnippet.slice(0, 100)}…”): Which sentence is fully correct?`,
+        options: [
+          "I have finished the video and noted two useful phrases.",
+          "I have finish the video and noted two useful phrases.",
+          "I am finished the video and noted two useful phrases.",
+          "I finishing the video and noted two useful phrases.",
+        ],
+        correctIndex: 0,
+        explanation: "Present perfect + past participle marks a completed experience.",
+      }
+      : isBasic
+        ? {
           questionType: "multiple_choice" as const,
           id: "g1",
           category: "grammar" as const,
-          question: `Grammar recap (“${grammarWeak.stemSnippet.slice(0, 100)}…”): Which sentence is fully correct?`,
+          question: "Which sentence is correct?",
           options: [
-            "I have finished the video and noted two useful phrases.",
-            "I have finish the video and noted two useful phrases.",
-            "I am finished the video and noted two useful phrases.",
-            "I finishing the video and noted two useful phrases.",
+            "She watches videos every day.",
+            "She watch videos every day.",
+            "She is watch videos every day.",
+            "She watching videos every day.",
           ],
           correctIndex: 0,
-          explanation: "Present perfect + past participle marks a completed experience.",
+          explanation: "Use 'watches' for he/she/it in the present simple.",
         }
-      : {
+        : {
           questionType: "multiple_choice" as const,
           id: "g1",
           category: "grammar" as const,
@@ -702,40 +736,68 @@ export function fallbackComprehensionTests(ctx: {
         },
   );
 
-  mcq.push({
-    questionType: "multiple_choice",
-    id: "g2",
-    category: "grammar",
-    question: "Choose the article: “I saw ___ interesting point in the video.”",
-    options: ["an", "a", "the", "— (no article)"],
-    correctIndex: 0,
-    explanation: "“An” precedes vowel sounds (an interesting…).",
-  });
+  mcq.push(
+    isBasic
+      ? {
+        questionType: "multiple_choice",
+        id: "g2",
+        category: "grammar",
+        question: "Choose the correct word: “I have ___ apple.”",
+        options: ["an", "a", "the", "two"],
+        correctIndex: 0,
+        explanation: "“An” precedes vowel sounds.",
+      }
+      : {
+        questionType: "multiple_choice",
+        id: "g2",
+        category: "grammar",
+        question: "Choose the article: “I saw ___ interesting point in the video.”",
+        options: ["an", "a", "the", "— (no article)"],
+        correctIndex: 0,
+        explanation: "“An” precedes vowel sounds (an interesting…).",
+      }
+  );
 
-  mcq.push({
-    questionType: "multiple_choice",
-    id: "g3",
-    category: "grammar",
-    question:
-      "Which completes: “The speaker focuses ___ helping learners with listening.”",
-    options: ["on", "at", "for", "by"],
-    correctIndex: 0,
-    explanation: "“Focus on” is the fixed collocation.",
-  });
+  mcq.push(
+    isBasic
+      ? {
+        questionType: "multiple_choice",
+        id: "g3",
+        category: "grammar",
+        question: "Which completes: “The speaker is looking ___ the camera.”",
+        options: ["at", "on", "for", "by"],
+        correctIndex: 0,
+        explanation: "“Looking at” is the correct phrase here.",
+      }
+      : {
+        questionType: "multiple_choice",
+        id: "g3",
+        category: "grammar",
+        question: "Which completes: “The speaker focuses ___ helping learners with listening.”",
+        options: ["on", "at", "for", "by"],
+        correctIndex: 0,
+        explanation: "“Focus on” is the fixed collocation.",
+      }
+  );
 
   const hobbyRef =
     ctx.hobbies && ctx.hobbies.length > 0
       ? ` If it fits the content, note one idea that could matter for an interest like ${ctx.hobbies
-          .slice(0, 2)
-          .join(" or ")
-          .slice(0, 80)}.`
+        .slice(0, 2)
+        .join(" or ")
+        .slice(0, 80)}.`
       : "";
+
   const openItem: ComprehensionTestItem = {
     questionType: "open",
     id: "open1",
     category: "open",
-    question: `In 2–3 sentences, what was the video “${label.slice(0, 72)}” mainly about? Mention at least one concrete idea.${hobbyRef}`,
-    explanation: `Rubric: topic + one specific detail from the clip; optional one-line link to "${goal.slice(0, 60)}" only if the video actually supports it.`,
+    question: isBasic
+      ? `What is the video “${label.slice(0, 72)}” about? Write 1 simple sentence.`
+      : `In 2–3 sentences, what was the video “${label.slice(0, 72)}” mainly about? Mention at least one concrete idea.${hobbyRef}`,
+    explanation: isBasic
+      ? `Rubric: Accept any simple correct sentence about the topic.`
+      : `Rubric: topic + one specific detail from the clip; optional one-line link to "${goal.slice(0, 60)}" only if the video actually supports it.`,
   };
 
   return [...mcq, openItem];

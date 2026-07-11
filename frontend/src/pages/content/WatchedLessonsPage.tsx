@@ -64,7 +64,7 @@ function RecapActionCard(props: {
     done: string;
     lastScore: string;
     lessons: string;
-    reasons: Record<string, string>; // 1. Добавили типизацию
+    reasons: Record<string, string>;
   };
 }) {
   const { config, status, locale, labels } = props;
@@ -75,12 +75,10 @@ function RecapActionCard(props: {
       ? formatRecapCooldown(status.nextAvailableAt, locale)
       : null;
 
-  // 2. Ищем перевод по ключу. Если ключа почему-то нет — отдаем сырой reason
   const translatedReason = status?.reason
     ? labels.reasons[status.reason] || status.reason
     : labels.done;
 
-  // 3. Подставляем переведенный текст
   const ctaLabel = available
     ? labels.start
     : status?.completedInPeriod
@@ -146,10 +144,9 @@ export default function WatchedLessonsPage() {
   const { locale } = useLandingLocale();
   const dict = locale === "uk" ? appUk : appEn;
 
-  // 2. Дістаємо потрібні шматки
   const M = dict.myLessonsPage;
   const browseCatalog = dict.catalogSpotlight.browseCatalog;
-  const reasonsDict = dict.recaps.reasons; // <-- Ось наші переклади причин!
+  const reasonsDict = dict.recaps.reasons;
 
   const [videos, setVideos] = useState<ContentVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -215,7 +212,11 @@ export default function WatchedLessonsPage() {
     };
   }, []);
 
-  const cards = useMemo(() => videos.map(toCardVideo), [videos]);
+  const cards = useMemo(() => {
+    const rawCards = videos.map(toCardVideo);
+    return [...rawCards].reverse();
+  }, [videos]);
+
   const recapLabels = useMemo(
     () => ({
       start: M.recapStartCta,
@@ -238,7 +239,7 @@ export default function WatchedLessonsPage() {
       />
       <div className="flex">
         <CatalogSidebar
-          onSelectLevel={() => {}}
+          onSelectLevel={() => { }}
           reserveTopNavSpace={false}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}

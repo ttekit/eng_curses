@@ -68,8 +68,8 @@ export function renderComprehensionTestsIframeHtml(
           <span class="cat open">Summary</span>
         </legend>
         <p class="prompt">${escapeHtml(t.question)}</p>
-        <textarea class="open-answer" rows="5" placeholder="Write 2–3 sentences in English." aria-label="Your answer"></textarea>
-        <p class="ta-hint">Aim for at least ~40 characters and two sentences.</p>
+        <textarea class="open-answer" rows="5" placeholder="Write your answer in English." aria-label="Your answer"></textarea>
+        <p class="ta-hint">Aim for at least a full sentence.</p>
         <p class="feedback" hidden></p>
       </fieldset>`;
       }
@@ -234,7 +234,7 @@ export function renderComprehensionTestsIframeHtml(
         var ta = fs.querySelector("textarea.open-answer");
         var text = ta ? ta.value.trim() : "";
         if (!text) { feedback.textContent = "Please write your answer."; feedback.hidden = false; return; }
-        if (text.length < 40) { feedback.textContent = "Add a bit more detail (about two sentences)."; feedback.hidden = false; return; }
+        if (text.length < 15) { feedback.textContent = "Please write a complete sentence."; feedback.hidden = false; return; }
         fs.classList.add("ok");
         feedback.textContent = "Looks good to submit — final grading runs on the server.";
         feedback.hidden = false;
