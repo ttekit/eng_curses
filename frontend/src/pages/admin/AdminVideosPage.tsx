@@ -1574,7 +1574,7 @@ export default function AdminVideosPage() {
                   editSaving ||
                   !!regenBusy ||
                   !editing?.videoCaption?.subtitlesFileLink ||
-                  [/*"B1", "B2", "C1",*/ "C2"].includes(
+                  ["B1", "B2", "C1", "C2"].includes(
                     videoLevelBadge(editing),
                   )
                 }
