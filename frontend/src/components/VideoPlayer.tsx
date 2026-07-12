@@ -778,7 +778,7 @@ export default function VideoPlayer({
                     <div className="px-3 py-1.5 font-semibold text-white/50 border-b border-white/10 select-none">
                       Субтитри
                     </div>
-                    <button
+                  <button
                       type="button"
                       onClick={() => {
                         setSelectedTrackId(null);

@@ -550,7 +550,7 @@ export class VideoCaptionsService {
     });
     writeStream.write("WEBVTT\n\n");
 
-    const BATCH_SIZE = 25;
+    const BATCH_SIZE = 30;
     const chunks: import("src/common/utils/vtt.utils").VttBlock[][] = [];
 
     let currentBlocks: import("src/common/utils/vtt.utils").VttBlock[] = [];
@@ -625,7 +625,7 @@ export class VideoCaptionsService {
       const p = processChunk(chunks[i], i);
       executing.add(p);
       p.finally(() => executing.delete(p));
-      if (executing.size >= 4) {
+      if (executing.size >= 5) {
         await Promise.race(executing);
       }
     }
@@ -682,17 +682,26 @@ export class VideoCaptionsService {
   }
 
   /** Load WebVTT text from S3 URL stored on `VideoCaptions` (same-origin admin proxy). */
-  async fetchStoredSubtitlesVtt(contentVideoId: number): Promise<string> {
+  async fetchStoredSubtitlesVtt(
+    contentVideoId: number,
+    lang?: string,
+  ): Promise<string> {
     const row = await this.prisma.videoCaptions.findUnique({
       where: { contentVideoId },
-      select: { subtitlesFileLink: true },
+      select: { subtitlesFileLink: true, subtitlesUkLink: true },
     });
-    const url = row?.subtitlesFileLink?.trim();
+
+    const url =
+      lang === "uk"
+        ? row?.subtitlesUkLink?.trim()
+        : row?.subtitlesFileLink?.trim();
+
     if (!url) {
       throw new NotFoundException(
-        `No captions row for ContentVideo ${contentVideoId}`,
+        `No ${lang === "uk" ? "Ukrainian" : "English"} captions for ContentVideo ${contentVideoId}`,
       );
     }
+
     const res = await fetch(url, { signal: AbortSignal.timeout(120_000) });
     if (!res.ok) {
       throw new BadGatewayException(

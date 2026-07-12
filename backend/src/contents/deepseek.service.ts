@@ -19,25 +19,52 @@ export class DeepSeekService {
     batch: string[],
     retries = 3,
   ): Promise<string[]> {
+    const CHUNK_SIZE = 30;
+    const finalTranslatedArray: string[] = [];
+    const totalChunks = Math.ceil(batch.length / CHUNK_SIZE);
+
+    for (let i = 0; i < batch.length; i += CHUNK_SIZE) {
+      const chunk = batch.slice(i, i + CHUNK_SIZE);
+      const currentChunkNum = Math.floor(i / CHUNK_SIZE) + 1;
+
+      // this.logger.log(
+      //   `Translating chunk ${currentChunkNum} of ${totalChunks}...`,
+      // );
+
+      const chunkResult = await this.translateChunkWithRetry(chunk, retries);
+      finalTranslatedArray.push(...chunkResult);
+    }
+
+    return finalTranslatedArray;
+  }
+
+  private async translateChunkWithRetry(
+    chunk: string[],
+    retries: number,
+  ): Promise<string[]> {
     const editorPrompt =
       process.env.SUBTITLE_TRANSLATE_PROMPT ||
       "Translate these subtitles into Ukrainian.";
 
     const batchObject: Record<string, string> = {};
-    batch.forEach((text, index) => {
+    chunk.forEach((text, index) => {
       batchObject[String(index)] = text;
     });
 
+    batchObject["_END_"] = "END_OF_BATCH";
+
     const prompt = `${editorPrompt}
-      You will receive a JSON object where keys are stringified numbers (indexes) and values are English strings.
+      You will receive a JSON object with numbered keys and one special key "_END_".
+      
       STRICT TECHNICAL RULES:
       1. Return ONLY a valid JSON object.
-      2. Keep the EXACT SAME keys. Do not add, remove, or skip any keys.
-      3. Translate the values to Ukrainian.
-      4. Do NOT merge or split lines.
-      5. Provide NO conversational text, markdown formatting, or explanations. Just the JSON object.
+      2. Translate all string values of the numbered keys to Ukrainian.
+      3. DO NOT drop, skip, or merge any numbered keys. Translate short fragments (like "but", "scouts.") literally.
+      4. The very last key in your output MUST be "_END_": "END_OF_BATCH". Do not close the JSON object until you have outputted this exact key.
+      5. Provide NO conversational text or markdown formatting. Just the JSON.
+      
       EXAMPLE OUTPUT:
-      {"0": "Переклад першого рядка", "1": "Переклад другого рядка"}`;
+      {"0": "Переклад", "1": "...", "_END_": "END_OF_BATCH"}`;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
@@ -52,7 +79,7 @@ export class DeepSeekService {
           },
           signal: controller.signal,
           body: JSON.stringify({
-            model: "deepseek-v4-pro",
+            model: "deepseek-v4-flash",
             messages: [
               { role: "system", content: prompt },
               { role: "user", content: JSON.stringify(batchObject) },
@@ -76,21 +103,19 @@ export class DeepSeekService {
 
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          this.logger.error(`🚨 СЕТЬ ВЕРНУЛА МУСОР: ${content}`);
           throw new Error("No JSON object found in response");
         }
 
         const parsedObj = JSON.parse(jsonMatch[0]);
 
-        // 3. СОБИРАЕМ МАССИВ ОБРАТНО СТРОГО ПО ИНДЕКСАМ
         const translatedArray: string[] = [];
-        for (let i = 0; i < batch.length; i++) {
+        for (let i = 0; i < chunk.length; i++) {
           if (parsedObj[String(i)] === undefined) {
-            // 🚨 ВМЕСТО КРАША СЕРВЕРА - ПРОСТО ЛОГИРУЕМ И ВСТАВЛЯЕМ ОРИГИНАЛ
+            //этот лог пускай будет, пару дней потестить всё ли гуд, потом удалим(до 18.07.2026)
             this.logger.warn(
-              `⚠️ Нейронка обленилась и пропустила ключ "${i}". Оставляем оригинал: "${batch[i]}"`,
+              `Нейронка обленилась и пропустила ключ "${i}". Оставляем оригинал: "${chunk[i]}"`,
             );
-            translatedArray.push(batch[i]); // Фолбек на английский текст
+            translatedArray.push(chunk[i]);
           } else {
             translatedArray.push(parsedObj[String(i)]);
           }
@@ -102,12 +127,12 @@ export class DeepSeekService {
           error instanceof Error ? error.message : String(error);
 
         this.logger.warn(
-          `Translation attempt ${attempt} failed: ${errorMessage}`,
+          `Translation chunk attempt ${attempt} failed: ${errorMessage}`,
         );
 
         if (attempt === retries) {
           throw new InternalServerErrorException(
-            "Failed to translate subtitles.",
+            "Failed to translate subtitles chunk.",
           );
         }
         await new Promise((r) => setTimeout(r, 2000 * attempt));
