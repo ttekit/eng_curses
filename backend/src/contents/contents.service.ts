@@ -819,7 +819,6 @@ export class ContentsService {
       const vid = slot?.ContentVideo?.[0];
       const stats = slot?.stats;
 
-      // Возвращаем массив классов для красивого UI
       const classAccesses = c.classAccesses
         ? c.classAccesses.map((a) => ({
             classId: a.classId,
@@ -958,7 +957,6 @@ export class ContentsService {
 
     if (!content) throw new NotFoundException("Content not found");
 
-    // Если учитель владелец видео и передал глобальные дедлайны
     if (content.ownerUserId === teacherId && payload.global) {
       const parsedAvail = payload.global.availableFrom
         ? new Date(payload.global.availableFrom)
@@ -976,7 +974,6 @@ export class ContentsService {
       });
     }
 
-    // Если переданы индивидуальные классы с дедлайнами
     if (payload.classes && Array.isArray(payload.classes)) {
       const myClasses = await this.prisma.class.findMany({
         where: { teacherId },

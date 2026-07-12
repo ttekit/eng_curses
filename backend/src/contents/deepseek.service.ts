@@ -25,11 +25,6 @@ export class DeepSeekService {
 
     for (let i = 0; i < batch.length; i += CHUNK_SIZE) {
       const chunk = batch.slice(i, i + CHUNK_SIZE);
-      const currentChunkNum = Math.floor(i / CHUNK_SIZE) + 1;
-
-      // this.logger.log(
-      //   `Translating chunk ${currentChunkNum} of ${totalChunks}...`,
-      // );
 
       const chunkResult = await this.translateChunkWithRetry(chunk, retries);
       finalTranslatedArray.push(...chunkResult);
