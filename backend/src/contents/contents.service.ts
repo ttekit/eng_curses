@@ -97,58 +97,60 @@ export class ContentsService {
     let m3u8Url: string | null = null;
     let zipThumbUrl: string | null = null;
 
-    const uploadPromises = zipEntries.map(async (entry) => {
-      if (entry.isDirectory) return;
-
-      const entryName = entry.entryName;
+    const validEntries = zipEntries.filter((entry) => {
       const fileName = entry.name;
-
-      if (
-        !fileName ||
-        fileName.startsWith("._") ||
-        entryName.includes("__MACOSX") ||
-        fileName === ".DS_Store"
-      ) {
-        return;
-      }
-
-      const fileBuffer = entry.getData();
-      const s3Key = `m3u8_videos/${folderUuid}/${entryName}`;
-
-      let contentType = "application/octet-stream";
-      if (fileName.endsWith(".m3u8"))
-        contentType = "application/vnd.apple.mpegurl";
-      else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
-      else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
-      else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
-
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: s3Key,
-          Body: fileBuffer,
-          ContentType: contentType,
-        }),
+      return (
+        !entry.isDirectory &&
+        fileName &&
+        !fileName.startsWith("._") &&
+        !entry.entryName.includes("__MACOSX") &&
+        fileName !== ".DS_Store"
       );
-
-      const currentUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
-
-      if (fileName.endsWith(".m3u8")) {
-        const lower = fileName.toLowerCase();
-        const isMaster =
-          lower.includes("master") ||
-          lower.includes("playlist") ||
-          lower.includes("index");
-
-        if (!m3u8Url || isMaster) {
-          m3u8Url = currentUrl;
-        }
-      } else if (contentType.startsWith("image/")) {
-        if (!zipThumbUrl) zipThumbUrl = currentUrl;
-      }
     });
 
-    await Promise.all(uploadPromises);
+    const CONCURRENCY_LIMIT = 40;
+
+    for (let i = 0; i < validEntries.length; i += CONCURRENCY_LIMIT) {
+      const chunk = validEntries.slice(i, i + CONCURRENCY_LIMIT);
+
+      const uploadPromises = chunk.map(async (entry) => {
+        const entryName = entry.entryName;
+        const fileName = entry.name;
+        const fileBuffer = entry.getData();
+        const s3Key = `m3u8_videos/${folderUuid}/${entryName}`;
+
+        let contentType = "application/octet-stream";
+        if (fileName.endsWith(".m3u8"))
+          contentType = "application/vnd.apple.mpegurl";
+        else if (fileName.endsWith(".ts")) contentType = "video/MP2T";
+        else if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = "image/jpeg";
+        else if (fileName.match(/\.(png)$/i)) contentType = "image/png";
+
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: s3Key,
+            Body: fileBuffer,
+            ContentType: contentType,
+          }),
+        );
+
+        const currentUrl = publicS3ObjectUrl(this.bucket, this.region, s3Key);
+
+        if (fileName.endsWith(".m3u8")) {
+          const lower = fileName.toLowerCase();
+          const isMaster =
+            lower.includes("master") ||
+            lower.includes("playlist") ||
+            lower.includes("index");
+          if (!m3u8Url || isMaster) m3u8Url = currentUrl;
+        } else if (contentType.startsWith("image/")) {
+          if (!zipThumbUrl) zipThumbUrl = currentUrl;
+        }
+      });
+
+      await Promise.all(uploadPromises);
+    }
 
     if (!m3u8Url) {
       throw new BadRequestException(
@@ -817,7 +819,6 @@ export class ContentsService {
       const vid = slot?.ContentVideo?.[0];
       const stats = slot?.stats;
 
-      // Возвращаем массив классов для красивого UI
       const classAccesses = c.classAccesses
         ? c.classAccesses.map((a) => ({
             classId: a.classId,
@@ -956,7 +957,6 @@ export class ContentsService {
 
     if (!content) throw new NotFoundException("Content not found");
 
-    // Если учитель владелец видео и передал глобальные дедлайны
     if (content.ownerUserId === teacherId && payload.global) {
       const parsedAvail = payload.global.availableFrom
         ? new Date(payload.global.availableFrom)
@@ -974,7 +974,6 @@ export class ContentsService {
       });
     }
 
-    // Если переданы индивидуальные классы с дедлайнами
     if (payload.classes && Array.isArray(payload.classes)) {
       const myClasses = await this.prisma.class.findMany({
         where: { teacherId },

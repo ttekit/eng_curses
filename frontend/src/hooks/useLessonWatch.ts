@@ -55,6 +55,7 @@ export function useLessonWatch(id: string | undefined) {
   } | null>(null);
   const [sideBundleLoading, setSideBundleLoading] = useState(false);
   const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
+  const [transcriptLinesUk, setTranscriptLinesUk] = useState<any[]>([]);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [playbackSec, setPlaybackSec] = useState(0);
   const [vocabularyHintMap, setVocabularyHintMap] = useState<
@@ -86,7 +87,7 @@ export function useLessonWatch(id: string | undefined) {
     if (!el || !Number.isFinite(seconds)) return;
     try {
       el.currentTime = Math.max(0, seconds);
-    } catch { }
+    } catch {}
   }, []);
 
   const postWatchCompleteOnce = useCallback(async () => {
@@ -187,8 +188,12 @@ export function useLessonWatch(id: string | undefined) {
             : undefined;
         if (!cancelled) {
           setPlaylistRibbon({
-            prevVideoId: prevEp ? ((prevEp as any).friendlyLink || prevEp.contentVideoId) : null,
-            nextVideoId: nextEp ? ((nextEp as any).friendlyLink || nextEp.contentVideoId) : null,
+            prevVideoId: prevEp
+              ? (prevEp as any).friendlyLink || prevEp.contentVideoId
+              : null,
+            nextVideoId: nextEp
+              ? (nextEp as any).friendlyLink || nextEp.contentVideoId
+              : null,
             position: idx + 1,
             total: parsed.episodes.length,
           });
@@ -223,8 +228,8 @@ export function useLessonWatch(id: string | undefined) {
         const quizQuestions =
           Array.isArray(body.tests) && body.tests.length > 0
             ? mapApiTestsToQuiz(
-              body.tests as NonNullable<LessonSideBundle["tests"]>,
-            )
+                body.tests as NonNullable<LessonSideBundle["tests"]>,
+              )
             : defaultQuizQuestions;
         const gradingToken =
           typeof body.gradingToken === "string" && body.gradingToken.length > 0
@@ -247,28 +252,43 @@ export function useLessonWatch(id: string | undefined) {
     if (!id || !videoData || isLocked) return;
     const vid = videoData.id;
     let cancelled = false;
+
     setTranscriptLoading(true);
     setTranscriptLines([]);
-    void apiFetch(`/content-video/${vid}/captions`)
-      .then(async (r) => {
+    setTranscriptLinesUk([]); // Очищаем и украинские тоже при смене видео
+
+    const fetchTranscripts = async () => {
+      try {
+        // Запускаем два запроса параллельно
+        const [resEn, resUk] = await Promise.allSettled([
+          apiFetch(`/content-video/${vid}/captions`),
+          apiFetch(`/content-video/${vid}/captions?lang=uk`),
+        ]);
+
         if (cancelled) return;
-        if (!r.ok) {
-          setTranscriptLines([]);
-          return;
+
+        if (resEn.status === "fulfilled" && resEn.value.ok) {
+          const textEn = await resEn.value.text();
+          setTranscriptLines(
+            splitLongTranscriptLines(parseWebVttTranscriptLines(textEn), 80),
+          );
         }
-        setTranscriptLines(
-          splitLongTranscriptLines(
-            parseWebVttTranscriptLines(await r.text()),
-            80,
-          ),
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setTranscriptLines([]);
-      })
-      .finally(() => {
+
+        if (resUk.status === "fulfilled" && resUk.value.ok) {
+          const textUk = await resUk.value.text();
+          setTranscriptLinesUk(
+            splitLongTranscriptLines(parseWebVttTranscriptLines(textUk), 80),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load transcripts", error);
+      } finally {
         if (!cancelled) setTranscriptLoading(false);
-      });
+      }
+    };
+
+    void fetchTranscripts();
+
     return () => {
       cancelled = true;
     };
@@ -302,7 +322,7 @@ export function useLessonWatch(id: string | undefined) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ secondsWatched: 20 }),
         });
-      } catch (err) { }
+      } catch (err) {}
     }, 20000);
     return () => {
       if (heartbeatIntervalRef.current)
@@ -474,7 +494,7 @@ export function useLessonWatch(id: string | undefined) {
             }),
           });
           if (r.ok) {
-            await refreshProfile().catch(() => { });
+            await refreshProfile().catch(() => {});
             const d = await r.json();
             const fb = readOpenEndedFeedbackFromSubmit(d);
             if (fb !== undefined) writtenSummaryFeedback = fb;
@@ -529,7 +549,7 @@ export function useLessonWatch(id: string | undefined) {
           `${LESSON_SUMMARY_STORAGE}${id}`,
           JSON.stringify(payload),
         );
-      } catch { }
+      } catch {}
       void navigate(`/content/${id}/summary`, { state: payload });
     },
     [
@@ -572,6 +592,7 @@ export function useLessonWatch(id: string | undefined) {
     lessonSideBundle,
     sideBundleLoading,
     transcriptLines,
+    transcriptLinesUk,
     transcriptLoading,
     playbackSec,
     setPlaybackSec,

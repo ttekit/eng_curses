@@ -236,7 +236,7 @@ function slugFriendly(label: string): string {
   return base.length > 100 ? base.slice(0, 100).replace(/-[^-]*$/, "") : base;
 }
 
-type MetadataInspectTab = "themes" | "levels" | "subs";
+type MetadataInspectTab = "themes" | "levels" | "subs" | "subs-uk";
 
 function ChipList(props: { tags: string[]; emptyLabel: string }) {
   const { tags, emptyLabel } = props;
@@ -298,7 +298,7 @@ export default function AdminVideosPage() {
   const [editThumb, setEditThumb] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [regenBusy, setRegenBusy] = useState<
-    false | "tags" | "cefr" | "captions"
+    false | "tags" | "cefr" | "captions" | "captions-uk"
   >(false);
 
   const [editSeriesGroup, setEditSeriesGroup] =
@@ -374,6 +374,46 @@ export default function AdminVideosPage() {
     setSubtitleLoading(false);
   }, [inspectMeta?.video.id]);
 
+  useEffect(() => {
+    if (
+      !inspectMeta ||
+      (inspectMeta.tab !== "subs" && inspectMeta.tab !== "subs-uk")
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    setSubtitleLoading(true);
+    setSubtitleError(null);
+    setSubtitleText(null);
+
+    const isUk = inspectMeta.tab === "subs-uk";
+
+    const url = isUk
+      ? `/content-video/${inspectMeta.video.id}/subtitles?lang=uk`
+      : `/content-video/${inspectMeta.video.id}/subtitles`;
+
+    apiFetch(url)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Could not load subtitles");
+        const text = await res.text();
+        if (!cancelled) setSubtitleText(text);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setSubtitleError(
+            e instanceof Error ? e.message : "Could not load subtitles",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSubtitleLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inspectMeta]);
   useEffect(() => {
     if (!inspectMeta || inspectMeta.tab !== "subs") return;
     const link = inspectMeta.video.videoCaption?.subtitlesFileLink?.trim();
@@ -819,6 +859,39 @@ export default function AdminVideosPage() {
     [],
   );
 
+  const handleRegenCaptionsUk = async () => {
+    if (!editing) return;
+    const vid = editing.id;
+    setRegenBusy("captions-uk");
+
+    try {
+      // Вызываем эндпоинт твоего бэкенда для перевода (замени URL, если он у тебя другой)
+      const res = await apiFetch(`/content-video/${vid}/captions/uk`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to translate subtitles");
+      }
+
+      toast.success("Subtitles successfully translated to UK");
+
+      // Обновляем данные в таблице и модалке
+      const rows = await loadVideos();
+      const u = rows?.find((x) => x.id === vid);
+      if (u) {
+        setEditing(u);
+        setEditName(u.videoName);
+        setEditDesc(u.videoDescription || u.content.category.description || "");
+        setEditAge(u.ageRestriction || "0+");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Translation failed");
+    } finally {
+      setRegenBusy(false);
+    }
+  };
+
   const handleAddEpisodeSubmit = async () => {
     if (!addEpisodeSeries) return;
     const name = addEpisodeTitle.trim();
@@ -829,7 +902,10 @@ export default function AdminVideosPage() {
 
     const fd = new FormData();
     fd.append("videoName", name);
-    fd.append("friendlyLink", slugFriendly(addEpisodeFriendlyLink.trim() || name));
+    fd.append(
+      "friendlyLink",
+      slugFriendly(addEpisodeFriendlyLink.trim() || name),
+    );
     fd.append("ageRestriction", addEpisodeAge);
 
     const d = addEpisodeDesc.trim();
@@ -944,7 +1020,6 @@ export default function AdminVideosPage() {
       </div>
 
       <AdminModal
-
         open={uploadOpen}
         onClose={() => !uploadSaving && setUploadOpen(false)}
         title="Upload new video"
@@ -1091,7 +1166,11 @@ export default function AdminVideosPage() {
                 id="admin-vid-link"
                 placeholder="my-awesome-video"
                 value={uploadFriendlyLink}
-                onChange={(e) => setUploadFriendlyLink(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                onChange={(e) =>
+                  setUploadFriendlyLink(
+                    e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                  )
+                }
               />
             </div>
           </div>
@@ -1279,7 +1358,11 @@ export default function AdminVideosPage() {
               id="admin-ep-link"
               placeholder="my-episode-link"
               value={addEpisodeFriendlyLink}
-              onChange={(e) => setAddEpisodeFriendlyLink(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+              onChange={(e) =>
+                setAddEpisodeFriendlyLink(
+                  e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                )
+              }
             />
           </div>
 
@@ -1357,13 +1440,20 @@ export default function AdminVideosPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="admin-edit-vid-link">
+            <label
+              className="text-sm font-medium"
+              htmlFor="admin-edit-vid-link"
+            >
               Friendly Link (URL slug)
             </label>
             <AdminInput
               id="admin-edit-vid-link"
               value={editFriendlyLink}
-              onChange={(e) => setEditFriendlyLink(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+              onChange={(e) =>
+                setEditFriendlyLink(
+                  e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                )
+              }
             />
           </div>
 
@@ -1473,6 +1563,27 @@ export default function AdminVideosPage() {
               >
                 <Layers className="h-4 w-4" />
                 {regenBusy === "cefr" ? "Working…" : "Regenerate CEFR"}
+              </AdminButton>
+
+              <AdminButton
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={
+                  editSaving ||
+                  !!regenBusy ||
+                  !editing?.videoCaption?.subtitlesFileLink ||
+                  ["B1", "B2", "C1", "C2"].includes(
+                    videoLevelBadge(editing),
+                  )
+                }
+                onClick={() => void handleRegenCaptionsUk()}
+              >
+                <Captions className="h-4 w-4 text-purple-500" />
+                {regenBusy === "captions-uk"
+                  ? "Translating…"
+                  : "Translate to UK"}
               </AdminButton>
             </div>
           </div>
@@ -1615,6 +1726,18 @@ export default function AdminVideosPage() {
                 <Captions className="h-4 w-4" />
                 Subtitles
               </AdminButton>
+              <AdminButton
+                type="button"
+                size="sm"
+                variant={inspectMeta.tab === "subs-uk" ? "primary" : "outline"}
+                className="gap-1.5"
+                onClick={() =>
+                  setInspectMeta({ ...inspectMeta, tab: "subs-uk" })
+                }
+              >
+                <Captions className="h-4 w-4" />
+                UK Subtitles
+              </AdminButton>
             </div>
 
             {inspectMeta.tab === "themes" ? (
@@ -1644,7 +1767,7 @@ export default function AdminVideosPage() {
                   Processing complexity:{" "}
                   <span className="font-medium text-foreground">
                     {inspectMeta.video.content.stats?.processingComplexity !=
-                      null
+                    null
                       ? inspectMeta.video.content.stats.processingComplexity
                       : "—"}
                   </span>
@@ -1652,31 +1775,76 @@ export default function AdminVideosPage() {
               </div>
             ) : null}
 
+            {/* Вкладка 1: АНГЛИЙСКИЕ СУБТИТРЫ */}
             {inspectMeta.tab === "subs" ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {inspectMeta.video.videoCaption?.subtitlesFileLink ? (
-                  <>
+                  <div className="space-y-2">
                     <p className="text-xs text-muted-foreground">
                       Loaded via{" "}
                       <code className="text-[11px]">
                         GET /content-video/:id/subtitles
-                      </code>{" "}
-                      (same API token as admin).
+                      </code>
                     </p>
-                    <a
-                      href={inspectMeta.video.videoCaption.subtitlesFileLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block text-sm text-primary underline-offset-4 hover:underline break-all"
-                    >
-                      Open raw file on storage
-                    </a>
-                  </>
+                    <div className="flex flex-col gap-2 bg-muted/30 p-3 rounded-lg border border-border">
+                      <a
+                        href={inspectMeta.video.videoCaption.subtitlesFileLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline break-all"
+                      >
+                        🇬🇧 Open English VTT
+                      </a>
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    No captions row yet. Open Edit → Regenerate captions.
+                    No English captions yet. Open Edit → Regenerate captions.
                   </p>
                 )}
+
+                {/* Текст английских субтитров */}
+                {subtitleLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading WebVTT…
+                  </p>
+                ) : null}
+                {subtitleError ? (
+                  <p className="text-sm text-destructive">{subtitleError}</p>
+                ) : null}
+                {subtitleText ? (
+                  <pre className="max-h-[min(420px,50vh)] overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] whitespace-pre-wrap break-all">
+                    {subtitleText}
+                  </pre>
+                ) : null}
+              </div>
+            ) : null}
+
+            {inspectMeta.tab === "subs-uk" ? (
+              <div className="space-y-4">
+                {inspectMeta.video.videoCaption?.subtitlesUkLink ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Translated Ukrainian Subtitles
+                    </p>
+                    <div className="flex flex-col gap-2 bg-muted/30 p-3 rounded-lg border border-border">
+                      <a
+                        href={inspectMeta.video.videoCaption.subtitlesUkLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-purple-500 underline-offset-4 hover:underline break-all"
+                      >
+                        🇺🇦 Open Ukrainian VTT
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    🇺🇦 Ukrainian VTT not generated yet.
+                  </p>
+                )}
+
+                {/* ДОБАВЛЕНО: Блок для вывода самого текста украинских субтитров */}
                 {subtitleLoading ? (
                   <p className="text-sm text-muted-foreground">
                     Loading WebVTT…
@@ -1997,6 +2165,14 @@ export default function AdminVideosPage() {
                                     }
                                   >
                                     <Captions className="h-4 w-4" /> Subtitles
+                                  </AdminRowMenuItem>
+                                  <AdminRowMenuItem
+                                    onClick={() =>
+                                      setInspectMeta({ video, tab: "subs-uk" })
+                                    }
+                                  >
+                                    <Captions className="h-4 w-4" />{" "}
+                                    UK Subtitles
                                   </AdminRowMenuItem>
                                   <AdminRowMenuItem
                                     onClick={() => openEdit(video)}

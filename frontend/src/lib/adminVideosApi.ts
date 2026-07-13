@@ -12,7 +12,7 @@ export type AdminCatalogVideoRow = {
 
   /** Order within the parent `ContentMedia` when multiple clips share a slot. */
   playlistPosition?: number;
-  videoCaption: { subtitlesFileLink: string } | null;
+  videoCaption: { subtitlesFileLink: string, subtitlesUkLink: string } | null;
   content: {
     id: number;
     /** `ContentMedia` playlist index within the series. */

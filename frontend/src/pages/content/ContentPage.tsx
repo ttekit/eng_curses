@@ -272,6 +272,7 @@ export default function ContentPage() {
     lessonSideBundle,
     sideBundleLoading,
     transcriptLines,
+    transcriptLinesUk,
     transcriptLoading,
     playbackSec,
     setPlaybackSec,
@@ -292,27 +293,25 @@ export default function ContentPage() {
   } = useLessonWatch(id);
 
   const playerTranscripts = useMemo(() => {
-    if (!transcriptLines || !Array.isArray(transcriptLines) || transcriptLines.length === 0) {
-      return undefined;
-    }
+    // Если вообще нет данных
+    if (!transcriptLines || transcriptLines.length === 0) return undefined;
 
     const tracks = [];
-    const hasUkTranslation = transcriptLines.some(
-      (cue: any) => cue.ukText || cue.translation || cue.textUk
-    );
 
-    if (hasUkTranslation) {
+    // 1. Добавляем украинскую дорожку, если она пришла из хука
+    if (transcriptLinesUk && transcriptLinesUk.length > 0) {
       tracks.push({
         id: "uk",
         label: "Українська",
-        cues: transcriptLines.map((cue: any) => ({
+        cues: transcriptLinesUk.map((cue: any) => ({
           startSec: cue.startSec,
           endSec: cue.endSec,
-          text: cue.ukText || cue.translation || cue.textUk || "",
+          text: cue.text || "",
         })),
       });
     }
 
+    // 2. Добавляем английскую
     tracks.push({
       id: "en",
       label: "English",
@@ -324,7 +323,7 @@ export default function ContentPage() {
     });
 
     return tracks;
-  }, [transcriptLines]);
+  }, [transcriptLines, transcriptLinesUk]); // Обязательно добавь сюда transcriptLinesUk!
 
   if (loading)
     return (
@@ -524,13 +523,13 @@ export default function ContentPage() {
                     ))}
                   {(user?.role?.toLowerCase() === "teacher" ||
                     user?.role?.toLowerCase() === "admin") && (
-                      <div className="ml-2 z-50">
-                        <AssignHomeworkButton
-                          contentId={Number(id)}
-                          contentName={videoData.videoName}
-                        />
-                      </div>
-                    )}
+                    <div className="ml-2 z-50">
+                      <AssignHomeworkButton
+                        contentId={Number(id)}
+                        contentName={videoData.videoName}
+                      />
+                    </div>
+                  )}
                 </div>
                 <h1 className="font-display mb-3 text-2xl font-bold sm:text-3xl">
                   {videoData.videoName}

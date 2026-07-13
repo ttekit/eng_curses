@@ -38,7 +38,7 @@ export class ContentVideoService {
   constructor(
     private prisma: PrismaService,
     @Inject("REDIS_CLIENT") private readonly redis: RedisCatalogCacheClient,
-  ) { }
+  ) {}
 
   async create(createContentVideoDto: CreateContentVideoDto) {
     const maxRow = await this.prisma.contentVideo.aggregate({
@@ -90,23 +90,23 @@ export class ContentVideoService {
     const whereClause = isAdmin
       ? {}
       : {
-        OR: [
-          {
-            content: {
-              category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
-            },
-          },
-          ...(teacherId
-            ? [
-              {
-                content: {
-                  category: { ownerUserId: teacherId },
-                },
+          OR: [
+            {
+              content: {
+                category: { visibility: CATALOG_CONTENT_VISIBILITY_PUBLIC },
               },
-            ]
-            : []),
-        ],
-      };
+            },
+            ...(teacherId
+              ? [
+                  {
+                    content: {
+                      category: { ownerUserId: teacherId },
+                    },
+                  },
+                ]
+              : []),
+          ],
+        };
 
     const videos = await this.prisma.contentVideo.findMany({
       where: whereClause,
@@ -118,7 +118,7 @@ export class ContentVideoService {
       ],
       include: {
         videoCaption: {
-          select: { subtitlesFileLink: true },
+          select: { subtitlesFileLink: true, subtitlesUkLink: true },
         },
         content: {
           include: {
@@ -141,7 +141,6 @@ export class ContentVideoService {
 
   async findAllPublicCatalog() {
     const cacheKey = "catalog:videos:public_safe";
-    
     try {
       const cached = await this.redis.get(cacheKey);
       if (cached) return JSON.parse(cached);
@@ -157,7 +156,6 @@ export class ContentVideoService {
     try {
       await this.redis.set(cacheKey, JSON.stringify(safeVideos), "EX", 300);
     } catch (e) {}
-    
     return safeVideos;
   }
 
@@ -181,7 +179,9 @@ export class ContentVideoService {
     const videos = await this.prisma.contentVideo.findMany({
       where: { id: { in: orderedIds } },
       include: {
-        videoCaption: { select: { subtitlesFileLink: true } },
+        videoCaption: {
+          select: { subtitlesFileLink: true, subtitlesUkLink: true },
+        },
         content: {
           include: {
             category: true,
@@ -204,13 +204,18 @@ export class ContentVideoService {
   }
 
   async findOne(idParam: string | number, reqUserId?: number) {
-    const isNumeric = typeof idParam === 'number' || /^\d+$/.test(String(idParam));
-    const whereClause = isNumeric ? { id: Number(idParam) } : { friendlyLink: String(idParam) };
+    const isNumeric =
+      typeof idParam === "number" || /^\d+$/.test(String(idParam));
+    const whereClause = isNumeric
+      ? { id: Number(idParam) }
+      : { friendlyLink: String(idParam) };
 
     const contentVideo = await this.prisma.contentVideo.findFirst({
       where: whereClause,
       include: {
-        videoCaption: { select: { subtitlesFileLink: true } },
+        videoCaption: {
+          select: { subtitlesFileLink: true, subtitlesUkLink: true },
+        },
         content: {
           include: {
             category: {
@@ -225,7 +230,9 @@ export class ContentVideoService {
     });
 
     if (!contentVideo) {
-      throw new NotFoundException(`ContentVideo with ID/slug ${idParam} not found`);
+      throw new NotFoundException(
+        `ContentVideo with ID/slug ${idParam} not found`,
+      );
     }
 
     const now = new Date();
