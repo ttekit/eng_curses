@@ -64,7 +64,7 @@ export class DeepSeekService {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
 
         const response = await fetch(this.apiUrl, {
           method: "POST",
