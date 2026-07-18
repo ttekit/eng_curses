@@ -18,6 +18,9 @@ const HARRY_POTTER_VIDEO =
 const HARRY_POTTER_VTT =
   "https://kpi-eng-course.s3.amazonaws.com/uploads/captions/c8e3111e-020c-4f86-8f63-655751d5f10f.vtt";
 
+const HARRY_POTTER_VIDEO_QUICK =
+  "https://kpi-eng-course.s3.us-east-1.amazonaws.com/m3u8_videos/%D0%93%D0%B0%D1%80%D1%80%D0%B8_%D0%9F%D0%BE%D1%82%D1%82%D0%B5%D1%80_%D0%B8_%D0%A4%D0%B8%D0%BB%D0%BE%D1%81%D0%BE%D1%84%D1%81%D0%BA%D0%B8%D0%B8%CC%86_%D0%9A%D0%B0%D0%BC%D0%B5%D0%BD%D1%8C_1/index.m3u8";
+
 const sharedVocabulary: VocabularyItem[] = [
   {
     word: "Compartment",
@@ -69,7 +72,7 @@ const sharedQuizQuestions: QuizQuestion[] = [
 
 export const demoLessons: Record<"quickTry" | "wholeLesson", DemoLessonData> = {
   quickTry: {
-    videoLink: HARRY_POTTER_VIDEO,
+    videoLink: HARRY_POTTER_VIDEO_QUICK,
     videoName: "The Philosopher's Stone (Ep.1) — Quick Try",
     videoDescription:
       "A short taste of the lesson. Watch the first couple of minutes and try a mini quiz.",
