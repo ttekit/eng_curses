@@ -87,7 +87,7 @@ export const landingEn = {
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "testimonials", label: "Learners about Explys" },
-      { hash: "ready-to-start", label: "Ready to start" },
+      { hash: "ready-to-start", label: "Demo lesson" },
     ],
     pricing: "Pricing",
     catalog: "Catalog",
@@ -878,6 +878,10 @@ export const landingEn = {
     },
 
     howToUse: "How do I complete the lesson?",
+    moreExpl:
+      "Create an account to unlock more detailed explanations tailored to your level and mistakes",
+    tryAgain: "Try again",
+    allCorrect: "Great job! All answers are correct",
 
     instructions: {
       title: "How to take the demo lesson?",
@@ -891,6 +895,17 @@ export const landingEn = {
         { step: "Create an account to continue learning" },
         { step: "Achieve the best results" },
       ],
+    },
+
+    explanations: {
+      question1:
+        "'Was' is the past tense form of the verb 'to be' for singular subjects (I/he/she/it). 'Harry' is singular, so 'was' is correct.",
+      question2:
+        "'Good' is an exception: its comparative form is not made with '-er' or 'more', but with the unique word 'better'.",
+      question3:
+        "'Had better' is a fixed expression used for advice or warnings ('had better + base verb without to'), unlike 'should to' or 'musting'.",
+      question4:
+        "Both verbs must be in the past tense: 'arrived' (regular) and 'met' (the past form of the irregular verb 'meet').",
     },
   },
 } as const;

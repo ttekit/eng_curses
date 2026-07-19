@@ -89,7 +89,7 @@ export const landingUk = {
       { hash: "why-choose-explys", label: "Чому Explys" },
       { hash: "how-explys-works", label: "Як це працює" },
       { hash: "testimonials", label: "Учні про Explys" },
-      { hash: "ready-to-start", label: "Почати" },
+      { hash: "ready-to-start", label: "Демо-урок" },
     ],
     pricing: "Тарифи",
     catalog: "Каталог",
@@ -883,6 +883,10 @@ export const landingUk = {
     },
 
     howToUse: "Як пройти урок?",
+    moreExpl:
+      "Більш детальні пояснення з урахуванням саме твого рівня та помилок доступні після створення акаунта",
+    tryAgain: "Спробувати знову",
+    allCorrect: "Чудова робота! Всі відповіді правильні",
 
     instructions: {
       title: "Як пройти демо-урок?",
@@ -896,6 +900,17 @@ export const landingUk = {
         { step: "Створіть акаунт, щоб продовжити навчання" },
         { step: "Досягайте найкращих результатів" },
       ],
+    },
+
+    explanations: {
+      question1:
+        "'Was'- форма минулого часу дієслова 'to be' для однини (I/he/she/it). Harry - однина, тому правильно 'was'",
+      question2:
+        "'Good'- виняток: порівняльний ступінь утворюється не через '-er' чи 'more', а окремим словом 'better'",
+      question3:
+        "'Had better'- стійка конструкція для поради/попередження ('had better + дієслово без to'), а не 'should to' чи 'musting'",
+      question4:
+        "Обидва дієслова мають стояти в минулому часі: 'arrived' (правильне) та 'met' (неправильна форма від 'meet')",
     },
   },
 } as const;

@@ -140,7 +140,7 @@ export default function DemoLessonBody({
     mode === "quickTry" ? demo.quickTryContent : demo.wholeLessonContent;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 max-h-fit">
       <div className="flex flex-row justify-between mb-4">
         <div className="flex flex-col">
           <p className="text-2xl font-bold mb-1">{content.title}</p>

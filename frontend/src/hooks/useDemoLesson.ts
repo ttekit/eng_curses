@@ -25,14 +25,6 @@ export function useDemoLesson(mode: DemoMode) {
   const progressedToWatchedRef = useRef(false);
 
   useEffect(() => {
-    setActiveTab("vocabulary");
-    setPlaybackSec(0);
-    setIsVideoComplete(false);
-    setQuizResult(null);
-    progressedToWatchedRef.current = false;
-  }, [mode]);
-
-  useEffect(() => {
     let cancelled = false;
     setTranscriptLoading(true);
     setTranscriptLines([]);
@@ -40,9 +32,16 @@ export function useDemoLesson(mode: DemoMode) {
       .then((r) => r.text())
       .then((text) => {
         if (cancelled) return;
-        setTranscriptLines(
-          splitLongTranscriptLines(parseWebVttTranscriptLines(text), 80),
+        const allLines = splitLongTranscriptLines(
+          parseWebVttTranscriptLines(text),
+          80,
         );
+        const visibleLines = data.maxPlaybackSec
+          ? allLines.filter(
+              (line) => (line.startSec ?? 0) < data.maxPlaybackSec!,
+            )
+          : allLines;
+        setTranscriptLines(visibleLines);
       })
       .catch(() => {
         if (!cancelled) setTranscriptLines([]);
@@ -53,7 +52,7 @@ export function useDemoLesson(mode: DemoMode) {
     return () => {
       cancelled = true;
     };
-  }, [data.subtitlesFileLink]);
+  }, [data.subtitlesFileLink, data.maxPlaybackSec]);
 
   const onVideoMount = useCallback((el: HTMLVideoElement | null) => {
     videoElRef.current = el;
@@ -92,11 +91,11 @@ export function useDemoLesson(mode: DemoMode) {
 
   const handlePlaybackFraction = useCallback(
     (fraction: number) => {
-      if (!data.maxPlaybackSec && fraction >= WATCHED_COMPLETED_RATIO) {
+      if (fraction >= WATCHED_COMPLETED_RATIO) {
         ensureComplete();
       }
     },
-    [data.maxPlaybackSec, ensureComplete],
+    [ensureComplete],
   );
 
   const handleVideoEnded = useCallback(() => {

@@ -10,19 +10,25 @@ export default function DemoLessonPage() {
 
   return (
     <>
-      <div className="font-display">
-        <DemoHeader mode={mode} onModeChange={setMode} />
-        <main className="pt-18">
-          <DemoLessonBody
-            mode={mode}
-            onOpenInstructions={() => setIsInstructionsOpen(true)}
-          />
-        </main>
+      <div className="relative h-screen">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
+        <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
 
-        <InstructionsModal
-          isOpen={isInstructionsOpen}
-          onClose={() => setIsInstructionsOpen(false)}
-        />
+        <div className="relative font-display">
+          <DemoHeader mode={mode} onModeChange={setMode} />
+          <main className="pt-18 ">
+            <DemoLessonBody
+              mode={mode}
+              onOpenInstructions={() => setIsInstructionsOpen(true)}
+            />
+          </main>
+
+          <InstructionsModal
+            isOpen={isInstructionsOpen}
+            onClose={() => setIsInstructionsOpen(false)}
+          />
+        </div>
       </div>
     </>
   );

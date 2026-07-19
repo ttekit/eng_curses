@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useLandingLocale } from "../../../context/LandingLocaleContext";
 
 interface InstructionsModalProps {
@@ -14,30 +15,38 @@ export default function InstructionsModal({
   if (!isOpen) return null;
 
   return (
-    <>
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
       <div
-        className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        className="relative w-full max-w-md rounded-[25px] border border-border bg-card p-7 shadow-2xl shadow-primary/10"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-border border rounded-[25px] p-7">
-          <p className="text-primary text-xl font-bold mb-2">
+        <div className="flex flex-row justify-between items-center mb-5">
+          <p className=" pr-8 text-xl font-bold text-primary">
             {demoInst.title}
           </p>
-          <div className="items-start">
-            {demoInst.steps.map((item, index) => (
-              <>
-                <div key={index} className="flex flex-row gap-1">
-                  <p className="text-primary">
-                    {demoInst.stepName} {index + 1}
-                    {"."}
-                  </p>
-                  <p>{item.step}</p>
-                </div>
-              </>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1.5 text-muted-foreground transition-all duration-300 hover:cursor-pointer hover:bg-primary/30 bg-primary/10 hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {demoInst.steps.map((item, index) => (
+            <div key={index} className="flex flex-row items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+                {index + 1}
+              </span>
+              <p className="leading-relaxed text-foreground">{item.step}</p>
+            </div>
+          ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }
