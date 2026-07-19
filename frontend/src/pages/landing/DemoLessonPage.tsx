@@ -10,7 +10,7 @@ export default function DemoLessonPage() {
 
   return (
     <>
-      <div className="relative h-screen bg-background">
+      <div className="relative h-screen bg-background overflow-y-auto scrollbar-hide">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
         <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
@@ -23,12 +23,11 @@ export default function DemoLessonPage() {
               onOpenInstructions={() => setIsInstructionsOpen(true)}
             />
           </main>
-
-          <InstructionsModal
-            isOpen={isInstructionsOpen}
-            onClose={() => setIsInstructionsOpen(false)}
-          />
         </div>
+        <InstructionsModal
+          isOpen={isInstructionsOpen}
+          onClose={() => setIsInstructionsOpen(false)}
+        />
       </div>
     </>
   );

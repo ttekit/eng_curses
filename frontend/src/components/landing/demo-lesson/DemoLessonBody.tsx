@@ -182,6 +182,7 @@ export default function DemoLessonBody({
           <div className="lg:hidden">
             <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
             <Panels
+              key={mode}
               activeTab={activeTab}
               vocabulary={data.vocabulary}
               transcriptLines={transcriptLines}
@@ -201,6 +202,7 @@ export default function DemoLessonBody({
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="mt-0 max-h-[min(600px,70vh)] overflow-y-auto rounded-xl border border-border bg-card p-4">
             <Panels
+              key={mode}
               activeTab={activeTab}
               vocabulary={data.vocabulary}
               transcriptLines={transcriptLines}
