@@ -61,6 +61,11 @@ describe("SeoService", () => {
 
     expect(xml).toContain("<loc>https://explys.com/</loc>");
     expect(xml).toContain("<loc>https://explys.com/pricing</loc>");
+    expect(xml).toContain("<loc>https://explys.com/about</loc>");
+    expect(xml).toContain("<loc>https://explys.com/terms</loc>");
+    expect(xml).toContain("<loc>https://explys.com/privacy</loc>");
+    expect(xml).not.toContain("/login");
+    expect(xml).not.toContain("/register");
   });
 
   it("skips null lastmod values for catalog entries", async () => {

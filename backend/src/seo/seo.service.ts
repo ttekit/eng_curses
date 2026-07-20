@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma.service";
+import { MARKETING_SITEMAP_ROUTES } from "./marketing-sitemap.routes";
 
 type SitemapUrlEntry = {
   loc: string;
@@ -39,39 +40,40 @@ export class SeoService {
     return value ? value.toISOString().slice(0, 10) : undefined;
   }
 
-  private buildMarketingEntries(origin: string): SitemapUrlEntry[] {
+  private buildHreflangAlternates(
+    origin: string,
+    path: string,
+  ): { hreflang: string; href: string }[] {
+    const enHref = path === "/" ? `${origin}/` : `${origin}${path}`;
+    const ukHref =
+      path === "/" ? `${origin}/?lang=uk` : `${origin}${path}?lang=uk`;
     return [
-      {
-        loc: `${origin}/`,
-        changefreq: "weekly",
-        priority: "1.0",
-        alternates: [
-          { hreflang: "en", href: `${origin}/` },
-          { hreflang: "uk", href: `${origin}/?lang=uk` },
-          { hreflang: "x-default", href: `${origin}/` },
-        ],
-      },
-      {
-        loc: `${origin}/pricing`,
-        changefreq: "monthly",
-        priority: "0.8",
-        alternates: [
-          { hreflang: "en", href: `${origin}/pricing` },
-          { hreflang: "uk", href: `${origin}/pricing?lang=uk` },
-          { hreflang: "x-default", href: `${origin}/pricing` },
-        ],
-      },
+      { hreflang: "en", href: enHref },
+      { hreflang: "uk", href: ukHref },
+      { hreflang: "x-default", href: enHref },
     ];
   }
 
-  private async buildPublicCatalogEntries(origin: string): Promise<SitemapUrlEntry[]> {
+  private buildMarketingEntries(origin: string): SitemapUrlEntry[] {
+    return MARKETING_SITEMAP_ROUTES.map((route) => {
+      const loc =
+        route.path === "/" ? `${origin}/` : `${origin}${route.path}`;
+      return {
+        loc,
+        changefreq: route.changefreq,
+        priority: route.priority,
+        alternates: this.buildHreflangAlternates(origin, route.path),
+      };
+    });
+  }
+
+  private async buildPublicCatalogEntries(
+    origin: string,
+  ): Promise<SitemapUrlEntry[]> {
     const entries: SitemapUrlEntry[] = [];
     const publicSeries = await this.prisma.content.findMany({
       where: { visibility: "public" },
-      select: {
-        friendlyLink: true,
-        updateAt: true,
-      },
+      select: { friendlyLink: true, updateAt: true },
     });
     for (const series of publicSeries) {
       if (!series.friendlyLink) {
@@ -86,28 +88,19 @@ export class SeoService {
     }
     const publicVideos = await this.prisma.contentVideo.findMany({
       where: {
-        content: {
-          category: {
-            visibility: "public",
-          },
-        },
+        content: { category: { visibility: "public" } },
       },
       select: {
         id: true,
         content: {
-          select: {
-            category: {
-              select: { updateAt: true },
-            },
-          },
+          select: { category: { select: { updateAt: true } } },
         },
       },
     });
     for (const video of publicVideos) {
-      const updateDate = video.content?.category?.updateAt;
       entries.push({
         loc: `${origin}/content/${video.id}`,
-        lastmod: this.formatLastmod(updateDate),
+        lastmod: this.formatLastmod(video.content?.category?.updateAt),
         changefreq: "weekly",
         priority: "0.5",
       });
@@ -146,14 +139,13 @@ export class SeoService {
     return parts.join("\n");
   }
 
-  /** Generates sitemap XML for crawlers. */
+  /** Generates sitemap XML for crawlers. Never throws — falls back to marketing URLs. */
   async buildSitemapXml(): Promise<string> {
     const origin = this.resolveSiteOrigin();
     const urls: SitemapUrlEntry[] = this.buildMarketingEntries(origin);
     if (this.includePublicCatalogUrls()) {
       try {
-        const catalogUrls = await this.buildPublicCatalogEntries(origin);
-        urls.push(...catalogUrls);
+        urls.push(...(await this.buildPublicCatalogEntries(origin)));
       } catch (error) {
         this.logger.error(
           "Public catalog sitemap entries failed; returning marketing URLs only",
