@@ -73,7 +73,7 @@ interface ContentVideo {
 
 function toCardVideo(video: ContentVideo): CatalogCardVideo {
   const systemTags = video.content?.stats?.systemTags || [];
-  const levelTag = systemTags.find(tag => /^(A1|A2|B1|B2|C1|C2)$/i.test(tag));
+  const levelTag = systemTags.find((tag) => /^(A1|A2|B1|B2|C1|C2)$/i.test(tag));
 
   return {
     id: video.id,
@@ -105,6 +105,7 @@ function stripCheckoutSuccessSearch(): { pathname: string; search: string } {
     return { pathname, search: window.location.search };
   }
   p.delete("checkout");
+  p.delete("session_id");
   const q = p.toString();
   return { pathname, search: q ? `?${q}` : "" };
 }
@@ -154,7 +155,6 @@ export default function VideoPage() {
   const [ageVerificationTarget, setAgeVerificationTarget] = useState<
     string | null
   >(null);
-
 
   const openAgeVerification = useCallback((ageRestriction: string) => {
     setAgeVerificationTarget(ageRestriction);
@@ -208,9 +208,10 @@ export default function VideoPage() {
   };
 
   const catalogCheckoutReturn = useMemo(() => {
-    return new URLSearchParams(location.search).get("checkout") === "success";
+    const params = new URLSearchParams(location.search);
+    return params.get("checkout") === "success" && params.has("session_id");
   }, [location.search]);
-
+  
   const activatingSubscriptionOverlay =
     catalogCheckoutReturn &&
     !subscriptionEnforcementDisabled() &&
@@ -256,7 +257,13 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [catalogCheckoutReturn, navigate, refreshProfile, cb.stripeConfirmError, cb.stripeThanksToast]);
+  }, [
+    catalogCheckoutReturn,
+    navigate,
+    refreshProfile,
+    cb.stripeConfirmError,
+    cb.stripeThanksToast,
+  ]);
 
   const accessToken = getStoredAccessToken();
   const needsPlacement =
@@ -538,16 +545,16 @@ export default function VideoPage() {
   const featuredHero = useMemo(() => {
     return featured
       ? {
-        id: featured.id,
-        friendlyLink: featured.friendlyLink,
-        title: featured.videoName,
-        description:
-          featured.videoDescription ??
-          featured.content.category.description ??
-          "",
-        categoryName: featured.content.category.name,
-        thumbnailUrl: featured.thumbnailUrl,
-      }
+          id: featured.id,
+          friendlyLink: featured.friendlyLink,
+          title: featured.videoName,
+          description:
+            featured.videoDescription ??
+            featured.content.category.description ??
+            "",
+          categoryName: featured.content.category.name,
+          thumbnailUrl: featured.thumbnailUrl,
+        }
       : null;
   }, [featured]);
 
@@ -610,16 +617,16 @@ export default function VideoPage() {
 
   const paginatedVideos = hasFilters
     ? filteredVideos.slice(
-      (currentPage - 1) * GRID_PAGE_SIZE,
-      currentPage * GRID_PAGE_SIZE,
-    )
+        (currentPage - 1) * GRID_PAGE_SIZE,
+        currentPage * GRID_PAGE_SIZE,
+      )
     : [];
 
   const paginatedRows = !hasFilters
     ? catalogRows.slice(
-      (currentPage - 1) * ROWS_PAGE_SIZE,
-      currentPage * ROWS_PAGE_SIZE,
-    )
+        (currentPage - 1) * ROWS_PAGE_SIZE,
+        currentPage * ROWS_PAGE_SIZE,
+      )
     : [];
 
   return (
@@ -993,7 +1000,8 @@ export default function VideoPage() {
                     {cb.placementTakeTestTitle || "Let's find your level"}
                   </h2>
                   <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                    {cb.placementTakeTestDesc || "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you."}
+                    {cb.placementTakeTestDesc ||
+                      "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you."}
                   </p>
                 </div>
 
@@ -1009,7 +1017,9 @@ export default function VideoPage() {
                     disabled={isSkipping}
                     className="w-full rounded-xl border border-border bg-background px-6 py-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted cursor-pointer disabled:opacity-50"
                   >
-                    {isSkipping ? "..." : cb.placementBtnSkip || "Skip test (Start at A1)"}
+                    {isSkipping
+                      ? "..."
+                      : cb.placementBtnSkip || "Skip test (Start at A1)"}
                   </button>
                 </div>
               </div>
