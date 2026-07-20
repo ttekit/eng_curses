@@ -165,7 +165,8 @@ export const appEn = {
     emptyFiltered: "Try clearing the category filter.",
     placementProgressAria: "Placement flow progress",
     placementTakeTestTitle: "Let's find your level",
-    placementTakeTestDesc: "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you.",
+    placementTakeTestDesc:
+      "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you.",
     placementBtnStart: "Start the test",
     placementBtnSkip: "Skip test (Start at A1)",
     placementStepCounter: "1 / 2",
@@ -1306,11 +1307,14 @@ export const appEn = {
 
   recaps: {
     reasons: {
-      "NEED_LESSONS_FOR_MISTAKES": "Complete at least one lesson quiz to bank mistakes to practise.",
-      "WEEKLY_ALREADY_COMPLETED": "You already finished this week’s summary.",
-      "NEED_LESSONS_FOR_WEEKLY": "Watch at least one lesson this week (Mon–Sun UTC) to unlock.",
-      "MONTHLY_ALREADY_COMPLETED": "You already finished this month’s summary.",
-      "NEED_LESSONS_FOR_MONTHLY": "Watch at least one lesson this calendar month (UTC) to unlock."
-    }
-  }
+      NEED_LESSONS_FOR_MISTAKES:
+        "Complete at least one lesson quiz to bank mistakes to practise.",
+      WEEKLY_ALREADY_COMPLETED: "You already finished this week’s summary.",
+      NEED_LESSONS_FOR_WEEKLY:
+        "Watch at least one lesson this week (Mon–Sun UTC) to unlock.",
+      MONTHLY_ALREADY_COMPLETED: "You already finished this month’s summary.",
+      NEED_LESSONS_FOR_MONTHLY:
+        "Watch at least one lesson this calendar month (UTC) to unlock.",
+    },
+  },
 } as const;
