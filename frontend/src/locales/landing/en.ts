@@ -87,7 +87,7 @@ export const landingEn = {
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "testimonials", label: "Learners about Explys" },
-      { hash: "ready-to-start", label: "Ready to start" },
+      { hash: "ready-to-start", label: "Demo lesson" },
     ],
     pricing: "Pricing",
     catalog: "Catalog",
@@ -404,7 +404,7 @@ export const landingEn = {
     subtitle:
       "Join thousands of learners improving their English with personalized video content.",
     catalog: "Catalog",
-    howItWorks: "How it works",
+    howItWorks: "Try demo lesson",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
     footnotePromo: "Free access in July 2026!",
@@ -859,5 +859,53 @@ export const landingEn = {
     submit: "Send feedback",
     submitting: "Sending…",
     successToast: "Thanks for your feedback! (Demo — not sent to server yet.)",
+  },
+
+  demoLessonPage: {
+    quickTry: "Quick Try",
+    wholeLesson: "Full-length lesson",
+    createAccount: "Create an account",
+    returnBack: "Return back",
+    createDescription: "Proceed to create an account",
+
+    quickTryContent: {
+      title: "Give it a quick try",
+      describtion: "Try out the platform's features with a shortened lesson",
+    },
+    wholeLessonContent: {
+      title: "Full-length lesson",
+      describtion: "Try out the platform's full functionality",
+    },
+
+    howToUse: "How do I complete the lesson?",
+    moreExpl:
+      "Create an account to unlock more detailed explanations tailored to your level and mistakes",
+    tryAgain: "Try again",
+    allCorrect: "Great job! All answers are correct",
+
+    instructions: {
+      title: "How to take the demo lesson?",
+      stepName: "Step",
+      steps: [
+        { step: "Choose the demo lesson mode" },
+        { step: "Watch the video with subtitles" },
+        { step: "Review the vocabulary" },
+        { step: "Take the test" },
+        { step: "Review your mistakes (if you have)" },
+        { step: "Create an account to continue learning" },
+        { step: "Achieve the best results" },
+      ],
+    },
+
+    explanations: {
+      question1:
+        "'Was' is the past tense form of the verb 'to be' for singular subjects (I/he/she/it). 'Harry' is singular, so 'was' is correct.",
+      question2:
+        "'Good' is an exception: its comparative form is not made with '-er' or 'more', but with the unique word 'better'.",
+      question3:
+        "'Had better' is a fixed expression used for advice or warnings ('had better + base verb without to'), unlike 'should to' or 'musting'.",
+      question4:
+        "Both verbs must be in the past tense: 'arrived' (regular) and 'met' (the past form of the irregular verb 'meet').",
+    },
   },
 } as const;

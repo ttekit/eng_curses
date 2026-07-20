@@ -89,7 +89,7 @@ export const landingUk = {
       { hash: "why-choose-explys", label: "Чому Explys" },
       { hash: "how-explys-works", label: "Як це працює" },
       { hash: "testimonials", label: "Учні про Explys" },
-      { hash: "ready-to-start", label: "Почати" },
+      { hash: "ready-to-start", label: "Демо-урок" },
     ],
     pricing: "Тарифи",
     catalog: "Каталог",
@@ -404,7 +404,7 @@ export const landingUk = {
     subtitle:
       "Долучайся до тисяч учнів, які вже покращують англійську з персоналізованими відео.",
     catalog: "Каталог",
-    howItWorks: "Як це працює?",
+    howItWorks: "Спробувати демо-урок",
     trustNoCard: "Без банківської картки",
     trustPrivacy: "Без спаму. Твої дані залишаються приватними.",
     footnotePromo: "Безкоштовний доступ у липні 2026!",
@@ -863,5 +863,54 @@ export const landingUk = {
     submit: "Надіслати",
     submitting: "Надсилаємо…",
     successToast: "Дякуємо за відгук! (Демо — на сервер ще не надсилається.)",
+  },
+
+  demoLessonPage: {
+    quickTry: "Швидка спроба",
+    wholeLesson: "Повний урок",
+    createAccount: "Створити акаунт",
+    returnBack: "Повернутись назад",
+    createDescription: "Перейти до створення акаунту",
+
+    quickTryContent: {
+      title: "Спробуй швидко",
+      describtion:
+        "Випробуй функціонал платформи за допомогою скороченого урока",
+    },
+    wholeLessonContent: {
+      title: "Повний урок",
+      describtion: "Випробуй функціонал платформи в повному розмірі",
+    },
+
+    howToUse: "Як пройти урок?",
+    moreExpl:
+      "Більш детальні пояснення з урахуванням саме твого рівня та помилок доступні після створення акаунта",
+    tryAgain: "Спробувати знову",
+    allCorrect: "Чудова робота! Всі відповіді правильні",
+
+    instructions: {
+      title: "Як пройти демо-урок?",
+      stepName: "Крок",
+      steps: [
+        { step: "Оберіть режим демо-урока" },
+        { step: "Подивіться відео з субтитрами" },
+        { step: "Перегляньте словник" },
+        { step: "Пройдіть тест" },
+        { step: "Перегляньте помилки (якщо такі є)" },
+        { step: "Створіть акаунт, щоб продовжити навчання" },
+        { step: "Досягайте найкращих результатів" },
+      ],
+    },
+
+    explanations: {
+      question1:
+        "'Was'- форма минулого часу дієслова 'to be' для однини (I/he/she/it). Harry - однина, тому правильно 'was'",
+      question2:
+        "'Good'- виняток: порівняльний ступінь утворюється не через '-er' чи 'more', а окремим словом 'better'",
+      question3:
+        "'Had better'- стійка конструкція для поради/попередження ('had better + дієслово без to'), а не 'should to' чи 'musting'",
+      question4:
+        "Обидва дієслова мають стояти в минулому часі: 'arrived' (правильне) та 'met' (неправильна форма від 'meet')",
+    },
   },
 } as const;

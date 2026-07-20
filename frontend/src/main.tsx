@@ -20,6 +20,7 @@ import LearnerRecapQuizPage from "./pages/content/LearnerRecapQuizPage";
 import LessonSummaryPage from "./pages/content/LessonSummaryPage";
 import RegisterSuccessPage from "./pages/registration/RegisterSuccessPage";
 import LandingPage from "./pages/landing/LandingPage";
+import DemoLessonPage from "./pages/landing/DemoLessonPage";
 import LevelTestPage from "./pages/registration/LevelTestPage";
 import LearningPlanPage from "./pages/learning/LearningPlanPage";
 import PricingPage from "./pages/pricing/PricingPage";
@@ -70,6 +71,7 @@ const router = createBrowserRouter([
       { path: "/privacy", element: <PrivacyPolicyPage /> },
       { path: "/terms", element: <TermsOfServicePage /> },
       { path: "/feedback", element: <FeedbackPage /> },
+      { path: "/demo-lesson", element: <DemoLessonPage /> },
       {
         element: <RequireAuth />,
         children: [
@@ -92,7 +94,7 @@ const router = createBrowserRouter([
               },
             ],
           },
-          { path: "/level-test", element: <LevelTestPage /> },  
+          { path: "/level-test", element: <LevelTestPage /> },
           {
             element: <RequireSubscriberAccess />,
             children: [
