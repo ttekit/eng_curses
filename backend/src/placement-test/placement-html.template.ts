@@ -17,52 +17,10 @@ function escapeAttr(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
-/** Inline SVG mascot (thinking mood), colors match ui-example / frontend theme */
-const MASCOT_SVG_HEADER = `
-<svg class="hdr-mascot" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <ellipse cx="100" cy="120" rx="55" ry="45" fill="var(--accent)"/>
-  <circle cx="75" cy="115" r="8" fill="var(--accent-dim)"/>
-  <circle cx="95" cy="130" r="6" fill="var(--accent-dim)"/>
-  <circle cx="120" cy="110" r="10" fill="var(--accent-dim)"/>
-  <path d="M155 130 Q180 130 185 155 Q190 180 165 185 Q145 188 145 170" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"/>
-  <ellipse cx="130" cy="155" rx="12" ry="8" fill="var(--accent)"/>
-  <rect x="125" y="155" width="10" height="20" rx="5" fill="var(--accent)"/>
-  <ellipse cx="70" cy="155" rx="12" ry="8" fill="var(--accent)"/>
-  <rect x="65" y="155" width="10" height="20" rx="5" fill="var(--accent)"/>
-  <ellipse cx="65" cy="85" rx="40" ry="35" fill="var(--accent)"/>
-  <path d="M40 60 Q50 40 65 55 Q80 40 90 60" stroke="var(--primary)" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="55" cy="80" r="18" fill="var(--deep)"/>
-  <circle cx="55" cy="80" r="14" fill="var(--foreground)"/>
-  <circle cx="52" cy="77" r="5" fill="var(--deep)"/>
-  <path d="M40 65 L70 70" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M30 95 Q40 105 55 100" stroke="var(--primary-soft)" stroke-width="3" stroke-linecap="round"/>
-</svg>`.trim();
-
-const MASCOT_SVG_RESULT = `
-<svg class="res-mascot" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <ellipse cx="100" cy="120" rx="55" ry="45" fill="var(--accent)"/>
-  <circle cx="75" cy="115" r="8" fill="var(--accent-dim)"/>
-  <circle cx="120" cy="110" r="10" fill="var(--accent-dim)"/>
-  <path d="M155 130 Q180 130 185 155 Q190 180 165 185 Q145 188 145 170" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"/>
-  <ellipse cx="130" cy="155" rx="12" ry="8" fill="var(--accent)"/>
-  <rect x="125" y="155" width="10" height="20" rx="5" fill="var(--accent)"/>
-  <ellipse cx="70" cy="155" rx="12" ry="8" fill="var(--accent)"/>
-  <rect x="65" y="155" width="10" height="20" rx="5" fill="var(--accent)"/>
-  <ellipse cx="65" cy="85" rx="40" ry="35" fill="var(--accent)"/>
-  <path d="M40 60 Q50 40 65 55 Q80 40 90 60" stroke="var(--primary)" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="55" cy="80" r="18" fill="var(--deep)"/>
-  <circle cx="55" cy="80" r="14" fill="var(--foreground)"/>
-  <circle cx="52" cy="77" r="5" fill="var(--deep)"/>
-  <path d="M38 65 Q55 55 72 65" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="95" cy="50" r="3" fill="var(--primary)"/>
-  <circle cx="30" cy="55" r="2" fill="var(--primary)"/>
-  <path d="M30 95 Q40 105 55 100" stroke="var(--primary-soft)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M32 98 Q20 110 25 120" stroke="var(--danger)" stroke-width="4" stroke-linecap="round"/>
-</svg>`.trim();
-
 export function renderPlacementHtml(
   payload: PlacementTestPayload,
   accessToken: string,
+  t: Record<string, string>,
   xApiToken?: string | null,
   apiPublicOrigin = "",
   parentOrigin = "",
@@ -76,6 +34,26 @@ export function renderPlacementHtml(
   }
   const dataJson = embedJsonInScript(payloadOut);
   const dataJsonHtml = escapeAttr(dataJson);
+
+  const jsTranslations = {
+    vocabReinforced: t.vocabReinforced,
+    worthAnotherLook: t.worthAnotherLook,
+    vocabFallback: t.vocabFallback,
+    grammarPracticed: t.grammarPracticed,
+    grammarRevisit: t.grammarRevisit,
+    recapHint: t.recapHint,
+    lvlBeginner: t.lvlBeginner,
+    lvlIntermediate: t.lvlIntermediate,
+    lvlAdvanced: t.lvlAdvanced,
+    lblBeginner: t.lblBeginner,
+    lblElementary: t.lblElementary,
+    lblIntermediate: t.lblIntermediate,
+    lblUpperInt: t.lblUpperInt,
+    lblAdvanced: t.lblAdvanced,
+    pctCorrect: t.pctCorrect,
+    andWord: t.andWord,
+  };
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -624,36 +602,36 @@ export function renderPlacementHtml(
           <img src="/Icon.svg" class="res-mascot" alt="Result mascot" />
         </div>
       </div>
-      <h1 class="res-title font-display">Test complete!</h1>
-      <p class="res-sub">Great job — here&apos;s how you did.</p>
+      <h1 class="res-title font-display">${t.testComplete}</h1>
+      <p class="res-sub">${t.greatJob}</p>
       <div class="score-card">
         <div class="score-row">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-          <span style="font-weight:600;color:var(--foreground)">Your score</span>
+          <span style="font-weight:600;color:var(--foreground)">${t.yourScore}</span>
         </div>
         <div class="score-big" id="scoreFract">0/0</div>
         <div class="score-pct" id="scorePct"></div>
         <div class="level-badge">
           <div class="level-seg">
-            <div class="level-lbl">Your level</div>
+            <div class="level-lbl">${t.yourLevel}</div>
             <div class="level-code" id="lvlCode"></div>
           </div>
           <div class="level-bar"></div>
           <div class="level-seg">
-            <div class="level-lbl">Proficiency</div>
+            <div class="level-lbl">${t.proficiency}</div>
             <div class="level-prof" id="lvlLabel"></div>
           </div>
         </div>
       </div>
       <div class="summary-card" id="summaryCard" hidden>
-        <h3>What you practiced</h3>
+        <h3>${t.whatPracticed}</h3>
         <p id="summaryVocab"></p>
         <p id="summaryGrammar"></p>
         <p class="summary-muted" id="summaryHint"></p>
       </div>
       <p class="res-msg" id="lvlMsg"></p>
       <button type="button" class="btn btn-primary btn-block" id="btnContinue">
-        Start learning →
+        ${t.startLearning}
       </button>
       <div class="msg-foot" id="finishMsg" role="status" aria-live="polite"></div>
     </div>
@@ -662,7 +640,8 @@ export function renderPlacementHtml(
   <!-- Payload only in textarea (entities escape <script>-breaking sequences in JSON). No <template> + raw JSON (can confuse HTML tokenizer vs following <script>). -->
   <textarea id="placement-data" class="placement-data-blob" readonly aria-hidden="true">${dataJsonHtml}</textarea>
   <script>
-${PLACEMENT_IFRAME_SCRIPT}
+    window.i18n = ${JSON.stringify(jsTranslations)};
+    ${PLACEMENT_IFRAME_SCRIPT}
   </script>
 </body>
 </html>`;

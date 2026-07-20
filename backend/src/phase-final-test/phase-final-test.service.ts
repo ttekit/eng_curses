@@ -69,6 +69,7 @@ export class PhaseFinalTestService {
     userId: number,
     accessToken: string,
     apiPublicOrigin: string,
+    t: Record<string, string>
   ): Promise<string> {
     const ctx = await this.loadUserPlanContext(userId);
     if (ctx.activeStudyingPhaseIndex >= ctx.phaseCount - 1) {
@@ -119,6 +120,7 @@ export class PhaseFinalTestService {
     return renderPlacementHtml(
       payload,
       accessToken,
+      t,
       xApi,
       apiPublicOrigin,
       parentOrigin,

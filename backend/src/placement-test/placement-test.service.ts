@@ -948,11 +948,13 @@ export class PlacementTestService {
     accessToken: string,
     apiPublicOrigin: string,
     parentOrigin: string,
+    t: Record<string, string>
   ): string {
     const xApi = this.config.get<string>("API_TOKEN");
     return renderPlacementHtml(
       payload,
       accessToken,
+      t,
       xApi,
       apiPublicOrigin,
       parentOrigin,

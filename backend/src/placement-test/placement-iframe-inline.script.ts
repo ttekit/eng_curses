@@ -121,21 +121,22 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
 
   function getLevel(score, total) {
     var pct = (score / total) * 100;
-    if (pct >= 90) return { level: "C1", label: "Advanced" };
-    if (pct >= 70) return { level: "B2", label: "Upper intermediate" };
-    if (pct >= 50) return { level: "B1", label: "Intermediate" };
-    if (pct >= 30) return { level: "A2", label: "Elementary" };
-    return { level: "A1", label: "Beginner" };
+    var t = window.i18n;
+    if (pct >= 90) return { level: "C1", label: t.lblAdvanced };
+    if (pct >= 70) return { level: "B2", label: t.lblUpperInt };
+    if (pct >= 50) return { level: "B1", label: t.lblIntermediate };
+    if (pct >= 30) return { level: "A2", label: t.lblElementary };
+    return { level: "A1", label: t.lblBeginner };
   }
 
   function levelMessage(code) {
     if (code === "A1" || code === "A2") {
-      return "We will personalize lessons to your beginner level and help you build strong foundations.";
+      return window.i18n.lvlBeginner;
     }
     if (code === "B1" || code === "B2") {
-      return "We will match content to your intermediate level and help you keep advancing.";
+      return window.i18n.lvlIntermediate;
     }
-    return "We will personalize with more challenging material for your advanced skills.";
+    return window.i18n.lvlAdvanced;
   }
 
   var questions = d.questions;
@@ -354,60 +355,69 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
   }
 
   function joinPhrases(arr, max) {
-    var u = uniqueTrim(arr,max, 120);
+    var u = uniqueTrim(arr, max, 120);
     if (!u.length) return "";
     if (u.length === 1) return u[0];
-    if (u.length === 2) return u[0] + " and " + u[1];
-    return u.slice(0, -1).join(", ") + ", and " + u[u.length - 1];
+    var andW = window.i18n.andWord;
+    if (u.length === 2) return u[0] + " " + andW + " " + u[1];
+    return u.slice(0, -1).join(", ") + ", " + andW + " " + u[u.length - 1];
   }
 
   function joinTopics(arr, max) {
     var u = uniqueTrim(arr, max, 80);
     if (!u.length) return "";
     if (u.length === 1) return u[0];
-    if (u.length === 2) return u[0] + " and " + u[1];
-    return u.slice(0, -1).join(", ") + ", and " + u[u.length - 1];
+    var andW = window.i18n.andWord;
+    if (u.length === 2) return u[0] + " " + andW + " " + u[1];
+    return u.slice(0, -1).join(", ") + ", " + andW + " " + u[u.length - 1];
   }
 
   function renderSummary(summary) {
-    var card = document.getElementById("summaryCard");
-    var elV = document.getElementById("summaryVocab");
-    var elG = document.getElementById("summaryGrammar");
-    var elH = document.getElementById("summaryHint");
-    var vOk = summary.vocabularyReinforced.length;
-    var vBad = summary.vocabularyToReview.length;
+  var card = document.getElementById("summaryCard");
+  var elV = document.getElementById("summaryVocab");
+  var elG = document.getElementById("summaryGrammar");
+  var elH = document.getElementById("summaryHint");
+  var t = window.i18n;
 
-    var vocabParts = [];
-    if (vOk) {
-      vocabParts.push("Vocabulary — You reinforced words and phrases such as " + joinPhrases(summary.vocabularyReinforced, 8) + ".");
-    }
-    if (vBad) {
-      vocabParts.push("Worth another look: " + joinPhrases(summary.vocabularyToReview, 6) + " (these were the best answers).");
-    }
-    if (!vocabParts.length) {
-      elV.textContent = "Vocabulary — You worked on meaning, collocations, and word choice. Keep noticing how native speakers phrase ideas in your lessons.";
-    } else {
-      elV.textContent = vocabParts.join(" ");
-    }
+  var vOk = summary.vocabularyReinforced.length;
+  var vBad = summary.vocabularyToReview.length;
+  var vocabParts = [];
 
-    var gP = summary.grammarYouPracticed.length;
-    var gR = summary.grammarToRevisit.length;
-    var gParts = [];
-    if (gP) {
-      gParts.push("Grammar — You used structures tied to " + joinTopics(summary.grammarYouPracticed, 10) + ".");
-    }
-    if (gR) {
-      gParts.push("If any item felt shaky, revisit " + joinTopics(summary.grammarToRevisit, 6) + ".");
-    }
-    if (!gParts.length) {
-      elG.textContent = "";
-    } else {
-      elG.textContent = gParts.join(" ");
-    }
-
-    elH.textContent = "We use this recap to tune your catalogue — not as a judgment of you.";
-    card.hidden = false;
+  if (vOk) {
+    var wordsJoined = joinPhrases(summary.vocabularyReinforced, 8);
+    vocabParts.push(t.vocabReinforced.replace('{words}', wordsJoined));
   }
+  if (vBad) {
+    var badWordsJoined = joinPhrases(summary.vocabularyToReview, 6);
+    vocabParts.push(t.worthAnotherLook.replace('{words}', badWordsJoined));
+  }
+  if (!vocabParts.length) {
+    elV.textContent = t.vocabFallback;
+  } else {
+    elV.textContent = vocabParts.join(" ");
+  }
+
+  var gP = summary.grammarYouPracticed.length;
+  var gR = summary.grammarToRevisit.length;
+  var gParts = [];
+
+  if (gP) {
+    var topicsJoined = joinTopics(summary.grammarYouPracticed, 10);
+    gParts.push(t.grammarPracticed.replace('{topics}', topicsJoined));
+  }
+  if (gR) {
+    var revisitJoined = joinTopics(summary.grammarToRevisit, 6);
+    gParts.push(t.grammarRevisit.replace('{topics}', revisitJoined));
+  }
+  if (!gParts.length) {
+    elG.textContent = "";
+  } else {
+    elG.textContent = gParts.join(" ");
+  }
+
+  elH.textContent = t.recapHint;
+  card.hidden = false;
+}
 
   function computeScore() {
     var score = 0;
@@ -431,8 +441,7 @@ export const PLACEMENT_IFRAME_SCRIPT = String.raw`
     var pct = Math.round((score / n) * 100);
 
     document.getElementById("scoreFract").textContent = score + "/" + n;
-    document.getElementById("scorePct").textContent = pct + "% correct";
-    document.getElementById("lvlCode").textContent = level.level;
+    document.getElementById("scorePct").textContent = pct + window.i18n.pctCorrect;    document.getElementById("lvlCode").textContent = level.level;
     document.getElementById("lvlLabel").textContent = level.label;
     document.getElementById("lvlMsg").textContent = levelMessage(level.level);
 
