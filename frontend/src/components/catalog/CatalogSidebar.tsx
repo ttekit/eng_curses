@@ -20,6 +20,7 @@ import { formatMessage } from "../../lib/formatMessage";
 import { ThemeToggle } from "../ThemeToggle";
 import { LearnerCustomiseFab } from "./LearnerCustomiseFab";
 import { useTheme } from "../../context/ThemeContext";
+import { Sparkles } from "lucide-react";
 
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
@@ -27,6 +28,7 @@ const sidebarLinkDefs = [
   { id: "classroom" as const, icon: GraduationCap, to: "/classroom" },
   { id: "myLessons" as const, icon: BookOpen, to: "/watched-lessons" },
   { id: "customise" as const, icon: SlidersHorizontal, to: "/customise" },
+  { id: "changelog" as const, icon: Sparkles, to: "/whats-new" },
   { id: "leaderboard" as const, icon: Trophy, to: "/leaderboard" },
   { id: "profile" as const, icon: User, to: "/profile" },
 
@@ -114,6 +116,7 @@ export function CatalogSidebar({
     search: shell.navSearch,
     classroom: shell.navClassroom,
     myLessons: shell.navMyLessons,
+    changelog: /*shell.navWhatsNew ||*/ "What's new",
     customise: shell.navCustomise,
     leaderboard: shell.navLeaderboard,
     profile: shell.navProfile,
@@ -143,6 +146,9 @@ export function CatalogSidebar({
     }
     if (linkId === "customise") {
       return pathname === "/customise";
+    }
+    if (linkId === "changelog") {
+      return pathname === "/whats-new";
     }
     const link = sidebarLinkDefs.find((l) => l.id === linkId);
     return link ? pathname === link.to.split("?")[0] : false;
