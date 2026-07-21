@@ -26,13 +26,13 @@ import { LearnerJwtGuard } from "src/auth/guards/learner-jwt.guard";
 import { extractAccessTokenFromRequest } from "src/auth/extract-request-access-token.util";
 import { resolveFrameAncestorsCsp } from "src/common/utils/frame-ancestors-csp.util";
 import { PhaseFinalTestService } from "./phase-final-test.service";
+import { placementDict } from "src/placement-test/placement-dict";
 
 type AuthedRequest = Request & { user: { sub: number; email: string } };
 
 function inferApiPublicOrigin(req: Request): string {
   const xf = req.headers["x-forwarded-proto"];
-  const raw =
-    typeof xf === "string" ? xf.split(",")[0]?.trim() : undefined;
+  const raw = typeof xf === "string" ? xf.split(",")[0]?.trim() : undefined;
   const proto = (raw || req.protocol || "http").replace(/:$/, "");
   const host = req.get("host");
   if (!host) return "";
@@ -63,7 +63,9 @@ export class PhaseFinalTestController {
   @UseGuards(LearnerJwtGuard)
   @ApiBearerAuth("JWT-auth")
   @ApiSecurity("api-token")
-  @ApiOperation({ summary: "Phase final test status for the active studying phase" })
+  @ApiOperation({
+    summary: "Phase final test status for the active studying phase",
+  })
   @ApiOkResponse({ description: "Status payload" })
   status(@Req() req: AuthedRequest) {
     return this.phaseFinalTest.getStatus(req.user.sub);
@@ -93,10 +95,15 @@ export class PhaseFinalTestController {
       "Content-Security-Policy",
       `frame-ancestors ${frameAncestors}`,
     );
+    const langCode = req.query?.lang === "uk" ? "uk" : "en";
+
+    const t = placementDict[langCode];
+
     const html = await this.phaseFinalTest.renderDocumentHtml(
       req.user.sub,
       getBearerOrQueryToken(req),
       inferApiPublicOrigin(req),
+      t
     );
     res.send(html);
   }
@@ -125,9 +132,9 @@ export class PhaseFinalTestController {
       access_token:
         typeof body?.access_token === "string" ? body.access_token : undefined,
       answers:
-        body?.answers && typeof body.answers === "object" ?
-          (body.answers as Record<string, number>)
-        : undefined,
+        body?.answers && typeof body.answers === "object"
+          ? (body.answers as Record<string, number>)
+          : undefined,
     });
   }
 }

@@ -211,7 +211,7 @@ export default function VideoPage() {
     const params = new URLSearchParams(location.search);
     return params.get("checkout") === "success" && params.has("session_id");
   }, [location.search]);
-  
+
   const activatingSubscriptionOverlay =
     catalogCheckoutReturn &&
     !subscriptionEnforcementDisabled() &&
@@ -349,7 +349,7 @@ export default function VideoPage() {
     setPlacementDocError(null);
     void (async () => {
       try {
-        const res = await apiFetch("/placement-test/document", {
+        const res = await apiFetch(`/placement-test/document?lang=${locale}`, {
           method: "GET",
         });
         if (!res.ok) {
@@ -377,7 +377,7 @@ export default function VideoPage() {
     return () => {
       cancelled = true;
     };
-  }, [showPlacementTest, accessToken, cb.placementLoadError]);
+  }, [showPlacementTest, accessToken, cb.placementLoadError, locale]);
 
   useEffect(() => {
     const fetchVideos = async () => {

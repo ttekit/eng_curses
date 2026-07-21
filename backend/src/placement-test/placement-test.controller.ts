@@ -32,13 +32,13 @@ import { resolveParentPostMessageOrigin } from "src/common/utils/parent-post-mes
 import { PlacementTestService } from "./placement-test.service";
 import { extractAccessTokenFromRequest } from "../auth/extract-request-access-token.util";
 import { SkipSubscriptionCheck } from "../auth/decorators/skip-subscription-check.decorator";
+import { placementDict } from "./placement-dict";
 
 type AuthedRequest = Request & { user: { sub: number; email: string } };
 
 function inferApiPublicOrigin(req: Request): string {
   const xf = req.headers["x-forwarded-proto"];
-  const raw =
-    typeof xf === "string" ? xf.split(",")[0]?.trim() : undefined;
+  const raw = typeof xf === "string" ? xf.split(",")[0]?.trim() : undefined;
   const proto = (raw || req.protocol || "http").replace(/:$/, "");
   const host = req.get("host");
   if (!host) return "";
@@ -56,6 +56,7 @@ function getBearerOrQueryToken(req: Request): string {
   }
   return "";
 }
+
 
 @Controller("placement-test")
 @ApiTags("placement-test")
@@ -128,12 +129,15 @@ export class PlacementTestController {
     const payload = await this.placementTest.buildTestPayloadForUser(
       req.user.sub,
     );
+    const langCode = req.query?.lang === "uk" ? "uk" : "en";
+    const t = placementDict[langCode];
     const token = getBearerOrQueryToken(req);
     const html = this.placementTest.renderDocumentHtml(
       payload,
       token,
       inferApiPublicOrigin(req),
       resolveParentPostMessageOrigin(this.config),
+      t,
     );
     res.send(html);
   }
@@ -159,10 +163,7 @@ export class PlacementTestController {
   })
   @ApiCreatedResponse({ type: PlacementCompleteResponseDto })
   @ApiResponse({ status: 401, description: "Invalid or missing JWT" })
-  complete(
-    @Req() req: AuthedRequest,
-    @Body() body: CompletePlacementDto,
-  ) {
+  complete(@Req() req: AuthedRequest, @Body() body: CompletePlacementDto) {
     return this.placementTest.completePlacement(req.user.sub, body ?? {});
   }
 }

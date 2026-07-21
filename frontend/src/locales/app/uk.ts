@@ -166,7 +166,8 @@ export const appUk = {
     emptyFiltered: "Спробуй скинути фільтр категорії.",
     placementProgressAria: "Прогрес підготовки до тесту",
     placementTakeTestTitle: "Давай визначимо твій рівень",
-    placementTakeTestDesc: "Пройди короткий тест, щоб ми зрозуміли твій поточний рівень англійської та підібрали ідеальні відео та завдання.",
+    placementTakeTestDesc:
+      "Пройди короткий тест, щоб ми зрозуміли твій поточний рівень англійської та підібрали ідеальні відео та завдання.",
     placementBtnStart: "Почати тест",
     placementBtnSkip: "Пропустити (Почати з A1)",
     placementStepCounter: "1 / 2",
@@ -1303,11 +1304,15 @@ export const appUk = {
 
   recaps: {
     reasons: {
-      "NEED_LESSONS_FOR_MISTAKES": "Пройди хоча б один тест уроку, щоб накопичити помилки для тренування.",
-      "WEEKLY_ALREADY_COMPLETED": "Ти вже завершив підсумок цього тижня.",
-      "NEED_LESSONS_FOR_WEEKLY": "Подивись хоча б один урок цього тижня (пн-нд, UTC), щоб розблокувати.",
-      "MONTHLY_ALREADY_COMPLETED": "Ти вже завершив підсумок цього місяця.",
-      "NEED_LESSONS_FOR_MONTHLY": "Подивись хоча б один урок цього календарного місяця (UTC), щоб розблокувати."
-    }
-  }
+      NEED_LESSONS_FOR_MISTAKES:
+        "Пройди хоча б один тест уроку, щоб накопичити помилки для тренування.",
+      WEEKLY_ALREADY_COMPLETED: "Ти вже завершив підсумок цього тижня.",
+      NEED_LESSONS_FOR_WEEKLY:
+        "Подивись хоча б один урок цього тижня (пн-нд, UTC), щоб розблокувати.",
+      MONTHLY_ALREADY_COMPLETED: "Ти вже завершив підсумок цього місяця.",
+      NEED_LESSONS_FOR_MONTHLY:
+        "Подивись хоча б один урок цього календарного місяця (UTC), щоб розблокувати.",
+    },
+  },
+
 } as const;

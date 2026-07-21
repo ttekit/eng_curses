@@ -5,6 +5,7 @@ import { ConstellationGeneratorService } from "./constellation-generator.service
 import { ConstellationProgressService } from "./constellation-progress.service";
 import { StarVideoMatcherService } from "./star-video-matcher.service";
 import { PrismaService } from "src/prisma.service";
+import { ConstellationService } from "./constellation.service";
 
 @Module({
     controllers: [ConstellationController],
@@ -14,6 +15,7 @@ import { PrismaService } from "src/prisma.service";
         ConstellationGeneratorService,
         ConstellationProgressService,
         StarVideoMatcherService,
+        ConstellationService,
     ],
     exports: [ConstellationProgressService],
 })
