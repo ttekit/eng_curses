@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
-import {
-  Sparkles,
-  Calendar,
-  ArrowLeft,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
+import { Calendar, ChevronRight, Loader2, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { useAppMessages } from "../../hooks/useAppMessages";
+import { BellRing } from "lucide-react";
 
 interface LogType {
   id: number;
@@ -19,21 +16,24 @@ interface LogType {
 }
 
 export default function WhatsNewPage() {
+  const { locale } = useLandingLocale();
+  const messages = useAppMessages().whatsNewPage;
+
   const [logs, setLogs] = useState<LogType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState<LogType | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
-  // Загрузка опубликованных постов
+  const dateLocale = locale === "uk" ? "uk-UA" : "en-US";
+
   useEffect(() => {
     const fetchPublishedLogs = async () => {
       try {
         setLoading(true);
-        // ВОТ ЗДЕСЬ нужно добавить http://localhost:4200
         const res = await fetch("http://localhost:4200/changelogs", {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Не удалось загрузить обновления");
+        if (!res.ok) throw new Error(messages.fetchError);
         const data = await res.json();
         setLogs(data);
       } catch (error) {
@@ -44,7 +44,7 @@ export default function WhatsNewPage() {
     };
 
     fetchPublishedLogs();
-  }, []);
+  }, [messages.fetchError]);
 
   useEffect(() => {
     if (selectedLog) {
@@ -59,14 +59,12 @@ export default function WhatsNewPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Сайдбар */}
       <CatalogSidebar
         collapsed={isSidebarCollapsed}
         onCollapsedChange={setIsSidebarCollapsed}
         reserveTopNavSpace={false}
       />
 
-      {/* Основной контент */}
       <main
         className={cn(
           "transition-[margin] duration-300 ease-in-out min-h-screen pt-12 pb-20",
@@ -74,29 +72,23 @@ export default function WhatsNewPage() {
         )}
       >
         <div className="max-w-4xl mx-auto px-6 w-full">
-          {/* Заголовок */}
           <div className="text-center space-y-3 mb-16">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
-              <Sparkles className="h-4 w-4" /> Что нового
+              <BellRing className="h-4 w-4" /> {messages.badge}
             </div>
             <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">
-              Обновления платформы
+              {messages.title}
             </h1>
-            <p className="text-muted-foreground text-sm">
-              Следите за новыми фичами и улучшениями
-            </p>
+            <p className="text-muted-foreground text-sm">{messages.subtitle}</p>
           </div>
 
-          {/* Список / Загрузка */}
           {loading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : logs.length === 0 ? (
             <div className="text-center py-16 border border-border rounded-xl bg-card">
-              <p className="text-muted-foreground">
-                Пока нет опубликованных обновлений.
-              </p>
+              <p className="text-muted-foreground">{messages.emptyState}</p>
             </div>
           ) : (
             <div className="relative border-l-2 border-border ml-2 sm:ml-8 space-y-10">
@@ -121,7 +113,7 @@ export default function WhatsNewPage() {
 
                     <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-4">
                       <Calendar className="h-3.5 w-3.5" />
-                      {new Date(log.createdAt).toLocaleDateString("ru-RU", {
+                      {new Date(log.createdAt).toLocaleDateString(dateLocale, {
                         day: "numeric",
                         month: "long",
                         year: "numeric",
@@ -134,7 +126,7 @@ export default function WhatsNewPage() {
                           src={log.imageUrl}
                           alt={log.title}
                           loading="lazy"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     )}
@@ -144,7 +136,7 @@ export default function WhatsNewPage() {
                     </p>
 
                     <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary opacity-80 group-hover/card:opacity-100 transition-opacity">
-                      Читать полностью <ChevronRight className="h-4 w-4" />
+                      {messages.readMore} <ChevronRight className="h-4 w-4" />
                     </div>
                   </div>
                 </div>
@@ -154,58 +146,74 @@ export default function WhatsNewPage() {
         </div>
       </main>
 
-      {/* Боковая панель с полным текстом */}
       {selectedLog && (
-        <>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={() => setSelectedLog(null)}
           />
 
-          <div className="fixed inset-y-0 right-0 z-[110] w-full sm:w-[500px] bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="flex items-center gap-4 border-b border-border p-4 bg-background/80 backdrop-blur-md sticky top-0 z-10">
+          <div className="relative w-full max-w-2xl max-h-[90vh] bg-card border border-border rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden z-[110]">
+            <div className="flex items-center justify-between border-b border-border p-4 sm:px-6 bg-background/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
+              <h3 className="font-semibold text-foreground truncate pr-4">
+                {messages.badge}
+              </h3>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="flex items-center gap-2 px-3 py-2 -ml-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors group/back"
+                className="flex items-center justify-center h-8 w-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0 cursor-pointer"
               >
-                <ArrowLeft className="h-5 w-5 transition-transform group-hover/back:-translate-x-1" />
-                <span className="font-medium">Назад</span>
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  {new Date(selectedLog.createdAt).toLocaleDateString("ru-RU", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                  {selectedLog.version && (
-                    <>
-                      <span className="px-1">•</span>
-                      <span className="font-mono bg-muted px-2 py-0.5 rounded-md text-xs text-foreground">
-                        {selectedLog.version}
-                      </span>
-                    </>
-                  )}
+            <div className="flex-1 overflow-y-auto">
+              {selectedLog.imageUrl && (
+                <div className="w-full h-48 sm:h-72 bg-muted border-b border-border shrink-0">
+                  <img
+                    src={selectedLog.imageUrl}
+                    alt={selectedLog.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground leading-tight">
-                  {selectedLog.title}
-                </h2>
-              </div>
+              )}
 
-              <div className="h-px w-full bg-border" />
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(selectedLog.createdAt).toLocaleDateString(
+                      dateLocale,
+                      {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      },
+                    )}
+                    {selectedLog.version && (
+                      <>
+                        <span className="px-1">•</span>
+                        <span className="font-mono bg-muted px-2 py-0.5 rounded-md text-xs text-foreground">
+                          {selectedLog.version}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground leading-tight">
+                    {selectedLog.title}
+                  </h2>
+                </div>
 
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="text-base text-foreground/90 leading-relaxed whitespace-pre-line">
-                  {selectedLog.content}
-                </p>
+                <div className="h-px w-full bg-border" />
+
+                <div className="prose prose-sm dark:prose-invert max-w-none pb-4">
+                  <p className="text-base text-foreground/90 leading-relaxed whitespace-pre-line">
+                    {selectedLog.content}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

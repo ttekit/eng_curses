@@ -12,6 +12,7 @@ import {
   User,
   GraduationCap,
   Shield,
+  BellRing,
 } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import type { UserData } from "../../context/UserContext";
@@ -20,15 +21,15 @@ import { formatMessage } from "../../lib/formatMessage";
 import { ThemeToggle } from "../ThemeToggle";
 import { LearnerCustomiseFab } from "./LearnerCustomiseFab";
 import { useTheme } from "../../context/ThemeContext";
-import { Sparkles } from "lucide-react";
 
+const unreadCount = 3;
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
   { id: "search" as const, icon: Search, to: "/catalog" },
   { id: "classroom" as const, icon: GraduationCap, to: "/classroom" },
   { id: "myLessons" as const, icon: BookOpen, to: "/watched-lessons" },
   { id: "customise" as const, icon: SlidersHorizontal, to: "/customise" },
-  { id: "changelog" as const, icon: Sparkles, to: "/whats-new" },
+  { id: "changelog" as const, icon: BellRing, to: "/whats-new" },
   { id: "leaderboard" as const, icon: Trophy, to: "/leaderboard" },
   { id: "profile" as const, icon: User, to: "/profile" },
 
@@ -47,7 +48,11 @@ function shouldShowClassroomNav(user: UserData | null | undefined): boolean {
     return false;
   }
   const role = user.role?.toLowerCase();
-  if (role === "teacher" || role === "admin") {
+  if (role === "admin") {
+    return false;
+  }
+
+  if (role === "teacher") {
     return true;
   }
   return user.teacherId != null && user.teacherId > 0;
@@ -116,7 +121,7 @@ export function CatalogSidebar({
     search: shell.navSearch,
     classroom: shell.navClassroom,
     myLessons: shell.navMyLessons,
-    changelog: /*shell.navWhatsNew ||*/ "What's new",
+    changelog: shell.news,
     customise: shell.navCustomise,
     leaderboard: shell.navLeaderboard,
     profile: shell.navProfile,
@@ -150,6 +155,7 @@ export function CatalogSidebar({
     if (linkId === "changelog") {
       return pathname === "/whats-new";
     }
+
     const link = sidebarLinkDefs.find((l) => l.id === linkId);
     return link ? pathname === link.to.split("?")[0] : false;
   };
@@ -295,7 +301,7 @@ export function CatalogSidebar({
                   key={link.id}
                   to={link.to}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
                     linkActive(link.id)
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -304,6 +310,21 @@ export function CatalogSidebar({
                 >
                   <link.icon className="h-5 w-5 shrink-0" />
                   {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+
+                  {link.id === "changelog" && unreadCount > 0 && (
+                    <span
+                      className={cn(
+                        "flex items-center justify-center rounded-full bg-red-500 font-bold text-white shadow-sm",
+                        collapsed
+                          ? "absolute right-2 top-2 h-2.5 w-2.5 p-0 text-[0px]"
+                          : "ml-auto h-5 min-w-[20px] px-1.5 text-[11px]",
+                      )}
+                    >
+                      {!collapsed && unreadCount > 99
+                        ? "99+"
+                        : !collapsed && unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
