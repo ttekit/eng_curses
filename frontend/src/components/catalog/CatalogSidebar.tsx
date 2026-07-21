@@ -21,8 +21,9 @@ import { formatMessage } from "../../lib/formatMessage";
 import { ThemeToggle } from "../ThemeToggle";
 import { LearnerCustomiseFab } from "./LearnerCustomiseFab";
 import { useTheme } from "../../context/ThemeContext";
+import { useEffect, useState } from "react";
+import { getCachedChangelogs } from "../../lib/changelogsCache";
 
-const unreadCount = 3;
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
   { id: "search" as const, icon: Search, to: "/catalog" },
@@ -113,8 +114,31 @@ export function CatalogSidebar({
   const { user } = useUser();
   const shell = useAppMessages().catalogShell;
   const common = useAppMessages().common;
-
+  const [unreadCount, setUnreadCount] = useState(0);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const logs = await getCachedChangelogs();
+        if (logs && logs.length > 0) {
+          const lastSeenId =
+            Number(localStorage.getItem("lastSeenChangelogId")) || 0;
+          const unread = logs.filter((log: any) => log.id > lastSeenId).length;
+          setUnreadCount(unread);
+        }
+      } catch (error) {
+        console.error("Sidebar changelogs error:", error);
+      }
+    };
+
+    fetchUnread();
+
+    const handleLogsRead = () => setUnreadCount(0);
+    window.addEventListener("changelogs-read", handleLogsRead);
+
+    return () => window.removeEventListener("changelogs-read", handleLogsRead);
+  }, []);
 
   const sidebarLabels: Record<SidebarLinkId, string> = {
     catalog: shell.navCatalog,

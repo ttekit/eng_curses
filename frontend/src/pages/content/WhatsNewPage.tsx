@@ -5,6 +5,7 @@ import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { BellRing } from "lucide-react";
+import { getCachedChangelogs } from "../../lib/changelogsCache";
 
 interface LogType {
   id: number;
@@ -27,15 +28,22 @@ export default function WhatsNewPage() {
   const dateLocale = locale === "uk" ? "uk-UA" : "en-US";
 
   useEffect(() => {
-    const fetchPublishedLogs = async () => {
+    const loadLogs = async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:4200/changelogs", {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(messages.fetchError);
-        const data = await res.json();
+        const data = await getCachedChangelogs();
         setLogs(data);
+
+        if (data && data.length > 0) {
+          const latestId = data[0].id;
+          const lastSeenId =
+            Number(localStorage.getItem("lastSeenChangelogId")) || 0;
+
+          if (latestId > lastSeenId) {
+            localStorage.setItem("lastSeenChangelogId", latestId.toString());
+            window.dispatchEvent(new Event("changelogs-read"));
+          }
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -43,9 +51,8 @@ export default function WhatsNewPage() {
       }
     };
 
-    fetchPublishedLogs();
-  }, [messages.fetchError]);
-
+    loadLogs();
+  }, []);
   useEffect(() => {
     if (selectedLog) {
       document.body.style.overflow = "hidden";
@@ -91,14 +98,14 @@ export default function WhatsNewPage() {
               <p className="text-muted-foreground">{messages.emptyState}</p>
             </div>
           ) : (
-            <div className="relative border-l-2 border-border ml-2 sm:ml-8 space-y-10">
+            <div className="relative border-l-0 sm:border-l-2 border-border ml-0 sm:ml-8 space-y-6 sm:space-y-10">
               {logs.map((log) => (
-                <div key={log.id} className="relative pl-8 sm:pl-12 group">
-                  <div className="absolute -left-[9px] top-2 h-4 w-4 rounded-full border-2 border-primary bg-background group-hover:bg-primary transition-colors" />
+                <div key={log.id} className="relative pl-0 sm:pl-12 group">
+                  <div className="hidden sm:block absolute -left-[9px] top-2 h-4 w-4 rounded-full border-2 border-primary bg-background group-hover:bg-primary transition-colors" />
 
                   <div
                     onClick={() => setSelectedLog(log)}
-                    className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer group/card block"
+                    className="rounded-xl border border-border bg-card p-5 sm:p-8 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer group/card block"
                   >
                     <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
                       <h3 className="font-bold text-xl text-foreground group-hover/card:text-primary transition-colors">
