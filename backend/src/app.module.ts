@@ -31,6 +31,7 @@ import { RedisModule } from "./redis/redis.module";
 import { SeoModule } from "./seo/seo.module";
 import { AvatarsModule } from "./avatars/avatars.module";
 import { ScheduleModule } from "@nestjs/schedule";
+import { ConstellationModule } from "./constelattions/constellation.module";
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { ScheduleModule } from "@nestjs/schedule";
     RedisModule,
     SeoModule,
     AvatarsModule,
+    ConstellationModule
   ],
   controllers: [AppController],
   providers: [
