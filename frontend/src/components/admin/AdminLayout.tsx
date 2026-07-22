@@ -17,14 +17,12 @@ import {
 import { cn } from "../../lib/utils";
 import { SEO } from "../SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
-import { Megaphone } from "lucide-react";
 
 const sidebarLinks = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/admin", end: true },
   { icon: Users, label: "Users", to: "/admin/users" },
   { icon: Video, label: "Videos", to: "/admin/videos" },
   { icon: GraduationCap, label: "Teachers", to: "/admin/teachers" },
-  { icon: Megaphone, label: "Changelog", to: "/admin/changelog" }, 
   { icon: BarChart3, label: "Analytics", to: "/admin/analytics" },
   { icon: Smile, label: "Avatars", to: "/admin/avatars" },
   { icon: Settings, label: "Settings", to: "/admin/settings" },

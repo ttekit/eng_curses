@@ -49,8 +49,6 @@ import FeedbackPage from "./pages/legal/FeedbackPage";
 import OAuthSuccess from "./pages/login/OAuthSuccess";
 import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
-import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
-import WhatsNewPage from "./pages/content/WhatsNewPage";
 
 const router = createBrowserRouter([
   {
@@ -92,7 +90,6 @@ const router = createBrowserRouter([
                   { path: "analytics", element: <AdminAnalyticsPage /> },
                   { path: "avatars", element: <AdminAvatarsPage /> },
                   { path: "settings", element: <AdminSettingsPage /> },
-                  { path: "changelog", element: <AdminChangelogPage /> },
                 ],
               },
             ],
@@ -114,7 +111,6 @@ const router = createBrowserRouter([
                 path: "/watched-lessons/recap/:kind",
                 element: <LearnerRecapQuizPage />,
               },
-              { path: "/whats-new", element: <WhatsNewPage /> },
               { path: "/profileMain", element: <ProfileMain /> },
               { path: "/profile", element: <ProfileMain /> },
               {
