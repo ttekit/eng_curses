@@ -57,7 +57,6 @@ export const appUk = {
     levelWithDot: "• {prefix} {level}",
     appTheme: "Тема: ",
     navAdmin: "Адмін",
-    news: "Що нового",
   },
 
   emailVerificationBanner: {
@@ -1315,14 +1314,5 @@ export const appUk = {
         "Подивись хоча б один урок цього календарного місяця (UTC), щоб розблокувати.",
     },
   },
-  whatsNewPage: {
-    fetchError: "Не вдалося завантажити оновлення",
-    badge: "Що нового",
-    title: "Оновлення платформи",
-    subtitle: "Слідкуйте за новими функціями та покращеннями",
-    emptyState: "Поки що немає опублікованих оновлень.",
-    readMore: "Читати повністю",
-    newBadge: "Нове",
-    markAllAsRead: "Позначити всі як прочитані",
-  },
+
 } as const;

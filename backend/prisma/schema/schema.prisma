@@ -447,18 +447,3 @@ model UserStarProgress {
   @@id([userId, starId])
   @@map("user_star_progress")
 }
-
-model Changelog {
-  id          Int     @id @default(autoincrement())
-  title       String
-  content     String  @db.Text
-  version     String?
-  isPublished Boolean @default(false) @map("is_published")
-
-  imageUrl String? @map("image_url")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("changelogs")
-}

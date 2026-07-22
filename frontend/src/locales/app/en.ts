@@ -57,7 +57,6 @@ export const appEn = {
     levelWithDot: "• {prefix} {level}",
     appTheme: "Theme: ",
     navAdmin: "Admin",
-    news: "What's new",
   },
 
   emailVerificationBanner: {
@@ -1317,15 +1316,5 @@ export const appEn = {
       NEED_LESSONS_FOR_MONTHLY:
         "Watch at least one lesson this calendar month (UTC) to unlock.",
     },
-  },
-  whatsNewPage: {
-    fetchError: "Failed to load updates",
-    badge: "What's new",
-    title: "Platform updates",
-    subtitle: "Stay updated with new features and improvements",
-    emptyState: "No published updates yet.",
-    readMore: "Read more",
-    newBadge: "New",
-    markAllAsRead: "Mark all as read",
   },
 } as const;
