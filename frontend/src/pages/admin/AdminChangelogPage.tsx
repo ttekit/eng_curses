@@ -10,6 +10,7 @@ import {
   Save,
   Megaphone,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import toast from "react-hot-toast";
@@ -23,6 +24,7 @@ import ReactCrop, {
 import "react-image-crop/dist/ReactCrop.css";
 import { processCroppedImage } from "../../lib/imageOptimizer";
 import { apiFetch } from "../../lib/api";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
 
 interface ChangelogItem {
   id: number;
@@ -40,6 +42,10 @@ export default function AdminChangelogPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<ChangelogItem | null>(null);
 
+  const [logToDelete, setLogToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmWord, setDeleteConfirmWord] = useState("");
+
   const [title, setTitle] = useState("");
   const [version, setVersion] = useState("");
   const [content, setContent] = useState("");
@@ -55,15 +61,15 @@ export default function AdminChangelogPage() {
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [logToDelete, setLogToDelete] = useState<number | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const { locale } = useLandingLocale();
+  const expectedWord = locale === "uk" ? "видалити" : "delete";
+
+  const isWordValid = deleteConfirmWord.trim().toLowerCase() === expectedWord;
 
   const fetchAdminLogs = async () => {
     try {
       setLoading(true);
-
       const res = await apiFetch("/changelogs/admin/all");
-
       if (!res.ok) throw new Error("Unable to load news");
       const data = await res.json();
       setLogs(data);
@@ -74,6 +80,7 @@ export default function AdminChangelogPage() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchAdminLogs();
   }, []);
@@ -137,7 +144,6 @@ export default function AdminChangelogPage() {
           completedCrop,
           originalFileName,
         );
-
         setImageFile(optimizedFile);
         setImagePreview(URL.createObjectURL(optimizedFile));
         setOriginalImgSrc("");
@@ -147,11 +153,11 @@ export default function AdminChangelogPage() {
       }
     }
   };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-
       const formData = new FormData();
       formData.append("title", title);
       formData.append("content", content);
@@ -192,23 +198,6 @@ export default function AdminChangelogPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
-
-    try {
-      const res = await apiFetch(`/changelogs/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Error during deletion");
-
-      toast.success("The news item has been deleted");
-      setLogs((prev) => prev.filter((item) => item.id !== id));
-    } catch (error) {
-      toast.error("Unable to delete the record");
-      console.error(error);
-    }
-  };
-
   const confirmDelete = async () => {
     if (logToDelete === null) return;
 
@@ -231,7 +220,7 @@ export default function AdminChangelogPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold tracking-tight text-foreground flex items-center gap-3">
@@ -305,7 +294,7 @@ export default function AdminChangelogPage() {
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(log.id)}
+                  onClick={() => setLogToDelete(log.id)}
                   className="flex h-9 w-9 items-center justify-center rounded-md border border-destructive/20 bg-destructive/10 text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground hover:cursor-pointer"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -513,6 +502,74 @@ export default function AdminChangelogPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {logToDelete !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-foreground">
+                  Delete this post?
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to delete this news item? This action
+                  cannot be undone.
+                </p>
+              </div>
+
+              <div className="w-full text-left mt-4">
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  Type{" "}
+                  <span className="font-bold text-foreground select-none">
+                    {expectedWord}
+                  </span>{" "}
+                  to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmWord}
+                  onChange={(e) => setDeleteConfirmWord(e.target.value)}
+                  placeholder={expectedWord}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-destructive/50"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setLogToDelete(null);
+                  setDeleteConfirmWord("");
+                }}
+                className="w-full sm:w-auto rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 hover:cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting || !isWordValid}
+                onClick={() => {
+                  confirmDelete();
+                  setDeleteConfirmWord("");
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50 hover:cursor-pointer"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
