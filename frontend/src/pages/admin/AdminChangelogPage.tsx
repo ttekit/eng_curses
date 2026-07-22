@@ -14,6 +14,15 @@ import {
 import { cn } from "../../lib/utils";
 import toast from "react-hot-toast";
 import { ImagePlus } from "lucide-react";
+import ReactCrop, {
+  type Crop,
+  type PixelCrop,
+  centerCrop,
+  makeAspectCrop,
+} from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+import { processCroppedImage } from "../../lib/imageOptimizer";
+import { apiFetch } from "../../lib/api";
 
 interface ChangelogItem {
   id: number;
@@ -31,7 +40,6 @@ export default function AdminChangelogPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<ChangelogItem | null>(null);
 
-  // Поля формы
   const [title, setTitle] = useState("");
   const [version, setVersion] = useState("");
   const [content, setContent] = useState("");
@@ -40,26 +48,32 @@ export default function AdminChangelogPage() {
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [originalImgSrc, setOriginalImgSrc] = useState<string>("");
+  const [originalFileName, setOriginalFileName] = useState("");
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Загрузка списка новостей для админа (включая черновики)
+  const [logToDelete, setLogToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchAdminLogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:4200/changelogs/admin/all", {
-        credentials: "include", // передаем куку авторизации
-      });
-      if (!res.ok) throw new Error("Не удалось загрузить новости");
+
+      const res = await apiFetch("/changelogs/admin/all");
+
+      if (!res.ok) throw new Error("Unable to load news");
       const data = await res.json();
       setLogs(data);
     } catch (error) {
-      toast.error("Ошибка загрузки данных");
+      toast.error("Data Loading Error");
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAdminLogs();
   }, []);
@@ -87,16 +101,52 @@ export default function AdminChangelogPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Файл слишком большой! Максимум 5MB");
-        return;
-      }
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("The file is too large! Maximum 15MB");
+      return;
     }
+
+    setOriginalFileName(file.name);
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      setOriginalImgSrc(reader.result?.toString() || "");
+    });
+    reader.readAsDataURL(file);
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    const initialCrop = centerCrop(
+      makeAspectCrop({ unit: "%", width: 90 }, 16 / 9, width, height),
+      width,
+      height,
+    );
+    setCrop(initialCrop);
+  };
+
+  const handleCropConfirm = async () => {
+    if (imgRef.current && completedCrop?.width && completedCrop?.height) {
+      try {
+        const optimizedFile = await processCroppedImage(
+          imgRef.current,
+          completedCrop,
+          originalFileName,
+        );
+
+        setImageFile(optimizedFile);
+        setImagePreview(URL.createObjectURL(optimizedFile));
+        setOriginalImgSrc("");
+      } catch (error) {
+        toast.error("Unable to crop the image");
+        console.error(error);
+      }
+    }
+  };
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -108,29 +158,34 @@ export default function AdminChangelogPage() {
       formData.append("isPublished", String(isPublished));
       if (version) formData.append("version", version);
       if (imageFile) formData.append("image", imageFile);
+      if (!imagePreview && editingLog?.imageUrl) {
+        formData.append("removeImage", "true");
+      }
 
       let res;
       if (editingLog) {
-        res = await fetch(`http://localhost:4200/changelogs/${editingLog.id}`, {
+        res = await apiFetch(`/changelogs/${editingLog.id}`, {
           method: "PATCH",
           body: formData,
-          credentials: "include",
         });
       } else {
-        res = await fetch("http://localhost:4200/changelogs", {
+        res = await apiFetch("/changelogs", {
           method: "POST",
           body: formData,
-          credentials: "include",
         });
       }
 
-      if (!res.ok) throw new Error("Ошибка при сохранении");
+      if (!res.ok) throw new Error("Error saving");
 
-      toast.success(editingLog ? "Новость обновлена!" : "Новость создана!");
+      toast.success(
+        editingLog
+          ? "This news item has been updated!"
+          : "The news item has been created!",
+      );
       setIsModalOpen(false);
       fetchAdminLogs();
     } catch (error) {
-      toast.error("Не удалось сохранить запись");
+      toast.error("The entry could not be saved");
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -138,26 +193,45 @@ export default function AdminChangelogPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Вы уверены, что хотите удалить этот пост?")) return;
+    if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const res = await fetch(`http://localhost:4200/changelogs/${id}`, {
+      const res = await apiFetch(`/changelogs/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
-      if (!res.ok) throw new Error("Ошибка при удалении");
+      if (!res.ok) throw new Error("Error during deletion");
 
-      toast.success("Новость удалена");
+      toast.success("The news item has been deleted");
       setLogs((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
-      toast.error("Не удалось удалить запись");
+      toast.error("Unable to delete the record");
       console.error(error);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (logToDelete === null) return;
+
+    try {
+      setIsDeleting(true);
+      const res = await apiFetch(`/changelogs/${logToDelete}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error during deletion");
+
+      toast.success("The news item has been deleted");
+      setLogs((prev) => prev.filter((item) => item.id !== logToDelete));
+      setLogToDelete(null);
+    } catch (error) {
+      toast.error("Unable to delete the record");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Хедер */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold tracking-tight text-foreground flex items-center gap-3">
@@ -165,7 +239,7 @@ export default function AdminChangelogPage() {
             What's New / Changelog
           </h1>
           <p className="text-muted-foreground mt-1">
-            Публикация обновлений и новостей для пользователей
+            Posting Updates and News for Users{" "}
           </p>
         </div>
         <button
@@ -173,18 +247,17 @@ export default function AdminChangelogPage() {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-all hover:opacity-90 active:scale-95 shadow-sm hover:cursor-pointer"
         >
           <Plus className="h-4 w-4" />
-          Написать новость
+          Write a news article
         </button>
       </div>
 
-      {/* Список */}
       {loading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : logs.length === 0 ? (
         <div className="text-center py-16 border border-border rounded-xl bg-card">
-          <p className="text-muted-foreground">Пока нет ни одной записи.</p>
+          <p className="text-muted-foreground">There are no entries yet.</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -200,11 +273,11 @@ export default function AdminChangelogPage() {
                   </h3>
                   {log.isPublished ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-medium text-accent">
-                      <Eye className="h-3 w-3" /> Опубликовано
+                      <Eye className="h-3 w-3" /> Published
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                      <EyeOff className="h-3 w-3" /> Черновик
+                      <EyeOff className="h-3 w-3" /> Draft
                     </span>
                   )}
                   {log.version && (
@@ -224,7 +297,6 @@ export default function AdminChangelogPage() {
                 </div>
               </div>
 
-              {/* Действия */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleOpenModal(log)}
@@ -244,13 +316,12 @@ export default function AdminChangelogPage() {
         </div>
       )}
 
-      {/* Модалка создания/редактирования */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-6 my-8">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <h2 className="text-xl font-bold font-display text-foreground">
-                {editingLog ? "Редактировать новость" : "Новая запись"}
+                {editingLog ? "Edit News Item" : "New Post"}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -261,14 +332,52 @@ export default function AdminChangelogPage() {
             </div>
 
             <form onSubmit={handleSave} className="space-y-4">
-              {/* Поле загрузки фото */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">
-                  Обложка новости (опционально)
+                  News Cover (optional){" "}
                 </label>
 
-                {imagePreview ? (
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden border border-border group">
+                {originalImgSrc ? (
+                  <div className="space-y-3 bg-muted/20 p-4 rounded-xl border border-border">
+                    <p className="text-sm font-medium text-foreground text-center">
+                      Select the area (16:9)
+                    </p>
+                    <div className="flex justify-center overflow-auto rounded-lg bg-black/5 p-2">
+                      <ReactCrop
+                        crop={crop}
+                        onChange={(c) => setCrop(c)}
+                        onComplete={(c) => setCompletedCrop(c)}
+                        aspect={16 / 9}
+                      >
+                        <img
+                          ref={imgRef}
+                          alt="Crop me"
+                          src={originalImgSrc}
+                          onLoad={onImageLoad}
+                          style={{ maxHeight: "50vh", maxWidth: "100%" }}
+                          className="block"
+                        />
+                      </ReactCrop>
+                    </div>
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setOriginalImgSrc("")}
+                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCropConfirm}
+                        className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                ) : imagePreview ? (
+                  <div className="relative w-full max-w-md aspect-video rounded-lg overflow-hidden border border-border group">
                     <img
                       src={imagePreview}
                       alt="Preview"
@@ -280,7 +389,7 @@ export default function AdminChangelogPage() {
                         onClick={() => fileInputRef.current?.click()}
                         className="text-white hover:text-primary transition-colors text-sm font-medium"
                       >
-                        Заменить
+                        Replace
                       </button>
                       <button
                         type="button"
@@ -290,7 +399,7 @@ export default function AdminChangelogPage() {
                         }}
                         className="text-white hover:text-destructive transition-colors text-sm font-medium"
                       >
-                        Удалить
+                        Delete
                       </button>
                     </div>
                   </div>
@@ -301,7 +410,7 @@ export default function AdminChangelogPage() {
                   >
                     <ImagePlus className="h-6 w-6 text-muted-foreground" />
                     <span className="text-sm font-medium text-muted-foreground">
-                      Загрузить картинку (WebP, PNG, JPG)
+                      Upload an image (WebP, PNG, JPG){" "}
                     </span>
                   </div>
                 )}
@@ -318,21 +427,21 @@ export default function AdminChangelogPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2 space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground">
-                    Заголовок
+                    Title
                   </label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Например: Обновление платформы"
+                    placeholder="For example: Platform update"
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground">
-                    Версия
+                    Version
                   </label>
                   <input
                     type="text"
@@ -346,14 +455,14 @@ export default function AdminChangelogPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">
-                  Содержание
+                  Table of Contents
                 </label>
                 <textarea
                   rows={6}
                   required
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Опишите изменения для пользователей..."
+                  placeholder="Describe the changes for users..."
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                 />
               </div>
@@ -380,7 +489,7 @@ export default function AdminChangelogPage() {
                     />
                   </div>
                   <span className="text-sm font-medium text-foreground">
-                    {isPublished ? "Опубликовано" : "Сохранить как черновик"}
+                    {isPublished ? "Published" : "Save as a draft"}
                   </span>
                 </label>
 
@@ -390,7 +499,7 @@ export default function AdminChangelogPage() {
                     onClick={() => setIsModalOpen(false)}
                     className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground hover:cursor-pointer"
                   >
-                    Отмена
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -399,7 +508,7 @@ export default function AdminChangelogPage() {
                   >
                     {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                     <Save className="h-4 w-4" />
-                    Сохранить
+                    Save
                   </button>
                 </div>
               </div>

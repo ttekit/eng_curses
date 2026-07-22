@@ -128,7 +128,7 @@ export default function WhatsNewPage() {
                     </div>
 
                     {log.imageUrl && (
-                      <div className="w-full h-48 sm:h-64 mb-4 rounded-lg overflow-hidden bg-muted">
+                      <div className="w-full aspect-video mb-4 rounded-lg overflow-hidden bg-muted border border-border/50">
                         <img
                           src={log.imageUrl}
                           alt={log.title}
@@ -175,11 +175,11 @@ export default function WhatsNewPage() {
 
             <div className="flex-1 overflow-y-auto">
               {selectedLog.imageUrl && (
-                <div className="w-full h-48 sm:h-72 bg-muted border-b border-border shrink-0">
+                <div className="w-full bg-muted/30 border-b border-border shrink-0 flex justify-center">
                   <img
                     src={selectedLog.imageUrl}
                     alt={selectedLog.title}
-                    className="w-full h-full object-cover"
+                    className="w-full max-h-[40vh] sm:max-h-[50vh] object-contain"
                   />
                 </div>
               )}

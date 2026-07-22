@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "src/prisma.service";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-// Убедись, что импортируешь правильные DTO
-import { CreateChangelogDto, UpdateChangelogDto } from "./dto/changelog.dto";
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
 @Injectable()
 export class ChangelogService {
@@ -24,7 +26,6 @@ export class ChangelogService {
     });
   }
 
-  // --- Вспомогательный метод для загрузки файла ---
   private async uploadImageToS3(file: Express.Multer.File): Promise<string> {
     const key = `changelogs/${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, "")}`;
 
@@ -40,7 +41,6 @@ export class ChangelogService {
     return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
   }
 
-  // Для админки: создание записи с опциональной картинкой
   async create(data: any, file?: Express.Multer.File) {
     let imageUrl = null;
 
@@ -53,24 +53,30 @@ export class ChangelogService {
         title: data.title,
         content: data.content,
         version: data.version || null,
-        isPublished: data.isPublished,
+        isPublished: data.isPublished === "true" || data.isPublished === true,
         imageUrl: imageUrl,
       },
     });
   }
 
-  // Для админки: обновление записи с опциональной картинкой
   async update(id: number, data: any, file?: Express.Multer.File) {
     const existingLog = await this.prisma.changelog.findUnique({
       where: { id },
     });
     if (!existingLog) throw new NotFoundException("Changelog not found");
 
-    let imageUrl = existingLog.imageUrl; // Оставляем старую картинку по умолчанию
+    let imageUrl = existingLog.imageUrl;
 
-    // Если пришел новый файл — загружаем его и меняем URL
     if (file) {
+      if (existingLog.imageUrl) {
+        await this.deleteImageFromS3(existingLog.imageUrl);
+      }
       imageUrl = await this.uploadImageToS3(file);
+    } else if (data.removeImage === "true") {
+      if (existingLog.imageUrl) {
+        await this.deleteImageFromS3(existingLog.imageUrl);
+      }
+      imageUrl = null;
     }
 
     return this.prisma.changelog.update({
@@ -79,29 +85,29 @@ export class ChangelogService {
         title: data.title,
         content: data.content,
         version: data.version || null,
-        isPublished: data.isPublished,
+        isPublished: data.isPublished === "true" || data.isPublished === true,
         imageUrl: imageUrl,
       },
     });
   }
 
-  // Для фронтенда: получить конкретную запись
   async findOne(id: number) {
     const log = await this.prisma.changelog.findUnique({ where: { id } });
     if (!log) throw new NotFoundException("Changelog not found");
     return log;
   }
 
-  // Для админки: удаление
   async remove(id: number) {
-    try {
-      return await this.prisma.changelog.delete({ where: { id } });
-    } catch {
-      throw new NotFoundException("Changelog not found");
+    const log = await this.prisma.changelog.findUnique({ where: { id } });
+    if (!log) throw new NotFoundException("Changelog not found");
+
+    if (log.imageUrl) {
+      await this.deleteImageFromS3(log.imageUrl);
     }
+
+    return await this.prisma.changelog.delete({ where: { id } });
   }
 
-  // Публичный метод: отдает ТОЛЬКО опубликованные записи
   async findPublished() {
     return this.prisma.changelog.findMany({
       where: { isPublished: true },
@@ -109,10 +115,25 @@ export class ChangelogService {
     });
   }
 
-  // Админский метод: отдает ВСЕ записи (и черновики тоже)
   async findAllForAdmin() {
     return this.prisma.changelog.findMany({
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  private async deleteImageFromS3(imageUrl: string) {
+    try {
+      const urlParts = imageUrl.split("/");
+      const key = urlParts.slice(3).join("/");
+
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      console.error("Error deleting file from S3:", error);
+    }
   }
 }
