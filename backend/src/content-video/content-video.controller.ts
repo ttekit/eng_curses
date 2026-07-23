@@ -14,7 +14,6 @@ import {
   Req,
   Res,
   UseGuards,
-  InternalServerErrorException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -49,7 +48,6 @@ import { VocabularyPersonalizationService } from "src/content-video/vocabulary-p
 import { PrismaService } from "src/prisma.service";
 import { Public } from "src/auth/decorators/public.decorator";
 
-
 @ApiTags("content-video")
 @Controller("content-video")
 export class ContentVideoController {
@@ -63,7 +61,7 @@ export class ContentVideoController {
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -212,25 +210,17 @@ export class ContentVideoController {
       "Downloads MP4 from `videoLink`, FFmpeg extracts mono 16 kHz PCM WAV, POSTs `audio/wav` to Listen (`DEEPGRAM_TRANSCRIBE_MODEL`, default `nova-3`), writes WebVTT to S3, upserts `VideoCaptions`. Optional Gemini tag refresh after success.",
   })
   async regenerateCaptions(@Param("id", ParseIntPipe) id: number) {
-    try {
-      const row = await this.videoCaptionsService.generateCaptions(id);
-
-      if (row === null) {
-        throw new BadRequestException(
-          "Caption generation could not run. Set DEEPGRAM_API_KEY and ensure FFmpeg can decode the video’s audio (see server logs). Optional: FFMPEG_PATH, DEEPGRAM_TRANSCRIBE_MODEL.",
-        );
-      }
-
-      return {
-        ok: true,
-        contentVideoId: id,
-        subtitlesFileLink: row.subtitlesFileLink,
-      };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        error instanceof Error ? error.message : "Caption generation failed",
+    const row = await this.videoCaptionsService.generateCaptions(id);
+    if (row === null) {
+      throw new BadRequestException(
+        "Caption generation could not run. Set DEEPGRAM_API_KEY and ensure FFmpeg can decode the video’s audio (see server logs). Optional: FFMPEG_PATH, DEEPGRAM_TRANSCRIBE_MODEL.",
       );
     }
+    return {
+      ok: true,
+      contentVideoId: id,
+      subtitlesFileLink: row.subtitlesFileLink,
+    };
   }
 
   @Get(":id/captions")

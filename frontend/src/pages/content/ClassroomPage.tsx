@@ -118,6 +118,7 @@ export default function ClassroomPage() {
         onCollapsedChange={setSidebarCollapsed}
         reserveTopNavSpace={false}
       />
+      
       <main
         className={cn(
           "flex-1 w-full pb-24 transition-all duration-300 font-display lg:pb-8",
