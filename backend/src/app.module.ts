@@ -32,6 +32,7 @@ import { SeoModule } from "./seo/seo.module";
 import { AvatarsModule } from "./avatars/avatars.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConstellationModule } from "./constelattions/constellation.module";
+import { ChangelogModule } from './changelog/changelog.module';
 
 @Module({
   imports: [
@@ -94,7 +95,8 @@ import { ConstellationModule } from "./constelattions/constellation.module";
     RedisModule,
     SeoModule,
     AvatarsModule,
-    ConstellationModule
+    ConstellationModule,
+    ChangelogModule
   ],
   controllers: [AppController],
   providers: [
