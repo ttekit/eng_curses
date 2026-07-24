@@ -151,7 +151,7 @@ export function AdminTextarea({
 
 export function AdminSelectNative({
   className,
-  children: _children,
+  children,
   ...p
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
@@ -161,7 +161,9 @@ export function AdminSelectNative({
         className,
       )}
       {...p}
-    />
+    >
+      {children}
+    </select>
   );
 }
 
