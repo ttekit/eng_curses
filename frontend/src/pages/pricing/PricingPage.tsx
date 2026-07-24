@@ -48,7 +48,7 @@ export default function PricingPage() {
           <div className="relative flex justify-center items-center mb-5 w-50 h-50">
             <div className="absolute w-40 h-40 rounded-full bg-linear-to-tr from-primary to-accent opacity-40 blur-2xl animate-pulse" />
             <img
-              src="./ResultHappy.svg"
+              src="/ResultHappy.svg"
               className="relative z-10 w-full h-full"
               alt="Happy icon"
             />
