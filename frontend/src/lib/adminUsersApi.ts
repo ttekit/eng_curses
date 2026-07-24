@@ -43,6 +43,7 @@ export async function createAdminUser(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...payload,
+      email: payload.email.trim().toLowerCase(),
       method: "CREDENTIALS",
     }),
   });
@@ -65,10 +66,13 @@ export async function patchAdminUser(
   userId: number,
   patch: PatchAdminUserPayload,
 ): Promise<unknown> {
-  const res = await adminApiFetch(`/users/${userId}`, {
+  const res = await adminApiFetch(`/users/${userId}/admin`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(patch),
+    body: JSON.stringify({
+      ...patch,
+      ...(patch.email ? { email: patch.email.trim().toLowerCase() } : {}),
+    }),
   });
   if (!res.ok) {
     throw new Error(await readApiErrorBody(res));
