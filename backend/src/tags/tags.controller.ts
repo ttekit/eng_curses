@@ -1,23 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipSubscriptionCheck } from 'src/auth/decorators/skip-subscription-check.decorator';
+import { JwtAdminGuard } from 'src/auth/guards/jwt-admin.guard';
 
 @ApiTags('tags')
 @Controller('tags')
 export class TagsController {
-  constructor(private readonly tagsService: TagsService) {}
+  constructor(private readonly tagsService: TagsService) { }
 
   @Post()
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Create a new tag',
     description: 'Creates a new tag with a unique name. Tags are used to categorize topics.',
   })
   @ApiBody({ type: CreateTagDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Tag successfully created.',
     schema: {
       example: {
@@ -34,12 +37,12 @@ export class TagsController {
 
   @Get()
   @SkipSubscriptionCheck()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all tags',
     description: 'Retrieves all available tags with their associated topics.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Return all tags.',
     schema: {
       example: [
@@ -56,17 +59,17 @@ export class TagsController {
   }
 
   @Get(':id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get a tag by id',
     description: 'Retrieves a specific tag by its ID along with all associated topics.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the tag to retrieve' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the tag to retrieve'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Return a tag.',
     schema: {
       example: {
@@ -82,18 +85,20 @@ export class TagsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Update a tag',
     description: 'Updates a tag with new information. The name must be unique.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the tag to update' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the tag to update'
   })
   @ApiBody({ type: UpdateTagDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Tag successfully updated.',
     schema: {
       example: {
@@ -110,17 +115,19 @@ export class TagsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Delete a tag',
     description: 'Deletes a tag. Associated topics will not be deleted.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the tag to delete' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the tag to delete'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Tag successfully deleted.',
     schema: {
       example: {

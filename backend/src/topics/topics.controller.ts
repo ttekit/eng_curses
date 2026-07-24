@@ -1,23 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { TopicsService } from './topics.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipSubscriptionCheck } from 'src/auth/decorators/skip-subscription-check.decorator';
+import { JwtAdminGuard } from 'src/auth/guards/jwt-admin.guard';
+
 
 @ApiTags('topics')
 @Controller('topics')
 export class TopicsController {
-  constructor(private readonly topicsService: TopicsService) {}
+  constructor(private readonly topicsService: TopicsService) { }
 
   @Post()
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Create a new topic',
     description: 'Creates a new topic with a category and optional tags. Topics are the main learning content units.',
   })
   @ApiBody({ type: CreateTopicDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Topic successfully created.',
     schema: {
       example: {
@@ -41,12 +45,12 @@ export class TopicsController {
 
   @Get()
   @SkipSubscriptionCheck()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all topics',
     description: 'Retrieves all available topics with their associated categories and tags.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Return all topics.',
     schema: {
       example: [
@@ -69,17 +73,17 @@ export class TopicsController {
   }
 
   @Get(':id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get a topic by id',
     description: 'Retrieves a specific topic by its ID along with its category and all associated tags.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the topic to retrieve' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the topic to retrieve'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Return a topic.',
     schema: {
       example: {
@@ -101,18 +105,20 @@ export class TopicsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Update a topic',
     description: 'Updates a topic with new information. You can update the category and tags.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the topic to update' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the topic to update'
   })
   @ApiBody({ type: UpdateTopicDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Topic successfully updated.',
     schema: {
       example: {
@@ -138,17 +144,20 @@ export class TopicsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+
+  @ApiOperation({
     summary: 'Delete a topic',
     description: 'Deletes a topic. The category will not be deleted, and tag associations will be removed.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the topic to delete' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the topic to delete'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Topic successfully deleted.',
     schema: {
       example: {

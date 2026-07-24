@@ -1,4 +1,3 @@
-// backend/src/users/dto/update-user.dto.ts
 import { ApiPropertyOptional, OmitType, PartialType } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import {

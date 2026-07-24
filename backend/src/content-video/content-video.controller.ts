@@ -6,6 +6,7 @@ import {
   Get,
   Header,
   HttpCode,
+  InternalServerErrorException,
   Param,
   ParseIntPipe,
   Patch,
@@ -14,7 +15,6 @@ import {
   Req,
   Res,
   UseGuards,
-  InternalServerErrorException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -48,7 +48,7 @@ import { VocabularyHintsService } from "src/content-video/vocabulary-hints.servi
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
 import { PrismaService } from "src/prisma.service";
 import { Public } from "src/auth/decorators/public.decorator";
-
+import { Throttle } from "@nestjs/throttler";
 
 @ApiTags("content-video")
 @Controller("content-video")
@@ -110,6 +110,9 @@ export class ContentVideoController {
   }
 
   @Post("vocabulary-hints")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 10, ttl: 60000 } })
   @ApiOperation({
     summary:
       "Hints for vocabulary cards: translation (optional target language), English pronunciation, simple English meaning",
@@ -127,6 +130,8 @@ export class ContentVideoController {
 
   @Post(":id/vocabulary-personalize")
   @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 10, ttl: 60000 } })
   @ApiOperation({
     summary:
       "Personalized vocabulary hints for signed-in learners (native translation + level-tuned gloss; gloss in native language when level is below B1)",
@@ -214,13 +219,11 @@ export class ContentVideoController {
   async regenerateCaptions(@Param("id", ParseIntPipe) id: number) {
     try {
       const row = await this.videoCaptionsService.generateCaptions(id);
-
       if (row === null) {
         throw new BadRequestException(
           "Caption generation could not run. Set DEEPGRAM_API_KEY and ensure FFmpeg can decode the video’s audio (see server logs). Optional: FFMPEG_PATH, DEEPGRAM_TRANSCRIBE_MODEL.",
         );
       }
-
       return {
         ok: true,
         contentVideoId: id,
@@ -316,6 +319,7 @@ export class ContentVideoController {
   @Post(":id/tests/generate")
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 5, ttl: 60000 } })
   generateComprehensionTests(
     @Param("id", ParseIntPipe) id: number,
     @Body() body: { userId?: number | null } | undefined,
@@ -443,6 +447,9 @@ export class ContentVideoController {
   }
 
   @Post(":id/summary-recommendations")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 5, ttl: 60000 } })
   @SkipSubscriptionCheck()
   @ApiOperation({
     summary:

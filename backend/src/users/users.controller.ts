@@ -29,11 +29,12 @@ import { ResetProgressDto } from "./dto/reset-progress.dto";
 import { AdminUpdateUserDto } from "./dto/update-user.dto";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
 import { SkipSubscriptionCheck } from "src/auth/decorators/skip-subscription-check.decorator";
+import { Public } from "src/auth/decorators/public.decorator";
 
 @ApiTags("users")
 @Controller("users")
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @ApiOperation({
@@ -148,5 +149,14 @@ export class UsersController {
 
     await this.usersService.resetProgress(Number(userId), dto);
     return { success: true, message: "Progress has been successfully reset." };
+  }
+
+  @Get("public/stats")
+  @Public()
+  @SkipSubscriptionCheck()
+  @ApiOperation({ summary: "Get public statistics for landing page" })
+  @ApiResponse({ status: 200, description: "Return public statistics." })
+  getPublicStats() {
+    return this.usersService.getPublicStats();
   }
 }
