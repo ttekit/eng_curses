@@ -33,7 +33,6 @@ const sidebarLinkDefs = [
   { id: "changelog" as const, icon: BellRing, to: "/whats-new" },
   { id: "leaderboard" as const, icon: Trophy, to: "/leaderboard" },
   { id: "profile" as const, icon: User, to: "/profile" },
-
   {
     id: "admin" as const,
     icon: Shield,
@@ -67,7 +66,6 @@ function resolveVisibleSidebarLinks(user: UserData | null | undefined) {
     if (link.id === "classroom") {
       return shouldShowClassroomNav(user);
     }
-
     if (link.id === "admin") {
       return user?.role?.toLowerCase() === "admin";
     }
@@ -196,7 +194,7 @@ export function CatalogSidebar({
     <>
       <aside
         className={cn(
-          "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-450 lg:flex",
+          "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-300 lg:flex",
           sidebarTopClass,
           collapsed ? "w-20" : "w-64 shadow-2xl",
         )}
@@ -214,66 +212,66 @@ export function CatalogSidebar({
           )}
         </button>
 
-        <div
-          className={cn(
-            "mx-3 my-3 flex shrink-0 flex-col overflow-hidden rounded-[24px] border border-border transition-all",
-            collapsed ? "py-1.5 items-center gap-3" : "pb-2",
-          )}
-        >
-          <div className={cn("flex items-center gap-3", !collapsed && "p-1")}>
-            <Link to="/profile" className="shrink-0">
+        <div className="mx-3 my-3 flex h-28 shrink-0 flex-col justify-between overflow-hidden rounded-[24px] border border-border bg-card p-2.5 transition-all duration-300">
+          <div className="flex h-10 w-full items-center">
+            <Link
+              to="/profile"
+              className="flex h-10 w-10 shrink-0 items-center justify-center"
+            >
               <img
                 src={avatarUrl || "/LandingProfile.svg"}
-                className={cn(
-                  "hover:cursor-pointer rounded-full object-cover transition-all",
-                  collapsed ? "h-9 w-9" : "ml-2 mt-2 mb-1 h-9 w-9",
-                )}
+                className="h-9 w-9 rounded-full object-cover"
                 alt=""
               />
             </Link>
 
-            {!collapsed && (
-              <div className="min-w-0 flex-1 pr-3 pt-1 animate-in fade-in duration-300">
-                <p className="truncate text-[13px] text-foreground/70">
-                  {welcomeName?.trim()
-                    ? formatMessage(shell.greetingHi, { name: welcomeName })
-                    : shell.welcomeBackExclaim}
-                </p>
-                <p className="text-sm font-semibold text-accent">
-                  {englishLevel?.trim()
-                    ? formatMessage(shell.levelWithDot, {
-                        prefix: common.levelPrefix,
-                        level: englishLevel,
-                      })
-                    : shell.brandsFallback}
-                </p>
-              </div>
-            )}
+            <div
+              className={cn(
+                "flex flex-col justify-center min-w-0 overflow-hidden transition-all duration-300",
+                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-2.5",
+              )}
+            >
+              <p className="truncate text-[13px] text-foreground/70 leading-tight">
+                {welcomeName?.trim()
+                  ? formatMessage(shell.greetingHi, { name: welcomeName })
+                  : shell.welcomeBackExclaim}
+              </p>
+              <p className="truncate text-[13px] font-semibold text-accent leading-tight mt-0.5">
+                {englishLevel?.trim()
+                  ? formatMessage(shell.levelWithDot, {
+                      prefix: common.levelPrefix,
+                      level: englishLevel,
+                    })
+                  : shell.brandsFallback}
+              </p>
+            </div>
           </div>
 
-          <div
-            className={cn("h-px bg-border/60", collapsed ? "w-8" : "mx-3 mt-1")}
-          />
-          <div
-            className={cn(
-              "flex items-center ",
-              collapsed
-                ? "justify-center pb-1 "
-                : "justify-between px-4 pb-1 mt-1",
-            )}
-          >
-            {!collapsed && (
-              <>
-                <span className="text-[12px] text-muted-foreground tracking-wider animate-in fade-in duration-300">
-                  {shell.appTheme}
-                </span>
+          <div className="flex h-2 w-full items-center justify-center">
+            <div
+              className={cn(
+                "h-px bg-border/60 transition-all duration-300",
+                collapsed ? "w-8" : "w-full mx-2",
+              )}
+            />
+          </div>
 
-                <span className="text-[12px] font-semibold capitalize text-foreground animate-in fade-in duration-300">
-                  {theme}
-                </span>
-              </>
-            )}
-            <div className={cn("scale-90", !collapsed && "origin-right")}>
+          <div className="flex h-10 w-full items-center justify-between">
+            <div
+              className={cn(
+                "flex items-center gap-2 min-w-0 overflow-hidden transition-all duration-300",
+                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-2",
+              )}
+            >
+              <span className="truncate text-[12px] text-muted-foreground tracking-wider">
+                {shell.appTheme}
+              </span>
+              <span className="truncate text-[12px] font-semibold capitalize text-foreground">
+                {theme}
+              </span>
+            </div>
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center scale-90">
               <ThemeToggle />
             </div>
           </div>
@@ -281,87 +279,74 @@ export function CatalogSidebar({
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <nav className="flex-col space-y-1 p-4">
-            {visibleSidebarLinks.map((link) => {
-              if ("isExternal" in link && link.isExternal) {
+            {visibleSidebarLinks
+              .filter((link) => link.id !== "changelog")
+              .map((link) => {
+                if ("isExternal" in link && link.isExternal) {
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.to}
+                      className={cn(
+                        "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                        "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        collapsed && "justify-center px-2",
+                      )}
+                    >
+                      <link.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                    </a>
+                  );
+                }
+
+                if (link.id === "search") {
+                  const active = linkActive(link.id);
+                  const itemClass = cn(
+                    "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    collapsed && "justify-center px-2",
+                  );
+                  return pathname === "/catalog" && onOpenCatalogSpotlight ? (
+                    <button
+                      key={link.id}
+                      type="button"
+                      className={itemClass}
+                      onClick={() => onOpenCatalogSpotlight()}
+                    >
+                      <link.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                    </button>
+                  ) : (
+                    <Link
+                      key={link.id}
+                      to="/catalog"
+                      state={{ openSpotlight: true }}
+                      className={itemClass}
+                    >
+                      <link.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                    </Link>
+                  );
+                }
                 return (
-                  <a
+                  <Link
                     key={link.id}
-                    href={link.to}
+                    to={link.to}
                     className={cn(
-                      "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                      "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                      linkActive(link.id)
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       collapsed && "justify-center px-2",
                     )}
                   >
                     <link.icon className="h-5 w-5 shrink-0" />
                     {!collapsed && <span>{sidebarLabels[link.id]}</span>}
-                  </a>
-                );
-              }
-
-              if (link.id === "search") {
-                const active = linkActive(link.id);
-                const itemClass = cn(
-                  "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  collapsed && "justify-center px-2",
-                );
-                return pathname === "/catalog" && onOpenCatalogSpotlight ? (
-                  <button
-                    key={link.id}
-                    type="button"
-                    className={itemClass}
-                    onClick={() => onOpenCatalogSpotlight()}
-                  >
-                    <link.icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{sidebarLabels[link.id]}</span>}
-                  </button>
-                ) : (
-                  <Link
-                    key={link.id}
-                    to="/catalog"
-                    state={{ openSpotlight: true }}
-                    className={itemClass}
-                  >
-                    <link.icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{sidebarLabels[link.id]}</span>}
                   </Link>
                 );
-              }
-              return (
-                <Link
-                  key={link.id}
-                  to={link.to}
-                  className={cn(
-                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                    linkActive(link.id)
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    collapsed && "justify-center px-2",
-                  )}
-                >
-                  <link.icon className="h-5 w-5 shrink-0" />
-                  {!collapsed && <span>{sidebarLabels[link.id]}</span>}
-
-                  {link.id === "changelog" && unreadCount > 0 && (
-                    <span
-                      className={cn(
-                        "flex items-center justify-center rounded-full bg-red-500 font-bold text-white shadow-sm",
-                        collapsed
-                          ? "absolute right-2 top-2 h-2.5 w-2.5 p-0 text-[0px]"
-                          : "ml-auto h-5 min-w-[20px] px-1.5 text-[11px]",
-                      )}
-                    >
-                      {!collapsed && unreadCount > 99
-                        ? "99+"
-                        : !collapsed && unreadCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
+              })}
           </nav>
 
           {!collapsed && (
@@ -415,19 +400,67 @@ export function CatalogSidebar({
           )}
         </div>
 
-        <div className="mt-auto border-t border-border p-4 shrink-0 bg-card">
+        <div className="mt-auto flex flex-col gap-1 border-t border-border p-4 shrink-0 bg-card">
+          <Link
+            to="/whats-new"
+            className={cn(
+              "relative flex items-center h-10 rounded-lg transition-all duration-300",
+              linkActive("changelog")
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              collapsed ? "justify-center px-0" : "justify-start px-3",
+            )}
+          >
+            <div className="relative flex shrink-0 items-center justify-center">
+              <BellRing className="h-5 w-5" />
+              {collapsed && unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-[1.5px] border-card bg-red-500"></span>
+                </span>
+              )}
+            </div>
+
+            <div
+              className={cn(
+                "flex min-w-0 items-center overflow-hidden transition-all duration-300",
+                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-3",
+              )}
+            >
+              <span className="truncate whitespace-nowrap">
+                {sidebarLabels["changelog"]}
+              </span>
+
+              {!collapsed && unreadCount > 0 && (
+                <span className="ml-auto flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-sm">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </div>
+          </Link>
+
           <Link
             to="/profile?tab=settings"
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+              "relative flex items-center h-10 rounded-lg transition-all duration-300",
               pathname === "/profile" && searchParams.get("tab") === "settings"
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              collapsed && "justify-center px-2",
+              collapsed ? "justify-center px-0" : "justify-start px-3",
             )}
           >
             <Settings className="h-5 w-5 shrink-0" />
-            {!collapsed && <span>{shell.settings}</span>}
+
+            <div
+              className={cn(
+                "flex min-w-0 items-center overflow-hidden transition-all duration-300",
+                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-3",
+              )}
+            >
+              <span className="truncate whitespace-nowrap">
+                {shell.settings}
+              </span>
+            </div>
           </Link>
         </div>
       </aside>
@@ -442,6 +475,7 @@ export function CatalogSidebar({
         />
       )}
 
+      {/* МОБИЛЬНОЕ МЕНЮ: Оставляем всё как есть, Changelog здесь нужен */}
       <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-border bg-card lg:hidden pb-[calc(env(safe-area-inset-bottom)+16px)]">
         <div className="flex w-full items-start justify-evenly px-1 pt-2 pb-1">
           {visibleSidebarLinks.map((link) => {
@@ -500,7 +534,6 @@ export function CatalogSidebar({
                     </span>
                   )}
                 </div>
-
                 <span className={textClass}>{sidebarLabels[link.id]}</span>
               </Link>
             );
