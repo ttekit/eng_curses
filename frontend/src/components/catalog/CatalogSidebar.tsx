@@ -196,7 +196,7 @@ export function CatalogSidebar({
     <>
       <aside
         className={cn(
-          "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-600 lg:flex",
+          "fixed bottom-0 left-0 z-50 hidden flex-col border-r border-border bg-card font-display transition-all duration-450 lg:flex",
           sidebarTopClass,
           collapsed ? "w-20" : "w-64 shadow-2xl",
         )}
@@ -217,7 +217,7 @@ export function CatalogSidebar({
         <div
           className={cn(
             "mx-3 my-3 flex shrink-0 flex-col overflow-hidden rounded-[24px] border border-border transition-all",
-            collapsed ? "p-1 items-center" : "pb-2",
+            collapsed ? "py-1.5 items-center gap-3" : "pb-2",
           )}
         >
           <div className={cn("flex items-center gap-3", !collapsed && "p-1")}>
@@ -225,15 +225,15 @@ export function CatalogSidebar({
               <img
                 src={avatarUrl || "/LandingProfile.svg"}
                 className={cn(
-                  "hover:cursor-pointer rounded-full object-cover",
-                  collapsed ? "m-2 h-8 w-8" : "ml-2 mt-2 mb-1 h-9 w-9",
+                  "hover:cursor-pointer rounded-full object-cover transition-all",
+                  collapsed ? "h-9 w-9" : "ml-2 mt-2 mb-1 h-9 w-9",
                 )}
                 alt=""
               />
             </Link>
 
             {!collapsed && (
-              <div className="min-w-0 flex-1 pr-3 pt-1">
+              <div className="min-w-0 flex-1 pr-3 pt-1 animate-in fade-in duration-300">
                 <p className="truncate text-[13px] text-foreground/70">
                   {welcomeName?.trim()
                     ? formatMessage(shell.greetingHi, { name: welcomeName })
@@ -251,22 +251,32 @@ export function CatalogSidebar({
             )}
           </div>
 
-          {!collapsed && (
-            <div className="mt-1 flex flex-col gap-2">
-              <div className="mx-3 h-px bg-border/60" />
-              <div className="flex items-center justify-between px-4 pb-1">
-                <span className="text-[12px] text-muted-foreground tracking-wider">
+          <div
+            className={cn("h-px bg-border/60", collapsed ? "w-8" : "mx-3 mt-1")}
+          />
+          <div
+            className={cn(
+              "flex items-center ",
+              collapsed
+                ? "justify-center pb-1 "
+                : "justify-between px-4 pb-1 mt-1",
+            )}
+          >
+            {!collapsed && (
+              <>
+                <span className="text-[12px] text-muted-foreground tracking-wider animate-in fade-in duration-300">
                   {shell.appTheme}
                 </span>
-                <span className="text-[12px] font-semibold capitalize text-foreground">
+
+                <span className="text-[12px] font-semibold capitalize text-foreground animate-in fade-in duration-300">
                   {theme}
                 </span>
-                <div className="scale-90 origin-right">
-                  <ThemeToggle />
-                </div>
-              </div>
+              </>
+            )}
+            <div className={cn("scale-90", !collapsed && "origin-right")}>
+              <ThemeToggle />
             </div>
-          )}
+          </div>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
