@@ -213,7 +213,12 @@ export function CatalogSidebar({
         </button>
 
         <div className="mx-3 my-3 flex h-28 shrink-0 flex-col justify-between overflow-hidden rounded-[24px] border border-border bg-card p-2.5 transition-all duration-300">
-          <div className="flex h-10 w-full items-center">
+          <div
+            className={cn(
+              "flex h-10 w-full items-center transition-all duration-300",
+              collapsed ? "justify-center" : "justify-start",
+            )}
+          >
             <Link
               to="/profile"
               className="flex h-10 w-10 shrink-0 items-center justify-center"
@@ -256,7 +261,12 @@ export function CatalogSidebar({
             />
           </div>
 
-          <div className="flex h-10 w-full items-center justify-between">
+          <div
+            className={cn(
+              "flex h-10 w-full items-center transition-all duration-300",
+              collapsed ? "justify-center" : "justify-between",
+            )}
+          >
             <div
               className={cn(
                 "flex items-center gap-2 min-w-0 overflow-hidden transition-all duration-300",
@@ -475,7 +485,6 @@ export function CatalogSidebar({
         />
       )}
 
-      {/* МОБИЛЬНОЕ МЕНЮ: Оставляем всё как есть, Changelog здесь нужен */}
       <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-border bg-card lg:hidden pb-[calc(env(safe-area-inset-bottom)+16px)]">
         <div className="flex w-full items-start justify-evenly px-1 pt-2 pb-1">
           {visibleSidebarLinks.map((link) => {
