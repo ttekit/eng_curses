@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Calendar, Clock, Lock, Play } from "lucide-react";
+import { Clock, Lock, Play } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useUser } from "../../context/UserContext";
 import { AssignHomeworkButton } from "../AssignHomeworkButton";
@@ -159,7 +159,7 @@ export function CatalogVideoCard({
         {isLocked && (
           <div className="absolute inset-0 z-30 flex items-center justify-center">
             {needsDob ? (
-              <Calendar className="w-10 h-10 text-white/70 drop-shadow-md" />
+              <Lock className="w-10 h-10 text-white/70 drop-shadow-md" />
             ) : (
               <Lock
                 className="w-10 h-10 text-white/50 drop-shadow-md"
