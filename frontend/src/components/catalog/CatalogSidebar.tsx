@@ -39,7 +39,7 @@ const sidebarLinkDefs = [
     to: "https://explys.com/admin",
     isExternal: true,
   },
-] as const;
+] as const; 
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
 
