@@ -273,10 +273,10 @@ export function CatalogSidebar({
                 collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-2",
               )}
             >
-              <span className="truncate text-[12px] text-muted-foreground tracking-wider">
+              <span className="truncate text-[15px] text-muted-foreground tracking-wider">
                 {shell.appTheme}
               </span>
-              <span className="truncate text-[12px] font-semibold capitalize text-foreground">
+              <span className="truncate text-[15px] font-semibold capitalize text-foreground">
                 {theme}
               </span>
             </div>
@@ -292,32 +292,43 @@ export function CatalogSidebar({
             {visibleSidebarLinks
               .filter((link) => link.id !== "changelog")
               .map((link) => {
-                if ("isExternal" in link && link.isExternal) {
-                  return (
-                    <a
-                      key={link.id}
-                      href={link.to}
+                const active = linkActive(link.id);
+
+                const itemClass = cn(
+                  "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                );
+
+                const linkContent = (
+                  <>
+                    <div className="flex h-full w-12 shrink-0 items-center justify-center">
+                      <link.icon className="h-5 w-5" />
+                    </div>
+
+                    <div
                       className={cn(
-                        "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                        "text-muted-foreground hover:bg-muted hover:text-foreground",
-                        collapsed && "justify-center px-2",
+                        "flex min-w-0 items-center overflow-hidden transition-all duration-300",
+                        collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
                       )}
                     >
-                      <link.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                      <span className="truncate whitespace-nowrap">
+                        {sidebarLabels[link.id]}
+                      </span>
+                    </div>
+                  </>
+                );
+
+                if ("isExternal" in link && link.isExternal) {
+                  return (
+                    <a key={link.id} href={link.to} className={itemClass}>
+                      {linkContent}
                     </a>
                   );
                 }
 
                 if (link.id === "search") {
-                  const active = linkActive(link.id);
-                  const itemClass = cn(
-                    "flex w-full hover:cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    collapsed && "justify-center px-2",
-                  );
                   return pathname === "/catalog" && onOpenCatalogSpotlight ? (
                     <button
                       key={link.id}
@@ -325,8 +336,7 @@ export function CatalogSidebar({
                       className={itemClass}
                       onClick={() => onOpenCatalogSpotlight()}
                     >
-                      <link.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                      {linkContent}
                     </button>
                   ) : (
                     <Link
@@ -335,30 +345,18 @@ export function CatalogSidebar({
                       state={{ openSpotlight: true }}
                       className={itemClass}
                     >
-                      <link.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                      {linkContent}
                     </Link>
                   );
                 }
+
                 return (
-                  <Link
-                    key={link.id}
-                    to={link.to}
-                    className={cn(
-                      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                      linkActive(link.id)
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      collapsed && "justify-center px-2",
-                    )}
-                  >
-                    <link.icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{sidebarLabels[link.id]}</span>}
+                  <Link key={link.id} to={link.to} className={itemClass}>
+                    {linkContent}
                   </Link>
                 );
               })}
           </nav>
-
           {!collapsed && (
             <div className="space-y-4 border-t border-border p-4">
               <p className="mb-2 text-sm font-medium text-foreground">
@@ -414,33 +412,33 @@ export function CatalogSidebar({
           <Link
             to="/whats-new"
             className={cn(
-              "relative flex items-center h-10 rounded-lg transition-all duration-300",
+              "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
               linkActive("changelog")
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              collapsed ? "justify-center px-0" : "justify-start px-3",
             )}
           >
-            <div className="relative flex shrink-0 items-center justify-center">
-              <BellRing className="h-5 w-5" />
-              {collapsed && unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-[1.5px] border-card bg-red-500"></span>
-                </span>
-              )}
+            <div className="flex h-full w-12 shrink-0 items-center justify-center">
+              <div className="relative flex h-5 w-5 items-center justify-center">
+                <BellRing className="h-5 w-5" />
+                {collapsed && unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-[1.5px] border-card bg-red-500"></span>
+                  </span>
+                )}
+              </div>
             </div>
 
             <div
               className={cn(
                 "flex min-w-0 items-center overflow-hidden transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-3",
+                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
               )}
             >
               <span className="truncate whitespace-nowrap">
                 {sidebarLabels["changelog"]}
               </span>
-
               {!collapsed && unreadCount > 0 && (
                 <span className="ml-auto flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-sm">
                   {unreadCount > 99 ? "99+" : unreadCount}
@@ -452,19 +450,20 @@ export function CatalogSidebar({
           <Link
             to="/profile?tab=settings"
             className={cn(
-              "relative flex items-center h-10 rounded-lg transition-all duration-300",
+              "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
               pathname === "/profile" && searchParams.get("tab") === "settings"
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              collapsed ? "justify-center px-0" : "justify-start px-3",
             )}
           >
-            <Settings className="h-5 w-5 shrink-0" />
+            <div className="flex h-full w-12 shrink-0 items-center justify-center">
+              <Settings className="h-5 w-5 shrink-0" />
+            </div>
 
             <div
               className={cn(
                 "flex min-w-0 items-center overflow-hidden transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-3",
+                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
               )}
             >
               <span className="truncate whitespace-nowrap">
