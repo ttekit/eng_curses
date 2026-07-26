@@ -13,16 +13,19 @@ import {
   GraduationCap,
   Shield,
   BellRing,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useUser } from "../../context/UserContext";
 import type { UserData } from "../../context/UserContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { formatMessage } from "../../lib/formatMessage";
-import { ThemeToggle } from "../ThemeToggle";
 import { LearnerCustomiseFab } from "./LearnerCustomiseFab";
 import { useTheme } from "../../context/ThemeContext";
 import { useEffect, useState } from "react";
 import { getCachedChangelogs } from "../../lib/changelogsCache";
+import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { ThemeToggle } from "../ThemeToggle";
 
 const sidebarLinkDefs = [
   { id: "catalog" as const, icon: LayoutGrid, to: "/catalog" },
@@ -39,7 +42,7 @@ const sidebarLinkDefs = [
     to: "https://explys.com/admin",
     isExternal: true,
   },
-] as const; 
+] as const;
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
 
@@ -113,7 +116,9 @@ export function CatalogSidebar({
   const shell = useAppMessages().catalogShell;
   const common = useAppMessages().common;
   const [unreadCount, setUnreadCount] = useState(0);
-  const { theme } = useTheme();
+
+  const { theme, setTheme } = useTheme();
+  const { locale, setLocale } = useLandingLocale();
 
   useEffect(() => {
     const fetchUnread = async () => {
@@ -149,7 +154,6 @@ export function CatalogSidebar({
     profile: shell.navProfile,
     admin: shell.navAdmin,
   };
-
   const welcomeName = user?.name;
   const avatarUrl = user?.avatarUrl;
   const englishLevel = user?.englishLevel;
@@ -261,29 +265,68 @@ export function CatalogSidebar({
             />
           </div>
 
-          <div
-            className={cn(
-              "flex h-10 w-full items-center transition-all duration-300",
-              collapsed ? "justify-center" : "justify-between",
-            )}
-          >
-            <div
-              className={cn(
-                "flex items-center gap-2 min-w-0 overflow-hidden transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pl-2",
-              )}
-            >
-              <span className="truncate text-[15px] text-muted-foreground tracking-wider">
-                {shell.appTheme}
-              </span>
-              <span className="truncate text-[15px] font-semibold capitalize text-foreground">
-                {theme}
-              </span>
-            </div>
+          <div className="flex h-10 w-full items-center justify-center gap-2.5">
+            {!collapsed ? (
+              <>
+                <div className="flex h-9 items-center rounded-full border border-border p-0.5 shrink-0 bg-card">
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex h-full items-center justify-center rounded-full px-4 text-xs font-bold transition-colors hover:cursor-pointer",
+                      locale === "uk"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => setLocale("uk")}
+                  >
+                    UA
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex h-full items-center justify-center rounded-full px-4 text-xs font-bold transition-colors hover:cursor-pointer",
+                      locale === "en"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => setLocale("en")}
+                  >
+                    EN
+                  </button>
+                </div>
 
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center scale-90">
-              <ThemeToggle />
-            </div>
+                <div className="flex h-9 items-center rounded-full border border-border p-0.5 shrink-0 bg-card">
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex h-full items-center justify-center rounded-full px-3.5 transition-colors hover:cursor-pointer",
+                      theme === "light"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => setTheme && setTheme("light")}
+                  >
+                    <Sun className="h-[18px] w-[18px]" />
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex h-full items-center justify-center rounded-full px-3.5 transition-colors hover:cursor-pointer",
+                      theme === "dark"
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => setTheme && setTheme("dark")}
+                  >
+                    <Moon className="h-[18px] w-[18px]" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center scale-90">
+                <ThemeToggle />
+              </div>
+            )}
           </div>
         </div>
 
