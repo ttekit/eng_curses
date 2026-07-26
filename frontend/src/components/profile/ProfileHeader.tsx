@@ -94,7 +94,8 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
 
           <div className="min-w-0 flex-1 space-y-2 text-center sm:text-left">
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap">
-              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+              {/* ДОБАВИЛИ break-all и max-w-full СЮДА */}
+              <h1 className="max-w-full break-all text-2xl font-bold text-foreground sm:text-3xl">
                 {user.name || h.learnerFallback || "Learner"}
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
@@ -109,9 +110,13 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
               </div>
             </div>
 
-            <p className="text-muted-foreground">{user.email}</p>
+            {/* ДОБАВИЛИ break-all и max-w-full СЮДА (на всякий случай, если email тоже вылезет) */}
+            <p className="max-w-full break-all text-muted-foreground">
+              {user.email}
+            </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground sm:justify-start">
+              {" "}
               {/* Ищем этот блок ниже в возвращаемом JSX и заменяем: */}
               {user.joinDateLabel || user.fullJoinDate ? (
                 <div className="flex items-center gap-1.5">
