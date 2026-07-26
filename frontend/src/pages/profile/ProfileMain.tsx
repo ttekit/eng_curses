@@ -376,7 +376,7 @@ export default function ProfileMain() {
               )}
 
             <div
-              className="mt-8 flex flex-wrap items-center gap-1 rounded-xl bg-secondary/50 p-1"
+              className="mt-8 grid w-full grid-cols-4 gap-1 rounded-xl bg-secondary/50 p-1 sm:flex sm:flex-wrap sm:items-center"
               role="tablist"
               aria-label={profile.tabListAria}
             >
@@ -391,7 +391,7 @@ export default function ProfileMain() {
                     aria-selected={isActive}
                     onClick={() => selectTab(tab.id)}
                     className={cn(
-                      "inline-flex hover:cursor-pointer flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:flex-none sm:justify-start",
+                      "flex w-full hover:cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:w-auto sm:justify-start",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -403,7 +403,6 @@ export default function ProfileMain() {
                 );
               })}
             </div>
-
             <div className="mt-6">
               {activeTab === "overview" ? (
                 <ProfileStats user={statsModel} />

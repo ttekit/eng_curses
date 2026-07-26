@@ -287,71 +287,73 @@ export function ProfileProgress() {
         )}
       </ProfileCard>
 
-      <ProfileCard
-        title={p.recentVideos}
-        action={
-          <Link
-            to="/catalog"
-            className="text-sm font-medium text-primary hover:underline shrink-0 ml-2"
-          >
-            {p.viewAll}
-          </Link>
-        }
-      >
-        <div className="space-y-3">
-          {(details?.recentVideos || []).map((video) => (
-            <div
-              key={video.id}
-              className="flex items-center gap-3 sm:gap-4 rounded-lg p-2 sm:p-3 transition-colors hover:bg-secondary/30"
+      {details?.recentVideos && details.recentVideos.length > 0 && (
+        <ProfileCard
+          title={p.recentVideos}
+          action={
+            <Link
+              to="/catalog"
+              className="text-sm font-medium text-primary hover:underline shrink-0 ml-2"
             >
+              {p.viewAll}
+            </Link>
+          }
+        >
+          <div className="space-y-3">
+            {(details?.recentVideos || []).map((video) => (
               <div
-                className={cn(
-                  "flex size-10 shrink-0 items-center justify-center rounded-lg",
-                  video.completed
-                    ? "bg-accent/20"
-                    : (video.progress ?? 0) > 0
-                      ? "bg-primary/20"
-                      : "bg-secondary",
-                )}
+                key={video.id}
+                className="flex items-center gap-3 sm:gap-4 rounded-lg p-2 sm:p-3 transition-colors hover:bg-secondary/30"
               >
-                {video.completed ? (
-                  <CheckCircle className="size-5 text-accent" />
-                ) : (video.progress ?? 0) > 0 ? (
-                  <PlayCircle className="size-5 text-primary" />
-                ) : (
-                  <Lock className="size-5 text-muted-foreground" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p
-                  className="font-medium text-foreground line-clamp-1 break-words"
-                  title={video.title}
+                <div
+                  className={cn(
+                    "flex size-10 shrink-0 items-center justify-center rounded-lg",
+                    video.completed
+                      ? "bg-accent/20"
+                      : (video.progress ?? 0) > 0
+                        ? "bg-primary/20"
+                        : "bg-secondary",
+                  )}
                 >
-                  {video.title}
-                </p>
-                <p className="text-sm text-muted-foreground line-clamp-1 break-words">
-                  {video.category}
-                </p>
+                  {video.completed ? (
+                    <CheckCircle className="size-5 text-accent" />
+                  ) : (video.progress ?? 0) > 0 ? (
+                    <PlayCircle className="size-5 text-primary" />
+                  ) : (
+                    <Lock className="size-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-medium text-foreground line-clamp-1 break-words"
+                    title={video.title}
+                  >
+                    {video.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground line-clamp-1 break-words">
+                    {video.category}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  {video.completed ? (
+                    <span className="rounded-md bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
+                      {p.scorePrefix} {video.score}%
+                    </span>
+                  ) : (video.progress ?? 0) > 0 ? (
+                    <span className="text-sm text-muted-foreground">
+                      {video.progress}%
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      {p.notStartedStatus}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="shrink-0 text-right">
-                {video.completed ? (
-                  <span className="rounded-md bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
-                    {p.scorePrefix} {video.score}%
-                  </span>
-                ) : (video.progress ?? 0) > 0 ? (
-                  <span className="text-sm text-muted-foreground">
-                    {video.progress}%
-                  </span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    {p.notStartedStatus}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </ProfileCard>
+            ))}
+          </div>
+        </ProfileCard>
+      )}
 
       <ProfileCard title={p.vocabularyProgress}>
         {details?.vocabularyProgress && (

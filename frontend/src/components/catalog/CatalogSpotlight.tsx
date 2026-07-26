@@ -178,7 +178,7 @@ export function CatalogSpotlight({
 
       <div
         className={cn(
-          "relative z-141 h-fit w-full max-w-2xl rounded-2xl border border-border transition-all duration-500",
+          "relative z-141 h-fit w-full max-w-2xl rounded-2xl border border-border transition-all duration-150",
           visible ? "opacity-100" : "opacity-0",
         )}
         role="dialog"
