@@ -463,28 +463,26 @@ export default function ContentPage() {
                     {needsDob ? (
                       <>
                         <h2 className="text-foreground font-bold text-2xl mb-2">
-                          Age Verification Required
+                          {L.ageVerificationRequired}
                         </h2>
                         <p className="text-muted-foreground text-sm max-w-md mb-5">
-                          To watch age-restricted content, please confirm your
-                          date of birth.
+                          {L.ageVerificationDesc}
                         </p>
                         <button
                           type="button"
                           onClick={() => setAgeModalOpen(true)}
                           className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2.5 px-6 rounded-xl transition-colors cursor-pointer"
                         >
-                          Verify age
+                          {L.verifyAgeBtn}
                         </button>
                       </>
                     ) : (
                       <>
                         <h2 className="text-foreground font-bold text-2xl mb-2">
-                          18+ Only
+                          {L.adultsOnlyTitle}
                         </h2>
                         <p className="text-muted-foreground text-sm max-w-md">
-                          This content is restricted to adults (18+) and is not
-                          available to your profile.
+                          {L.adultsOnlyDesc}
                         </p>
                       </>
                     )}
