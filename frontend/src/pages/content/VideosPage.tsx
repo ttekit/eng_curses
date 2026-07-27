@@ -111,7 +111,7 @@ function stripCheckoutSuccessSearch(): { pathname: string; search: string } {
 }
 
 const LEVELS_LIST = ["All", "A1", "A2", "B1", "B2", "C1", "C2"] as const;
-const AGE_LIST = ["All", "0+", "6+", "12+", "16+", "18+", "21+"] as const;
+const AGE_LIST = ["All", "0+", "6+", "12+", "16+", "18+"] as const;
 
 function getPaginationRange(current: number, total: number) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -719,6 +719,8 @@ export default function VideoPage() {
                             {filterLabel(lvl)}
                           </button>
                         ))}
+
+                        
                       </div>
 
                       <button
@@ -755,7 +757,8 @@ export default function VideoPage() {
                           msOverflowStyle: "none",
                         }}
                       >
-                        {AGE_LIST.map((age) => (
+
+                       {AGE_LIST.map((age) => (
                           <button
                             key={age}
                             type="button"
@@ -770,6 +773,7 @@ export default function VideoPage() {
                             {filterLabel(age)}
                           </button>
                         ))}
+                
                       </div>
 
                       <button
@@ -881,6 +885,7 @@ export default function VideoPage() {
                           key={video.id}
                           video={toCardVideo(video)}
                           onRequestAgeVerification={openAgeVerification}
+                          className="w-full"
                         />
                       ))}
                     </div>

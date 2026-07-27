@@ -7,6 +7,63 @@ import { useMemo } from "react";
 import { resolveVideoAgeAccess } from "../../lib/ageEligibility";
 import { useAppMessages } from "../../hooks/useAppMessages";
 
+function IconRatingNC17({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 46 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect x="1" y="1" width="44" height="22" rx="3" />
+      <text
+        x="23"
+        y="16"
+        textAnchor="middle"
+        fontSize="10"
+        fontWeight="900"
+        stroke="none"
+        fill="currentColor"
+        fontFamily="sans-serif"
+      >
+        NC-17
+      </text>
+    </svg>
+  );
+}
+export function IconRatingR({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 28 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect x="1" y="1" width="26" height="22" rx="3" />
+      <text
+        x="14"
+        y="15.5"
+        textAnchor="middle"
+        fontSize="12"
+        fontWeight="bold"
+        stroke="currentColor"
+        strokeWidth="0.5"
+        fill="currentColor"
+        fontFamily="'Times New Roman', Georgia, serif"
+      >
+        R
+      </text>
+    </svg>
+  );
+}
 export interface CatalogCardVideo {
   id: number;
   title: string;
@@ -18,6 +75,7 @@ export interface CatalogCardVideo {
   ageRestriction?: string;
   friendlyLink?: string;
   level?: string;
+  className?: string;
 }
 
 const levelLike = /^(A1|A2|B1|B2|C1|C2)$/i;
@@ -54,12 +112,13 @@ interface CatalogVideoCardProps {
   video: CatalogCardVideo;
   showProgress?: boolean;
   onRequestAgeVerification?: (ageRestriction: string) => void;
+  className?: string;
 }
-
 export function CatalogVideoCard({
   video,
   showProgress,
   onRequestAgeVerification,
+  className,
 }: CatalogVideoCardProps) {
   const { user } = useUser();
   const isTeacher =
@@ -68,10 +127,16 @@ export function CatalogVideoCard({
 
   const common = useAppMessages().common;
 
-  const ageAccess = useMemo(
-    () => resolveVideoAgeAccess(user, video.ageRestriction),
-    [user, video.ageRestriction],
-  );
+  const ageAccess = useMemo(() => {
+    if (
+      !video.ageRestriction ||
+      ["0+", "6+", "12+"].includes(video.ageRestriction)
+    ) {
+      return "allowed";
+    }
+    return resolveVideoAgeAccess(user, video.ageRestriction);
+  }, [user, video.ageRestriction]);
+
   const isLocked = ageAccess !== "allowed";
   const needsDob = ageAccess === "needs_dob";
   const targetUrl = `/content/${video.friendlyLink || video.id}`;
@@ -105,53 +170,54 @@ export function CatalogVideoCard({
           {!isLocked && (
             <div className="absolute inset-0 bg-background/10 transition-colors group-hover:bg-transparent" />
           )}
-
-          {(video.ageRestriction || video.level) && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-              {video.ageRestriction && (
-                <span
-                  className={cn(
-                    "rounded px-1.5 py-0.5 text-xs font-bold",
-                    ageRestrictionClass(video.ageRestriction),
-                  )}
-                >
-                  {video.ageRestriction}
-                </span>
-              )}
-              {video.level && (
-                <span
-                  className={cn(
-                    "rounded px-2 py-0.5 text-xs font-semibold backdrop-blur-md shadow-sm",
-                    badgeClassForLabel(video.level),
-                  )}
-                >
-                  {video.level}
-                </span>
-              )}
-            </div>
-          )}
-
-          {video.durationLabel ? (
-            <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-10">
-              <Clock className="h-3 w-3" />
-              {video.durationLabel}
-            </span>
-          ) : null}
-
-          {showProgress && video.progress !== undefined ? (
-            <div className="absolute right-0 bottom-0 left-0 h-1 bg-muted z-10">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${video.progress}%` }}
-              />
-            </div>
-          ) : null}
         </div>
 
+        {(video.ageRestriction || video.level) && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 z-40">
+            {video.ageRestriction && (
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-xs font-bold shadow-sm",
+                  ageRestrictionClass(video.ageRestriction),
+                )}
+              >
+                {video.ageRestriction}
+              </span>
+            )}
+            {video.level && (
+              <span
+                className={cn(
+                  "rounded px-2 py-0.5 text-xs font-semibold backdrop-blur-md shadow-sm",
+                  badgeClassForLabel(video.level),
+                )}
+              >
+                {video.level}
+              </span>
+            )}
+          </div>
+        )}
+
+        {video.durationLabel ? (
+          <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground backdrop-blur-sm z-40">
+            <Clock className="h-3 w-3" />
+            {video.durationLabel}
+          </span>
+        ) : null}
+
+        {showProgress && video.progress !== undefined ? (
+          <div className="absolute right-0 bottom-0 left-0 h-1 bg-muted z-40">
+            <div
+              className="h-full bg-primary"
+              style={{ width: `${video.progress}%` }}
+            />
+          </div>
+        ) : null}
+
+        {/* ОБНОВЛЕННАЯ КНОПКА PLAY: Крупнее и с плавной анимацией */}
         {!isLocked && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 z-20">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background/40 backdrop-blur-sm">
-              <Play className="h-6 w-6 fill-foreground text-foreground" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-30">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background/50 backdrop-blur-md shadow-lg transition-transform duration-300 group-hover:scale-110">
+              <Play className="h-8 w-8 ml-1 fill-foreground text-foreground" />
             </div>
           </div>
         )}
@@ -159,10 +225,14 @@ export function CatalogVideoCard({
         {isLocked && (
           <div className="absolute inset-0 z-30 flex items-center justify-center">
             {needsDob ? (
-              <Lock className="w-10 h-10 text-white/70 drop-shadow-md" />
+              video.ageRestriction === "16+" ? (
+                <IconRatingR className="h-10 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+              ) : (
+                <IconRatingNC17 className="h-10 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+              )
             ) : (
               <Lock
-                className="w-10 h-10 text-white/50 drop-shadow-md"
+                className="w-12 h-12 text-white/50 drop-shadow-md"
                 strokeWidth={1.5}
               />
             )}
@@ -183,7 +253,13 @@ export function CatalogVideoCard({
   );
 
   return (
-    <div className="group relative flex w-64 shrink-0 flex-col gap-3 sm:w-80">
+    <div
+      className={cn(
+        "group relative flex flex-col gap-3",
+        className ||
+          "w-[280px] shrink-0 sm:w-[320px] md:w-[360px] lg:w-[400px] xl:w-[340px] 2xl:w-[425px]",
+      )}
+    >
       {isLocked ? (
         needsDob ? (
           onRequestAgeVerification ? (

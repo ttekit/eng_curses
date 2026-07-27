@@ -1115,6 +1115,13 @@ export const appEn = {
     warning: "Warning! Age resctriction:",
     xpInfo: "Earn 150xp after finishing this lesson to move to a new level!",
     assignHomework: "Assign homework",
+    ageVerificationRequired: "Age Verification Required",
+    ageVerificationDesc:
+      "To watch age-restricted content, please confirm your date of birth.",
+    verifyAgeBtn: "Verify age",
+    adultsOnlyTitle: "18+ Only",
+    adultsOnlyDesc:
+      "This content is restricted to adults (18+) and is not available to your profile.",
   },
 
   lessonSummaryPage: {
