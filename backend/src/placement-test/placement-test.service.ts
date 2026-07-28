@@ -290,8 +290,7 @@ export class PlacementTestService {
     const targetDomain =
       userProfile?.learningGoal?.trim() ||
       userProfile?.workField?.trim() ||
-      userProfile?.hobbies?.[0]?.trim() ||
-      "General English & Everyday Life";
+      (userProfile?.hobbies?.length ? `Topic: ${userProfile.hobbies[0]}` : "General Communication & Vocabulary");
 
     this.constellationGenerator
       .generateAndSaveConstellation(targetDomain, band.code, userId)

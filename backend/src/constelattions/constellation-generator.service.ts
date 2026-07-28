@@ -78,6 +78,35 @@ export class ConstellationGeneratorService {
             }).catch(() => undefined);
         }
 
+        for (const dbId of tempIdToDbId.values()) {
+            await this.matcher.matchAndAssignVideo(dbId, cefrLevel);
+        }
+
+        if (userId) {
+            await this.prisma.userConstellationProgress.create({
+                data: {
+                    userId,
+                    constellationId: constellation.id,
+                    status: "AVAILABLE",
+                },
+            }).catch(() => undefined);
+
+            const dependentIds = new Set(prerequisitesData.map(p => p.dependentId));
+
+            const firstStarId = Array.from(tempIdToDbId.values()).find(id => !dependentIds.has(id))
+                ?? Array.from(tempIdToDbId.values())[0];
+
+            if (firstStarId) {
+                await this.prisma.userStarProgress.create({
+                    data: {
+                        userId,
+                        starId: firstStarId,
+                        status: "AVAILABLE",
+                    },
+                }).catch(() => undefined);
+            }
+        }
+
         return this.prisma.constellation.findUnique({
             where: { id: constellation.id },
             include: {
