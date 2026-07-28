@@ -7,6 +7,7 @@ import {
   CatalogVideoCard,
   type CatalogCardVideo,
 } from "../../components/catalog/CatalogVideoCard";
+import { ConstellationPlan } from "../../components/catalog/ConstellationPlan";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { cn } from "../../lib/utils";
@@ -19,6 +20,13 @@ import {
   type RecapKind,
   type RecapStatusItem,
 } from "../../lib/learnerRecap";
+import {
+  fetchAllConstellations,
+  fetchConstellationGraph,
+  completeStar,
+  type Constellation,
+  type StarProgress,
+} from "../../lib/constellationApi";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
 
@@ -90,7 +98,7 @@ function RecapActionCard(props: {
   return (
     <article
       className={cn(
-        "flex flex-col rounded-2xl border bg-card/50 p-5 shadow-sm transition-colors",
+        "flex flex-col rounded-2xl border bg-card/50 p-5 shadow-sm transition-colors min-w-[280px] flex-1",
         available
           ? "border-primary/30 hover:border-primary/50"
           : "border-border opacity-90",
@@ -124,7 +132,7 @@ function RecapActionCard(props: {
       {available ? (
         <Link
           to={`/watched-lessons/recap/${config.kind}`}
-          className=" flex rounded-[15px] bg-primary px-6 py-3 mt-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
+          className="flex rounded-[15px] bg-primary px-6 py-3 mt-2 text-sm font-semibold items-center justify-center text-foreground/70 hover:bg-purple-hover hover:text-white transition-all hover:cursor-pointer shadow-[inset_0_4px_12px_rgba(0,0,0,0.6),inset_0_-2px_6px_rgba(255,255,255,0.3)]"
         >
           {ctaLabel}
         </Link>
@@ -154,6 +162,10 @@ export default function WatchedLessonsPage() {
   const [recapStatus, setRecapStatus] =
     useState<LearnerRecapStatusResponse | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  const [constellations, setConstellations] = useState<Constellation[]>([]);
+  const [starProgressMap, setStarProgressMap] = useState<Record<number, StarProgress[]>>({});
+  const [loadingPlan, setLoadingPlan] = useState(true);
 
   const recapCards: RecapCardConfig[] = useMemo(
     () => [
@@ -212,6 +224,51 @@ export default function WatchedLessonsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setLoadingPlan(true);
+      try {
+        const list = await fetchAllConstellations();
+        if (cancelled) return;
+        setConstellations(list);
+
+        const progressResults = await Promise.all(
+          list.map((c) => fetchConstellationGraph(c.id).catch(() => null)),
+        );
+        if (cancelled) return;
+
+        const progressMap: Record<number, StarProgress[]> = {};
+        progressResults.forEach((res) => {
+          if (res) {
+            progressMap[res.constellationId] = res.stars;
+          }
+        });
+        setStarProgressMap(progressMap);
+      } catch {
+        if (!cancelled) setConstellations([]);
+      } finally {
+        if (!cancelled) setLoadingPlan(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleCompleteStar = async (starId: number, constellationId: number) => {
+    try {
+      await completeStar(starId);
+      const updatedGraph = await fetchConstellationGraph(constellationId);
+      setStarProgressMap((prev) => ({
+        ...prev,
+        [constellationId]: updatedGraph.stars,
+      }));
+    } catch (e) {
+      console.error("Failed to complete star:", e);
+    }
+  };
+
   const cards = useMemo(() => {
     const rawCards = videos.map(toCardVideo);
     return [...rawCards].reverse();
@@ -247,7 +304,7 @@ export default function WatchedLessonsPage() {
 
         <main
           className={cn(
-            "ml-0 flex-1 pb-28 lg:pb-12",
+            "ml-0 flex-1 pb-28 lg:pb-12 transition-all duration-300",
             sidebarCollapsed ? "lg:ml-20" : "lg:ml-64",
           )}
         >
@@ -279,8 +336,45 @@ export default function WatchedLessonsPage() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
-            <section className="space-y-4">
+          <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+            <section className="space-y-4 rounded-3xl border border-purple-500/20 bg-card/20 p-6 backdrop-blur-sm">
+              <div>
+                <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+                  Навчальний план
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Ваші інтерактивні сузір'я. Натискайте на зірки, щоб проходити уроки та закривати категорії.
+                </p>
+              </div>
+
+              {loadingPlan ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                </div>
+              ) : constellations.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-border rounded-2xl">
+                  <p className="text-muted-foreground text-sm">
+                    Сузір'я ще не створені або недоступні для вашого рівня.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {constellations.map((c) => (
+                    <ConstellationPlan
+                      key={c.id}
+                      constellation={c}
+                      progress={starProgressMap[c.id] || []}
+                      onCompleteStar={(starId) => handleCompleteStar(starId, c.id)}
+                      onFinishCategory={(cid) => {
+                        console.log("Finished category:", cid);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-4 rounded-3xl border border-border/50 bg-card/10 p-6">
               <div>
                 <h2 className="font-display text-lg font-semibold tracking-tight">
                   {M.trainingHubTitle}
@@ -289,7 +383,7 @@ export default function WatchedLessonsPage() {
                   {M.trainingHubSubtitle}
                 </p>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 pr-2 custom-scrollbar">
                 {recapCards.map((cfg) => (
                   <RecapActionCard
                     key={cfg.kind}
@@ -302,7 +396,7 @@ export default function WatchedLessonsPage() {
               </div>
             </section>
 
-            <section className="space-y-4">
+            <section className="space-y-4 rounded-3xl border border-border/50 bg-card/10 p-6">
               <h2 className="font-display text-lg font-semibold tracking-tight">
                 {M.completedTitle}
               </h2>
@@ -332,7 +426,7 @@ export default function WatchedLessonsPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                   {cards.map((video) => (
                     <CatalogVideoCard
                       key={video.id}
