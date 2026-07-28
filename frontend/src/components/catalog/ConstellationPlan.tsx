@@ -50,15 +50,41 @@ export function ConstellationPlan({
             case "IN_PROGRESS":
                 return "bg-purple-900 text-purple-200 shadow-[0_0_15px_rgba(168,85,247,0.6)] border-purple-400 animate-pulse";
             case "AVAILABLE":
-                return "bg-card text-purple-400 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:bg-purple-500/20 hover:scale-110";
+                return "bg-card text-purple-400 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]";
             default:
-                return "bg-muted/60 text-muted-foreground border-border/80 hover:border-muted-foreground/50 opacity-75";
+                return "bg-muted/60 text-muted-foreground border-border/80 opacity-75";
         }
+    };
+
+    const getRequiredPrerequisiteName = (star: Star): string | null => {
+        const index = constellation.stars.findIndex((s) => s.id === star.id);
+        if (index <= 0) return null;
+
+        if (star.prerequisites && star.prerequisites.length > 0) {
+            const reqId = star.prerequisites[0].prerequisiteId;
+            const reqStar = constellation.stars.find((s) => s.id === reqId);
+            if (reqStar) return reqStar.name;
+        }
+
+        return constellation.stars[index - 1].name;
     };
 
     const renderStarsGraph = (interactive: boolean) => (
         <div className="relative w-full h-48 my-4 flex items-center justify-center select-none">
-            <svg className="absolute inset-0 w-full h-full pointer-events-none stroke-purple-500/30 stroke-2">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                <defs>
+                    <marker
+                        id={`arrow-${constellation.id}`}
+                        viewBox="0 0 10 10"
+                        refX="22"
+                        refY="5"
+                        markerWidth="5"
+                        markerHeight="5"
+                        orient="auto-start-reverse"
+                    >
+                        <path d="M 0 1 L 10 5 L 0 9 z" className="fill-purple-500/50" />
+                    </marker>
+                </defs>
                 {constellation.stars.map((star, i) => {
                     if (i === 0) return null;
                     const prev = starPositions[i - 1];
@@ -70,7 +96,9 @@ export function ConstellationPlan({
                             y1={`${prev.y}%`}
                             x2={`${curr.x}%`}
                             y2={`${curr.y}%`}
+                            className="stroke-purple-500/40 stroke-2"
                             strokeDasharray="4 4"
+                            markerEnd={`url(#arrow-${constellation.id})`}
                         />
                     );
                 })}
@@ -85,8 +113,14 @@ export function ConstellationPlan({
                     <div
                         key={star.id}
                         style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                        className="absolute -translate-x-1/2 -translate-y-1/2"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center z-10"
+                        onMouseEnter={() => interactive && setHoveredStar(star)}
+                        onMouseLeave={() => interactive && setHoveredStar(null)}
                     >
+                        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-950 border border-purple-500/50 text-[10px] font-bold text-purple-300 flex items-center justify-center shadow-sm z-20">
+                            {i + 1}
+                        </span>
+
                         <button
                             type="button"
                             onClick={(e) => {
@@ -95,12 +129,11 @@ export function ConstellationPlan({
                                     onCompleteStar(star.id);
                                 }
                             }}
-                            onMouseEnter={() => interactive && setHoveredStar(star)}
-                            onMouseLeave={() => interactive && setHoveredStar(null)}
                             className={cn(
-                                "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200",
+                                "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform duration-200 ease-out",
                                 styles,
-                                interactive && status === "AVAILABLE" && "cursor-pointer ring-4 ring-purple-500/20",
+                                interactive && "hover:scale-110",
+                                interactive && status === "AVAILABLE" && "cursor-pointer ring-4 ring-purple-500/20 hover:bg-purple-500/20",
                                 interactive && status === "LOCKED" && "cursor-not-allowed",
                             )}
                         >
@@ -205,23 +238,39 @@ export function ConstellationPlan({
 
                                 {hoveredStar ? (
                                     <div className="mt-4 space-y-3">
-                                        <h5 className="font-bold text-base text-purple-300 leading-snug">
-                                            {hoveredStar.name}
-                                        </h5>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-5 h-5 rounded-full bg-purple-900 border border-purple-500 text-[11px] font-bold text-purple-200 flex items-center justify-center shrink-0">
+                                                {constellation.stars.findIndex((s) => s.id === hoveredStar.id) + 1}
+                                            </span>
+                                            <h5 className="font-bold text-base text-purple-300 leading-snug">
+                                                {hoveredStar.name}
+                                            </h5>
+                                        </div>
+
                                         <p className="text-xs text-muted-foreground leading-relaxed">
                                             {hoveredStar.description ||
                                                 "No specific details provided for this star."}
                                         </p>
 
                                         {(starStatusMap.get(hoveredStar.id) || "LOCKED") === "LOCKED" && (
-                                            <div className="mt-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] leading-normal">
-                                                🔒 <strong>Зірка заблокована.</strong> Пройдіть попередній урок у цьому сузір'ї, щоб відкрити доступ до цієї теми.
+                                            <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed">
+                                                🔒 <strong>Зірка заблокована.</strong>
+                                                {getRequiredPrerequisiteName(hoveredStar) ? (
+                                                    <span className="block mt-1 text-amber-200/90">
+                                                        Щоб відкрити цей урок, спочатку пройдіть попередній етап: <br />
+                                                        <strong className="text-white font-semibold">«{getRequiredPrerequisiteName(hoveredStar)}»</strong>.
+                                                    </span>
+                                                ) : (
+                                                    <span className="block mt-1">
+                                                        Пройдіть попередні уроки у цьому сузір'ї, щоб отримати доступ.
+                                                    </span>
+                                                )}
                                             </div>
                                         )}
 
                                         {starStatusMap.get(hoveredStar.id) === "AVAILABLE" && (
-                                            <div className="mt-3 p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[11px] leading-normal">
-                                                ✨ <strong>Тема доступна!</strong> Натисніть на цю зірку, щоб розпочати урок.
+                                            <div className="mt-3 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs leading-relaxed">
+                                                ✨ <strong>Тема доступна!</strong> Натисніть на цю зірку, щоб розпочати урок та отримати прогрес.
                                             </div>
                                         )}
                                     </div>
