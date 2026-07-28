@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, Lock, Play, Star as StarIcon, Sparkles, ArrowRight } from "lucide-react";
+import { CheckCircle2, Lock, Play, Star as StarIcon, Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { Constellation, Star, StarProgress } from "../../lib/constellationApi";
 
 interface ConstellationPlanProps {
     constellation: Constellation;
     progress: StarProgress[];
-    onCompleteStar?: (starId: number) => void;
+    onCompleteStar?: (starId: number) => Promise<void> | void;
     onFinishCategory?: (constellationId: number) => void;
 }
 
@@ -19,6 +19,7 @@ export function ConstellationPlan({
 }: ConstellationPlanProps) {
     const [isZoomed, setIsZoomed] = useState(false);
     const [selectedStar, setSelectedStar] = useState<Star | null>(null);
+    const [completingId, setCompletingId] = useState<number | null>(null);
 
     const starStatusMap = useMemo(() => {
         const map = new Map<number, string>();
@@ -76,6 +77,16 @@ export function ConstellationPlan({
         }
 
         return constellation.stars[index - 1].name;
+    };
+
+    const handleActionClick = async (starId: number) => {
+        if (!onCompleteStar || completingId !== null) return;
+        try {
+            setCompletingId(starId);
+            await Promise.resolve(onCompleteStar(starId));
+        } finally {
+            setCompletingId(null);
+        }
     };
 
     const renderStarsGraph = (interactive: boolean) => (
@@ -301,7 +312,7 @@ export function ConstellationPlan({
                                                 {selectedStar.contentVideoId ? (
                                                     <Link
                                                         to={`/content/${selectedStar.contentVideoId}`}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                                                     >
                                                         <Play className="w-4 h-4 fill-current" />
                                                         Дивитись відео-урок
@@ -309,11 +320,21 @@ export function ConstellationPlan({
                                                 ) : (
                                                     <button
                                                         type="button"
-                                                        onClick={() => onCompleteStar && onCompleteStar(selectedStar.id)}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                                                        disabled={completingId === selectedStar.id}
+                                                        onClick={() => void handleActionClick(selectedStar.id)}
+                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                                                     >
-                                                        <CheckCircle2 className="w-4 h-4" />
-                                                        Пройти перевірковий тест
+                                                        {completingId === selectedStar.id ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                Завершення...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle2 className="w-4 h-4" />
+                                                                Завершити цей етап
+                                                            </>
+                                                        )}
                                                     </button>
                                                 )}
                                             </div>
