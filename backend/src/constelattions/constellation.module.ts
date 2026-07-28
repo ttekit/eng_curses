@@ -1,22 +1,22 @@
 import { Module } from "@nestjs/common";
+import { PrismaModule } from "../prisma.module";
 import { ConstellationController } from "./constellation.controller";
-import { ConstellationGeminiClient } from "./constellation-gemini.client";
-import { ConstellationGeneratorService } from "./constellation-generator.service";
-import { ConstellationProgressService } from "./constellation-progress.service";
-import { StarVideoMatcherService } from "./star-video-matcher.service";
-import { PrismaService } from "src/prisma.service";
 import { ConstellationService } from "./constellation.service";
+import { ConstellationGeneratorService } from "./constellation-generator.service";
+import { ConstellationGeminiClient } from "./constellation-gemini.client";
+import { StarVideoMatcherService } from "./star-video-matcher.service";
+import { ConstellationProgressService } from "./constellation-progress.service";
 
 @Module({
+    imports: [PrismaModule],
     controllers: [ConstellationController],
     providers: [
-        PrismaService,
-        ConstellationGeminiClient,
-        ConstellationGeneratorService,
-        ConstellationProgressService,
-        StarVideoMatcherService,
         ConstellationService,
+        ConstellationGeneratorService,
+        ConstellationGeminiClient,
+        StarVideoMatcherService,
+        ConstellationProgressService,
     ],
-    exports: [ConstellationProgressService],
+    exports: [ConstellationService, ConstellationGeneratorService],
 })
 export class ConstellationModule { }
