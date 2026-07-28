@@ -31,6 +31,7 @@ import AdminVideosPage from "./pages/admin/AdminVideosPage";
 import AdminTeachersPage from "./pages/admin/AdminTeachersPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import AdminConstellationsPage from "./pages/admin/AdminConstellationsPage";
 import AnalyticsLayout from "./components/AnalyticsLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireAdmin from "./components/RequireAdmin";
@@ -74,6 +75,7 @@ const router = createBrowserRouter([
       { path: "/terms", element: <TermsOfServicePage /> },
       { path: "/feedback", element: <FeedbackPage /> },
       { path: "/demo-lesson", element: <DemoLessonPage /> },
+
       {
         element: <RequireAuth />,
         children: [
@@ -93,6 +95,7 @@ const router = createBrowserRouter([
                   { path: "avatars", element: <AdminAvatarsPage /> },
                   { path: "settings", element: <AdminSettingsPage /> },
                   { path: "changelog", element: <AdminChangelogPage /> },
+                  { path: "constellations", element: <AdminConstellationsPage /> },
                 ],
               },
             ],

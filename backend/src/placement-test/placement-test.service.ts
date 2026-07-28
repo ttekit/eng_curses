@@ -37,6 +37,7 @@ import {
 } from "src/config/ai-prompts.defaults";
 import { buildAiPrompt } from "src/config/ai-prompts";
 import { renderPlacementHtml } from "./placement-html.template";
+import { ConstellationGeneratorService } from "src/constelattions/constellation-generator.service";
 
 @Injectable()
 export class PlacementTestService {
@@ -47,6 +48,7 @@ export class PlacementTestService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly alcorythm: AlcorythmService,
+    private readonly constellationGenerator: ConstellationGeneratorService,
   ) {
     this.themes = this.loadThemes();
   }
@@ -280,6 +282,23 @@ export class PlacementTestService {
         ? buildPlacementSummary(draft.questions, answers)
         : undefined;
 
+    const userProfile = await this.prisma.additionalUserData.findUnique({
+      where: { userId },
+      select: { learningGoal: true, workField: true, hobbies: true },
+    });
+
+    const targetDomain =
+      userProfile?.learningGoal?.trim() ||
+      userProfile?.workField?.trim() ||
+      userProfile?.hobbies?.[0]?.trim() ||
+      "General English & Everyday Life";
+
+    this.constellationGenerator
+      .generateAndSaveConstellation(targetDomain, band.code, userId)
+      .catch((err) => {
+        this.logger.error(`Failed to auto-generate constellation for user ${userId}:`, err);
+      });
+
     return {
       ok: true as const,
       englishLevel: band.code,
@@ -289,6 +308,10 @@ export class PlacementTestService {
       percentage: pct,
       summary,
     };
+
+
+
+
   }
 
   /** Light touch on skill columns from typed placement items (+ legacy untyped). */

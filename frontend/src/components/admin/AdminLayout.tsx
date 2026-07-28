@@ -13,6 +13,7 @@ import {
   GraduationCap,
   BarChart3,
   Smile,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { SEO } from "../SEO/SEO";
@@ -24,7 +25,8 @@ const sidebarLinks = [
   { icon: Users, label: "Users", to: "/admin/users" },
   { icon: Video, label: "Videos", to: "/admin/videos" },
   { icon: GraduationCap, label: "Teachers", to: "/admin/teachers" },
-  { icon: Megaphone, label: "Changelog", to: "/admin/changelog" }, 
+  { icon: Megaphone, label: "Changelog", to: "/admin/changelog" },
+  { icon: Sparkles, label: "Constellations", to: "/admin/constellations" },
   { icon: BarChart3, label: "Analytics", to: "/admin/analytics" },
   { icon: Smile, label: "Avatars", to: "/admin/avatars" },
   { icon: Settings, label: "Settings", to: "/admin/settings" },

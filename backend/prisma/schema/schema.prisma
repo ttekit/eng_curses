@@ -83,6 +83,7 @@ model User {
 
   constellationProgress UserConstellationProgress[]
   starProgress          UserStarProgress[]
+  constellations        Constellation[]
 
   @@index([teacherId], map: "users_teacher_id_idx")
   @@map("users")
@@ -386,6 +387,9 @@ model Constellation {
   name        String
   description String?
   rewardId    Int?    @map("reward_id")
+
+  userId Int?  @map("user_id") // <-- НОВЕ: власник сузір'я (null, якщо глобальне)
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   stars        Star[]
   userProgress UserConstellationProgress[]
