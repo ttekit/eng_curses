@@ -221,15 +221,13 @@ export function CatalogVideoCard({
             </div>
           </div>
         )}
-
+        
         {isLocked && (
           <div className="absolute inset-0 z-30 flex items-center justify-center">
-            {needsDob ? (
-              video.ageRestriction === "16+" ? (
-                <IconRatingR className="h-10 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-              ) : (
-                <IconRatingNC17 className="h-10 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
-              )
+            {video.ageRestriction === "16+" ? (
+              <IconRatingR className="h-10 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+            ) : video.ageRestriction === "18+" ? (
+              <IconRatingNC17 className="h-10 text-white/95 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
             ) : (
               <Lock
                 className="w-12 h-12 text-white/50 drop-shadow-md"
