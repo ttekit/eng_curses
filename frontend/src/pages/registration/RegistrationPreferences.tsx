@@ -26,13 +26,6 @@ export default function RegistrationPreferences() {
   const { user, refreshProfile } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const isUntouched = formData.learningGoal;
-    if (isUntouched && formData.learningGoal !== t.defaultGoal) {
-      updateFormData({ learningGoal: t.defaultGoal });
-    }
-  }, [formData.learningGoal, t.defaultGoal, updateFormData]);
-
   const currentRole = (
     user?.role ? String(user.role) : String(formData.role || "")
   ).toLowerCase();
@@ -56,7 +49,6 @@ export default function RegistrationPreferences() {
     setIsSubmitting(true);
     try {
       const payload = {
-        // role: formData.role ? formData.role.toUpperCase() : undefined,
         favoriteGenres: formData.favoriteGenres,
         hatedGenres: formData.hatedGenres,
         learningGoal: formData.learningGoal,
@@ -124,7 +116,7 @@ export default function RegistrationPreferences() {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <LearningPurposeFields
-              learningGoal={formData.learningGoal ?? ""}
+              learningGoal={formData.learningGoal || ""}
               timeToAchieve={formData.timeToAchieve ?? ""}
               labels={{
                 goalTitle: t.goalTitle,
