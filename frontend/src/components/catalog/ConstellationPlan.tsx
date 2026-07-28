@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router";
 import { CheckCircle2, Lock, Play, Star as StarIcon, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { Constellation, Star, StarProgress } from "../../lib/constellationApi";
@@ -17,7 +18,7 @@ export function ConstellationPlan({
     onFinishCategory,
 }: ConstellationPlanProps) {
     const [isZoomed, setIsZoomed] = useState(false);
-    const [hoveredStar, setHoveredStar] = useState<Star | null>(null);
+    const [selectedStar, setSelectedStar] = useState<Star | null>(null);
 
     const starStatusMap = useMemo(() => {
         const map = new Map<number, string>();
@@ -42,6 +43,14 @@ export function ConstellationPlan({
             return { x, y };
         });
     }, [constellation.stars]);
+
+    const getEffectiveStatus = (star: Star, index: number): string => {
+        const raw = starStatusMap.get(star.id) || "LOCKED";
+        if (index === 0 && raw === "LOCKED") {
+            return "AVAILABLE";
+        }
+        return raw;
+    };
 
     const getStatusStyles = (status?: string) => {
         switch (status) {
@@ -106,16 +115,15 @@ export function ConstellationPlan({
 
             {constellation.stars.map((star, i) => {
                 const pos = starPositions[i];
-                const status = starStatusMap.get(star.id) || "LOCKED";
+                const status = getEffectiveStatus(star, i);
                 const styles = getStatusStyles(status);
+                const isSelected = selectedStar?.id === star.id;
 
                 return (
                     <div
                         key={star.id}
                         style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
                         className="absolute -translate-x-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center z-10"
-                        onMouseEnter={() => interactive && setHoveredStar(star)}
-                        onMouseLeave={() => interactive && setHoveredStar(null)}
                     >
                         <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-950 border border-purple-500/50 text-[10px] font-bold text-purple-300 flex items-center justify-center shadow-sm z-20">
                             {i + 1}
@@ -125,16 +133,15 @@ export function ConstellationPlan({
                             type="button"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (interactive && status === "AVAILABLE" && onCompleteStar) {
-                                    onCompleteStar(star.id);
+                                if (interactive) {
+                                    setSelectedStar(star);
                                 }
                             }}
                             className={cn(
-                                "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform duration-200 ease-out",
+                                "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer",
                                 styles,
                                 interactive && "hover:scale-110",
-                                interactive && status === "AVAILABLE" && "cursor-pointer ring-4 ring-purple-500/20 hover:bg-purple-500/20",
-                                interactive && status === "LOCKED" && "cursor-not-allowed",
+                                isSelected && "scale-110 ring-4 ring-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.8)]",
                             )}
                         >
                             {status === "COMPLETED" ? (
@@ -153,10 +160,18 @@ export function ConstellationPlan({
         </div>
     );
 
+    const selectedIndex = selectedStar ? constellation.stars.findIndex((s) => s.id === selectedStar.id) : -1;
+    const selectedStatus = selectedStar ? getEffectiveStatus(selectedStar, selectedIndex) : "LOCKED";
+
     return (
         <>
             <div
-                onClick={() => !isZoomed && setIsZoomed(true)}
+                onClick={() => {
+                    if (!isZoomed) {
+                        setSelectedStar(constellation.stars[0] || null);
+                        setIsZoomed(true);
+                    }
+                }}
                 className={cn(
                     "relative flex flex-col justify-between p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-card/40 transition-colors duration-300",
                     !isZoomed && "cursor-pointer hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:bg-card/60",
@@ -193,7 +208,7 @@ export function ConstellationPlan({
                         <button
                             type="button"
                             onClick={() => setIsZoomed(false)}
-                            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground text-sm font-semibold px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground text-sm font-semibold px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
                         >
                             ✕ Close
                         </button>
@@ -218,7 +233,7 @@ export function ConstellationPlan({
                                 <button
                                     type="button"
                                     onClick={() => onFinishCategory(constellation.id)}
-                                    className="w-full mt-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-all shadow-[0_0_15px_rgba(147,51,234,0.5)]"
+                                    className="w-full mt-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-all shadow-[0_0_15px_rgba(147,51,234,0.5)] cursor-pointer"
                                 >
                                     Finish Category & Claim Reward
                                 </button>
@@ -229,36 +244,36 @@ export function ConstellationPlan({
                             <div>
                                 <h4 className="font-semibold text-sm text-foreground border-b border-border pb-2.5 flex items-center justify-between">
                                     <span>Star Details</span>
-                                    {hoveredStar && (
+                                    {selectedStar && (
                                         <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono uppercase">
-                                            {starStatusMap.get(hoveredStar.id) || "LOCKED"}
+                                            {selectedStatus}
                                         </span>
                                     )}
                                 </h4>
 
-                                {hoveredStar ? (
+                                {selectedStar ? (
                                     <div className="mt-4 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <span className="w-5 h-5 rounded-full bg-purple-900 border border-purple-500 text-[11px] font-bold text-purple-200 flex items-center justify-center shrink-0">
-                                                {constellation.stars.findIndex((s) => s.id === hoveredStar.id) + 1}
+                                                {selectedIndex + 1}
                                             </span>
                                             <h5 className="font-bold text-base text-purple-300 leading-snug">
-                                                {hoveredStar.name}
+                                                {selectedStar.name}
                                             </h5>
                                         </div>
 
                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                            {hoveredStar.description ||
+                                            {selectedStar.description ||
                                                 "No specific details provided for this star."}
                                         </p>
 
-                                        {(starStatusMap.get(hoveredStar.id) || "LOCKED") === "LOCKED" && (
+                                        {selectedStatus === "LOCKED" && selectedIndex > 0 && (
                                             <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed">
                                                 🔒 <strong>Зірка заблокована.</strong>
-                                                {getRequiredPrerequisiteName(hoveredStar) ? (
+                                                {getRequiredPrerequisiteName(selectedStar) ? (
                                                     <span className="block mt-1 text-amber-200/90">
                                                         Щоб відкрити цей урок, спочатку пройдіть попередній етап: <br />
-                                                        <strong className="text-white font-semibold">«{getRequiredPrerequisiteName(hoveredStar)}»</strong>.
+                                                        <strong className="text-white font-semibold">«{getRequiredPrerequisiteName(selectedStar)}»</strong>.
                                                     </span>
                                                 ) : (
                                                     <span className="block mt-1">
@@ -268,9 +283,46 @@ export function ConstellationPlan({
                                             </div>
                                         )}
 
-                                        {starStatusMap.get(hoveredStar.id) === "AVAILABLE" && (
-                                            <div className="mt-3 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs leading-relaxed">
-                                                ✨ <strong>Тема доступна!</strong> Натисніть на цю зірку, щоб розпочати урок та отримати прогрес.
+                                        {selectedStatus === "LOCKED" && selectedIndex === 0 && (
+                                            <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed">
+                                                🔒 <strong>Стартовий урок заблоковано.</strong>
+                                                <span className="block mt-1 text-amber-200/90">
+                                                    Будь ласка, оновіть сторінку або зверніться до підтримки для розблокування цього сузір'я.
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {(selectedStatus === "AVAILABLE" || selectedStatus === "IN_PROGRESS") && (
+                                            <div className="mt-4 pt-3 border-t border-border/60">
+                                                <p className="text-xs text-purple-300 mb-3">
+                                                    ✨ <strong>Тема доступна!</strong> Натисніть кнопку нижче, щоб перейти до виконання завдання:
+                                                </p>
+
+                                                {selectedStar.contentVideoId ? (
+                                                    <Link
+                                                        to={`/content/${selectedStar.contentVideoId}`}
+                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
+                                                    >
+                                                        <Play className="w-4 h-4 fill-current" />
+                                                        Дивитись відео-урок
+                                                    </Link>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onCompleteStar && onCompleteStar(selectedStar.id)}
+                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                                                    >
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        Пройти перевірковий тест
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {selectedStatus === "COMPLETED" && (
+                                            <div className="mt-3 p-3 rounded-xl bg-purple-600/10 border border-purple-500/30 text-purple-300 text-xs leading-relaxed flex items-center gap-2">
+                                                <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0" />
+                                                <span>Цей етап успішно пройдено! Ви можете обрати наступну доступну зірку.</span>
                                             </div>
                                         )}
                                     </div>
@@ -278,7 +330,7 @@ export function ConstellationPlan({
                                     <div className="mt-6 text-center py-6 border border-dashed border-border/60 rounded-xl p-4">
                                         <Sparkles className="w-6 h-6 text-purple-400/40 mx-auto mb-2" />
                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Наведіть мишу на будь-яку зірку зліва, щоб побачити опис уроку та його статус.
+                                            Натисніть на будь-яку зірку зліва, щоб побачити опис уроку, перевірити статус або перейти до відео.
                                         </p>
                                     </div>
                                 )}
