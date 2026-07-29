@@ -287,14 +287,14 @@ export default function WatchedLessonsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-background text-foreground antialiased">
       <SEO
         title={M.heading}
         description={M.seoDescription}
         canonicalUrl={resolveCanonicalUrl("/watched-lessons")}
         noindex
       />
-      <div className="flex">
+      <div className="flex w-full max-w-[100vw]">
         <CatalogSidebar
           onSelectLevel={() => { }}
           reserveTopNavSpace={false}
@@ -304,45 +304,45 @@ export default function WatchedLessonsPage() {
 
         <main
           className={cn(
-            "ml-0 flex-1 pb-28 lg:pb-12 transition-all duration-300",
+            "min-w-0 w-full ml-0 flex-1 pb-28 lg:pb-12 transition-all duration-300",
             sidebarCollapsed ? "lg:ml-20" : "lg:ml-64",
           )}
         >
           <div className="border-border border-b bg-card/30 px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 min-w-0">
                 <Link to="/catalog">
                   <img
                     src="/Icon.svg"
-                    className="h-18 w-15 hover:cursor-pointer"
+                    className="h-18 w-15 hover:cursor-pointer shrink-0"
                     alt=""
                   />
                 </Link>
-                <div>
-                  <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                <div className="min-w-0">
+                  <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl truncate">
                     {M.heading}
                   </h1>
-                  <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                  <p className="mt-1 max-w-xl text-sm text-muted-foreground truncate">
                     {M.subtitle}
                   </p>
                 </div>
               </div>
               <Link
                 to="/catalog"
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-primary hover:underline shrink-0"
               >
                 {browseCatalog}
               </Link>
             </div>
           </div>
 
-          <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-            <section className="space-y-4 rounded-3xl border border-purple-500/20 bg-card/20 p-6 backdrop-blur-sm">
+          <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 w-full">
+            <section className="space-y-4 rounded-3xl border border-purple-500/20 bg-card/20 p-6 backdrop-blur-sm w-full min-w-0">
               <div>
                 <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
                   Навчальний план
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-muted-foreground break-words">
                   Ваші інтерактивні сузір'я. Натискайте на зірки, щоб проходити уроки та закривати категорії.
                 </p>
               </div>
@@ -358,7 +358,7 @@ export default function WatchedLessonsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full max-w-full overflow-hidden box-border">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0">
                   {constellations.map((c) => (
                     <ConstellationPlan
                       key={c.id}
@@ -374,7 +374,7 @@ export default function WatchedLessonsPage() {
               )}
             </section>
 
-            <section className="space-y-4 rounded-3xl border border-border/50 bg-card/10 p-6">
+            <section className="space-y-4 rounded-3xl border border-border/50 bg-card/10 p-6 w-full min-w-0">
               <div>
                 <h2 className="font-display text-lg font-semibold tracking-tight">
                   {M.trainingHubTitle}
@@ -383,7 +383,7 @@ export default function WatchedLessonsPage() {
                   {M.trainingHubSubtitle}
                 </p>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 pr-2 custom-scrollbar">
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 pr-2 custom-scrollbar w-full">
                 {recapCards.map((cfg) => (
                   <RecapActionCard
                     key={cfg.kind}
@@ -396,7 +396,7 @@ export default function WatchedLessonsPage() {
               </div>
             </section>
 
-            <section className="space-y-4 rounded-3xl border border-border/50 bg-card/10 p-6">
+            <section className="space-y-4 rounded-3xl border border-border/50 bg-card/10 p-6 w-full min-w-0">
               <h2 className="font-display text-lg font-semibold tracking-tight">
                 {M.completedTitle}
               </h2>
@@ -426,7 +426,7 @@ export default function WatchedLessonsPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar w-full min-w-0">
                   {cards.map((video) => (
                     <CatalogVideoCard
                       key={video.id}

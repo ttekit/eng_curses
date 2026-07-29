@@ -308,7 +308,7 @@ export function ConstellationPlan({
                                         {(selectedStatus === "AVAILABLE" || selectedStatus === "IN_PROGRESS") && (
                                             <div className="mt-4 pt-3 border-t border-border/60">
                                                 <p className="text-xs text-purple-300 mb-3">
-                                                    ✨ <strong>Тема доступна!</strong> Натисніть кнопку нижче, щоб перейти до виконання завдання:
+                                                    ✨ <strong>Тема доступна!</strong> Натисні кнопку нижче, щоб перейти до виконання завдання:
                                                 </p>
 
                                                 {selectedStar.contentVideoId ? (
