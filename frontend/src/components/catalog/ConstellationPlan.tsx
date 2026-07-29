@@ -36,12 +36,35 @@ export function ConstellationPlan({
 
     const starPositions = useMemo(() => {
         const total = constellation.stars.length;
+
+        if (total === 1) {
+            return [{ x: 50, y: 50 }];
+        }
+
+        const isMobile = window.innerWidth < 640;
+
+        const width = isMobile ? 78 : 86;
+        const height = isMobile ? 64 : 72;
+
+        const startX = (100 - width) / 2;
+        const startY = (100 - height) / 2;
+
         return constellation.stars.map((_, index) => {
-            const angle = (index / total) * Math.PI * 1.5 + 0.5;
-            const radius = window.innerWidth < 640 ? 22 + (index % 2) * 8 : 35 + (index % 2) * 15;
-            const x = 50 + radius * Math.cos(angle);
-            const y = 50 + radius * Math.sin(angle);
-            return { x: Math.max(12, Math.min(88, x)), y: Math.max(12, Math.min(88, y)) };
+            const progress = total === 1 ? 0 : index / (total - 1);
+            const x =
+                startX +
+                progress * width +
+                Math.sin(progress * Math.PI * 2) * (isMobile ? 8 : 10);
+
+            const y =
+                startY +
+                height / 2 +
+                Math.sin(progress * Math.PI * 3) * (isMobile ? 18 : 22);
+
+            return {
+                x: Math.max(8, Math.min(92, x)),
+                y: Math.max(12, Math.min(88, y)),
+            };
         });
     }, [constellation.stars]);
 
@@ -92,7 +115,7 @@ export function ConstellationPlan({
     };
 
     const renderStarsGraph = (interactive: boolean) => (
-        <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none overflow-hidden">
+        <div className="relative w-full h-64 sm:h-72 my-4 flex items-center justify-center select-none overflow-hidden">
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
                 <defs>
                     <marker
