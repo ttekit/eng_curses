@@ -38,7 +38,7 @@ export function ConstellationPlan({
         const total = constellation.stars.length;
         return constellation.stars.map((_, index) => {
             const angle = (index / total) * Math.PI * 1.5 + 0.5;
-            const radius = 24 + (index % 2) * 12;
+            const radius = 22 + (index % 2) * 12;
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
             return { x, y };
@@ -92,7 +92,7 @@ export function ConstellationPlan({
     };
 
     const renderStarsGraph = (interactive: boolean) => (
-        <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none">
+        <div className="relative w-full aspect-[4/3] sm:aspect-video my-4 flex items-center justify-center select-none">
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
                 <defs>
                     <marker
@@ -136,9 +136,9 @@ export function ConstellationPlan({
                     <div
                         key={star.id}
                         style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center z-10"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center z-10"
                     >
-                        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-950 border border-purple-500/50 text-[10px] font-bold text-purple-300 flex items-center justify-center shadow-sm z-20">
+                        <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-purple-950 border border-purple-500/50 text-[9px] sm:text-[10px] font-bold text-purple-300 flex items-center justify-center shadow-sm z-20">
                             {i + 1}
                         </span>
 
@@ -151,20 +151,20 @@ export function ConstellationPlan({
                                 }
                             }}
                             className={cn(
-                                "w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer shrink-0",
+                                "w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer shrink-0",
                                 styles,
                                 interactive && "hover:scale-110",
                                 isSelected && "scale-110 ring-4 ring-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.8)]",
                             )}
                         >
                             {status === "COMPLETED" ? (
-                                <CheckCircle2 className="w-5 h-5" />
+                                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
                             ) : status === "LOCKED" ? (
-                                <Lock className="w-4 h-4" />
+                                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             ) : status === "IN_PROGRESS" ? (
-                                <Play className="w-4 h-4 fill-current" />
+                                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
                             ) : (
-                                <StarIcon className="w-5 h-5 fill-purple-400/20" />
+                                <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 fill-purple-400/20" />
                             )}
                         </button>
                     </div>
@@ -186,13 +186,13 @@ export function ConstellationPlan({
                     }
                 }}
                 className={cn(
-                    "relative flex flex-col justify-between p-4 sm:p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-card/40 transition-colors duration-300 w-full overflow-hidden box-border",
+                    "relative flex flex-col justify-between p-4 sm:p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-card/40 transition-colors duration-300 w-full max-w-full overflow-hidden box-border",
                     !isZoomed && "cursor-pointer hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:bg-card/60",
                 )}
             >
-                <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-display font-semibold text-base sm:text-lg text-foreground flex items-center gap-2 truncate">
-                        <Sparkles className="w-5 h-5 text-purple-400 shrink-0" />
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                    <h3 className="font-display font-semibold text-base sm:text-lg text-foreground flex items-center gap-2 truncate min-w-0">
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 shrink-0" />
                         <span className="truncate">{constellation.name}</span>
                     </h3>
                     {isCategoryCompleted && (
@@ -204,10 +204,10 @@ export function ConstellationPlan({
 
                 {renderStarsGraph(false)}
 
-                <div className="mt-4 flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                    <span>{constellation.stars.length} stars</span>
-                    <span className="text-purple-400 font-medium flex items-center gap-1">
-                        Click to inspect <ArrowRight className="w-4 h-4" />
+                <div className="mt-4 flex items-center justify-between text-xs sm:text-sm text-muted-foreground min-w-0">
+                    <span className="truncate shrink-0">{constellation.stars.length} stars</span>
+                    <span className="text-purple-400 font-medium flex items-center gap-1 shrink-0">
+                        Click to inspect <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </span>
                 </div>
             </div>
@@ -215,7 +215,7 @@ export function ConstellationPlan({
             {isZoomed && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
                     <div
-                        className="relative w-full max-w-[92%] sm:max-w-[95%] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto box-border"
+                        className="relative w-full max-w-full lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto box-border"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
@@ -227,7 +227,7 @@ export function ConstellationPlan({
                         </button>
 
                         <div className="flex-1 flex flex-col justify-between min-w-0 pr-8 lg:pr-0">
-                            <div>
+                            <div className="min-w-0">
                                 <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-purple-400">
                                     Constellation Plan
                                 </span>
@@ -255,10 +255,10 @@ export function ConstellationPlan({
 
                         <div className="w-full lg:w-80 rounded-xl sm:rounded-2xl bg-muted/30 border border-border p-4 sm:p-5 flex flex-col justify-between shrink-0">
                             <div>
-                                <h4 className="font-semibold text-xs sm:text-sm text-foreground border-b border-border pb-2.5 flex items-center justify-between">
-                                    <span>Star Details</span>
+                                <h4 className="font-semibold text-xs sm:text-sm text-foreground border-b border-border pb-2.5 flex items-center justify-between min-w-0">
+                                    <span className="truncate">Star Details</span>
                                     {selectedStar && (
-                                        <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono uppercase">
+                                        <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono uppercase shrink-0">
                                             {selectedStatus}
                                         </span>
                                     )}
@@ -266,7 +266,7 @@ export function ConstellationPlan({
 
                                 {selectedStar ? (
                                     <div className="mt-4 space-y-3">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 min-w-0">
                                             <span className="w-5 h-5 rounded-full bg-purple-900 border border-purple-500 text-[11px] font-bold text-purple-200 flex items-center justify-center shrink-0">
                                                 {selectedIndex + 1}
                                             </span>
@@ -286,7 +286,7 @@ export function ConstellationPlan({
                                                 {getRequiredPrerequisiteName(selectedStar) ? (
                                                     <span className="block mt-1 text-amber-200/90">
                                                         Щоб відкрити цей урок, спочатку пройдіть попередній етап: <br />
-                                                        <strong className="text-white font-semibold">«{getRequiredPrerequisiteName(selectedStar)}»</strong>.
+                                                        <strong className="text-white font-semibold break-words">«{getRequiredPrerequisiteName(selectedStar)}»</strong>.
                                                     </span>
                                                 ) : (
                                                     <span className="block mt-1">
