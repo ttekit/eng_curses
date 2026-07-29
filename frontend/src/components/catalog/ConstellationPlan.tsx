@@ -38,7 +38,7 @@ export function ConstellationPlan({
         const total = constellation.stars.length;
         return constellation.stars.map((_, index) => {
             const angle = (index / total) * Math.PI * 1.5 + 0.5;
-            const radius = 35 + (index % 2) * 15;
+            const radius = 25 + (index % 2) * 15;
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
             return { x, y };
@@ -92,8 +92,8 @@ export function ConstellationPlan({
     };
 
     const renderStarsGraph = (interactive: boolean) => (
-        <div className="relative w-full h-48 my-4 flex items-center justify-center select-none overflow-hidden">
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        <div className="relative w-full h-56 my-4 flex items-center justify-center select-none">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
                 <defs>
                     <marker
                         id={`arrow-${constellation.id}`}
@@ -186,7 +186,7 @@ export function ConstellationPlan({
                     }
                 }}
                 className={cn(
-                    "relative flex flex-col justify-between p-5 sm:p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-card/40 transition-colors duration-300 w-full overflow-hidden",
+                    "relative flex flex-col justify-between p-5 sm:p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-card/40 transition-colors duration-300 w-full",
                     !isZoomed && "cursor-pointer hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:bg-card/60",
                 )}
             >
@@ -215,7 +215,7 @@ export function ConstellationPlan({
             {isZoomed && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
                     <div
-                        className="relative w-full max-w-[95vw] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto"
+                        className="relative w-full max-w-[calc(100vw-1rem)] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
@@ -362,19 +362,19 @@ export function ConstellationPlan({
                             <div className="mt-6 pt-4 border-t border-border text-[10px] sm:text-[11px] text-muted-foreground space-y-1.5">
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full bg-purple-600 shrink-0" />
-                                    <span>Completed (Пройдено)</span>
+                                    <span>Completed</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full bg-purple-900 border border-purple-400 shrink-0" />
-                                    <span>In Progress (В процесі)</span>
+                                    <span>In Progress</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full bg-card border border-purple-400 shrink-0" />
-                                    <span>Available (Можна почати)</span>
+                                    <span>Available</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full bg-muted/60 border border-border shrink-0" />
-                                    <span>Locked (Заблоковано)</span>
+                                    <span>Locked</span>
                                 </div>
                             </div>
                         </div>
