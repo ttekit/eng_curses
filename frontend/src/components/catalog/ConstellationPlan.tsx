@@ -38,10 +38,10 @@ export function ConstellationPlan({
         const total = constellation.stars.length;
         return constellation.stars.map((_, index) => {
             const angle = (index / total) * Math.PI * 1.5 + 0.5;
-            const radius = 35 + (index % 2) * 15;
+            const radius = window.innerWidth < 640 ? 22 + (index % 2) * 8 : 35 + (index % 2) * 15;
             const x = 50 + radius * Math.cos(angle);
             const y = 50 + radius * Math.sin(angle);
-            return { x, y };
+            return { x: Math.max(12, Math.min(88, x)), y: Math.max(12, Math.min(88, y)) };
         });
     }, [constellation.stars]);
 
@@ -92,7 +92,7 @@ export function ConstellationPlan({
     };
 
     const renderStarsGraph = (interactive: boolean) => (
-        <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none overflow-visible">
+        <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none overflow-hidden">
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
                 <defs>
                     <marker
@@ -192,7 +192,7 @@ export function ConstellationPlan({
             >
                 <div className="flex items-center justify-between gap-2 min-w-0 w-full">
                     <h3 className="font-display font-semibold text-base sm:text-lg text-foreground flex items-center gap-2 min-w-0 flex-1">
-                        <Sparkles className="w-5 h-5 text-purple-400 shrink-0" />
+                        <Sparkles className="w-5 h-5 text-purple-400 lg:shrink-0" />
                         <span className="truncate">{constellation.name}</span>
                     </h3>
                     {isCategoryCompleted && (
@@ -215,7 +215,7 @@ export function ConstellationPlan({
             {isZoomed && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
                     <div
-                        className="relative w-full max-w-[95vw] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto box-border"
+                        className="relative w-full max-w-[100vw] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto box-border"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
