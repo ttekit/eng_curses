@@ -17,6 +17,6 @@ import { ConstellationProgressService } from "./constellation-progress.service";
         StarVideoMatcherService,
         ConstellationProgressService,
     ],
-    exports: [ConstellationService, ConstellationGeneratorService],
+    exports: [ConstellationService, ConstellationGeneratorService, ConstellationProgressService],
 })
 export class ConstellationModule { }
