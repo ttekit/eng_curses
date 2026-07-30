@@ -755,7 +755,7 @@ export const appEn = {
     openCatalogPathAria: "Open {title} in catalog",
     scorePrefix: "Score:",
     notStartedStatus: "Not started",
-    viewAll: "View all",
+    viewAll: "Go to catalog",
     categoryBusiness: "Business",
     categoryMotivation: "Motivation",
     categoryCasual: "Casual",
