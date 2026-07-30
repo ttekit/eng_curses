@@ -9,12 +9,14 @@ import { applyListeningBumpToExistingTopics } from "src/user-language-data/user-
 import {
   PostWatchSurveyGeminiClient,
 } from "./post-watch-survey-gemini.client";
+import { ConstellationProgressService } from "src/constelattions/constellation-progress.service";
 
 @Injectable()
 export class PostWatchSurveyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: PostWatchSurveyGeminiClient,
+    private readonly constellationProgress: ConstellationProgressService,
   ) { }
 
   private async incrementUsersWatched(contentMediaId: number): Promise<void> {
@@ -101,6 +103,16 @@ export class PostWatchSurveyService {
       await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
 
       await this.awardXpAndCheckAchievements(userId, 0);
+
+      const linkedStars = await this.prisma.star.findMany({
+        where: { contentVideoId: videoId },
+      });
+
+      for (const star of linkedStars) {
+        await this.constellationProgress
+          .completeStar(userId, star.id)
+          .catch(() => { });
+      }
     }
 
     return session;
