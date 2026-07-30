@@ -17,6 +17,7 @@ import { ContentVideoController } from "./content-video.controller";
 import { ContentVideoService } from "./content-video.service";
 import { DeepSeekService } from "src/contents/deepseek.service";
 import { ConstellationService } from "src/constelattions/constellation.service";
+import { ConstellationModule } from "src/constelattions/constellation.module";
 
 
 @Module({
@@ -25,6 +26,7 @@ import { ConstellationService } from "src/constelattions/constellation.service";
     AlcorythmModule,
     UserVocabularyModule,
     ContentVideoModule,
+    ConstellationModule,
   ],
   controllers: [ContentVideoController],
   providers: [
