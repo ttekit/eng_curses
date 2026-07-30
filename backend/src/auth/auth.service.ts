@@ -12,20 +12,14 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { UsersService } from "src/users/users.service";
-import { AuthMethod, User, UserRole } from "@generated/prisma/client";
+import { AuthMethod, UserRole } from "@generated/prisma/client";
 import { Request, Response } from "express";
 import { ConfigService } from "@nestjs/config";
 import { ProviderService } from "./provider/provider.service";
-import { EmailConfirmationService } from "./email-confirmation/email-confirmation.service";
 import { TwoFactorAuthService } from "./two-factor-auth/two-factor-auth.service";
-import { UpdatePasswordDto } from "./dto/update-password.dto";
-import { UpdateEmailDto } from "./dto/update-email.dto";
 import { isOutboundMailDisabled } from "src/common/utils/outbound-mail-disabled.util";
 import { MailService } from "src/common/mail/mail.service";
-import { v4 as uuidv4 } from "uuid";
-import { randomInt } from "crypto";
 import { generateSecurePassword } from "src/common/utils/password.util";
 import { AuthProfileService } from "./auth-profile.service";
 import { AuthLearningStatsService } from "./auth-learning-stats.service";
@@ -234,7 +228,7 @@ export class AuthService {
         email: dto.email.toLowerCase(),
         password: hashedPassword,
         name: dto.name,
-        role: roleLabel as any,
+        role: "STUDENT",
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
         subscriptionPlan: "smart",
@@ -541,6 +535,7 @@ export class AuthService {
     const created = await this.userService.create({
       email,
       password: "",
+      role: UserRole.STUDENT,
       name: profile.name,
       picture: profile.picture,
       method: oauthMethod,

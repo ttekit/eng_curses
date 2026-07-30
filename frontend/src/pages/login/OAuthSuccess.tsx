@@ -34,7 +34,7 @@ export default function OAuthSuccess() {
             profile.role === "choose" ||
             profile.role === "regular"
           ) {
-            navigate("/register-details", { replace: true });
+            navigate("/register-preferences", { replace: true });
             return;
           }
 

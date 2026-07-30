@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import "./index.css";
 import { LandingLocaleProvider } from "./context/LandingLocaleContext";
 import RegistrationMain from "./pages/registration/RegistrationMain";
-import RegistrationDetails from "./pages/registration/RegistrationDetails";
+//import RegistrationDetails from "./pages/registration/RegistrationDetails";
 import RegistrationPreferences from "./pages/registration/RegistrationPreferences";
 import LoginForm from "./pages/login/LoginForm";
 import { RegistrationProvider } from "./context/RegistrationContext";
@@ -18,7 +18,7 @@ import CatalogSeriesPage from "./pages/content/CatalogSeriesPage";
 import WatchedLessonsPage from "./pages/content/WatchedLessonsPage";
 import LearnerRecapQuizPage from "./pages/content/LearnerRecapQuizPage";
 import LessonSummaryPage from "./pages/content/LessonSummaryPage";
-import RegisterSuccessPage from "./pages/registration/RegisterSuccessPage";
+//import RegisterSuccessPage from "./pages/registration/RegisterSuccessPage";
 import LandingPage from "./pages/landing/LandingPage";
 import DemoLessonPage from "./pages/landing/DemoLessonPage";
 import LevelTestPage from "./pages/registration/LevelTestPage";
@@ -59,12 +59,12 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <LandingPage /> },
       { path: "/register", element: <RegistrationMain /> },
-      { path: "/register-details", element: <RegistrationDetails /> },
+      // { path: "/register-details", element: <RegistrationDetails /> },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
       },
-      { path: "/register-success", element: <RegisterSuccessPage /> },
+      // { path: "/register-success", element: <RegisterSuccessPage /> },
       { path: "/verify-email", element: <EmailVerification /> },
       { path: "/restore-account", element: <RestoreAccount /> },
       { path: "/login", element: <LoginForm /> },
@@ -95,7 +95,10 @@ const router = createBrowserRouter([
                   { path: "avatars", element: <AdminAvatarsPage /> },
                   { path: "settings", element: <AdminSettingsPage /> },
                   { path: "changelog", element: <AdminChangelogPage /> },
-                  { path: "constellations", element: <AdminConstellationsPage /> },
+                  {
+                    path: "constellations",
+                    element: <AdminConstellationsPage />,
+                  },
                 ],
               },
             ],
