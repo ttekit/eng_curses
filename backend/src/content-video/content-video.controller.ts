@@ -49,6 +49,7 @@ import { VocabularyPersonalizationService } from "src/content-video/vocabulary-p
 import { PrismaService } from "src/prisma.service";
 import { Public } from "src/auth/decorators/public.decorator";
 import { Throttle } from "@nestjs/throttler";
+import { ConstellationProgressService } from "src/constelattions/constellation-progress.service";
 
 @ApiTags("content-video")
 @Controller("content-video")
@@ -63,6 +64,7 @@ export class ContentVideoController {
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
+    private readonly constellationProgress: ConstellationProgressService,
   ) { }
 
   @Post()
@@ -305,15 +307,33 @@ export class ContentVideoController {
   async watchComplete(
     @Param("id", ParseIntPipe) id: number,
     @Req() req: Request & { user: unknown },
-    @Body() body: { secondsWatched?: number; completed?: boolean },
+    @Body() body: { secondsWatched?: number; completed?: boolean | string },
   ) {
     const userId = jwtSubToUserId(req.user);
-    return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
+    const isCompleted = body.completed === true || String(body.completed) === "true";
+
+    const session = await this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,
       body.secondsWatched || 0,
-      body.completed,
+      isCompleted,
     );
+
+    if (isCompleted || session?.completed) {
+      const linkedStars = await this.prisma.star.findMany({
+        where: { contentVideoId: id },
+      });
+
+      for (const star of linkedStars) {
+        try {
+          await this.constellationProgress.completeStar(userId, star.id);
+        } catch (error) {
+          console.error(`[Constellation] Failed to complete star ${star.id}:`, error);
+        }
+      }
+    }
+
+    return session;
   }
 
   @Post(":id/tests/generate")
