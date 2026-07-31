@@ -765,7 +765,7 @@ export const appUk = {
     openCatalogPathAria: "Відкрити «{title}» в каталозі",
     scorePrefix: "Бал:",
     notStartedStatus: "Не почато",
-    viewAll: "Усі",
+    viewAll: "До каталогу",
     categoryBusiness: "Бізнес",
     categoryMotivation: "Мотивація",
     categoryCasual: "Розмовна",

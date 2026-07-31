@@ -180,7 +180,7 @@ export default function RegistrationMain() {
         confirmPassword,
         token: captchaToken,
       });
-      navigate("/register-details");
+      navigate("/register-preferences");
     } catch (error) {
       console.error("Error during registration:", error);
       setErrorText(errors.networkError);
