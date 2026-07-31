@@ -23,7 +23,13 @@ export function ConstellationPlan({
 
     const starStatusMap = useMemo(() => {
         const map = new Map<number, string>();
-        progress.forEach((p) => map.set(p.starId, p.status));
+        progress.forEach((p: any) => {
+            const starId = p.starId !== undefined ? p.starId : p.id;
+            const status = p.status !== undefined ? p.status : p.progressStatus;
+            if (starId !== undefined && status !== undefined) {
+                map.set(starId, status);
+            }
+        });
         return map;
     }, [progress]);
 
@@ -36,35 +42,12 @@ export function ConstellationPlan({
 
     const starPositions = useMemo(() => {
         const total = constellation.stars.length;
-
-        if (total === 1) {
-            return [{ x: 50, y: 50 }];
-        }
-
-        const isMobile = window.innerWidth < 640;
-
-        const width = isMobile ? 78 : 86;
-        const height = isMobile ? 64 : 72;
-
-        const startX = (100 - width) / 2;
-        const startY = (100 - height) / 2;
-
         return constellation.stars.map((_, index) => {
-            const progress = total === 1 ? 0 : index / (total - 1);
-            const x =
-                startX +
-                progress * width +
-                Math.sin(progress * Math.PI * 2) * (isMobile ? 8 : 10);
-
-            const y =
-                startY +
-                height / 2 +
-                Math.sin(progress * Math.PI * 3) * (isMobile ? 18 : 22);
-
-            return {
-                x: Math.max(8, Math.min(92, x)),
-                y: Math.max(12, Math.min(88, y)),
-            };
+            const angle = (index / total) * Math.PI * 1.5 + 0.5;
+            const radius = 35 + (index % 2) * 15;
+            const x = 50 + radius * Math.cos(angle);
+            const y = 50 + radius * Math.sin(angle);
+            return { x, y };
         });
     }, [constellation.stars]);
 
@@ -115,7 +98,7 @@ export function ConstellationPlan({
     };
 
     const renderStarsGraph = (interactive: boolean) => (
-        <div className="relative w-full h-64 sm:h-72 my-4 flex items-center justify-center select-none overflow-hidden">
+        <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none overflow-visible">
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
                 <defs>
                     <marker
@@ -215,7 +198,7 @@ export function ConstellationPlan({
             >
                 <div className="flex items-center justify-between gap-2 min-w-0 w-full">
                     <h3 className="font-display font-semibold text-base sm:text-lg text-foreground flex items-center gap-2 min-w-0 flex-1">
-                        <Sparkles className="w-5 h-5 text-purple-400 lg:shrink-0" />
+                        <Sparkles className="w-5 h-5 text-purple-400 shrink-0" />
                         <span className="truncate">{constellation.name}</span>
                     </h3>
                     {isCategoryCompleted && (
@@ -238,7 +221,7 @@ export function ConstellationPlan({
             {isZoomed && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
                     <div
-                        className="relative w-full max-w-[100vw] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto box-border"
+                        className="relative w-full max-w-[95vw] lg:max-w-4xl rounded-2xl sm:rounded-3xl border border-purple-500/40 bg-card p-4 sm:p-6 lg:p-8 shadow-2xl flex flex-col lg:flex-row gap-6 max-h-[90vh] overflow-y-auto box-border"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
@@ -331,7 +314,7 @@ export function ConstellationPlan({
                                         {(selectedStatus === "AVAILABLE" || selectedStatus === "IN_PROGRESS") && (
                                             <div className="mt-4 pt-3 border-t border-border/60">
                                                 <p className="text-xs text-purple-300 mb-3">
-                                                    ✨ <strong>Тема доступна!</strong> Натисні кнопку нижче, щоб перейти до виконання завдання:
+                                                    ✨ <strong>Тема доступна!</strong> Натисніть кнопку нижче, щоб перейти до виконання завдання:
                                                 </p>
 
                                                 {selectedStar.contentVideoId ? (
