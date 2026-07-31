@@ -239,9 +239,10 @@ export default function WatchedLessonsPage() {
         if (cancelled) return;
 
         const progressMap: Record<number, StarProgress[]> = {};
-        progressResults.forEach((res) => {
+        progressResults.forEach((res, index) => {
           if (res) {
-            progressMap[res.constellationId] = res.stars;
+            const constellationId = list[index].id;
+            progressMap[constellationId] = Array.isArray(res) ? res : (res.stars || []);
           }
         });
         setStarProgressMap(progressMap);
@@ -262,7 +263,7 @@ export default function WatchedLessonsPage() {
       const updatedGraph = await fetchConstellationGraph(constellationId);
       setStarProgressMap((prev) => ({
         ...prev,
-        [constellationId]: updatedGraph.stars,
+        [constellationId]: Array.isArray(updatedGraph) ? updatedGraph : (updatedGraph.stars || []),
       }));
     } catch (e) {
       console.error("Failed to complete star:", e);
