@@ -102,6 +102,7 @@ export const landingEn = {
     titleBefore: "Understand real English from",
     titleAccent: "movies & series",
     lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
+    account: "Creare an account in 2 minutes",
     ctaSecondary: "Browse content",
     videoCaption: "60-second product demo",
     videoWatch: "Watch the demo",

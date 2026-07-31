@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Play, Sparkles } from "lucide-react";
+import { Play, Sparkles, Clock } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
@@ -43,6 +43,11 @@ export function HeroSection() {
             </p>
 
             <div className="space-y-3">
+              <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/70">
+                <Clock className="h-4 w-4" />
+                {hero.account}
+              </div>
+
               <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">
                 <Link
                   to={primaryTo}
@@ -80,11 +85,11 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-      <div className="pointer-events-none absolute right-60 bottom-115 z-0 hidden h-40 w-40 rounded-full bg-amber-300/30 blur-3xl animate-glow duration-100 lg:block" />
+      <div className="pointer-events-none absolute right-60 bottom-115 z-0 hidden h-40 w-40 rounded-full bg-amber-300/30 blur-3xl animate-glow duration-100 xl:block" />
 
       <img
         src="/LandingPicture.png"
-        className="pointer-events-none absolute right-0 bottom-0 z-10 hidden w-200 lg:block"
+        className="pointer-events-none absolute right-0 bottom-0 z-10 hidden w-200 xl:block"
       />
     </section>
   );
