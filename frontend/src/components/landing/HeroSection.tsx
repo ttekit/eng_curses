@@ -71,22 +71,21 @@ export function HeroSection() {
           </div>
 
           <div className="relative flex justify-center lg:justify-end">
-            <div className="relative">
-              <div className="absolute inset-0 scale-100 rounded-full bg-primary/20 blur-3xl" />
+            <div className="relative w-full max-w-lg">
               <p className="mb-4 items-start text-center font-display text-3xl sm:text-right">
-                {hero.videoCaption}{" "}
-                <span className="text-primary">{hero.videoWatch}</span>
+                {/* {hero.videoCaption}{" "}
+                <span className="text-primary">{hero.videoWatch}</span> */}
               </p>
-              <div className="h-auto w-auto rounded-[15px] bg-primary/10">
-                <VideoPlayer
-                  src="https://kpi-eng-course.s3.us-east-1.amazonaws.com/m3u8_videos/Landing_video/index.m3u8"
-                  onPlay={trackLandingHeroVideoPlay}
-                />
-              </div>
             </div>
           </div>
         </div>
       </div>
+      <div className="pointer-events-none absolute right-60 bottom-115 z-0 hidden h-40 w-40 rounded-full bg-amber-300/30 blur-3xl animate-glow duration-100 lg:block" />
+
+      <img
+        src="/LandingPicture.png"
+        className="pointer-events-none absolute right-0 bottom-0 z-10 hidden w-200 lg:block"
+      />
     </section>
   );
 }
