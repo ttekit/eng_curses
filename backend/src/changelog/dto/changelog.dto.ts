@@ -1,18 +1,27 @@
+// changelog.dto.ts
 import { IsString, IsOptional, IsNotEmpty, IsBoolean } from "class-validator";
 
 export class CreateChangelogDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  titleUk: string;
 
   @IsString()
   @IsNotEmpty()
-  content: string;
+  titleEn: string;
+
+  @IsString()
+  @IsNotEmpty()
+  contentUk: string;
+
+  @IsString()
+  @IsNotEmpty()
+  contentEn: string;
 
   @IsOptional()
   @IsString()
   version?: string;
-
+  
   @IsOptional()
   @IsBoolean()
   isPublished?: boolean;
@@ -21,11 +30,19 @@ export class CreateChangelogDto {
 export class UpdateChangelogDto {
   @IsOptional()
   @IsString()
-  title?: string;
+  titleUk?: string;
 
   @IsOptional()
   @IsString()
-  content?: string;
+  titleEn?: string;
+
+  @IsOptional()
+  @IsString()
+  contentUk?: string;
+
+  @IsOptional()
+  @IsString()
+  contentEn?: string;
 
   @IsOptional()
   @IsString()

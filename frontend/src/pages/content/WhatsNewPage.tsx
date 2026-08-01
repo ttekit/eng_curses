@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { Calendar, ChevronRight, Loader2, X } from "lucide-react";
+import { Calendar, ChevronRight, Loader2, X, BellRing } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
-import { BellRing } from "lucide-react";
 import { getCachedChangelogs } from "../../lib/changelogsCache";
 
 interface LogType {
   id: number;
-  title: string;
-  content: string;
+  titleUk: string;
+  titleEn: string;
+  contentUk: string;
+  contentEn: string;
   version?: string;
   createdAt: string;
   imageUrl?: string | null;
@@ -53,6 +54,7 @@ export default function WhatsNewPage() {
 
     loadLogs();
   }, []);
+
   useEffect(() => {
     if (selectedLog) {
       document.body.style.overflow = "hidden";
@@ -79,7 +81,7 @@ export default function WhatsNewPage() {
         )}
       >
         <div className="max-w-4xl mx-auto px-6 w-full">
-          <div className="text-center space-y-3 mb-16">
+          <div className="text-center space-y-3 mb-12">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
               <BellRing className="h-4 w-4" /> {messages.badge}
             </div>
@@ -99,55 +101,69 @@ export default function WhatsNewPage() {
             </div>
           ) : (
             <div className="relative border-l-0 sm:border-l-2 border-border ml-0 sm:ml-8 space-y-6 sm:space-y-10">
-              {logs.map((log) => (
-                <div key={log.id} className="relative pl-0 sm:pl-12 group">
-                  <div className="hidden sm:block absolute -left-[9px] top-2 h-4 w-4 rounded-full border-2 border-primary bg-background group-hover:bg-primary transition-colors" />
+              {logs.map((log) => {
+                const displayTitle =
+                  locale === "uk"
+                    ? log.titleUk || log.titleEn
+                    : log.titleEn || log.titleUk;
+                const displayContent =
+                  locale === "uk"
+                    ? log.contentUk || log.contentEn
+                    : log.contentEn || log.contentUk;
 
-                  <div
-                    onClick={() => setSelectedLog(log)}
-                    className="rounded-xl border border-border bg-card p-5 sm:p-8 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer group/card block"
-                  >
-                    <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
-                      <h3 className="font-bold text-xl text-foreground group-hover/card:text-primary transition-colors">
-                        {log.title}
-                      </h3>
-                      {log.version && (
-                        <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-mono text-secondary-foreground shrink-0 self-start sm:self-auto">
-                          {log.version}
-                        </span>
-                      )}
-                    </div>
+                return (
+                  <div key={log.id} className="relative pl-0 sm:pl-12 group">
+                    <div className="hidden sm:block absolute -left-[9px] top-2 h-4 w-4 rounded-full border-2 border-primary bg-background group-hover:bg-primary transition-colors" />
 
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-4">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {new Date(log.createdAt).toLocaleDateString(dateLocale, {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </div>
-
-                    {log.imageUrl && (
-                      <div className="w-full aspect-video mb-4 rounded-lg overflow-hidden bg-muted border border-border/50">
-                        <img
-                          src={log.imageUrl}
-                          alt={log.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover"
-                        />
+                    <div
+                      onClick={() => setSelectedLog(log)}
+                      className="rounded-xl border border-border bg-card p-5 sm:p-8 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer group/card block"
+                    >
+                      <div className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                        <h3 className="font-bold text-xl text-foreground group-hover/card:text-primary transition-colors">
+                          {displayTitle}
+                        </h3>
+                        {log.version && (
+                          <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-mono text-secondary-foreground shrink-0 self-start sm:self-auto">
+                            {log.version}
+                          </span>
+                        )}
                       </div>
-                    )}
 
-                    <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line line-clamp-3">
-                      {log.content}
-                    </p>
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-4">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {new Date(log.createdAt).toLocaleDateString(
+                          dateLocale,
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          },
+                        )}
+                      </div>
 
-                    <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary opacity-80 group-hover/card:opacity-100 transition-opacity">
-                      {messages.readMore} <ChevronRight className="h-4 w-4" />
+                      {log.imageUrl && (
+                        <div className="w-full aspect-video mb-4 rounded-lg overflow-hidden bg-muted border border-border/50">
+                          <img
+                            src={log.imageUrl}
+                            alt={displayTitle}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+
+                      <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line line-clamp-3">
+                        {displayContent}
+                      </p>
+
+                      <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary opacity-80 group-hover/card:opacity-100 transition-opacity">
+                        {messages.readMore} <ChevronRight className="h-4 w-4" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -178,7 +194,11 @@ export default function WhatsNewPage() {
                 <div className="w-full bg-muted/30 border-b border-border shrink-0 flex justify-center">
                   <img
                     src={selectedLog.imageUrl}
-                    alt={selectedLog.title}
+                    alt={
+                      locale === "uk"
+                        ? selectedLog.titleUk || selectedLog.titleEn
+                        : selectedLog.titleEn || selectedLog.titleUk
+                    }
                     className="w-full max-h-[40vh] sm:max-h-[50vh] object-contain"
                   />
                 </div>
@@ -206,7 +226,9 @@ export default function WhatsNewPage() {
                     )}
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground leading-tight">
-                    {selectedLog.title}
+                    {locale === "uk"
+                      ? selectedLog.titleUk || selectedLog.titleEn
+                      : selectedLog.titleEn || selectedLog.titleUk}
                   </h2>
                 </div>
 
@@ -214,7 +236,9 @@ export default function WhatsNewPage() {
 
                 <div className="prose prose-sm dark:prose-invert max-w-none pb-4">
                   <p className="text-base text-foreground/90 leading-relaxed whitespace-pre-line">
-                    {selectedLog.content}
+                    {locale === "uk"
+                      ? selectedLog.contentUk || selectedLog.contentEn
+                      : selectedLog.contentEn || selectedLog.contentUk}
                   </p>
                 </div>
               </div>
@@ -225,5 +249,3 @@ export default function WhatsNewPage() {
     </div>
   );
 }
-
-

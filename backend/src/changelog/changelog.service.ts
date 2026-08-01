@@ -43,15 +43,16 @@ export class ChangelogService {
 
   async create(data: any, file?: Express.Multer.File) {
     let imageUrl = null;
-
     if (file) {
       imageUrl = await this.uploadImageToS3(file);
     }
 
     return this.prisma.changelog.create({
       data: {
-        title: data.title,
-        content: data.content,
+        titleUk: data.titleUk,
+        titleEn: data.titleEn,
+        contentUk: data.contentUk,
+        contentEn: data.contentEn,
         version: data.version || null,
         isPublished: data.isPublished === "true" || data.isPublished === true,
         imageUrl: imageUrl,
@@ -82,8 +83,10 @@ export class ChangelogService {
     return this.prisma.changelog.update({
       where: { id },
       data: {
-        title: data.title,
-        content: data.content,
+        titleUk: data.titleUk,
+        titleEn: data.titleEn,
+        contentUk: data.contentUk,
+        contentEn: data.contentEn,
         version: data.version || null,
         isPublished: data.isPublished === "true" || data.isPublished === true,
         imageUrl: imageUrl,
