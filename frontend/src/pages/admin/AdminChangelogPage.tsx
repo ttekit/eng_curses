@@ -48,9 +48,7 @@ export default function AdminChangelogPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmWord, setDeleteConfirmWord] = useState("");
 
-  const [title, setTitle] = useState("");
   const [version, setVersion] = useState("");
-  const [content, setContent] = useState("");
   const [isPublished, setIsPublished] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
