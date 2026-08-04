@@ -453,9 +453,13 @@ model UserStarProgress {
 }
 
 model Changelog {
-  id          Int     @id @default(autoincrement())
-  title       String
-  content     String  @db.Text
+  id Int @id @default(autoincrement())
+
+  titleUk   String @map("title_uk")
+  titleEn   String @map("title_en")
+  contentUk String @map("content_uk") @db.Text
+  contentEn String @map("content_en") @db.Text
+
   version     String?
   isPublished Boolean @default(false) @map("is_published")
 
