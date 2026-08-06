@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   AI_PROMPT_ENV_KEYS,
   DEFAULT_PROMPT_TRANSCRIPT_TAGS,
@@ -29,6 +29,8 @@ export type TranscriptMetadataResult = {
  */
 @Injectable()
 export class AlcorythmGeminiTranscriptTagClient {
+  private readonly logger = new Logger(AlcorythmGeminiTranscriptTagClient.name);
+
   async analyzeTranscriptMetadata(
     input: TranscriptMetadataInput,
   ): Promise<TranscriptMetadataResult | null> {
@@ -38,6 +40,7 @@ export class AlcorythmGeminiTranscriptTagClient {
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      this.logger.error('GEMINI_API_KEY is missing');
       return null;
     }
 
@@ -48,12 +51,12 @@ export class AlcorythmGeminiTranscriptTagClient {
     const userTagRules =
       genres.length === 0
         ? [
-            '- userTags: MUST be [] (empty array). No free-form labels; the genre catalog is empty.',
-          ]
+          '- userTags: MUST be [] (empty array). No free-form labels; the genre catalog is empty.',
+        ]
         : [
-            '- userTags: 1 to 10 items. Each string MUST be copied exactly from the genre catalog JSON array below (same spelling and punctuation as one of the listed values). Pick genres that best fit the video (film/TV style or overall content). Do not output any label that is not in that catalog. No duplicates.',
-            `- Genre catalog (JSON string array, exhaustive allow-list): ${genreCatalogJson}`,
-          ];
+          '- userTags: 1 to 10 items. Each string MUST be copied exactly from the genre catalog JSON array below (same spelling and punctuation as one of the listed values). Pick genres that best fit the video (film/TV style or overall content). Do not output any label that is not in that catalog. No duplicates.',
+          `- Genre catalog (JSON string array, exhaustive allow-list): ${genreCatalogJson}`,
+        ];
     const prompt = buildAiPrompt(
       AI_PROMPT_ENV_KEYS.transcriptTags,
       DEFAULT_PROMPT_TRANSCRIPT_TAGS,
@@ -87,12 +90,15 @@ export class AlcorythmGeminiTranscriptTagClient {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`API Error: ${response.status} - ${errorText}`);
         return null;
       }
 
       const payload = (await response.json()) as any;
       const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (typeof text !== 'string') {
+        this.logger.error(`Invalid text format from API: ${JSON.stringify(payload)}`);
         return null;
       }
 
@@ -102,6 +108,7 @@ export class AlcorythmGeminiTranscriptTagClient {
         complexity?: unknown;
       };
       if (!parsed || typeof parsed !== 'object') {
+        this.logger.error('Parsed JSON is not an object');
         return null;
       }
 
@@ -121,7 +128,8 @@ export class AlcorythmGeminiTranscriptTagClient {
         userTags,
         complexity,
       };
-    } catch {
+    } catch (error) {
+      this.logger.error(`Exception during fetch: ${String(error)}`);
       return null;
     }
   }
