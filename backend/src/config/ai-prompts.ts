@@ -26,13 +26,22 @@ export function loadAiPromptTemplate(
 /**
  * Replaces `{{KEY}}` placeholders in a template (global, all occurrences).
  */
+/**
+ * Replaces `{{KEY}}` placeholders in a template (global, all occurrences).
+ */
 export function applyAiPromptPlaceholders(
   template: string,
   vars: Readonly<Record<string, string>>,
 ): string {
+  // Добавляем защиту от undefined из-за кривых импортов
+  if (typeof template !== "string") {
+    console.error("🚨 CRITICAL ERROR: template is undefined! Проблема в порядке импортов (index.ts).");
+    return "";
+  }
+
   let out = template;
   for (const [key, value] of Object.entries(vars)) {
-    out = out.replaceAll(`{{${key}}}`, value);
+    out = out.replaceAll(`{{${key}}}`, String(value));
   }
   return out;
 }
