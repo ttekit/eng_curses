@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   AI_PROMPT_ENV_KEYS,
   DEFAULT_PROMPT_TRANSCRIPT_TAGS,
@@ -29,8 +29,6 @@ export type TranscriptMetadataResult = {
  */
 @Injectable()
 export class AlcorythmGeminiTranscriptTagClient {
-  private readonly logger = new Logger(AlcorythmGeminiTranscriptTagClient.name);
-
   async analyzeTranscriptMetadata(
     input: TranscriptMetadataInput,
   ): Promise<TranscriptMetadataResult | null> {
@@ -40,7 +38,6 @@ export class AlcorythmGeminiTranscriptTagClient {
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      this.logger.error('GEMINI_API_KEY is missing');
       return null;
     }
 
@@ -90,15 +87,12 @@ export class AlcorythmGeminiTranscriptTagClient {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        this.logger.error(`API Error: ${response.status} - ${errorText}`);
         return null;
       }
 
       const payload = (await response.json()) as any;
       const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (typeof text !== 'string') {
-        this.logger.error(`Invalid text format from API: ${JSON.stringify(payload)}`);
         return null;
       }
 
@@ -108,7 +102,6 @@ export class AlcorythmGeminiTranscriptTagClient {
         complexity?: unknown;
       };
       if (!parsed || typeof parsed !== 'object') {
-        this.logger.error('Parsed JSON is not an object');
         return null;
       }
 
@@ -128,8 +121,7 @@ export class AlcorythmGeminiTranscriptTagClient {
         userTags,
         complexity,
       };
-    } catch (error) {
-      this.logger.error(`Exception during fetch: ${String(error)}`);
+    } catch {
       return null;
     }
   }
