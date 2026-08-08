@@ -1335,4 +1335,11 @@ export const appEn = {
     newBadge: "New",
     markAllAsRead: "Mark all as read",
   },
+  videoPlayer: {
+    skipBack: "-10 sec",
+    skipForward: "+10 sec",
+    speed: "Speed",
+    subtitles: "Subtitles",
+    subtitlesOff: "Off",
+  },
 } as const;

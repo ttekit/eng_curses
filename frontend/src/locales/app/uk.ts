@@ -1,3 +1,5 @@
+import VideoPlayer from "../../components/VideoPlayer";
+
 /** Рядки українською для апки, каталогу, профілю, адмінки та уроків. */
 export const appUk = {
   common: {
@@ -1332,4 +1334,11 @@ export const appUk = {
     newBadge: "Нове",
     markAllAsRead: "Позначити всі як прочитані",
   },
+  videoPlayer: {
+    skipBack: "-10 сек",
+    skipForward: "+10 сек",
+    speed: "Швидкість",
+    subtitles: "Субтитри",
+    subtitlesOff: "Вимкнено",
+  }
 } as const;
