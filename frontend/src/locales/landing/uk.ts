@@ -518,7 +518,7 @@ export const landingUk = {
       resendCode: "Надіслати код знову",
       verifying: "Перевіряємо…",
       verifyCode: "Підтвердити код",
-      backToRegistration: "← Назад до реєстрації",
+      backToRegistration: "← Повернутися",
       codeRequired: "Введіть 6-значний код.",
       invalidCode: "Некоректний код підтвердження",
       connectionError: "Помилка з'єднання. Спробуйте ще раз.",
@@ -912,5 +912,20 @@ export const landingUk = {
       question4:
         "Обидва дієслова мають стояти в минулому часі: 'arrived' (правильне) та 'met' (неправильна форма від 'meet')",
     },
+  },
+
+  googleUsername: {
+    seoTitle: "Вибір нікнейму",
+    seoDesc: "Створіть унікальний нікнейм для вашого акаунту Explys",
+    rightTitle: "Майже готово!",
+    rightSubtitle:
+      "Твій Google-акаунт успішно підключено. Залишився лише один маленький крок.",
+    title: "Обери свій нікнейм",
+    lead: "Як нам до тебе звертатися? Цей нікнейм буде відображатися у твоєму профілі та рейтингах.",
+    label: "Твій нікнейм",
+    placeholder: "напр: твоє ім'я",
+    errorEmpty: "Нікнейм не може бути порожнім",
+    btnSubmit: "Продовжити",
+    saving: "Збереження...",
   },
 } as const;

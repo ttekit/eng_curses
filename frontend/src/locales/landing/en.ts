@@ -516,7 +516,7 @@ export const landingEn = {
       resendCode: "Resend code",
       verifying: "Verifying...",
       verifyCode: "Verify Code",
-      backToRegistration: "← Back to registration",
+      backToRegistration: "← Go back",
       codeRequired: "Please enter the 6-digit code.",
       invalidCode: "Invalid verification code",
       connectionError: "Connection error. Please try again.",
@@ -907,5 +907,19 @@ export const landingEn = {
       question4:
         "Both verbs must be in the past tense: 'arrived' (regular) and 'met' (the past form of the irregular verb 'meet').",
     },
+  },
+  googleUsername: {
+    seoTitle: "Set Username",
+    seoDesc: "Choose a unique username for your Explys account",
+    rightTitle: "Almost there!",
+    rightSubtitle:
+      "Your Google account is successfully linked. Just one small step left.",
+    title: "Choose your username",
+    lead: "What should we call you? This username will be visible on your profile and leaderboards.",
+    label: "Username",
+    placeholder: "e.g: your name",
+    errorEmpty: "Username cannot be empty",
+    btnSubmit: "Continue",
+    saving: "Saving...",
   },
 } as const;

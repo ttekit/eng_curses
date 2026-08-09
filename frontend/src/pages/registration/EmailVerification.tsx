@@ -98,7 +98,7 @@ export const EmailVerification: React.FC = () => {
           profile.role === "regular" ||
           (!profile.englishLevel && !profile.hasCompletedPlacement)
         ) {
-        navigate("/register-details");
+          navigate("/register-details");
           return;
         }
 
@@ -248,12 +248,13 @@ export const EmailVerification: React.FC = () => {
           </Button>
         </form>
 
-        <Link
-          to="/register"
-          className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="mt-8 inline-block text-center text-sm text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
         >
           {verify.backToRegistration}
-        </Link>
+        </button>
       </AuthSplitLayout>
     </>
   );

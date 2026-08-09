@@ -52,6 +52,7 @@ import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
+import GoogleUsernamePage from "./components/GoogleUsernamePage";
 
 const router = createBrowserRouter([
   {
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
       { path: "/", element: <LandingPage /> },
       { path: "/register", element: <RegistrationMain /> },
       // { path: "/register-details", element: <RegistrationDetails /> },
+      {
+        path: "/google-username",
+        element: <GoogleUsernamePage />,
+      },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
