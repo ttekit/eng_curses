@@ -196,6 +196,9 @@ export const appUk = {
     filterGenre: "Жанр",
     next: "Далі",
     prev: "Назад",
+    placementPrepRightTitle: "Останній крок!",
+    placementPrepRightSubtitle:
+      "Давай визначимо твій рівень англійської, щоб підібрати найкращі відео.",
   },
 
   search: {
@@ -1340,5 +1343,5 @@ export const appUk = {
     speed: "Швидкість",
     subtitles: "Субтитри",
     subtitlesOff: "Вимкнено",
-  }
+  },
 } as const;

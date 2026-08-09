@@ -87,7 +87,7 @@ export default function RegistrationPreferences() {
       />
       <div lang={locale === "uk" ? "uk" : "en"}>
         <AuthSplitLayout
-          progressStep={3}
+          progressStep={2}
           progressTotal={3}
           rightTitle={t.rightTitle}
           rightSubtitle={t.rightSubtitle}

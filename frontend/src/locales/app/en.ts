@@ -193,6 +193,9 @@ export const appEn = {
     filterGenre: "Genre",
     next: "Next",
     prev: "Prev",
+    placementPrepRightTitle: "One last step!",
+    placementPrepRightSubtitle:
+      "Let's find out your English level to provide the best video recommendations.",
   },
 
   search: {
