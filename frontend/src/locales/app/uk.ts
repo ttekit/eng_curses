@@ -1,5 +1,3 @@
-import VideoPlayer from "../../components/VideoPlayer";
-
 /** Рядки українською для апки, каталогу, профілю, адмінки та уроків. */
 export const appUk = {
   common: {
