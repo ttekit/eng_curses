@@ -34,7 +34,7 @@ export default function RegistrationPreferences() {
 
   useEffect(() => {
     if (isTeacher) {
-      navigate("/register-details", { replace: true });
+      navigate("/catalog", { replace: true });
     }
   }, [isTeacher, navigate]);
 

@@ -2,7 +2,7 @@ import InputText from "../../components/InputText";
 import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { useContext, useState, ChangeEvent, FormEvent } from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
@@ -11,13 +11,15 @@ import { AuthPageSeo } from "../../lib/authPageSeo";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import Turnstile from "react-turnstile";
 import { registerUser } from "../../lib/registerUser";
-import { getApiBase } from "../../lib/api";
+import { apiFetch, getApiBase, setStoredAccessToken } from "../../lib/api";
 import {
   DEFAULT_LEARNING_GOAL,
   DEFAULT_TIME_HORIZON,
 } from "../../lib/learningPlan";
 import { persistRegistrationSession } from "../../lib/registrationSession";
 import { restoreRegistrationAccessToken } from "../../lib/registrationSession";
+import { useEffect } from "react";
+import { useUser } from "../../context/UserContext";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -36,6 +38,17 @@ export default function RegistrationMain() {
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
   const navigate = useNavigate();
+
+  const [searchParams] = useSearchParams();
+  const urlRole = searchParams.get("role") || "student";
+
+  useEffect(() => {
+    if (formData.role !== urlRole) {
+      updateFormData({ role: urlRole });
+    }
+  }, [urlRole, formData.role]);
+
+  const { refreshProfile } = useUser();
 
   const isValidPassword = (p: string) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-]).{8,}$/.test(p);
@@ -156,18 +169,20 @@ export default function RegistrationMain() {
         password,
         confirmPassword,
         token: captchaToken,
+        role: urlRole.toUpperCase(),
       });
 
       if (!result.success) {
-        setErrorText(result.message || errors.registrationFailed);
+        const errMsg = Array.isArray(result.message)
+          ? result.message.join(", ")
+          : result.message;
+        setErrorText(errMsg || errors.registrationFailed);
         resetCaptcha();
         return;
       }
 
-      const hasToken =
-        Boolean(result.accessToken) ||
-        Boolean(restoreRegistrationAccessToken());
-      if (!hasToken) {
+      const token = result.accessToken || restoreRegistrationAccessToken();
+      if (!token) {
         setErrorText(errors.registrationFailedRetry);
         resetCaptcha();
         return;
@@ -179,17 +194,43 @@ export default function RegistrationMain() {
         password,
         confirmPassword,
         token: captchaToken,
+        role: urlRole,
       });
-      navigate("/register-preferences");
+
+      if (urlRole === "teacher") {
+        setStoredAccessToken(token);
+
+        try {
+          await apiFetch("/auth/update-preferences", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              role: "TEACHER",
+            }),
+            token: token,
+          });
+        } catch (err) {
+          console.warn("Не удалось принудительно обновить роль", err);
+        }
+
+        try {
+          await refreshProfile();
+        } catch (err) {
+          console.warn("Профиль не обновился, но продолжаем редирект...", err);
+        }
+        navigate("/catalog", { replace: true });
+      } else {
+        navigate("/register-preferences");
+      }
     } catch (error) {
       console.error("Error during registration:", error);
       setErrorText(errors.networkError);
       resetCaptcha();
     }
   };
-
   const handleGoogleRegister = () => {
-    window.location.href = `${getApiBase()}/auth/oauth/connect/google?action=register`;
+    document.cookie = `oauth_role=${urlRole}; path=/; max-age=300`;
+    window.location.href = `${getApiBase()}/auth/oauth/connect/google?action=register&role=${urlRole}`;
   };
 
   const handleBack = () => {
