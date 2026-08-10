@@ -397,6 +397,14 @@ model Constellation {
   @@map("constellations")
 }
 
+enum StarType {
+  VIDEO
+  GRAMMAR
+  READING
+  PHRASE
+  TEST
+}
+
 model Star {
   id              Int     @id @default(autoincrement())
   constellationId Int     @map("constellation_id")
@@ -404,12 +412,13 @@ model Star {
   description     String?
   contentVideoId  Int?    @map("content_video_id")
 
-  constellation Constellation @relation(fields: [constellationId], references: [id], onDelete: Cascade)
+  type     StarType @default(VIDEO)
+  metadata Json?
 
+  constellation Constellation      @relation(fields: [constellationId], references: [id], onDelete: Cascade)
   prerequisites StarPrerequisite[] @relation("DependentStars")
   dependents    StarPrerequisite[] @relation("PrerequisiteStars")
-
-  userProgress UserStarProgress[]
+  userProgress  UserStarProgress[]
 
   @@map("stars")
 }

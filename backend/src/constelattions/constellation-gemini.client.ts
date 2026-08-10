@@ -6,6 +6,8 @@ export interface GeneratedStar {
     topic: string;
     description: string;
     prerequisiteIds: string[];
+    type?: 'VIDEO' | 'GRAMMAR' | 'READING' | 'PHRASE' | 'TEST';
+    metadata?: any;
 }
 
 export interface GeneratedConstellation {

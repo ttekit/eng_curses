@@ -287,10 +287,23 @@ export class PlacementTestService {
       select: { learningGoal: true, workField: true, hobbies: true },
     });
 
-    const targetDomain =
+    let targetDomain =
       userProfile?.learningGoal?.trim() ||
       userProfile?.workField?.trim() ||
       (userProfile?.hobbies?.length ? `Topic: ${userProfile.hobbies[0]}` : "General Communication & Vocabulary");
+
+    if (band.code === "A1") {
+      targetDomain = "A1 Absolute Beginner: Alphabet, basic numbers, simple greetings like 'hello', and fundamental survival words.";
+      await this.alcorythm.resetSkillsForA1(userId).catch(err => {
+        this.logger.error(`Failed to reset A1 skills for user ${userId}:`, err);
+      });
+    }
+
+    this.constellationGenerator
+      .generateAndSaveConstellation(targetDomain, band.code, userId)
+      .catch((err) => {
+        this.logger.error(`Failed to auto-generate constellation for user ${userId}:`, err);
+      });
 
     this.constellationGenerator
       .generateAndSaveConstellation(targetDomain, band.code, userId)

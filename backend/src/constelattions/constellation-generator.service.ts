@@ -11,7 +11,6 @@ export class ConstellationGeneratorService {
         private readonly matcher: StarVideoMatcherService,
     ) { }
 
-    // ДОДАНО необов'язковий параметр userId?: number
     async generateAndSaveConstellation(domain: string, cefrLevel: string, userId?: number) {
         const generated = await this.gemini.generateConstellation(domain, cefrLevel);
 
@@ -23,7 +22,7 @@ export class ConstellationGeneratorService {
             data: {
                 name: generated.constellationName,
                 description: generated.description,
-                userId: userId ?? null, // <-- Прив'язуємо до учня, якщо передано ID
+                userId: userId ?? null,
             },
         });
 
@@ -35,6 +34,8 @@ export class ConstellationGeneratorService {
                     constellationId: constellation.id,
                     name: gStar.name,
                     description: `[${gStar.topic}] ${gStar.description}`,
+                    type: gStar.type || 'VIDEO',
+                    metadata: gStar.metadata || null,
                 },
             });
             tempIdToDbId.set(gStar.id, star.id);
@@ -64,22 +65,11 @@ export class ConstellationGeneratorService {
             });
         }
 
-        for (const dbId of tempIdToDbId.values()) {
-            await this.matcher.matchAndAssignVideo(dbId, cefrLevel);
-        }
-
-        if (userId) {
-            await this.prisma.userConstellationProgress.create({
-                data: {
-                    userId,
-                    constellationId: constellation.id,
-                    status: "AVAILABLE",
-                },
-            }).catch(() => undefined);
-        }
-
-        for (const dbId of tempIdToDbId.values()) {
-            await this.matcher.matchAndAssignVideo(dbId, cefrLevel);
+        for (const gStar of generated.stars) {
+            const dbId = tempIdToDbId.get(gStar.id);
+            if (dbId && (!gStar.type || gStar.type === 'VIDEO')) {
+                await this.matcher.matchAndAssignVideo(dbId, cefrLevel);
+            }
         }
 
         if (userId) {
