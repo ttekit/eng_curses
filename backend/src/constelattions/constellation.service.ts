@@ -9,7 +9,7 @@ import {
 
 @Injectable()
 export class ConstellationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createConstellation(data: CreateConstellationDto) {
     return this.prisma.constellation.create({ data });
@@ -63,10 +63,10 @@ export class ConstellationService {
         ...restData,
         prerequisites: prerequisiteIds?.length
           ? {
-              create: prerequisiteIds.map((id) => ({
-                prerequisiteId: id,
-              })),
-            }
+            create: prerequisiteIds.map((id) => ({
+              prerequisiteId: id,
+            })),
+          }
           : undefined,
       },
     });
@@ -107,5 +107,13 @@ export class ConstellationService {
     } catch {
       throw new NotFoundException("Star not found");
     }
+  }
+
+  async getStarById(id: number) {
+    const star = await this.prisma.star.findUnique({
+      where: { id },
+    });
+    if (!star) throw new NotFoundException("Star not found");
+    return star;
   }
 }

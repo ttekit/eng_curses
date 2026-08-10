@@ -12,6 +12,8 @@ export type Star = {
     description: string | null;
     contentVideoId: number | null;
     prerequisites?: StarPrerequisite[];
+    type?: "VIDEO" | "GRAMMAR" | "READING" | "PHRASE" | "TEST";
+    metadata?: Record<string, unknown>;
 };
 
 export type Constellation = {

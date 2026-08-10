@@ -30,7 +30,7 @@ export class ConstellationController {
     private readonly generatorService: ConstellationGeneratorService,
     private readonly progressService: ConstellationProgressService,
     private readonly crudService: ConstellationService,
-  ) {}
+  ) { }
 
   @Post("generate")
   @UseGuards(JwtAdminGuard)
@@ -114,5 +114,10 @@ export class ConstellationController {
   @UseGuards(JwtAdminGuard)
   async deleteStar(@Param("starId", ParseIntPipe) starId: number) {
     return this.crudService.deleteStar(starId);
+  }
+
+  @Get('star/:id')
+  async getStarById(@Param('id', ParseIntPipe) id: number) {
+    return this.crudService.getStarById(id);
   }
 }

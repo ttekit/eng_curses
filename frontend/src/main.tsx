@@ -52,6 +52,8 @@ import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
+import TaskPage from "./pages/content/TaskPage";
+
 
 const router = createBrowserRouter([
   {
@@ -59,7 +61,6 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <LandingPage /> },
       { path: "/register", element: <RegistrationMain /> },
-      // { path: "/register-details", element: <RegistrationDetails /> },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
@@ -138,6 +139,8 @@ const router = createBrowserRouter([
               },
               { path: "/content/:id/summary", element: <LessonSummaryPage /> },
               { path: "/content/:id?", element: <ContentPage /> },
+              { path: "/task/:id", element: <TaskPage /> },
+
             ],
           },
         ],

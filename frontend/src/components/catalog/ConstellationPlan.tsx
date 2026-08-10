@@ -317,13 +317,21 @@ export function ConstellationPlan({
                                                     ✨ <strong>Тема доступна!</strong> Натисніть кнопку нижче, щоб перейти до виконання завдання:
                                                 </p>
 
-                                                {selectedStar.contentVideoId ? (
+                                                {selectedStar.type === "VIDEO" && selectedStar.contentVideoId ? (
                                                     <Link
                                                         to={`/content/${selectedStar.contentVideoId}`}
                                                         className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                                                     >
                                                         <Play className="w-4 h-4 fill-current shrink-0" />
                                                         <span>Дивитись відео-урок</span>
+                                                    </Link>
+                                                ) : selectedStar.type && selectedStar.type !== "VIDEO" ? (
+                                                    <Link
+                                                        to={`/task/${selectedStar.id}`}
+                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                                                    >
+                                                        <Sparkles className="w-4 h-4 shrink-0" />
+                                                        <span>Почати завдання</span>
                                                     </Link>
                                                 ) : (
                                                     <button
