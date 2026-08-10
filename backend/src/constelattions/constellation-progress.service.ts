@@ -144,6 +144,8 @@ export class ConstellationProgressService {
         name: s.name,
         description: s.description,
         contentVideoId: s.contentVideoId,
+        type: s.type,
+        metadata: s.metadata,
         prerequisites: s.prerequisites.map((p) => p.prerequisiteId),
         progressStatus: status,
         isHidden,

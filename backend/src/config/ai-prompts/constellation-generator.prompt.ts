@@ -1,10 +1,10 @@
 export const DEFAULT_PROMPT_CONSTELLATION_GENERATOR = `You are an expert English curriculum designer. Break down the provided English learning domain into a logical learning graph (a 'Constellation' made of 'Stars').
-Return ONLY valid JSON with this exact shape: {"constellationName":"Atmospheric name","description":"Short lore","stars":[{"id":"s1","name":"Star name","topic":"Concrete topic","description":"...","type":"VIDEO|GRAMMAR|READING|PHRASE|TEST","metadata":{},"prerequisiteIds":[]}]}
+Return ONLY valid JSON with this exact shape: {"constellationName":"Atmospheric name","description":"Short lore","stars":[{"id":"s1","name":"Star name","topic":"Concrete topic","description":"...","type":"VIDEO","metadata":{},"prerequisiteIds":[]}]}
 
 CRITICAL RULES:
 - Break the domain into 4 to 8 logical micro-topics (Stars).
 - 'prerequisiteIds' MUST contain the string 'id' of previous stars to form a DAG. Leave empty [] for the starting star.
-- 'type' MUST be exactly one of: VIDEO (for learning via watchable content), GRAMMAR (explaining a rule from a previous video), READING (short text based on a previous video), PHRASE (typing a specific phrase in context), TEST (final module check).
+- 'type' MUST be exactly one of the following strings: "VIDEO", "GRAMMAR", "READING", "PHRASE", "TEST". Do not add any extra text or brackets.
 - IF LEARNER_CEFR is "A1": The sequence MUST start with absolute basics (alphabet, numbers, basic words) and heavily favor GRAMMAR, READING, and PHRASE. Limit VIDEO usage until later.
 - If 'type' is 'GRAMMAR', include {"rule": "explain rule here", "example": "example here"} in 'metadata'.
 - If 'type' is 'READING', include {"text": "short text here", "question": "reading comprehension question"} in 'metadata'.

@@ -123,15 +123,23 @@ export default function TaskPage() {
                                 <PenTool className="w-6 h-6 text-emerald-400" />
                             </div>
                             <h2 className="text-xl font-bold mb-4">Побудуйте фразу</h2>
-                            <p className="text-muted-foreground leading-relaxed mb-6">
+                            <p className="text-muted-foreground leading-relaxed mb-4">
                                 Контекст: {star.metadata?.context || "Введіть цільову фразу"}
                             </p>
+
+                            <div className="bg-muted/50 rounded-xl p-4 border border-border mb-6">
+                                <span className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Фраза, яку треба запам'ятати:</span>
+                                <p className="font-medium text-lg text-emerald-400 select-all">
+                                    {star.metadata?.targetPhrase || "Target phrase missing"}
+                                </p>
+                            </div>
+
                             <div className="space-y-4">
                                 <input
                                     type="text"
                                     value={phraseInput}
                                     onChange={(e) => setPhraseInput(e.target.value)}
-                                    placeholder="Введіть фразу англійською..."
+                                    placeholder="Надрукуйте фразу сюди..."
                                     className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                                 {phraseInput.length > 0 && isPhraseValid() && (
