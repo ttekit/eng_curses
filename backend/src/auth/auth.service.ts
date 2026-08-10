@@ -532,7 +532,7 @@ export class AuthService {
         ? AuthMethod.GOOGLE
         : AuthMethod.CREDENTIALS;
 
-    let extractedRole = "STUDENT";
+    let extractedRole = "ADULT";
 
     const rawCookies = req.headers.cookie || "";
     if (

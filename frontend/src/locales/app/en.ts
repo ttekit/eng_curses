@@ -249,7 +249,7 @@ export const appEn = {
   },
 
   profileHeader: {
-    roleAdult: "Adult learner",
+    roleAdult: "Adult",
     roleStudent: "Student",
     roleTeacher: "Teacher",
     roleAdmin: "Administrator",

@@ -250,7 +250,7 @@ export const appUk = {
   },
 
   profileHeader: {
-    roleAdult: "Дорослий учень",
+    roleAdult: "Користувач",
     roleStudent: "Учень",
     roleTeacher: "Викладач",
     roleAdmin: "Адміністратор",

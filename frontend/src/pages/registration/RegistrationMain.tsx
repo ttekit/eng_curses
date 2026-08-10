@@ -20,6 +20,7 @@ import { persistRegistrationSession } from "../../lib/registrationSession";
 import { restoreRegistrationAccessToken } from "../../lib/registrationSession";
 import { useEffect } from "react";
 import { useUser } from "../../context/UserContext";
+import { Error404Page } from "../Error404Page";
 
 export default function RegistrationMain() {
   const context = useContext(RegistrationContext);
@@ -40,7 +41,7 @@ export default function RegistrationMain() {
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
-  const urlRole = searchParams.get("role") || "student";
+  const urlRole = searchParams.get("role") || "adult";
 
   useEffect(() => {
     if (formData.role !== urlRole) {
@@ -229,7 +230,7 @@ export default function RegistrationMain() {
     }
   };
   const handleGoogleRegister = () => {
-    document.cookie = `oauth_role=${urlRole}; path=/; max-age=300`;
+    document.cookie = `oauth_role=${urlRole}; path=/; max-age=200`;
     window.location.href = `${getApiBase()}/auth/oauth/connect/google?action=register&role=${urlRole}`;
   };
 
@@ -250,6 +251,10 @@ export default function RegistrationMain() {
       timeToAchieve: DEFAULT_TIME_HORIZON,
     });
   };
+
+  if (urlRole.toLowerCase() === "admin") {
+    return <Error404Page />;
+  }
 
   return (
     <>
