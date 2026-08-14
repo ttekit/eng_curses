@@ -1,12 +1,10 @@
 import { Link } from "react-router";
 import { Play, Sparkles, Clock, SaveAll } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
-import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
 import {
   trackLandingCtaPrimary,
   trackLandingCtaSecondary,
-  trackLandingHeroVideoPlay,
 } from "../../lib/landingAnalytics";
 import HeroStats from "./HeroStats";
 
