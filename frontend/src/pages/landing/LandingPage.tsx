@@ -19,6 +19,11 @@ const HowItWorksSection = React.lazy(() =>
     default: m.HowItWorksSection,
   })),
 );
+const GamificationSection = React.lazy(() =>
+  import("../../components/landing/GamificationSection").then((m) => ({
+    default: m.GamificationSection,
+  })),
+);
 const LandingPricingSection = React.lazy(() =>
   import("../../components/landing/LandingPricingSection").then((m) => ({
     default: m.LandingPricingSection,
@@ -99,6 +104,7 @@ export default function LandingPage() {
         <FeaturesSection />
         <DifferentiationSection />
         <HowItWorksSection />
+        <GamificationSection />
         <TestimonialsSection />
         <CtaSection />
         <LandingFooter />

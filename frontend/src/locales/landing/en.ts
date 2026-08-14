@@ -190,6 +190,36 @@ export const landingEn = {
     ],
   },
 
+  gamification: {
+    eyebrow: "Gamification",
+    title: "Level up your English",
+    titleAccent: "like a game",
+    subtitle:
+      "Every lesson pushes you closer to the next level. XP, level-ups and achievements keep you hooked while the language becomes a habit.",
+    strips: [
+      {
+        label: "Levels",
+        from: "./lowLevel.jpg",
+        fromAlt: "Level 1",
+        to: "./highLevel.jpg",
+        toAlt: "Level 2",
+        burst: "LEVEL UP!",
+      },
+      {
+        label: "Experience",
+        from: "./lowExp.jpg",
+        fromAlt: "0 XP",
+        to: "./highExp.jpg",
+        toAlt: "1950 XP",
+        burst: "+XP",
+      },
+    ],
+    achievementLabel: "Achievement",
+    achievementTitle: "Unlock achievements",
+    achievementText:
+      "Finish lessons, keep your streak and unlock badges for every bit of progress — from your first video to a thousand words learned.",
+  },
+
   pricingSection: {
     title:
       "After that, simple and transparent payment to achieve the best results",

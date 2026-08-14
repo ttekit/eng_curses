@@ -191,6 +191,36 @@ export const landingUk = {
     ],
   },
 
+  gamification: {
+    eyebrow: "Гейміфікація",
+    title: "Прокачуй англійську",
+    titleAccent: "як у грі",
+    subtitle:
+      "Кожен урок наближає тебе до нового рівня. Досвід, левел-апи та досягнення тримають мотивацію, поки мова стає звичкою.",
+    strips: [
+      {
+        label: "Рівні",
+        from: "/lowLevel.jpg",
+        fromAlt: "Рівень 1",
+        to: "/highLevel.jpg",
+        toAlt: "Рівень 2",
+        burst: "LEVEL UP!",
+      },
+      {
+        label: "Досвід",
+        from: "/lowExp.jpg",
+        fromAlt: "0 XP",
+        to: "/highExp.jpg",
+        toAlt: "1950 XP",
+        burst: "+XP",
+      },
+    ],
+    achievementLabel: "Досягнення",
+    achievementTitle: "Розблоковуй досягнення",
+    achievementText:
+      "Проходь уроки, тримай серію та відкривай значки за кожен маленький прогрес — від першого відео до тисячі вивчених слів.",
+  },
+
   pricingSection: {
     title: "Далі проста й прозора оплата для досягнення найвищих результатів",
     subtitle:
