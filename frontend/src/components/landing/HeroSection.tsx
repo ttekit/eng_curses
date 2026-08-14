@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Play, Sparkles, Clock } from "lucide-react";
+import { Play, Sparkles, Clock, SaveAll } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import VideoPlayer from "../VideoPlayer";
 import { useUser } from "../../context/UserContext";
@@ -43,9 +43,15 @@ export function HeroSection() {
             </p>
 
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/70">
-                <Clock className="h-4 w-4" />
-                {hero.account}
+              <div className="flex flex-col">
+                <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/70">
+                  <Clock className="h-4 w-4" />
+                  {hero.account}
+                </div>
+                <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/70">
+                  <SaveAll className="h-4 w-4" />
+                  {hero.progressSave}
+                </div>
               </div>
 
               <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">

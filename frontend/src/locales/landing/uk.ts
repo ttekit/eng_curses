@@ -79,13 +79,13 @@ export const landingUk = {
     signInPromptAfter: ", щоб оформити Light, Smart або Family.",
     stripeTerms:
       "Оплата захищена Stripe. Продовжуючи, ви погоджуєтесь з умовами обраного тарифу.",
-    freeAccess: "Безкоштовний доступ у липні 2026!",
+    freeAccess: "Безкоштовний доступ перші 3 місяці!",
     startLearning: "Почати навчання зараз",
   },
 
   header: {
     navLinks: [
-      { hash: "pricing", label: "Тарифи" },
+      { hash: "pricing", label: "Тарифи та відповіді на питання" },
       { hash: "why-choose-explys", label: "Чому Explys" },
       { hash: "how-explys-works", label: "Як це працює" },
       { hash: "testimonials", label: "Учні про Explys" },
@@ -104,7 +104,8 @@ export const landingUk = {
     titleBefore: "Розумій справжню англійську з",
     titleAccent: "фільмів і серіалів",
     lead: "Адаптивні відеоуроки, інтерактивні вікторини та практика зі штучним інтелектом — під твій рівень і інтереси.",
-    account: "Створи акаунт за 2 хвилини",
+    account: "Створи акаунт за 2 хвилини разом з тестом на рівень мови",
+    progressSave: "Весь прогрес зберігається",
     ctaSecondary: "Перейти до каталогу",
     videoCaption: "60-секундна демонстрація продукту",
     videoWatch: "Дивіться демо",

@@ -77,13 +77,13 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
-    freeAccess: "Free access in July 2026!",
+    freeAccess: "Free access for the first 3 months!",
     startLearning: "Start learning now",
   },
 
   header: {
     navLinks: [
-      { hash: "pricing", label: "Pricing" },
+      { hash: "pricing", label: "Pricing and Questions" },
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "testimonials", label: "Learners about Explys" },
@@ -102,7 +102,8 @@ export const landingEn = {
     titleBefore: "Understand real English from",
     titleAccent: "movies & series",
     lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
-    account: "Creare an account in 2 minutes",
+    account: "Creare an account in 2 minutes with level test",
+    progressSave: "All progress is saved",
     ctaSecondary: "Browse content",
     videoCaption: "60-second product demo",
     videoWatch: "Watch the demo",
@@ -226,10 +227,10 @@ export const landingEn = {
     subtitle:
       "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
-    freeHeadline: "Start free in ",
-    freeAccess: "July 2026",
+    freeHeadline: "Free access for the ",
+    freeAccess: "first 3 months",
     freeHeadlineEnd: "No credit card required",
-    freePromo: "Free access in July 2026!",
+    freePromo: "Free access for the first 3 months!",
   },
 
   differentiation: {
@@ -438,7 +439,7 @@ export const landingEn = {
     howItWorks: "Try demo lesson",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
-    footnotePromo: "Free access in July 2026!",
+    footnotePromo: "Free access for the first 3 months!",
   },
 
   pricingCards: {
