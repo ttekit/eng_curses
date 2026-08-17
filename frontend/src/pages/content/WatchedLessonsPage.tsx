@@ -164,7 +164,9 @@ export default function WatchedLessonsPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const [constellations, setConstellations] = useState<Constellation[]>([]);
-  const [starProgressMap, setStarProgressMap] = useState<Record<number, StarProgress[]>>({});
+  const [starProgressMap, setStarProgressMap] = useState<
+    Record<number, StarProgress[]>
+  >({});
   const [loadingPlan, setLoadingPlan] = useState(true);
 
   const recapCards: RecapCardConfig[] = useMemo(
@@ -242,7 +244,9 @@ export default function WatchedLessonsPage() {
         progressResults.forEach((res, index) => {
           if (res) {
             const constellationId = list[index].id;
-            progressMap[constellationId] = Array.isArray(res) ? res : (res.stars || []);
+            progressMap[constellationId] = Array.isArray(res)
+              ? res
+              : res.stars || [];
           }
         });
         setStarProgressMap(progressMap);
@@ -257,13 +261,18 @@ export default function WatchedLessonsPage() {
     };
   }, []);
 
-  const handleCompleteStar = async (starId: number, constellationId: number) => {
+  const handleCompleteStar = async (
+    starId: number,
+    constellationId: number,
+  ) => {
     try {
       await completeStar(starId);
       const updatedGraph = await fetchConstellationGraph(constellationId);
       setStarProgressMap((prev) => ({
         ...prev,
-        [constellationId]: Array.isArray(updatedGraph) ? updatedGraph : (updatedGraph.stars || []),
+        [constellationId]: Array.isArray(updatedGraph)
+          ? updatedGraph
+          : updatedGraph.stars || [],
       }));
     } catch (e) {
       console.error("Failed to complete star:", e);
@@ -297,7 +306,7 @@ export default function WatchedLessonsPage() {
       />
       <div className="flex w-full max-w-[100vw]">
         <CatalogSidebar
-          onSelectLevel={() => { }}
+          onSelectLevel={() => {}}
           reserveTopNavSpace={false}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
@@ -344,7 +353,8 @@ export default function WatchedLessonsPage() {
                   Навчальний план
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground break-words">
-                  Ваші інтерактивні сузір'я. Натискайте на зірки, щоб проходити уроки та закривати категорії.
+                  Ваші інтерактивні сузір'я. Натискайте на зірки, щоб проходити
+                  уроки та закривати категорії.
                 </p>
               </div>
 
@@ -365,7 +375,9 @@ export default function WatchedLessonsPage() {
                       key={c.id}
                       constellation={c}
                       progress={starProgressMap[c.id] || []}
-                      onCompleteStar={(starId) => handleCompleteStar(starId, c.id)}
+                      onCompleteStar={(starId) =>
+                        handleCompleteStar(starId, c.id)
+                      }
                       onFinishCategory={(cid) => {
                         console.log("Finished category:", cid);
                       }}
@@ -427,7 +439,7 @@ export default function WatchedLessonsPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar w-full min-w-0">
+                <div className="grid grid-flow-col auto-cols-[85%] sm:auto-cols-auto sm:grid-flow-row sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 sm:max-h-[600px] overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto pb-4 sm:pb-0 pr-2 custom-scrollbar w-full min-w-0">
                   {cards.map((video) => (
                     <CatalogVideoCard
                       key={video.id}

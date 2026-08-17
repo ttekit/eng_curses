@@ -143,7 +143,7 @@ export function CatalogVideoCard({
 
   const cardContent = (
     <>
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted z-0">
         <div
           className={cn(
             "h-full w-full transition-all duration-300",

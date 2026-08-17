@@ -21,7 +21,9 @@ import {
   Loader2,
   Captions,
   Check,
+  ChevronUp,
 } from "lucide-react";
+import { useAppMessages } from "../hooks/useAppMessages";
 
 export interface SubtitleCue {
   startSec?: number;
@@ -72,7 +74,7 @@ export default function VideoPlayer({
         onVideoMount?.(node);
       }
     },
-    [onVideoMount]
+    [onVideoMount],
   );
 
   useEffect(() => {
@@ -117,6 +119,7 @@ export default function VideoPlayer({
 
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>("auto");
   const [showSubtitlesMenu, setShowSubtitlesMenu] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   const [showLeftAnimation, setShowLeftAnimation] = useState(false);
   const [showRightAnimation, setShowRightAnimation] = useState(false);
@@ -135,6 +138,8 @@ export default function VideoPlayer({
 
   const [bufferedProgress, setBufferedProgress] = useState(0);
 
+  const p = useAppMessages().videoPlayer;
+
   const availableTracks = useMemo(() => {
     if (transcripts && transcripts.length > 0) return transcripts;
     if (transcript && transcript.length > 0) {
@@ -152,7 +157,7 @@ export default function VideoPlayer({
           t.id === "ua" ||
           t.id.includes("uk") ||
           t.id.includes("ua") ||
-          t.label.toLowerCase().includes("укр")
+          t.label.toLowerCase().includes("укр"),
       );
       return ukTrack || availableTracks[0];
     }
@@ -160,7 +165,8 @@ export default function VideoPlayer({
   }, [availableTracks, selectedTrackId]);
 
   const activeSubtitle = useMemo(() => {
-    if (!activeTrack || !activeTrack.cues || activeTrack.cues.length === 0) return null;
+    if (!activeTrack || !activeTrack.cues || activeTrack.cues.length === 0)
+      return null;
     for (let i = 0; i < activeTrack.cues.length; i++) {
       const cue = activeTrack.cues[i];
       if (typeof cue.startSec === "number" && typeof cue.endSec === "number") {
@@ -182,6 +188,7 @@ export default function VideoPlayer({
     setShowControls(val);
     if (!val) {
       setShowSubtitlesMenu(false);
+      setShowSpeedMenu(false);
     }
   };
 
@@ -292,7 +299,7 @@ export default function VideoPlayer({
       }
       showControlsTemporarily();
     },
-    [showControlsTemporarily]
+    [showControlsTemporarily],
   );
 
   const evaluatePosition = (clientX: number) => {
@@ -315,7 +322,7 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.setPointerCapture(e.pointerId);
-      } catch { }
+      } catch {}
     }
     evaluatePosition(e.clientX);
   };
@@ -330,7 +337,7 @@ export default function VideoPlayer({
     if (timelineRef.current) {
       try {
         timelineRef.current.releasePointerCapture(e.pointerId);
-      } catch { }
+      } catch {}
     }
     if (videoRef.current) {
       const t = videoRef.current.currentTime;
@@ -342,6 +349,9 @@ export default function VideoPlayer({
 
   const handleGesture = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      setShowSubtitlesMenu(false);
+      setShowSpeedMenu(false);
+
       const now = Date.now();
       const DOUBLE_TAP_MS = 280;
 
@@ -376,7 +386,7 @@ export default function VideoPlayer({
         }, DOUBLE_TAP_MS);
       }
     },
-    [handleSkip, onClose, showControlsTemporarily]
+    [handleSkip, onClose, showControlsTemporarily],
   );
 
   useEffect(() => {
@@ -421,7 +431,7 @@ export default function VideoPlayer({
             }
           )
             .lock("landscape")
-            .catch(() => { });
+            .catch(() => {});
         }
       } catch {
         /* ignore fullscreen errors */
@@ -498,7 +508,7 @@ export default function VideoPlayer({
                 t.id === "ua" ||
                 t.id.includes("uk") ||
                 t.id.includes("ua") ||
-                t.label.toLowerCase().includes("укр")
+                t.label.toLowerCase().includes("укр"),
             );
             return ukTrack ? ukTrack.id : availableTracks[0]?.id || null;
           });
@@ -522,7 +532,7 @@ export default function VideoPlayer({
       ref={containerRef}
       className={cn(
         "relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-gray-950 select-none",
-        className
+        className,
       )}
       onMouseMove={showControlsTemporarily}
       onMouseLeave={() => {
@@ -530,6 +540,7 @@ export default function VideoPlayer({
           setControlsVisible(false);
         }
         setShowSubtitlesMenu(false);
+        setShowSpeedMenu(false); // Закрываем оба меню при уводе мыши
       }}
       {...rest}
     >
@@ -576,7 +587,7 @@ export default function VideoPlayer({
         <div
           className={cn(
             "absolute left-4 right-4 z-20 flex justify-center pointer-events-none transition-all duration-300",
-            showControls ? "bottom-24" : "bottom-8"
+            showControls ? "bottom-24" : "bottom-8",
           )}
         >
           <span
@@ -591,7 +602,7 @@ export default function VideoPlayer({
       <div
         className={cn(
           "absolute left-0 top-0 bottom-0 w-1/2 flex items-center justify-center bg-black/20 rounded-r-full pointer-events-none transition-all duration-300 transform -translate-x-10 opacity-0 backdrop-blur-xs z-10",
-          showLeftAnimation && "translate-x-0 opacity-100 duration-150"
+          showLeftAnimation && "translate-x-0 opacity-100 duration-150",
         )}
       >
         <div className="flex flex-col items-center text-white text-center">
@@ -599,14 +610,14 @@ export default function VideoPlayer({
             <ChevronLeft className="size-6" />
             <ChevronLeft className="size-6 -ml-3" />
           </div>
-          <span className="text-xs font-semibold mt-1">-10 сек</span>
+          <span className="text-xs font-semibold mt-1">{p.skipBack}</span>
         </div>
       </div>
 
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center bg-black/20 rounded-l-full pointer-events-none transition-all duration-300 transform translate-x-10 opacity-0 backdrop-blur-xs z-10",
-          showRightAnimation && "translate-x-0 opacity-100 duration-150"
+          showRightAnimation && "translate-x-0 opacity-100 duration-150",
         )}
       >
         <div className="flex flex-col items-center text-white text-center">
@@ -614,14 +625,15 @@ export default function VideoPlayer({
             <ChevronRight className="size-6" />
             <ChevronRight className="size-6 -ml-3" />
           </div>
-          <span className="text-xs font-semibold mt-1">+10 сек</span>
+          <span className="text-xs font-semibold mt-1">{p.skipForward}</span>
         </div>
       </div>
 
+      {/* --- ЦЕНТРАЛЬНЫЕ КНОПКИ (z-20) --- */}
       <div
         className={cn(
-          "absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-300 z-30 pointer-events-none",
-          showControls ? "opacity-100" : "opacity-0"
+          "absolute inset-0 flex items-center justify-center gap-8 transition-opacity duration-300 z-20 pointer-events-none",
+          showControls ? "opacity-100" : "opacity-0",
         )}
       >
         <button
@@ -632,7 +644,7 @@ export default function VideoPlayer({
             showControls
               ? "pointer-events-auto cursor-pointer"
               : "pointer-events-none",
-            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none"
+            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none",
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -652,7 +664,7 @@ export default function VideoPlayer({
             "w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/25 active:scale-95 transition-all shadow-lg backdrop-blur-sm",
             showControls
               ? "pointer-events-auto cursor-pointer"
-              : "pointer-events-none"
+              : "pointer-events-none",
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -675,7 +687,7 @@ export default function VideoPlayer({
             showControls
               ? "pointer-events-auto cursor-pointer"
               : "pointer-events-none",
-            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none"
+            isBuffering && "opacity-50 cursor-not-allowed pointer-events-none",
           )}
           style={{ touchAction: "manipulation" }}
           onClick={(e) => {
@@ -690,22 +702,22 @@ export default function VideoPlayer({
         </button>
       </div>
 
+      {/* --- НИЖНЯЯ ПАНЕЛЬ (z-40, ПРОЗРАЧНА ДЛЯ КЛИКОВ ЧЕРЕЗ pointer-events-none) --- */}
       <div
         className={cn(
-          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-20 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-20",
-          showControls
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          "absolute bottom-0 left-0 right-0 px-5 pb-4 pt-20 bg-linear-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 flex flex-col gap-3 z-40 pointer-events-none", // <-- ИМЕННО ЗДЕСЬ pointer-events-none
+          showControls ? "opacity-100" : "opacity-0",
         )}
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
       >
         <div
           ref={timelineRef}
           className={cn(
             "w-full h-2.5 bg-white/20 rounded-full relative group/timeline transition-all duration-200 touch-none",
-            isBuffering ? "cursor-not-allowed" : "cursor-pointer"
+            isBuffering ? "cursor-not-allowed" : "cursor-pointer",
+            showControls ? "pointer-events-auto" : "pointer-events-none", // <-- Возвращаем кликабельность ТОЛЬКО таймлайну
           )}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -714,19 +726,24 @@ export default function VideoPlayer({
             className="h-full bg-white/30 rounded-full absolute left-0 top-0 pointer-events-none transition-all duration-150"
             style={{ width: `${bufferedProgress}%` }}
           />
-
           <div
             className="h-full bg-(--purple-default) rounded-full absolute left-0 top-0 pointer-events-none transition-colors duration-200 group-hover/timeline:bg-purple-500"
             style={{ width: `${progress}%` }}
           />
-
           <div
             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none scale-0 group-hover/timeline:scale-100 transition-transform duration-150"
             style={{ left: `calc(${progress}% - 8px)` }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-white/90">
+        <div
+          className={cn(
+            "flex items-center justify-between text-white/90",
+            showControls ? "pointer-events-auto" : "pointer-events-none", // <-- И ТОЛЬКО ряду с кнопками
+          )}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center gap-4">
             <div className="text-sm font-medium tabular-nums space-x-1">
               <span className="text-white">{formatTime(currentTime)}</span>
@@ -759,26 +776,63 @@ export default function VideoPlayer({
               />
             </div>
 
-            <select
-              value={playbackSpeed}
-              onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-              className="bg-transparent text-white text-xs font-medium outline-none cursor-pointer hover:text-white border border-white/20 bg-zinc-950/50 rounded-lg px-2.5 py-1 [&>option]:bg-zinc-900"
-            >
-              <option value="0.5">0.5x</option>
-              <option value="1">1.0x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2.0x</option>
-            </select>
+            {/* МЕНЮ СКОРОСТИ (КАСТОМНОЕ) */}
+            <div className="relative flex items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSpeedMenu((prev) => !prev);
+                  setShowSubtitlesMenu(false); // Взаимоисключение меню
+                }}
+                className="bg-zinc-950/50 hover:bg-zinc-800 border border-white/20 text-white text-xs font-medium rounded-lg px-2.5 py-1.5 transition-colors focus:outline-none flex items-center gap-1.5 min-w-[4.5rem] justify-between"
+              >
+                <span>{playbackSpeed}x</span>
+                <ChevronUp
+                  className={cn(
+                    "size-3.5 transition-transform duration-200",
+                    showSpeedMenu && "rotate-180",
+                  )}
+                />
+              </button>
 
+              {showSpeedMenu && (
+                <div className="absolute bottom-full right-0 mb-2 bg-zinc-900/95 border border-white/20 rounded-lg shadow-xl py-1 min-w-[110px] backdrop-blur-md z-50 flex flex-col text-xs text-white">
+                  <div className="px-3 py-1 font-semibold text-white/50 border-b border-white/10 select-none">
+                    {p.speed}
+                  </div>
+                  {[0.5, 1, 1.25, 1.5, 2].map((speed) => {
+                    const isSelected = playbackSpeed === speed;
+                    return (
+                      <button
+                        key={speed}
+                        type="button"
+                        onClick={() => {
+                          handleSpeedChange(speed);
+                          setShowSpeedMenu(false);
+                        }}
+                        className={cn(
+                          "flex items-center justify-between px-3 py-1 hover:bg-white/10 transition-colors text-left cursor-pointer",
+                          isSelected && "text-(--purple-default) font-semibold",
+                        )}
+                      >
+                        <span>{speed === 1 ? "1.0x" : `${speed}x`}</span>
+                        {isSelected && <Check className="size-3.5 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* МЕНЮ СУБТИТРОВ */}
             {availableTracks.length > 0 && (
               <div className="relative flex items-center">
                 {showSubtitlesMenu && (
-                  <div className="absolute bottom-9 right-0 bg-zinc-900/95 border border-white/20 rounded-lg shadow-xl py-1 min-w-[130px] backdrop-blur-md z-50 flex flex-col text-xs text-white overflow-hidden">
+                  <div className="absolute bottom-full right-0 mb-3 bg-zinc-900/95 border border-white/20 rounded-lg shadow-xl py-1 min-w-[130px] backdrop-blur-md z-50 flex flex-col text-xs text-white overflow-hidden">
                     <div className="px-3 py-1.5 font-semibold text-white/50 border-b border-white/10 select-none">
-                      Субтитри
+                      {p.subtitles}
                     </div>
-                  <button
+                    <button
                       type="button"
                       onClick={() => {
                         setSelectedTrackId(null);
@@ -787,10 +841,10 @@ export default function VideoPlayer({
                       className={cn(
                         "flex items-center justify-between px-3 py-1.5 hover:bg-white/10 transition-colors text-left cursor-pointer",
                         selectedTrackId === null &&
-                        "text-(--purple-default) font-semibold"
+                          "text-(--purple-default) font-semibold",
                       )}
                     >
-                      <span>Вимкнено</span>
+                      <span>{p.subtitlesOff}</span>
                       {selectedTrackId === null && (
                         <Check className="size-3.5" />
                       )}
@@ -808,7 +862,7 @@ export default function VideoPlayer({
                           className={cn(
                             "flex items-center justify-between px-3 py-1.5 hover:bg-white/10 transition-colors text-left cursor-pointer",
                             isSelected &&
-                            "text-(--purple-default) font-semibold"
+                              "text-(--purple-default) font-semibold",
                           )}
                         >
                           <span className="truncate pr-2">{track.label}</span>
@@ -822,12 +876,15 @@ export default function VideoPlayer({
                 )}
                 <button
                   type="button"
-                  onClick={() => setShowSubtitlesMenu((prev) => !prev)}
+                  onClick={() => {
+                    setShowSubtitlesMenu((prev) => !prev);
+                    setShowSpeedMenu(false); // Взаимоисключение меню
+                  }}
                   className={cn(
                     "transition-colors",
                     activeTrack !== null
                       ? "text-white drop-shadow-md"
-                      : "text-white/50 hover:text-white/80"
+                      : "text-white/50 hover:text-white/80",
                   )}
                   title="Toggle Captions (C)"
                 >

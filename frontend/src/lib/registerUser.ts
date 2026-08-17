@@ -44,7 +44,7 @@ function cleanOptionalString(v: string | undefined): string | undefined {
  * Does not send `confirmPassword`, placeholder "choose" values, or `studentNames: ""` (Prisma JSON).
  */
 export function buildRegisterBody(formData: FormData): Record<string, unknown> {
-  const isTeacher = formData.role === "teacher";
+  const isTeacher = formData.role?.toLowerCase() === "teacher";
   const raw = formData.studentNames;
   const teacherPupils =
     isTeacher && Array.isArray(raw) ? raw : isTeacher ? [] : null;
@@ -129,10 +129,13 @@ export async function registerUser(
       if (
         data &&
         typeof data === "object" &&
-        Array.isArray((data as { generatedStudents?: unknown }).generatedStudents)
+        Array.isArray(
+          (data as { generatedStudents?: unknown }).generatedStudents,
+        )
       ) {
-        const students = (data as { generatedStudents: GeneratedStudentAccount[] })
-          .generatedStudents;
+        const students = (
+          data as { generatedStudents: GeneratedStudentAccount[] }
+        ).generatedStudents;
         if (students.length > 0) {
           generatedStudents = students;
         }

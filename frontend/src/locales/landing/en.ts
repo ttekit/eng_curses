@@ -516,7 +516,7 @@ export const landingEn = {
       resendCode: "Resend code",
       verifying: "Verifying...",
       verifyCode: "Verify Code",
-      backToRegistration: "← Back to registration",
+      backToRegistration: "← Go back",
       codeRequired: "Please enter the 6-digit code.",
       invalidCode: "Invalid verification code",
       connectionError: "Connection error. Please try again.",
@@ -599,6 +599,9 @@ export const landingEn = {
         dateOfBirth: "Date of Birth",
         orContinueWith: "Or start with",
         google: "Start with Google",
+        rightTitleTeacher: "Welcome to Explys!",
+        rightSubtitleTeacher:
+          "Join the community of teachers and manage your students' learning using interactive content.",
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",
@@ -731,7 +734,7 @@ export const landingEn = {
         title: "Registration successful",
         withStudents:
           "Your teacher account is ready. Student logins were created for the pupils you listed. Download the Excel file to share credentials securely (store it in a safe place—anyone with the file can sign in as those students).",
-        solo: "Your account is ready. You can sign in with the email and password you chose.",
+        solo: "Registration complete! Click the button below to start working with Explys interactive tools.",
         studentAccounts: "Student accounts (COUNT)",
         colName: "Name",
         colEmail: "Email",
@@ -744,6 +747,8 @@ export const landingEn = {
         continueToSite: "Continue to site",
         show: "Show",
         hide: "Hide",
+        mascotSubtitleTeacher:
+          "Everything is set! Choose video materials, create classes, and turn English learning into an exciting process.",
       },
     },
   },
@@ -907,5 +912,27 @@ export const landingEn = {
       question4:
         "Both verbs must be in the past tense: 'arrived' (regular) and 'met' (the past form of the irregular verb 'meet').",
     },
+  },
+  googleUsername: {
+    seoTitle: "Set Username",
+    seoDesc: "Choose a unique username for your Explys account",
+    rightTitle: "Almost there!",
+    rightSubtitle:
+      "Your Google account is successfully linked. Just one small step left.",
+    rightTitleTeacher: "Almost done!",
+    rightSubtitleTeacher:
+      "Your Google account is successfully connected. Just one step left to create your teacher dashboard.",
+    title: "Choose your username",
+    lead: "What should we call you? This username will be visible on your profile and leaderboards.",
+    label: "Username",
+    placeholder: "e.g: your name",
+    titleTeacher: "How to introduce you?",
+    leadTeacher:
+      "Your students will see this name in virtual classes and assignments.",
+    labelTeacher: "Full name",
+    placeholderTeacher: "e.g., Jane Doe",
+    errorEmpty: "Username cannot be empty",
+    btnSubmit: "Continue",
+    saving: "Saving...",
   },
 } as const;
