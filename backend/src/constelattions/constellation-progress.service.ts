@@ -29,7 +29,7 @@ export class ConstellationProgressService {
 
     const constellationStars = await this.prisma.star.findMany({
       where: { constellationId: star.constellationId },
-      include: { prerequisites: true },
+      orderBy: { id: 'asc' },
     });
 
     const userProgress = await this.prisma.userStarProgress.findMany({
@@ -42,39 +42,26 @@ export class ConstellationProgressService {
         .map((p) => p.starId),
     );
 
+    // Добавляем ту, которую только что прошли
     completedStarIds.add(starId);
 
     const newlyAvailable: number[] = [];
 
-    for (const s of constellationStars) {
-      if (completedStarIds.has(s.id)) continue;
+    const nextStar = constellationStars.find((s) => !completedStarIds.has(s.id));
 
-      const progressRecord = userProgress.find((p) => p.starId === s.id);
-      const currentStatus = progressRecord ? progressRecord.status : (s.prerequisites.length === 0 ? ProgressStatus.AVAILABLE : ProgressStatus.LOCKED);
+    if (nextStar) {
+      const progressRecord = userProgress.find((p) => p.starId === nextStar.id);
+      const currentStatus = progressRecord ? progressRecord.status : ProgressStatus.LOCKED;
 
-      if (currentStatus === ProgressStatus.COMPLETED || currentStatus === ProgressStatus.IN_PROGRESS || currentStatus === ProgressStatus.AVAILABLE) {
-        continue;
+      if (currentStatus === ProgressStatus.LOCKED) {
+        newlyAvailable.push(nextStar.id);
+
+        await this.prisma.userStarProgress.upsert({
+          where: { userId_starId: { userId, starId: nextStar.id } },
+          update: { status: ProgressStatus.AVAILABLE },
+          create: { userId, starId: nextStar.id, status: ProgressStatus.AVAILABLE },
+        });
       }
-
-      const allPrereqsMet = s.prerequisites.every((prereq) =>
-        completedStarIds.has(prereq.prerequisiteId),
-      );
-
-      if (allPrereqsMet) {
-        newlyAvailable.push(s.id);
-      }
-    }
-
-    if (newlyAvailable.length > 0) {
-      await this.prisma.$transaction(
-        newlyAvailable.map((id) =>
-          this.prisma.userStarProgress.upsert({
-            where: { userId_starId: { userId, starId: id } },
-            update: { status: ProgressStatus.AVAILABLE },
-            create: { userId, starId: id, status: ProgressStatus.AVAILABLE },
-          }),
-        ),
-      );
     }
 
     const allCompleted = constellationStars.every((s) =>
@@ -109,35 +96,30 @@ export class ConstellationProgressService {
     userId: number,
     constellationId: number,
   ) {
+    // Сортируем выдачу графа на фронт тоже строго по ID
     const stars = await this.prisma.star.findMany({
       where: { constellationId },
       include: {
         prerequisites: { select: { prerequisiteId: true } },
         userProgress: { where: { userId } },
       },
+      orderBy: { id: 'asc' },
     });
 
     if (!stars.length) {
       throw new NotFoundException("Constellation empty or not found");
     }
 
-    return stars.map((s) => {
-      const defaultStatus =
-        s.prerequisites.length === 0
-          ? ProgressStatus.AVAILABLE
-          : ProgressStatus.LOCKED;
-
+    return stars.map((s, index) => {
+      // По умолчанию открыта только самая первая звезда (index === 0), остальные закрыты
+      const defaultStatus = index === 0 ? ProgressStatus.AVAILABLE : ProgressStatus.LOCKED;
       const status = s.userProgress[0]?.status || defaultStatus;
 
+      // Звезда скрыта, если она заблокирована и предыдущая звезда еще не пройдена
       const isHidden =
         status === ProgressStatus.LOCKED &&
-        s.prerequisites.length > 0 &&
-        s.prerequisites.every((p) => {
-          const prereqStar = stars.find((st) => st.id === p.prerequisiteId);
-          return (
-            prereqStar?.userProgress[0]?.status !== ProgressStatus.COMPLETED
-          );
-        });
+        index > 0 &&
+        stars[index - 1].userProgress[0]?.status !== ProgressStatus.COMPLETED;
 
       return {
         id: s.id,
@@ -148,7 +130,7 @@ export class ConstellationProgressService {
         metadata: s.metadata,
         prerequisites: s.prerequisites.map((p) => p.prerequisiteId),
         progressStatus: status,
-        isHidden,
+        isHidden: !!isHidden,
       };
     });
   }

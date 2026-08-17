@@ -97,90 +97,132 @@ export function ConstellationPlan({
         }
     };
 
-    const renderStarsGraph = (interactive: boolean) => (
-        <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none overflow-visible">
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <defs>
-                    <marker
-                        id={`arrow-${constellation.id}`}
-                        viewBox="0 0 10 10"
-                        refX="22"
-                        refY="5"
-                        markerWidth="5"
-                        markerHeight="5"
-                        orient="auto-start-reverse"
-                    >
-                        <path d="M 0 1 L 10 5 L 0 9 z" className="fill-purple-500/50" />
-                    </marker>
-                </defs>
+    const renderStarsGraph = (interactive: boolean) => {
+        const MAX_PREVIEW = 4;
+        const total = constellation.stars.length;
+
+        return (
+            <div className="relative w-full h-48 sm:h-56 my-4 flex items-center justify-center select-none overflow-visible">
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    <defs>
+                        <marker
+                            id={`arrow-${constellation.id}`}
+                            viewBox="0 0 10 10"
+                            refX="22"
+                            refY="5"
+                            markerWidth="5"
+                            markerHeight="5"
+                            orient="auto-start-reverse"
+                        >
+                            <path d="M 0 1 L 10 5 L 0 9 z" className="fill-purple-500/50" />
+                        </marker>
+                    </defs>
+                    {constellation.stars.map((star, i) => {
+                        if (i === 0) return null;
+                        if (!interactive && i > MAX_PREVIEW) return null;
+
+                        const prev = starPositions[i - 1];
+                        const curr = starPositions[i];
+                        const isFadedLine = !interactive && i === MAX_PREVIEW;
+
+                        return (
+                            <line
+                                key={`line-${star.id}`}
+                                x1={`${prev.x}%`}
+                                y1={`${prev.y}%`}
+                                x2={`${curr.x}%`}
+                                y2={`${curr.y}%`}
+                                className={cn(
+                                    "stroke-2",
+                                    isFadedLine ? "stroke-purple-500/20" : "stroke-purple-500/40"
+                                )}
+                                strokeDasharray="4 4"
+                                markerEnd={isFadedLine ? undefined : `url(#arrow-${constellation.id})`}
+                            />
+                        );
+                    })}
+                </svg>
+
                 {constellation.stars.map((star, i) => {
-                    if (i === 0) return null;
-                    const prev = starPositions[i - 1];
-                    const curr = starPositions[i];
+                    if (!interactive && i > MAX_PREVIEW) return null;
+
+                    const pos = starPositions[i];
+
+                    if (!interactive && i === MAX_PREVIEW) {
+                        const hiddenCount = total - MAX_PREVIEW;
+                        return (
+                            <div
+                                key="hidden-badge"
+                                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                                className="absolute -translate-x-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center z-10"
+                            >
+                                <div className="w-10 h-10 rounded-full border-2 border-dashed border-purple-500/30 bg-muted/20 flex items-center justify-center text-xs font-bold text-purple-400/60 backdrop-blur-sm">
+                                    +{hiddenCount}
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    const status = getEffectiveStatus(star, i);
+                    const styles = getStatusStyles(status);
+                    const isSelected = selectedStar?.id === star.id;
+
                     return (
-                        <line
-                            key={`line-${star.id}`}
-                            x1={`${prev.x}%`}
-                            y1={`${prev.y}%`}
-                            x2={`${curr.x}%`}
-                            y2={`${curr.y}%`}
-                            className="stroke-purple-500/40 stroke-2"
-                            strokeDasharray="4 4"
-                            markerEnd={`url(#arrow-${constellation.id})`}
-                        />
+                        <div
+                            key={star.id}
+                            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                            className="absolute -translate-x-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center z-10"
+                        >
+                            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-950 border border-purple-500/50 text-[10px] font-bold text-purple-300 flex items-center justify-center shadow-sm z-20">
+                                {i + 1}
+                            </span>
+
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (interactive) {
+                                        setSelectedStar(star);
+                                    }
+                                }}
+                                className={cn(
+                                    "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer",
+                                    styles,
+                                    interactive && "hover:scale-110",
+                                    isSelected && "scale-110 ring-4 ring-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.8)]",
+                                )}
+                            >
+                                {status === "COMPLETED" ? (
+                                    <CheckCircle2 className="w-5 h-5" />
+                                ) : status === "LOCKED" ? (
+                                    <Lock className="w-4 h-4" />
+                                ) : status === "IN_PROGRESS" ? (
+                                    <Play className="w-4 h-4 fill-current" />
+                                ) : (
+                                    <StarIcon className="w-5 h-5 fill-purple-400/20" />
+                                )}
+                            </button>
+                        </div>
                     );
                 })}
-            </svg>
+            </div>
+        );
+    };
 
-            {constellation.stars.map((star, i) => {
-                const pos = starPositions[i];
-                const status = getEffectiveStatus(star, i);
-                const styles = getStatusStyles(status);
-                const isSelected = selectedStar?.id === star.id;
-
-                return (
-                    <div
-                        key={star.id}
-                        style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center z-10"
-                    >
-                        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-purple-950 border border-purple-500/50 text-[10px] font-bold text-purple-300 flex items-center justify-center shadow-sm z-20">
-                            {i + 1}
-                        </span>
-
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (interactive) {
-                                    setSelectedStar(star);
-                                }
-                            }}
-                            className={cn(
-                                "w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 ease-out cursor-pointer",
-                                styles,
-                                interactive && "hover:scale-110",
-                                isSelected && "scale-110 ring-4 ring-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.8)]",
-                            )}
-                        >
-                            {status === "COMPLETED" ? (
-                                <CheckCircle2 className="w-5 h-5" />
-                            ) : status === "LOCKED" ? (
-                                <Lock className="w-4 h-4" />
-                            ) : status === "IN_PROGRESS" ? (
-                                <Play className="w-4 h-4 fill-current" />
-                            ) : (
-                                <StarIcon className="w-5 h-5 fill-purple-400/20" />
-                            )}
-                        </button>
-                    </div>
-                );
-            })}
-        </div>
-    );
+    const getStarTypeBadge = (type?: string) => {
+        switch (type) {
+            case "VIDEO": return { label: "Відео-урок", icon: "🎬", color: "bg-blue-500/20 text-blue-300 border-blue-500/30" };
+            case "GRAMMAR": return { label: "Граматика", icon: "📖", color: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30" };
+            case "READING": return { label: "Читання", icon: "📚", color: "bg-orange-500/20 text-orange-300 border-orange-500/30" };
+            case "PHRASE": return { label: "Практика фраз", icon: "✍️", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
+            case "TEST": return { label: "Тест", icon: "🎯", color: "bg-red-500/20 text-red-300 border-red-500/30" };
+            default: return { label: "Завдання", icon: "✨", color: "bg-muted text-muted-foreground border-border" };
+        }
+    };
 
     const selectedIndex = selectedStar ? constellation.stars.findIndex((s) => s.id === selectedStar.id) : -1;
     const selectedStatus = selectedStar ? getEffectiveStatus(selectedStar, selectedIndex) : "LOCKED";
+
 
     return (
         <>
@@ -192,7 +234,7 @@ export function ConstellationPlan({
                     }
                 }}
                 className={cn(
-                    "relative flex flex-col justify-between p-5 sm:p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-card/40 transition-colors duration-300 w-full max-w-full min-w-0 overflow-hidden box-border",
+                    "relative flex flex-col justify-between p-5 sm:p-6 rounded-2xl border border-purple-500/20 bg-linear-to-b from-purple-950/20 to-card/40 transition-colors duration-300 w-full max-w-full min-w-0 overflow-hidden box-border",
                     !isZoomed && "cursor-pointer hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:bg-card/60",
                 )}
             >
@@ -276,14 +318,24 @@ export function ConstellationPlan({
                                             <span className="w-5 h-5 rounded-full bg-purple-900 border border-purple-500 text-[11px] font-bold text-purple-200 flex items-center justify-center shrink-0">
                                                 {selectedIndex + 1}
                                             </span>
-                                            <h5 className="font-bold text-sm sm:text-base text-purple-300 leading-snug break-words">
-                                                {selectedStar.name}
-                                            </h5>
+                                            <div className="flex flex-col gap-1.5 min-w-0">
+                                                <h5 className="font-bold text-sm sm:text-base text-purple-300 leading-snug wrap-break-words">
+                                                    {selectedStar.name}
+                                                </h5>
+                                                {selectedStar.type && (
+                                                    <div className={cn(
+                                                        "flex items-center gap-1.5 w-fit px-2 py-0.5 rounded-md border text-[10px] sm:text-xs font-medium uppercase tracking-wider",
+                                                        getStarTypeBadge(selectedStar.type).color
+                                                    )}>
+                                                        <span>{getStarTypeBadge(selectedStar.type).icon}</span>
+                                                        <span>{getStarTypeBadge(selectedStar.type).label}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        <p className="text-xs text-muted-foreground leading-relaxed break-words">
-                                            {selectedStar.description ||
-                                                "No specific details provided for this star."}
+                                        <p className="text-xs text-muted-foreground leading-relaxed wrap-break-words">
+                                            {selectedStar.description || "No specific details provided for this star."}
                                         </p>
 
                                         {selectedStatus === "LOCKED" && selectedIndex > 0 && (
@@ -292,7 +344,7 @@ export function ConstellationPlan({
                                                 {getRequiredPrerequisiteName(selectedStar) ? (
                                                     <span className="block mt-1 text-amber-200/90">
                                                         Щоб відкрити цей урок, спочатку пройдіть попередній етап: <br />
-                                                        <strong className="text-white font-semibold break-words">«{getRequiredPrerequisiteName(selectedStar)}»</strong>.
+                                                        <strong className="text-white font-semibold wrp-break-words">«{getRequiredPrerequisiteName(selectedStar)}»</strong>.
                                                     </span>
                                                 ) : (
                                                     <span className="block mt-1">

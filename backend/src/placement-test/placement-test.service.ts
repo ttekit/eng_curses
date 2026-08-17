@@ -193,13 +193,9 @@ export class PlacementTestService {
       select: {
         hasCompletedPlacement: true,
         placementTestDraft: true,
-        additionalUserData: { select: { id: true, englishLevel: true } },
+        additionalUserData: { select: { id: true, englishLevel: true, learningGoal: true, workField: true, hobbies: true } },
       },
-    }) as {
-      hasCompletedPlacement: boolean;
-      placementTestDraft: unknown;
-      additionalUserData: { id: number; englishLevel: string | null } | null;
-    } | null;
+    }) as any;
 
     if (!user) throw new NotFoundException("User not found");
 
@@ -207,6 +203,20 @@ export class PlacementTestService {
       const band = inferPlacementBandFromProfile(
         user.additionalUserData?.englishLevel,
       );
+
+      const hasConstellation = await this.prisma.userConstellationProgress.findFirst({ where: { userId } });
+      if (!hasConstellation) {
+        const userProfile = user.additionalUserData;
+        const baseGoal = userProfile?.learningGoal?.trim() || "General English";
+        let targetDomain = baseGoal;
+        if (band.code === "A1") {
+          targetDomain = `${baseGoal} (Level A1: basic words, alphabet, simple greetings)`;
+        }
+        this.constellationGenerator.generateAndSaveConstellation(targetDomain, band.code, userId).catch(err => {
+          this.logger.error(`Failed to auto-generate constellation for user ${userId} on fallback:`, err);
+        });
+      }
+
       return {
         ok: true as const,
         englishLevel: band.code,
@@ -215,10 +225,7 @@ export class PlacementTestService {
     }
 
     const draft = parsePlacementDraft(user.placementTestDraft);
-
-    const declaredBand = inferPlacementBandFromProfile(
-      user.additionalUserData?.englishLevel,
-    );
+    const declaredBand = inferPlacementBandFromProfile(user.additionalUserData?.englishLevel);
 
     let scored = { score: 0, total: 0 };
     let scoredBand: ReturnType<typeof placementBandFromScore>;
@@ -230,17 +237,17 @@ export class PlacementTestService {
       scoredBand = { code: "B1", label: "Intermediate" };
     }
 
-    const band = confirmedPlacementBandFromDeclaredAndScore(
-      scoredBand,
-      declaredBand,
-    );
+    const band = confirmedPlacementBandFromDeclaredAndScore(scoredBand, declaredBand);
+
+    const isSkipped = Object.keys(answers).length === 0;
+    if (isSkipped) {
+      band.code = "A1";
+      band.label = "Beginner";
+    }
 
     await (this.prisma as any).user.update({
       where: { id: userId },
-      data: {
-        hasCompletedPlacement: true,
-        placementTestDraft: null,
-      },
+      data: { hasCompletedPlacement: true, placementTestDraft: null },
     });
 
     if (user.additionalUserData) {
@@ -250,60 +257,31 @@ export class PlacementTestService {
       });
     }
 
-    await this.alcorythm
-      .analyzeUserLevel(userId)
-      .catch(() => undefined);
+    await this.alcorythm.analyzeUserLevel(userId).catch(() => undefined);
 
-    if (draft?.questions.length) {
-      await this.applyPlacementSkillNudge(userId, draft.questions, answers).catch(
-        () => undefined,
-      );
+    if (draft?.questions.length && !isSkipped) {
+      await this.applyPlacementSkillNudge(userId, draft.questions, answers).catch(() => undefined);
     }
 
-    const scorePct =
-      scored.total > 0
-        ? Math.round((1000 * scored.score) / scored.total) / 10
-        : 0;
+    const scorePct = scored.total > 0 ? Math.round((1000 * scored.score) / scored.total) / 10 : 0;
+
     await this.prisma.placementAttempt.create({
-      data: {
-        userId,
-        scoreCorrect: scored.score,
-        scoreTotal: scored.total,
-        scorePct,
-        englishLevel: band.code,
-      },
+      data: { userId, scoreCorrect: scored.score, scoreTotal: scored.total, scorePct, englishLevel: band.code },
     });
 
-    const pct =
-      scored.total > 0 ? Math.round((scored.score / scored.total) * 100) : 0;
+    const pct = scored.total > 0 ? Math.round((scored.score / scored.total) * 100) : 0;
+    const summary = draft?.questions.length && !isSkipped ? buildPlacementSummary(draft.questions, answers) : undefined;
+    const userProfile = user.additionalUserData;
 
-    const summary =
-      draft?.questions.length && Object.keys(answers).length
-        ? buildPlacementSummary(draft.questions, answers)
-        : undefined;
-
-    const userProfile = await this.prisma.additionalUserData.findUnique({
-      where: { userId },
-      select: { learningGoal: true, workField: true, hobbies: true },
-    });
-
-    let targetDomain =
-      userProfile?.learningGoal?.trim() ||
-      userProfile?.workField?.trim() ||
-      (userProfile?.hobbies?.length ? `Topic: ${userProfile.hobbies[0]}` : "General Communication & Vocabulary");
+    const baseGoal = userProfile?.learningGoal?.trim() || "General English";
+    let targetDomain = baseGoal;
 
     if (band.code === "A1") {
-      targetDomain = "A1 Absolute Beginner: Alphabet, basic numbers, simple greetings like 'hello', and fundamental survival words.";
+      targetDomain = `${baseGoal} (Level A1: basic words, alphabet, simple greetings)`;
       await this.alcorythm.resetSkillsForA1(userId).catch(err => {
         this.logger.error(`Failed to reset A1 skills for user ${userId}:`, err);
       });
     }
-
-    this.constellationGenerator
-      .generateAndSaveConstellation(targetDomain, band.code, userId)
-      .catch((err) => {
-        this.logger.error(`Failed to auto-generate constellation for user ${userId}:`, err);
-      });
 
     this.constellationGenerator
       .generateAndSaveConstellation(targetDomain, band.code, userId)
@@ -320,10 +298,61 @@ export class PlacementTestService {
       percentage: pct,
       summary,
     };
+  }
 
+  async skipPlacement(userId: number): Promise<PlacementCompleteResponseDto> {
+    const user = await (this.prisma as any).user.findUnique({
+      where: { id: userId },
+      select: {
+        hasCompletedPlacement: true,
+        additionalUserData: { select: { id: true, englishLevel: true, learningGoal: true, workField: true, hobbies: true } },
+      },
+    }) as any;
 
+    if (!user) throw new NotFoundException("User not found");
 
+    const band = { code: "A1", label: "Beginner" };
 
+    const hasConstellation = await this.prisma.userConstellationProgress.findFirst({
+      where: { userId }
+    });
+
+    if (!user.hasCompletedPlacement || !hasConstellation) {
+      await (this.prisma as any).user.update({
+        where: { id: userId },
+        data: { hasCompletedPlacement: true, placementTestDraft: null },
+      });
+
+      if (user.additionalUserData) {
+        await (this.prisma as any).additionalUserData.update({
+          where: { id: user.additionalUserData.id },
+          data: { englishLevel: "A1" },
+        });
+      }
+
+      const userProfile = user.additionalUserData;
+      const baseGoal = userProfile?.learningGoal?.trim() || "General English";
+      const targetDomain = `${baseGoal} (Level A1: basic words, alphabet, simple greetings)`;
+
+      await this.alcorythm.resetSkillsForA1(userId).catch(err => {
+        this.logger.error(`Failed to reset A1 skills for user ${userId}:`, err);
+      });
+
+      this.constellationGenerator
+        .generateAndSaveConstellation(targetDomain, band.code, userId)
+        .catch((err) => {
+          this.logger.error(`Failed to auto-generate constellation for user ${userId} on skip:`, err);
+        });
+    }
+
+    return {
+      ok: true as const,
+      englishLevel: band.code,
+      cefrLabel: band.label,
+      score: 0,
+      totalQuestions: 0,
+      percentage: 0,
+    };
   }
 
   /** Light touch on skill columns from typed placement items (+ legacy untyped). */

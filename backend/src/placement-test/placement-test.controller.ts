@@ -65,7 +65,7 @@ export class PlacementTestController {
   constructor(
     private readonly placementTest: PlacementTestService,
     private readonly config: ConfigService,
-  ) {}
+  ) { }
 
   @Get("status")
   @UseGuards(LearnerJwtGuard)
@@ -165,5 +165,23 @@ export class PlacementTestController {
   @ApiResponse({ status: 401, description: "Invalid or missing JWT" })
   complete(@Req() req: AuthedRequest, @Body() body: CompletePlacementDto) {
     return this.placementTest.completePlacement(req.user.sub, body ?? {});
+  }
+
+  @Post("skip")
+  @UseGuards(LearnerJwtGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiHeader({
+    name: "x-api-token",
+    required: false,
+    description: "Global API key in production (see `API_TOKEN`).",
+  })
+  @ApiSecurity("api-token")
+  @ApiOperation({
+    summary: "Skip placement test and auto-generate constellation based on user profile.",
+  })
+  @ApiCreatedResponse({ type: PlacementCompleteResponseDto })
+  @ApiResponse({ status: 401, description: "Invalid or missing JWT" })
+  skip(@Req() req: AuthedRequest) {
+    return this.placementTest.skipPlacement(req.user.sub);
   }
 }

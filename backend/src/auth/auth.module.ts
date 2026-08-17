@@ -28,10 +28,12 @@ import { StudyingPlanModule } from "src/studying-plan/studying-plan.module";
 import { SmtpService } from "./smtp.service";
 import { UserProfile } from "src/users/user-profile.service";
 import { AccountManagementService } from "src/users/account-management.service";
+import { ConstellationModule } from "src/constelattions/constellation.module";
 
 @Module({
   imports: [
     MailModule,
+    ConstellationModule,
     ProviderModule.registerAsync({
       imports: [ConfigModule],
       useFactory: getProvidersConfig,
@@ -89,4 +91,4 @@ import { AccountManagementService } from "src/users/account-management.service";
     OptionalLearnerJwtGuard,
   ],
 })
-export class AuthModule {}
+export class AuthModule { }
