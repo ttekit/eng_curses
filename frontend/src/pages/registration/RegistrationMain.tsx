@@ -2,7 +2,7 @@ import InputText from "../../components/InputText";
 import Button from "../../components/Button";
 import ValidateError from "../../components/ValidateError";
 import LabelRegister from "../../components/LabelRegister";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { useContext, useState, ChangeEvent, FormEvent } from "react";
 import { RegistrationContext } from "../../context/RegistrationContext";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
@@ -38,19 +38,37 @@ export default function RegistrationMain() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
-  const navigate = useNavigate();
 
-  const [searchParams] = useSearchParams();
-  const urlRole = searchParams.get("role") || "adult";
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const path = location.pathname.toLowerCase();
+  let urlRole = "adult";
+
+  if (path.includes("teacher")) {
+    urlRole = "teacher";
+  } else if (path.includes("adult")) {
+    urlRole = "adult";
+  }
 
   useEffect(() => {
     if (formData.role !== urlRole) {
       updateFormData({ role: urlRole });
     }
-  }, [urlRole, formData.role]);
+  }, [urlRole, formData.role, updateFormData]);
+  
+  const isTeacher = urlRole === "teacher";
+  const layoutProgressTotal = isTeacher ? 2 : 3;
+
+  const layoutRightTitle = isTeacher
+    ? step1.rightTitleTeacher
+    : step1.rightTitle;
+
+  const layoutRightSubtitle = isTeacher
+    ? step1.rightSubtitleTeacher
+    : step1.rightSubtitle;
 
   const { refreshProfile } = useUser();
-
   const isValidPassword = (p: string) =>
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&\-]).{8,}$/.test(p);
 
@@ -219,7 +237,10 @@ export default function RegistrationMain() {
         } catch (err) {
           console.warn("Профиль не обновился, но продолжаем редирект...", err);
         }
-        navigate("/catalog", { replace: true });
+        navigate("/register-success", {
+          replace: true,
+          state: { generatedStudents: result.generatedStudents },
+        });
       } else {
         navigate("/register-preferences");
       }
@@ -265,9 +286,9 @@ export default function RegistrationMain() {
       />
       <AuthSplitLayout
         progressStep={1}
-        progressTotal={3}
-        rightTitle={step1.rightTitle}
-        rightSubtitle={step1.rightSubtitle}
+        progressTotal={layoutProgressTotal}
+        rightTitle={layoutRightTitle}
+        rightSubtitle={layoutRightSubtitle}
       >
         <div className="mb-1 flex items-center gap-3">
           <img src="/Icon.svg" className="w-15 h-18 mr-4" alt="Icon" />

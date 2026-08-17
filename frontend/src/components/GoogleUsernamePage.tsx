@@ -15,11 +15,29 @@ export default function GoogleUsernamePage() {
   const navigate = useNavigate();
   const { messages } = useLandingLocale();
   const texts = messages.googleUsername;
-  const { refreshProfile } = useUser();
+
+  const { user, refreshProfile } = useUser();
 
   const [username, setUsername] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
+  const layoutProgressTotal = isTeacher ? 2 : 3;
+
+  const displayTitle = isTeacher ? texts.titleTeacher : texts.title;
+  const displayLead = isTeacher ? texts.leadTeacher : texts.lead;
+  const displayLabel = isTeacher ? texts.labelTeacher : texts.label;
+  const displayPlaceholder = isTeacher
+    ? texts.placeholderTeacher
+    : texts.placeholder;
+
+  const displayRightTitle = isTeacher
+    ? texts.rightTitleTeacher
+    : texts.rightTitle;
+  const displayRightSubtitle = isTeacher
+    ? texts.rightSubtitleTeacher
+    : texts.rightSubtitle;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,9 +61,14 @@ export default function GoogleUsernamePage() {
         throw new Error(errorData.message || "Failed to update username");
       }
 
-      await refreshProfile();
+      const profile = await refreshProfile();
+      const role = profile?.role?.toLowerCase();
 
-      navigate("/register-preferences", { replace: true });
+      if (role === "teacher") {
+        navigate("/register-success", { replace: true });
+      } else {
+        navigate("/register-preferences", { replace: true });
+      }
     } catch (err) {
       setErrorText(
         err instanceof Error
@@ -66,19 +89,19 @@ export default function GoogleUsernamePage() {
       />
       <AuthSplitLayout
         progressStep={1}
-        progressTotal={3}
-        rightTitle={texts.rightTitle}
-        rightSubtitle={texts.rightSubtitle}
+        progressTotal={layoutProgressTotal}
+        rightTitle={displayRightTitle}
+        rightSubtitle={displayRightSubtitle}
       >
         <div className="mb-1 flex items-center gap-3">
           <img src="/Icon.svg" className="w-15 h-18 mr-4" alt="Icon" />
-          <h1 className="font-display text-2xl font-bold">{texts.title}</h1>
+          <h1 className="font-display text-2xl font-bold">{displayTitle}</h1>
         </div>
-        <p className="mb-8 text-muted-foreground">{texts.lead}</p>
+        <p className="mb-8 text-muted-foreground">{displayLead}</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <LabelRegister isRequired={true}>{texts.label}</LabelRegister>
+            <LabelRegister isRequired={true}>{displayLabel}</LabelRegister>
             <InputText
               name="username"
               value={username}
@@ -87,7 +110,7 @@ export default function GoogleUsernamePage() {
                 if (errorText) setErrorText(null);
               }}
               type="text"
-              placeholder={texts.placeholder}
+              placeholder={displayPlaceholder}
               maxLength={50}
             />
           </div>

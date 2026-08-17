@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "../lib/utils";
-import { EmailVerificationBanner } from "./EmailVerificationBanner";
+//import { EmailVerificationBanner } from "./EmailVerificationBanner";
 
 export interface AuthSplitLayoutProps {
   children: ReactNode;
@@ -11,6 +11,8 @@ export interface AuthSplitLayoutProps {
   progressTotal?: number;
   /** Widen left column beyond default `max-w-md` when needed */
   mainClassName?: string;
+  rightImage?: string;
+  rightImageClassName?: string;
 }
 
 export function AuthSplitLayout({
@@ -20,20 +22,26 @@ export function AuthSplitLayout({
   progressStep,
   progressTotal = 3,
   mainClassName,
+  rightImage,
+  rightImageClassName,
 }: AuthSplitLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col font-display bg-background text-foreground">
-      <EmailVerificationBanner />
+      {/* <EmailVerificationBanner /> */}
+
       <div className="flex flex-1">
-        <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex w-full lg:w-1/2 shrink-0 items-center justify-center p-8">
           <div className={cn("w-full max-w-md", mainClassName)}>{children}</div>
         </div>
-        <div className="relative hidden lg:flex flex-1 bg-card items-center justify-center overflow-hidden">
+
+        <div className="relative hidden lg:flex lg:w-1/2 shrink-0 bg-card items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(0.65_0.25_295/0.2)_0%,transparent_70%)]" />
           <div className="relative px-12 text-center">
             <img
-              src="/Greeting.svg"
-              className="w-45 h-54 animate-float ml-25 my-5"
+              src={rightImage || "/Greeting.svg"}
+              className={
+                rightImageClassName || "w-45 h-54 animate-float ml-25 my-5"
+              }
               alt="Greeting Chameleon"
             />
             <h2 className="text-2xl font-bold font-display mb-4">
