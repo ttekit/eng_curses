@@ -53,6 +53,9 @@ import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
 import GoogleUsernamePage from "./components/GoogleUsernamePage";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
 
 const router = createBrowserRouter([
   {
