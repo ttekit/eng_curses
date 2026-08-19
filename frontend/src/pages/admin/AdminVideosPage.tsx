@@ -296,6 +296,7 @@ export default function AdminVideosPage() {
   const [editDesc, setEditDesc] = useState("");
   const [editAge, setEditAge] = useState("0+");
   const [editThumb, setEditThumb] = useState<File | null>(null);
+  const [editLevel, setEditLevel] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [regenBusy, setRegenBusy] = useState<
     false | "tags" | "cefr" | "captions" | "captions-uk"
@@ -514,6 +515,12 @@ export default function AdminVideosPage() {
     setEditFriendlyLink(v.friendlyLink || slugFriendly(v.videoName));
     setEditAge(v.ageRestriction || "0+");
     setEditThumb(null);
+    const currentLevel = videoLevelBadge(v);
+    setEditLevel(
+      ["A1", "A2", "B1", "B2", "C1", "C2"].includes(currentLevel)
+        ? currentLevel
+        : "",
+    );
   }, []);
 
   const handleSaveEdit = async () => {
@@ -534,6 +541,7 @@ export default function AdminVideosPage() {
           videoDescription: editDesc.trim() || null,
           ageRestriction: editAge,
           friendlyLink: slugFriendly(editFriendlyLink.trim() || name),
+          cefrLevel: editLevel || null,
         }),
       });
 
@@ -642,6 +650,12 @@ export default function AdminVideosPage() {
         setEditName(u.videoName);
         setEditDesc(u.videoDescription || u.content.category.description || "");
         setEditAge(u.ageRestriction || "0+");
+        const currentLevel = videoLevelBadge(u);
+        setEditLevel(
+          ["A1", "A2", "B1", "B2", "C1", "C2"].includes(currentLevel)
+            ? currentLevel
+            : "",
+        );
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Regeneration failed");
@@ -1476,6 +1490,25 @@ export default function AdminVideosPage() {
           </div>
 
           <div className="space-y-2">
+            <label className="text-sm font-medium">
+              CEFR Level (Уровень сложности)
+            </label>
+            <CustomSelect
+              value={editLevel}
+              onChange={setEditLevel}
+              options={[
+                { value: "", label: "Auto (ИИ) / Не задан" },
+                { value: "A1", label: "A1" },
+                { value: "A2", label: "A2" },
+                { value: "B1", label: "B1" },
+                { value: "B2", label: "B2" },
+                { value: "C1", label: "C1" },
+                { value: "C2", label: "C2" },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-2">
             <label
               className="text-sm font-medium"
               htmlFor="admin-edit-vid-desc"
@@ -1574,9 +1607,7 @@ export default function AdminVideosPage() {
                   editSaving ||
                   !!regenBusy ||
                   !editing?.videoCaption?.subtitlesFileLink ||
-                  ["B1", "B2", "C1", "C2"].includes(
-                    videoLevelBadge(editing),
-                  )
+                  ["B1", "B2", "C1", "C2"].includes(videoLevelBadge(editing))
                 }
                 onClick={() => void handleRegenCaptionsUk()}
               >
@@ -2171,8 +2202,8 @@ export default function AdminVideosPage() {
                                       setInspectMeta({ video, tab: "subs-uk" })
                                     }
                                   >
-                                    <Captions className="h-4 w-4" />{" "}
-                                    UK Subtitles
+                                    <Captions className="h-4 w-4" /> UK
+                                    Subtitles
                                   </AdminRowMenuItem>
                                   <AdminRowMenuItem
                                     onClick={() => openEdit(video)}
