@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
+import { Users } from "lucide-react";
+import { TrendingUp } from "lucide-react";
+import { Gauge } from "lucide-react";
+import { Clock } from "lucide-react";
+import { GraduationCap } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
+import { Award } from "lucide-react";
 
 export function Overview() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -16,10 +23,237 @@ export function Overview() {
           isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        <div className=" mx-auto px-6 w-full">
-          <p className="text-3xl font-semibold">
-            здесь будет обзор для учителя
-          </p>
+        <div className="border-b border-border px-6 w-full">
+          <p className="text-3xl font-semibold">Hello Marko</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mt-6 px-6">
+          <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <Users className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                <TrendingUp className="h-3 w-3 " />
+                <span>8%</span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground tracking-tight">
+                {" "}
+                12
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                / 14
+              </span>
+            </div>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Active students
+            </p>
+            <div className="mt-4 w-full">
+              <svg
+                className="w-full h-8 stroke-emerald-500"
+                viewBox="0 0 100 30"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 25C20 20 40 30 60 15C80 0 100 10 100 10"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <Gauge className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                <TrendingUp className="h-3 w-3 " />
+                <span>5%</span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground tracking-tight">
+                {" "}
+                16
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                %
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">Avg. progress</p>
+            <div className="mt-4 w-full">
+              <svg
+                className="w-full h-8 stroke-emerald-500"
+                viewBox="0 0 100 30"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 25C20 20 40 30 60 15C80 0 100 10 100 10"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                <TrendingUp className="h-3 w-3 " />
+                <span>8%</span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground tracking-tight">
+                {" "}
+                124.9
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                h
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Learning hours(mo)
+            </p>
+            <div className="mt-4 w-full">
+              <svg
+                className="w-full h-8 stroke-emerald-500"
+                viewBox="0 0 100 30"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 25C20 20 40 30 60 15C80 0 100 10 100 10"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <GraduationCap className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                <TrendingUp className="h-3 w-3 " />
+                <span>8%</span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground tracking-tight">
+                {" "}
+                43
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                %
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Completion rate
+            </p>
+            <div className="mt-4 w-full">
+              <svg
+                className="w-full h-8 stroke-emerald-500"
+                viewBox="0 0 100 30"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 25C20 20 40 30 60 15C80 0 100 10 100 10"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <ClipboardCheck className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                <TrendingUp className="h-3 w-3 " />
+                <span>8%</span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground tracking-tight">
+                {" "}
+                6
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Reviews pending
+            </p>
+            <div className="mt-4 w-full">
+              <svg
+                className="w-full h-8 stroke-emerald-500"
+                viewBox="0 0 100 30"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 25C20 20 40 30 60 15C80 0 100 10 100 10"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <Award className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
+                <TrendingUp className="h-3 w-3 " />
+                <span>8%</span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground tracking-tight">
+                3
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Certificates(mo)
+            </p>
+            <div className="mt-4 w-full">
+              <svg
+                className="w-full h-8 stroke-emerald-500"
+                viewBox="0 0 100 30"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 25C20 20 40 30 60 15C80 0 100 10 100 10"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
       </main>
     </div>

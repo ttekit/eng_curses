@@ -82,6 +82,11 @@ function resolveVisibleSidebarLinks(user: UserData | null | undefined) {
         return false;
       }
     }
+    if (!isTeacher) {
+      if (["overview", "students", "groups"].includes(link.id)) {
+        return false;
+      }
+    }
     if (link.id === "customise") {
       return false;
     }
