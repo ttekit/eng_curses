@@ -211,23 +211,7 @@ export default function ProfileMain() {
       label: tabLabels[tab.id],
     }));
     if (user?.role === "teacher") {
-      const withoutStudying = withLabels.filter(
-        (t) => t.id !== "studying-plan",
-      );
-      return [
-        withoutStudying[0],
-        {
-          id: "students" as const,
-          label: profile.tabStudents,
-          icon: GraduationCap,
-        },
-        {
-          id: "videos" as const,
-          label: profile.tabVideos,
-          icon: Video,
-        },
-        ...withoutStudying.slice(1),
-      ];
+      return withLabels.filter((t) => t.id === "settings");
     }
     return [...withLabels];
   }, [user?.role, profile]);
@@ -240,14 +224,16 @@ export default function ProfileMain() {
 
   const resolvedTab = useMemo((): TabId => {
     if (!user) return "overview";
+
+    if (user.role === "teacher") {
+      return "settings";
+    }
+
     let tab: TabId = "overview";
     if (tabParam && validIds.has(tabParam)) {
       tab = tabParam as TabId;
     }
     if (user.role !== "teacher" && (tab === "students" || tab === "videos")) {
-      tab = "overview";
-    }
-    if (user.role === "teacher" && tab === "studying-plan") {
       tab = "overview";
     }
     return tab;
@@ -259,17 +245,24 @@ export default function ProfileMain() {
 
   useEffect(() => {
     if (!user) return;
+
+    if (user.role === "teacher") {
+      if (searchParams.get("tab") !== "settings") {
+        setSearchParams({ tab: "settings" }, { replace: true });
+      }
+      return;
+    }
+
     const t = searchParams.get("tab");
     const ids = new Set<string>(tabs.map((tb) => tb.id));
     const needsClear =
       (t && !ids.has(t)) ||
-      (user.role !== "teacher" && (t === "students" || t === "videos")) ||
-      (user.role === "teacher" && t === "studying-plan");
+      (user.role !== "teacher" && (t === "students" || t === "videos"));
+
     if (needsClear) {
       setSearchParams({}, { replace: true });
     }
   }, [user, searchParams, tabs, setSearchParams]);
-
   if (isLoading) {
     return (
       <>
@@ -314,6 +307,7 @@ export default function ProfileMain() {
     else setSearchParams({ tab: id }, { replace: true });
   }
 
+  const isTeacher = user.role === "teacher";
   return (
     <div className="min-h-[calc(100dvh-var(--email-verification-banner-height,0px))] bg-background font-display antialiased">
       {" "}
@@ -374,35 +368,36 @@ export default function ProfileMain() {
                   </div>
                 </div>
               )}
-
-            <div
-              className="mt-8 grid w-full grid-cols-4 gap-1 rounded-xl bg-secondary/50 p-1 sm:flex sm:flex-wrap sm:items-center"
-              role="tablist"
-              aria-label={profile.tabListAria}
-            >
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => selectTab(tab.id)}
-                    className={cn(
-                      "flex w-full hover:cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:w-auto sm:justify-start",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {!isTeacher && (
+              <div
+                className="mt-8 grid w-full grid-cols-4 gap-1 rounded-xl bg-secondary/50 p-1 sm:flex sm:flex-wrap sm:items-center"
+                role="tablist"
+                aria-label={profile.tabListAria}
+              >
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => selectTab(tab.id)}
+                      className={cn(
+                        "flex w-full hover:cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors sm:w-auto sm:justify-start",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <div className="mt-6">
               {activeTab === "overview" ? (
                 <ProfileStats user={statsModel} />

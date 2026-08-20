@@ -42,6 +42,9 @@ const sidebarLinkDefs = [
     to: "https://explys.com/admin",
     isExternal: true,
   },
+  { id: "overview" as const, icon: User, to: "/teacher/overview" },
+  { id: "students" as const, icon: User, to: "/teacher/students" },
+  { id: "groups" as const, icon: User, to: "/teacher/groups" },
 ] as const;
 
 type SidebarLinkId = (typeof sidebarLinkDefs)[number]["id"];
@@ -62,7 +65,23 @@ function shouldShowClassroomNav(user: UserData | null | undefined): boolean {
 }
 
 function resolveVisibleSidebarLinks(user: UserData | null | undefined) {
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
   return sidebarLinkDefs.filter((link) => {
+    if (isTeacher) {
+      if (
+        [
+          "catalog",
+          "search",
+          "classroom",
+          "myLessons",
+          "changelog",
+          "leaderboard",
+          "profile",
+        ].includes(link.id)
+      ) {
+        return false;
+      }
+    }
     if (link.id === "customise") {
       return false;
     }
@@ -153,6 +172,9 @@ export function CatalogSidebar({
     leaderboard: shell.navLeaderboard,
     profile: shell.navProfile,
     admin: shell.navAdmin,
+    overview: shell.navOverview,
+    students: shell.navStudents,
+    groups: shell.navGroups,
   };
   const welcomeName = user?.name;
   const avatarUrl = user?.avatarUrl;

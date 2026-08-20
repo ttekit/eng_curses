@@ -58,6 +58,9 @@ export const appUk = {
     appTheme: "Тема: ",
     navAdmin: "Адмін",
     news: "Що нового",
+    navOverview: "Огляд",
+    navStudents: "Студенти",
+    navGroups: "Групи",
   },
 
   emailVerificationBanner: {

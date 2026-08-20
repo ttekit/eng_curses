@@ -58,6 +58,9 @@ export const appEn = {
     appTheme: "Theme: ",
     navAdmin: "Admin",
     news: "What's new",
+    navOverview: "Overview",
+    navStudents: "Students",
+    navGroups: "Groups",
   },
 
   emailVerificationBanner: {
