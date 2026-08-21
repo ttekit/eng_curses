@@ -7,9 +7,10 @@ import { Clock } from "lucide-react";
 import { GraduationCap } from "lucide-react";
 import { ClipboardCheck } from "lucide-react";
 import { Award } from "lucide-react";
+import { TopBar } from "../../components/Topbar";
 
 export function Overview() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -19,15 +20,13 @@ export function Overview() {
         reserveTopNavSpace={false}
       />
       <main
-        className={`flex-1 transition-all duration-300 pt-8 ${
+        className={`flex-1 transition-all duration-300 ${
           isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        <div className="border-b border-border px-6 w-full">
-          <p className="text-3xl font-semibold">Hello Marko</p>
-        </div>
+        <TopBar />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mt-6 px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mt-4 px-6">
           <div className="flex flex-col rounded-[20px] bg-card border border-border p-5 shadow-sm">
             <div className="flex items-start justify-between mb-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">

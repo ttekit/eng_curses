@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
+import { TopBar } from "../../components/Topbar";
 
 export function Groups() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="bg-background text-foreground flex min-h-screen">
@@ -17,11 +18,7 @@ export function Groups() {
           isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        <div className="px-6 w-full mx-auto">
-          <p className="text-3xl font-semibold">
-            здесь будет страница групп для учителя
-          </p>
-        </div>
+        <TopBar />
       </main>
     </div>
   );

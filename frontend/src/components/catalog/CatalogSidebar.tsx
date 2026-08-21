@@ -140,6 +140,7 @@ export function CatalogSidebar({
   const shell = useAppMessages().catalogShell;
   const common = useAppMessages().common;
   const [unreadCount, setUnreadCount] = useState(0);
+  const isTeacher = user?.role === "teacher";
 
   const { theme, setTheme } = useTheme();
   const { locale, setLocale } = useLandingLocale();
@@ -217,7 +218,6 @@ export function CatalogSidebar({
     if (value === "All") return common.filterAll;
     return value;
   };
-
   const sidebarTopClass = resolve_sidebar_top_class(reserveTopNavSpace);
   const visibleSidebarLinks = resolveVisibleSidebarLinks(user);
 
@@ -427,7 +427,7 @@ export function CatalogSidebar({
                 );
               })}
           </nav>
-          {!collapsed && (
+          {!isTeacher && !collapsed && (
             <div className="space-y-4 border-t border-border p-4">
               <p className="mb-2 text-sm font-medium text-foreground">
                 {shell.sectionLevel}
@@ -452,7 +452,7 @@ export function CatalogSidebar({
             </div>
           )}
 
-          {!collapsed && genres.length > 0 && (
+          {!isTeacher && !collapsed && genres.length > 0 && (
             <div className="space-y-4 border-t border-border p-4">
               <p className="mb-2 text-sm font-medium text-foreground">
                 {shell.sectionGenre}
@@ -478,73 +478,76 @@ export function CatalogSidebar({
           )}
         </div>
 
-        <div className="mt-auto flex flex-col gap-1 border-t border-border p-4 shrink-0 bg-card">
-          <Link
-            to="/whats-new"
-            className={cn(
-              "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
-              linkActive("changelog")
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <div className="flex h-full w-12 shrink-0 items-center justify-center">
-              <div className="relative flex h-5 w-5 items-center justify-center">
-                <BellRing className="h-5 w-5" />
-                {collapsed && unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-[1.5px] border-card bg-red-500"></span>
+        {!isTeacher && (
+          <div className="mt-auto flex flex-col gap-1 border-t border-border p-4 shrink-0 bg-card">
+            <Link
+              to="/whats-new"
+              className={cn(
+                "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
+                linkActive("changelog")
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <div className="flex h-full w-12 shrink-0 items-center justify-center">
+                <div className="relative flex h-5 w-5 items-center justify-center">
+                  <BellRing className="h-5 w-5" />
+                  {collapsed && unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-[1.5px] border-card bg-red-500"></span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className={cn(
+                  "flex min-w-0 items-center overflow-hidden transition-all duration-300",
+                  collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
+                )}
+              >
+                <span className="truncate whitespace-nowrap">
+                  {sidebarLabels["changelog"]}
+                </span>
+                {!collapsed && unreadCount > 0 && (
+                  <span className="ml-auto flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-sm">
+                    {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
 
-            <div
+            <Link
+              to="/profile?tab=settings"
               className={cn(
-                "flex min-w-0 items-center overflow-hidden transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
+                "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
+                pathname === "/profile" &&
+                  searchParams.get("tab") === "settings"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <span className="truncate whitespace-nowrap">
-                {sidebarLabels["changelog"]}
-              </span>
-              {!collapsed && unreadCount > 0 && (
-                <span className="ml-auto flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-sm">
-                  {unreadCount > 99 ? "99+" : unreadCount}
+              <div className="flex h-full w-12 shrink-0 items-center justify-center">
+                <Settings className="h-5 w-5 shrink-0" />
+              </div>
+
+              <div
+                className={cn(
+                  "flex min-w-0 items-center overflow-hidden transition-all duration-300",
+                  collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
+                )}
+              >
+                <span className="truncate whitespace-nowrap">
+                  {shell.settings}
                 </span>
-              )}
-            </div>
-          </Link>
-
-          <Link
-            to="/profile?tab=settings"
-            className={cn(
-              "relative flex items-center h-10 w-full rounded-lg transition-all duration-300",
-              pathname === "/profile" && searchParams.get("tab") === "settings"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <div className="flex h-full w-12 shrink-0 items-center justify-center">
-              <Settings className="h-5 w-5 shrink-0" />
-            </div>
-
-            <div
-              className={cn(
-                "flex min-w-0 items-center overflow-hidden transition-all duration-300",
-                collapsed ? "w-0 opacity-0" : "flex-1 opacity-100 pr-4",
-              )}
-            >
-              <span className="truncate whitespace-nowrap">
-                {shell.settings}
-              </span>
-            </div>
-          </Link>
-        </div>
+              </div>
+            </Link>
+          </div>
+        )}
       </aside>
 
-      {!collapsed && (
+      {!isTeacher && !collapsed && (
         <div
           className={cn(
             "fixed right-0 bottom-0 left-0 z-40 hidden bg-black/40 backdrop-blur-[3px] lg:block",

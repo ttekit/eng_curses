@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
+import { TopBar } from "../../components/Topbar";
 
 export function Students() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   return (
     <div className="bg-background flex min-h-screen ">
       <CatalogSidebar
@@ -15,9 +16,7 @@ export function Students() {
           isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        <div className="mx-auto px-6">
-          <p className="text-3xl font-semibold">Students</p>
-        </div>
+        <TopBar />
       </main>
     </div>
   );
