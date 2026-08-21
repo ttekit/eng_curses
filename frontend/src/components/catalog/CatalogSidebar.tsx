@@ -272,14 +272,16 @@ export function CatalogSidebar({
                   ? formatMessage(shell.greetingHi, { name: welcomeName })
                   : shell.welcomeBackExclaim}
               </p>
-              <p className="truncate text-[13px] font-semibold text-accent leading-tight mt-0.5">
-                {englishLevel?.trim()
-                  ? formatMessage(shell.levelWithDot, {
-                      prefix: common.levelPrefix,
-                      level: englishLevel,
-                    })
-                  : shell.brandsFallback}
-              </p>
+              {!isTeacher && (
+                <p className="truncate text-[13px] font-semibold text-accent leading-tight mt-0.5">
+                  {englishLevel?.trim()
+                    ? formatMessage(shell.levelWithDot, {
+                        prefix: common.levelPrefix,
+                        level: englishLevel,
+                      })
+                    : shell.brandsFallback}
+                </p>
+              )}
             </div>
           </div>
 

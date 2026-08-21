@@ -254,6 +254,28 @@ export function Overview() {
             </div>
           </div>
         </div>
+        <div className="w-6/10 mt-6 ml-6 flex flex-col rounded-[20px] bg-card border border-border shadow-sm min-h-80">
+          <div className="flex items-start justify-between p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Daily Active
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Learning minutes across the organization - last 14 days
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-500"></span>
+              Live
+            </div>
+          </div>
+          <div className="flex  mt-1 border-b"></div>
+        </div>
       </main>
     </div>
   );
