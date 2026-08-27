@@ -11,8 +11,10 @@ import {
   Delete,
 } from "@nestjs/common";
 import { Request } from "express";
+import { UserRole } from "@generated/prisma/enums";
 import { AuthGuard } from "src/auth/auth.guard";
 import { JwtAdminGuard } from "src/auth/guards/jwt-admin.guard";
+import type { AuthedUser } from "src/auth/auth.types";
 import { jwtSubToUserId } from "src/auth/jwt-subject.util";
 import { ConstellationGeneratorService } from "./constellation-generator.service";
 import { ConstellationProgressService } from "./constellation-progress.service";
@@ -31,6 +33,15 @@ export class ConstellationController {
     private readonly progressService: ConstellationProgressService,
     private readonly crudService: ConstellationService,
   ) { }
+
+  @Post("regenerate")
+  @UseGuards(AuthGuard)
+  async regeneratePersonalConstellation(
+    @Req() req: Request & { user: AuthedUser },
+  ) {
+    const userId = jwtSubToUserId(req.user);
+    return this.generatorService.regeneratePersonalConstellationForUser(userId);
+  }
 
   @Post("generate")
   @UseGuards(JwtAdminGuard)
@@ -70,8 +81,14 @@ export class ConstellationController {
 
   @Get()
   @UseGuards(AuthGuard)
-  async getAllConstellations() {
-    return this.crudService.getAllConstellations();
+  async getAllConstellations(
+    @Req() req: Request & { user: AuthedUser },
+  ) {
+    if (req.user.role === UserRole.ADMIN) {
+      return this.crudService.getAllConstellations();
+    }
+    const userId = jwtSubToUserId(req.user);
+    return this.crudService.getConstellationsForUser(userId);
   }
 
   @Get(":id")

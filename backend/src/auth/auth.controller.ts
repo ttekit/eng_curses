@@ -203,10 +203,16 @@ export class AuthController {
     const userId = resolve_authed_user_id(req.user);
     const result = await this.authService.updateUserPreferences(userId, body);
 
-    const targetDomain = "General English (Level A1: basic words, alphabet, simple greetings)";
-    this.constellationGenerator.generateAndSaveConstellation(targetDomain, "A1", userId)
-      .then(() => console.log(`Constellation generation triggered via update-preferences for user ${userId}`))
-      .catch(err => console.error(`Failed to generate constellation:`, err));
+    // Only when placement is completed via englishLevel (e.g. catalog skip).
+    // Do not generate on every preferences save during registration.
+    if (body.englishLevel !== undefined) {
+      const cefrLevel = String(body.englishLevel).trim() || "A1";
+      this.constellationGenerator
+        .ensurePersonalConstellationForUser(userId, cefrLevel)
+        .catch((err: unknown) =>
+          console.error(`Failed to generate constellation:`, err),
+        );
+    }
 
     return result;
   }

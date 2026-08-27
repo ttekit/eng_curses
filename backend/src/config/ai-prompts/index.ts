@@ -15,4 +15,6 @@ export { DEFAULT_PROMPT_COMPREHENSION_TESTS } from "./comprehension-tests.prompt
 export { DEFAULT_PROMPT_PLACEMENT_TEST } from "./placement-test.prompt";
 export { DEFAULT_PROMPT_VOCABULARY_PERSONALIZE } from "./vocabulary-personalize.prompt";
 export { DEFAULT_PROMPT_CONSTELLATION_GENERATOR } from "./constellation-generator.prompt";
+export { DEFAULT_PROMPT_CONSTELLATION_PLAN } from "./constellation-plan.prompt";
+export { DEFAULT_PROMPT_STAR_CONTENT } from "./star-content.prompt";
 export { DEFAULT_SUBTITLE_TRANSLATE_PROMPT } from "./subtitle-translate.prompt";

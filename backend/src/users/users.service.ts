@@ -15,6 +15,7 @@ import type { AuthMethod } from "@generated/prisma/enums";
 import { UserRole } from "@generated/prisma/enums";
 import { ResetProgressDto } from "./dto/reset-progress.dto";
 import { MailService } from "src/common/mail/mail.service";
+import { ConstellationGeneratorService } from "src/constelattions/constellation-generator.service";
 
 function parseRoleFromDto(roleRaw: string | undefined): UserRole | undefined {
   if (roleRaw == null || typeof roleRaw !== "string") {
@@ -47,6 +48,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly alcorythmService: AlcorythmService,
     private readonly mailService: MailService,
+    private readonly constellationGenerator: ConstellationGeneratorService,
   ) { }
 
   private readonly userSelect = {
@@ -537,6 +539,21 @@ export class UsersService {
       hatedGenres !== undefined
     ) {
       await this.alcorythmService.analyzeUserLevel(id);
+    }
+
+    if (dataToUpdate.hasCompletedPlacement === true) {
+      const cefrLevel =
+        typeof englishLevel === "string" && englishLevel.trim()
+          ? englishLevel.trim()
+          : "A1";
+      this.constellationGenerator
+        .ensurePersonalConstellationForUser(id, cefrLevel)
+        .catch((err: unknown) => {
+          this.logger.error(
+            `Failed to ensure constellation for user ${id}`,
+            err instanceof Error ? err.stack : err,
+          );
+        });
     }
 
     return {

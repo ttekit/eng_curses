@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { webvtt } from "@deepgram/captions";
@@ -35,6 +36,7 @@ import { buildVttChunk } from "src/common/utils/vtt.utils";
 import { createReadStream, createWriteStream } from "node:fs";
 import { Readable } from "node:stream";
 import * as readline from "node:readline";
+import { SubtitleIngestionService } from "src/srs/subtitle-ingestion.service";
 
 const DEEPGRAM_LISTEN = "https://api.deepgram.com/v1/listen";
 const execFileAsync = promisify(execFile);
@@ -288,6 +290,8 @@ export class VideoCaptionsService {
     private readonly configService: ConfigService,
     private readonly videoTranscriptTags: VideoTranscriptTagsService,
     private readonly deepSeekService: DeepSeekService,
+    @Optional()
+    private readonly subtitleIngestionService?: SubtitleIngestionService,
   ) {
     this.bucket = this.configService.getOrThrow<string>("AWS_S3_BUCKET_NAME");
     this.region =
@@ -483,7 +487,22 @@ export class VideoCaptionsService {
       );
     }
 
+    void this.trigger_segment_ingestion(contentVideoId);
+
     return row;
+  }
+
+  private trigger_segment_ingestion(contentVideoId: number): void {
+    if (!this.subtitleIngestionService) {
+      return;
+    }
+    void this.subtitleIngestionService
+      .ingest_for_video(contentVideoId)
+      .catch((error) => {
+        this.logger.warn(
+          `Segment ingestion failed for ContentVideo ${contentVideoId}: ${String(error)}`,
+        );
+      });
   }
 
   async syncUkrainianSubtitles(contentVideoId: number): Promise<void> {

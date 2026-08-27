@@ -212,7 +212,7 @@ export class PlacementTestService {
         if (band.code === "A1") {
           targetDomain = `${baseGoal} (Level A1: basic words, alphabet, simple greetings)`;
         }
-        this.constellationGenerator.generateAndSaveConstellation(targetDomain, band.code, userId).catch(err => {
+        this.constellationGenerator.ensurePersonalConstellationForUser(userId, band.code, targetDomain).catch(err => {
           this.logger.error(`Failed to auto-generate constellation for user ${userId} on fallback:`, err);
         });
       }
@@ -284,7 +284,7 @@ export class PlacementTestService {
     }
 
     this.constellationGenerator
-      .generateAndSaveConstellation(targetDomain, band.code, userId)
+      .ensurePersonalConstellationForUser(userId, band.code, targetDomain)
       .catch((err) => {
         this.logger.error(`Failed to auto-generate constellation for user ${userId}:`, err);
       });
@@ -339,7 +339,7 @@ export class PlacementTestService {
       });
 
       this.constellationGenerator
-        .generateAndSaveConstellation(targetDomain, band.code, userId)
+        .ensurePersonalConstellationForUser(userId, band.code, targetDomain)
         .catch((err) => {
           this.logger.error(`Failed to auto-generate constellation for user ${userId} on skip:`, err);
         });

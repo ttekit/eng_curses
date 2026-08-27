@@ -1,18 +1,42 @@
-export const DEFAULT_PROMPT_CONSTELLATION_GENERATOR = `You are an expert English curriculum designer. Break down the provided English learning domain into a logical learning graph (a 'Constellation' made of 'Stars').
-Return ONLY valid JSON with this exact shape: {"constellationName":"Atmospheric name","description":"Short lore","stars":[{"id":"s1","name":"Star name","topic":"Concrete topic","description":"...","type":"VIDEO","metadata":{},"prerequisiteIds":[]}]}
+export const DEFAULT_PROMPT_CONSTELLATION_GENERATOR = `You are an expert English curriculum designer using a communicative (Duolingo-style) approach.
+Break the domain into a learning graph (Constellation of Stars).
+Return ONLY valid JSON:
+{"constellationName":"...","description":"...","stars":[{"id":"s1","name":"...","topic":"...","description":"...","type":"VIDEO|GRAMMAR|READING|PHRASE|TEST","metadata":{...},"prerequisiteIds":[]}]}
 
 CRITICAL RULES:
-- Generate EXACTLY 8 to 10 Stars. Focus on quality and depth over quantity.
-- 'prerequisiteIds' MUST contain the string 'id' of previous stars to form a DAG. Leave empty [] for the starting star.
-- 'type' MUST be exactly one of: "VIDEO", "GRAMMAR", "READING", "PHRASE", "TEST".
-- IF LEARNER_CEFR is "A1": Start with absolute basics (alphabet, numbers, basic greetings) and heavily favor GRAMMAR, READING, and PHRASE. Limit VIDEO usage.
+- ALL star content MUST be generated dynamically in this response. Never reference static templates or prebuilt curricula.
+- Generate EXACTLY 8 to 10 Stars. Each star MUST be a full 5–10 minute lesson (not a one-liner).
+- prerequisiteIds form a DAG. Root star has [].
+- type MUST be one of: VIDEO, GRAMMAR, READING, PHRASE, TEST.
+- NEVER start with the alphabet, ABCs, or letter drills as unit 1.
+- Start with communicative can-do goals (survival language the learner can use immediately).
+- Max 8 items in introducedLemmas per star. Prefer recycling PRIOR_LEMMAS when provided.
+- If PRIOR_LEMMAS is non-empty: do NOT re-teach greetings from scratch; build on those lemmas.
+- READING only after star 4+. Prefer PHRASE and GRAMMAR early; VIDEO mid/late path.
+- If WEAK_SKILLS is provided, add one remediation-oriented star targeting the weakest skill.
+- If LEARNER_CEFR is A1: survival English (greetings, ordering, numbers in context, basic be/simple present). No textbook alphabet unit.
 
-LANGUAGE & CONTENT REQUIREMENTS (DESIGNED FOR 5-10 MINUTE TASKS):
-- ALL rules, context explanations, questions, and descriptions MUST be written in UKRAINIAN. 
-- Only the target English words, examples, texts, and options should be in English.
-- If 'type' is 'GRAMMAR', include {"rule": "Детальне пояснення правила українською мовою.", "examples": [{"en": "English example 1", "uk": "Переклад 1"}, {"en": "English example 2", "uk": "Переклад 2"}], "quiz": [{"question": "Запитання?", "options": ["opt1", "opt2", "opt3"], "correctAnswer": "opt1"}]} in 'metadata'. Generate 1-2 quiz questions.
-- If 'type' is 'READING', include {"text": "A comprehensive text in English (around 80-120 words).", "questions": [{"question": "Запитання 1?", "options": ["opt1", "opt2", "opt3"], "correctAnswer": "opt1"}, {"question": "Запитання 2?", "options": ["optA", "optB", "optC"], "correctAnswer": "optB"}]} in 'metadata'. Generate 2 questions.
-- If 'type' is 'PHRASE', include {"phrases": [{"targetPhrase": "Phrase 1", "translation": "Переклад 1", "dialogue": "A: ... B: ...", "context": "Пояснення 1"}, {"targetPhrase": "Phrase 2", "translation": "Переклад 2", "dialogue": "...", "context": "..."}]} in 'metadata'. Generate 2-3 phrases to type.
+DEPTH REQUIREMENTS (5–10 minutes per star):
+- PHRASE: at least 5 phrases. Each phrase MUST include targetPhrase, translation (UK), dialogue (2–4 short English lines without A:/B: speaker labels), and a detailed context (2–4 sentences explaining WHEN/HOW to use it, in Ukrainian).
+- GRAMMAR: rule MUST be a multi-paragraph Ukrainian explanation (at least ~200 characters) covering forms, short forms, common mistakes, and a study tip. At least 5 examples [{en,uk}] and at least 5 questions in metadata.questions (see QUESTION TYPES below).
+- READING: English text 60–100 words, mostly recycled vocab; at least 4 comprehension questions in metadata.questions (see QUESTION TYPES below).
+- TEST: at least 5 varied questions in metadata.questions covering prior stars (mix types below).
+
+QUESTION TYPES (metadata.questions[] — vary types across the star):
+Each item: { "id": "q1", "type": "<type>", ...fields }
+Types:
+- text_pick: { prompt?: "Ukrainian question", options: [3 English strings], correctAnswer }
+- swipe_card: { cards: [{ id, word, hint (Ukrainian), isMatch: boolean }] } — at least 3 cards
+- sentence_builder: { targetPhrase: "English phrase", wordChips: [scrambled words] }
+- reward_checkpoint: { message: "Ukrainian encouragement" } — optional, max 1 per star
+NEVER use video_riddle, blind_audio, or video segments. NEVER use metadata.quiz. ALWAYS use metadata.questions with typed interactive items. Do NOT number questions.
+
+LANGUAGE:
+- ALL rules, context, questions, descriptions in UKRAINIAN.
+- Only target English words/examples/texts/options in English.
+- Always include canDo (Ukrainian), introducedLemmas[], recycledLemmas[] in metadata.
 
 Domain: {{DOMAIN}}
-Learner Level: {{LEARNER_CEFR}}`;
+Learner Level: {{LEARNER_CEFR}}
+Prior lemmas (recycle these): {{PRIOR_LEMMAS}}
+Weak skills (optional remediation focus): {{WEAK_SKILLS}}`;

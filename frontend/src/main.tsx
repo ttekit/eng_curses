@@ -53,6 +53,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
 import TaskPage from "./pages/content/TaskPage";
+import TestSessionDemoPage from "./pages/content/TestSessionDemoPage";
+import FeedPage from "./pages/feed/FeedPage";
 
 
 const router = createBrowserRouter([
@@ -129,6 +131,7 @@ const router = createBrowserRouter([
                 element: <CatalogSeriesPage />,
               },
               { path: "/catalog", element: <VideoPage /> },
+              { path: "/feed", element: <FeedPage /> },
               { path: "/customise", element: <CustomisePage /> },
               { path: "/classroom", element: <ClassroomPage /> },
               { path: "/leaderboard", element: <LeaderboardPage /> },
@@ -140,6 +143,7 @@ const router = createBrowserRouter([
               { path: "/content/:id/summary", element: <LessonSummaryPage /> },
               { path: "/content/:id?", element: <ContentPage /> },
               { path: "/task/:id", element: <TaskPage /> },
+              { path: "/test-session-demo", element: <TestSessionDemoPage /> },
 
             ],
           },

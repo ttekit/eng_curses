@@ -4,7 +4,8 @@
     "types": [
       "jest",
       "node",
-      "multer"
+      "multer",
+      "express-session"
     ],
     "esModuleInterop": true,
     "isolatedModules": true,

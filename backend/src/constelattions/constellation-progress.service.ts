@@ -1,10 +1,22 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "src/prisma.service";
 import { ProgressStatus } from "../generated/prisma/client";
+import { StarContentGeneratorService } from "./star-content-generator.service";
+import {
+  compute_effective_star_status,
+  find_stars_to_unlock,
+  resolve_root_star_id,
+} from "./star-unlock.util";
 
+/**
+ * Tracks star unlock progression within a constellation.
+ */
 @Injectable()
 export class ConstellationProgressService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly starContentGenerator: StarContentGeneratorService,
+  ) {}
 
   async completeStar(userId: number, starId: number) {
     const star = await this.prisma.star.findUnique({
@@ -29,7 +41,8 @@ export class ConstellationProgressService {
 
     const constellationStars = await this.prisma.star.findMany({
       where: { constellationId: star.constellationId },
-      orderBy: { id: 'asc' },
+      include: { prerequisites: { select: { prerequisiteId: true } } },
+      orderBy: { id: "asc" },
     });
 
     const userProgress = await this.prisma.userStarProgress.findMany({
@@ -41,27 +54,33 @@ export class ConstellationProgressService {
         .filter((p) => p.status === ProgressStatus.COMPLETED)
         .map((p) => p.starId),
     );
-
-    // Добавляем ту, которую только что прошли
     completedStarIds.add(starId);
 
-    const newlyAvailable: number[] = [];
-
-    const nextStar = constellationStars.find((s) => !completedStarIds.has(s.id));
-
-    if (nextStar) {
-      const progressRecord = userProgress.find((p) => p.starId === nextStar.id);
-      const currentStatus = progressRecord ? progressRecord.status : ProgressStatus.LOCKED;
-
-      if (currentStatus === ProgressStatus.LOCKED) {
-        newlyAvailable.push(nextStar.id);
-
-        await this.prisma.userStarProgress.upsert({
-          where: { userId_starId: { userId, starId: nextStar.id } },
-          update: { status: ProgressStatus.AVAILABLE },
-          create: { userId, starId: nextStar.id, status: ProgressStatus.AVAILABLE },
-        });
-      }
+    const unlockNodes = constellationStars.map((item) => ({
+      id: item.id,
+      prerequisiteIds: item.prerequisites.map(
+        (prerequisite) => prerequisite.prerequisiteId,
+      ),
+    }));
+    const progressByStarId = new Map(
+      userProgress.map((record) => [record.starId, record.status]),
+    );
+    const newlyAvailable = find_stars_to_unlock(
+      unlockNodes,
+      completedStarIds,
+      progressByStarId,
+    );
+    for (const unlockedStarId of newlyAvailable) {
+      await this.prisma.userStarProgress.upsert({
+        where: { userId_starId: { userId, starId: unlockedStarId } },
+        update: { status: ProgressStatus.AVAILABLE },
+        create: {
+          userId,
+          starId: unlockedStarId,
+          status: ProgressStatus.AVAILABLE,
+        },
+      });
+      this.starContentGenerator.schedule_star_content(unlockedStarId);
     }
 
     const allCompleted = constellationStars.every((s) =>
@@ -96,30 +115,49 @@ export class ConstellationProgressService {
     userId: number,
     constellationId: number,
   ) {
-    // Сортируем выдачу графа на фронт тоже строго по ID
     const stars = await this.prisma.star.findMany({
       where: { constellationId },
       include: {
         prerequisites: { select: { prerequisiteId: true } },
         userProgress: { where: { userId } },
       },
-      orderBy: { id: 'asc' },
+      orderBy: { id: "asc" },
     });
 
     if (!stars.length) {
       throw new NotFoundException("Constellation empty or not found");
     }
 
-    return stars.map((s, index) => {
-      // По умолчанию открыта только самая первая звезда (index === 0), остальные закрыты
-      const defaultStatus = index === 0 ? ProgressStatus.AVAILABLE : ProgressStatus.LOCKED;
-      const status = s.userProgress[0]?.status || defaultStatus;
+    const unlockNodes = stars.map((item) => ({
+      id: item.id,
+      prerequisiteIds: item.prerequisites.map(
+        (prerequisite) => prerequisite.prerequisiteId,
+      ),
+    }));
+    const rootStarId = resolve_root_star_id(unlockNodes);
+    const completedStarIds = new Set(
+      stars
+        .filter((item) => item.userProgress[0]?.status === ProgressStatus.COMPLETED)
+        .map((item) => item.id),
+    );
 
-      // Звезда скрыта, если она заблокирована и предыдущая звезда еще не пройдена
+    return stars.map((s, index) => {
+      const storedStatus = s.userProgress[0]?.status;
+      const status = compute_effective_star_status(
+        {
+          id: s.id,
+          prerequisiteIds: s.prerequisites.map(
+            (prerequisite) => prerequisite.prerequisiteId,
+          ),
+        },
+        storedStatus,
+        completedStarIds,
+        rootStarId,
+      );
       const isHidden =
         status === ProgressStatus.LOCKED &&
         index > 0 &&
-        stars[index - 1].userProgress[0]?.status !== ProgressStatus.COMPLETED;
+        stars[index - 1]?.userProgress[0]?.status !== ProgressStatus.COMPLETED;
 
       return {
         id: s.id,

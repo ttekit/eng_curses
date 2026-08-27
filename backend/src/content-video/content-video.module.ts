@@ -10,6 +10,7 @@ import { ContentVideoSummaryRecommendationsGeminiClient } from "src/content-vide
 import { PostWatchSurveyGeminiClient } from "src/content-video/post-watch-survey-gemini.client";
 import { PostWatchSurveyService } from "src/content-video/post-watch-survey.service";
 import { VocabularyHintsService } from "src/content-video/vocabulary-hints.service";
+import { WordTranslateService } from "src/content-video/word-translate.service";
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
 import { VocabularyPersonalizeGeminiClient } from "src/content-video/vocabulary-personalize-gemini.client";
 import { UserVocabularyModule } from "src/user-vocabulary/user-vocabulary.module";
@@ -17,6 +18,7 @@ import { ContentVideoController } from "./content-video.controller";
 import { ContentVideoService } from "./content-video.service";
 import { DeepSeekService } from "src/contents/deepseek.service";
 import { ConstellationModule } from "src/constelattions/constellation.module";
+import { SrsModule } from "src/srs/srs.module";
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { ConstellationModule } from "src/constelattions/constellation.module";
     AlcorythmModule,
     UserVocabularyModule,
     ConstellationModule,
+    SrsModule,
   ],
   controllers: [ContentVideoController],
   providers: [
@@ -37,6 +40,7 @@ import { ConstellationModule } from "src/constelattions/constellation.module";
     ContentVideoOpenAnswerGraderClient,
     ContentVideoSummaryRecommendationsGeminiClient,
     VocabularyHintsService,
+    WordTranslateService,
     VocabularyPersonalizeGeminiClient,
     VocabularyPersonalizationService,
     DeepSeekService,

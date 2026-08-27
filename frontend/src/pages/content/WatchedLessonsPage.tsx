@@ -23,7 +23,6 @@ import {
 import {
   fetchAllConstellations,
   fetchConstellationGraph,
-  completeStar,
   type Constellation,
   type StarProgress,
 } from "../../lib/constellationApi";
@@ -257,19 +256,6 @@ export default function WatchedLessonsPage() {
     };
   }, []);
 
-  const handleCompleteStar = async (starId: number, constellationId: number) => {
-    try {
-      await completeStar(starId);
-      const updatedGraph = await fetchConstellationGraph(constellationId);
-      setStarProgressMap((prev) => ({
-        ...prev,
-        [constellationId]: Array.isArray(updatedGraph) ? updatedGraph : (updatedGraph.stars || []),
-      }));
-    } catch (e) {
-      console.error("Failed to complete star:", e);
-    }
-  };
-
   const cards = useMemo(() => {
     const rawCards = videos.map(toCardVideo);
     return [...rawCards].reverse();
@@ -365,7 +351,6 @@ export default function WatchedLessonsPage() {
                       key={c.id}
                       constellation={c}
                       progress={starProgressMap[c.id] || []}
-                      onCompleteStar={(starId) => handleCompleteStar(starId, c.id)}
                       onFinishCategory={(cid) => {
                         console.log("Finished category:", cid);
                       }}

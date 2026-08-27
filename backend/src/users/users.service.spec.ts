@@ -5,6 +5,7 @@ import { AlcorythmService } from "../alcorythm/alcorythm.service";
 import { MailService } from "src/common/mail/mail.service";
 import { UsersService } from "./users.service";
 import { UserRole } from "@generated/prisma/enums";
+import { ConstellationGeneratorService } from "src/constelattions/constellation-generator.service";
 
 jest.mock("src/common/mail/mail.service", () => ({
   MailService: jest.fn().mockImplementation(() => ({
@@ -25,6 +26,12 @@ describe("UsersService", () => {
         {
           provide: MailService,
           useValue: { validateEmailDomain: jest.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: ConstellationGeneratorService,
+          useValue: {
+            ensurePersonalConstellationForUser: jest.fn().mockResolvedValue({ id: 1 }),
+          },
         },
       ],
     }).compile();
@@ -52,7 +59,10 @@ describe("UsersService", () => {
         hasCompletedPlacement: false,
       } as never);
 
-      expect(updateSpy).toHaveBeenCalledWith(1, { name: "Ada" });
+      expect(updateSpy).toHaveBeenCalledWith(1, {
+        name: "Ada",
+        hasCompletedPlacement: false,
+      });
     });
 
     // it("allows marking placement complete", async () => {

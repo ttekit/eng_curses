@@ -1,25 +1,22 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, Lock, Play, Star as StarIcon, Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle2, Lock, Play, Star as StarIcon, Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { Constellation, Star, StarProgress } from "../../lib/constellationApi";
 
 interface ConstellationPlanProps {
     constellation: Constellation;
     progress: StarProgress[];
-    onCompleteStar?: (starId: number) => Promise<void> | void;
     onFinishCategory?: (constellationId: number) => void;
 }
 
 export function ConstellationPlan({
     constellation,
     progress,
-    onCompleteStar,
     onFinishCategory,
 }: ConstellationPlanProps) {
     const [isZoomed, setIsZoomed] = useState(false);
     const [selectedStar, setSelectedStar] = useState<Star | null>(null);
-    const [completingId, setCompletingId] = useState<number | null>(null);
 
     const starStatusMap = useMemo(() => {
         const map = new Map<number, string>();
@@ -51,12 +48,8 @@ export function ConstellationPlan({
         });
     }, [constellation.stars]);
 
-    const getEffectiveStatus = (star: Star, index: number): string => {
-        const raw = starStatusMap.get(star.id) || "LOCKED";
-        if (index === 0 && raw === "LOCKED") {
-            return "AVAILABLE";
-        }
-        return raw;
+    const getEffectiveStatus = (star: Star): string => {
+        return starStatusMap.get(star.id) || "LOCKED";
     };
 
     const getStatusStyles = (status?: string) => {
@@ -83,18 +76,6 @@ export function ConstellationPlan({
         }
 
         return constellation.stars[index - 1].name;
-    };
-
-    const handleActionClick = async (starId: number) => {
-        if (!onCompleteStar || completingId !== null) return;
-        try {
-            setCompletingId(starId);
-            await Promise.resolve(onCompleteStar(starId));
-        } catch (error) {
-            alert("Помилка сервера (429): Занадто багато запитів. Будь ласка, зачекайте хвилину, поки сервер зніме блокування.");
-        } finally {
-            setCompletingId(null);
-        }
     };
 
     const renderStarsGraph = (interactive: boolean) => {
@@ -163,7 +144,7 @@ export function ConstellationPlan({
                         );
                     }
 
-                    const status = getEffectiveStatus(star, i);
+                    const status = getEffectiveStatus(star);
                     const styles = getStatusStyles(status);
                     const isSelected = selectedStar?.id === star.id;
 
@@ -211,7 +192,7 @@ export function ConstellationPlan({
 
     const getStarTypeBadge = (type?: string) => {
         switch (type) {
-            case "VIDEO": return { label: "Відео-урок", icon: "🎬", color: "bg-blue-500/20 text-blue-300 border-blue-500/30" };
+            case "VIDEO": return { label: "Урок", icon: "✨", color: "bg-purple-500/20 text-purple-300 border-purple-500/30" };
             case "GRAMMAR": return { label: "Граматика", icon: "📖", color: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30" };
             case "READING": return { label: "Читання", icon: "📚", color: "bg-orange-500/20 text-orange-300 border-orange-500/30" };
             case "PHRASE": return { label: "Практика фраз", icon: "✍️", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
@@ -221,7 +202,7 @@ export function ConstellationPlan({
     };
 
     const selectedIndex = selectedStar ? constellation.stars.findIndex((s) => s.id === selectedStar.id) : -1;
-    const selectedStatus = selectedStar ? getEffectiveStatus(selectedStar, selectedIndex) : "LOCKED";
+    const selectedStatus = selectedStar ? getEffectiveStatus(selectedStar) : "LOCKED";
 
 
     return (
@@ -369,42 +350,13 @@ export function ConstellationPlan({
                                                     ✨ <strong>Тема доступна!</strong> Натисніть кнопку нижче, щоб перейти до виконання завдання:
                                                 </p>
 
-                                                {selectedStar.type === "VIDEO" && selectedStar.contentVideoId ? (
-                                                    <Link
-                                                        to={`/content/${selectedStar.contentVideoId}`}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                                                    >
-                                                        <Play className="w-4 h-4 fill-current shrink-0" />
-                                                        <span>Дивитись відео-урок</span>
-                                                    </Link>
-                                                ) : selectedStar.type && selectedStar.type !== "VIDEO" ? (
-                                                    <Link
-                                                        to={`/task/${selectedStar.id}`}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                                                    >
-                                                        <Sparkles className="w-4 h-4 shrink-0" />
-                                                        <span>Почати завдання</span>
-                                                    </Link>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        disabled={completingId === selectedStar.id}
-                                                        onClick={() => void handleActionClick(selectedStar.id)}
-                                                        className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                                                    >
-                                                        {completingId === selectedStar.id ? (
-                                                            <>
-                                                                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                                                                <span>Завершення...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                                                <span>Завершити цей етап</span>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                )}
+                                                <Link
+                                                    to={`/task/${selectedStar.id}`}
+                                                    className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                                                >
+                                                    <Sparkles className="w-4 h-4 shrink-0" />
+                                                    <span>Почати завдання</span>
+                                                </Link>
                                             </div>
                                         )}
 
@@ -419,7 +371,7 @@ export function ConstellationPlan({
                                     <div className="mt-6 text-center py-6 border border-dashed border-border/60 rounded-xl p-4">
                                         <Sparkles className="w-6 h-6 text-purple-400/40 mx-auto mb-2" />
                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Натисніть на будь-яку зірку зліва, щоб побачити опис уроку, перевірити статус або перейти до відео.
+                                            Натисніть на будь-яку зірку зліва, щоб побачити опис уроку, перевірити статус або перейти до завдання.
                                         </p>
                                     </div>
                                 )}
