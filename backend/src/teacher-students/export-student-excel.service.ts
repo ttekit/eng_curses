@@ -12,6 +12,7 @@ export class ExportStudentExcelService {
       select: {
         name: true,
         email: true,
+        class: { select: { name: true } },
         additionalUserData: { select: { englishLevel: true } },
         watchSessions: { where: { completed: true } },
         comprehensionTestAttempts: true,
@@ -31,6 +32,7 @@ export class ExportStudentExcelService {
       return {
         "Student Name": s.name,
         "Email Address": s.email,
+        "Cohort / Group": s.class?.name || "-",
         "English Level": s.additionalUserData?.englishLevel || "-",
         "Completed Videos": s.watchSessions.length,
         "Quiz Attempts": attemptsCount,
