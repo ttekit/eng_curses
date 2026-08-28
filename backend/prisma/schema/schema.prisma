@@ -77,8 +77,7 @@ model User {
 
   teacherOwnedContents Content[] @relation("TeacherOwnedContent")
 
-  classId        Int?    @map("class_id")
-  class          Class?  @relation("ClassStudents", fields: [classId], references: [id], onDelete: SetNull)
+  classes        Class[] @relation("ClassStudents") 
   teacherClasses Class[] @relation("TeacherClasses")
 
   constellationProgress UserConstellationProgress[]

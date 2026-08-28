@@ -57,6 +57,7 @@ import { registerSW } from "virtual:pwa-register";
 import { Overview } from "./pages/teacher/overview";
 import { Students } from "./pages/teacher/students";
 import { Groups } from "./pages/teacher/Groups";
+import { EditGroupPage } from "./components/teacher-students/EditGroupPage";
 
 registerSW({ immediate: true });
 
@@ -153,6 +154,7 @@ const router = createBrowserRouter([
               { path: "/teacher/overview", element: <Overview /> },
               { path: "/teacher/students", element: <Students /> },
               { path: "/teacher/groups", element: <Groups /> },
+              { path: "/teacher/groups/:id", element: <EditGroupPage /> },
             ],
           },
         ],

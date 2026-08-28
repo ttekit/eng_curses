@@ -202,4 +202,21 @@ export class TeacherStudentsController {
     const teacherId = jwtSubToUserId(req.user);
     return this.teacherStudentsService.resetStudentPassword(teacherId, id);
   }
+
+  @Patch("classes/:id/students")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: "Update students in a class" })
+  @ApiResponse({
+    status: 200,
+    description: "Class students updated successfully.",
+  })
+  async updateClassStudents(
+    @Req() req: Request & { user?: unknown },
+    @Param("id", ParseIntPipe) id: number,
+    @Body("studentIds") studentIds: number[],
+  ) {
+    const teacherId = jwtSubToUserId(req.user);
+    return this.teacherClasses.updateClassStudents(teacherId, id, studentIds);
+  }
 }

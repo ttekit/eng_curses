@@ -12,9 +12,7 @@ export const userProfileInclude = {
   teacher: {
     select: { name: true },
   },
-  class: {
-    select: { name: true },
-  },
+  classes: { select: { id: true, name: true } },
 } as const satisfies Prisma.UserInclude;
 
 export type UserProfileRecord = Prisma.UserGetPayload<{
@@ -142,6 +140,6 @@ export function map_user_profile_response(
     stripeSubscriptionId: user.stripeSubscriptionId ?? "",
     teacherId: user.teacherId ?? null,
     teacherName: user.teacher?.name ?? null,
-    className: user.class?.name ?? null,
+    className: user.classes?.map((c) => c.name).join(", ") || null,
   };
 }

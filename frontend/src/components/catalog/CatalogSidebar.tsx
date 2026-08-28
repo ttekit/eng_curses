@@ -70,7 +70,6 @@ function resolveVisibleSidebarLinks(user: UserData | null | undefined) {
     if (isTeacher) {
       if (
         [
-          "catalog",
           "search",
           "classroom",
           "myLessons",

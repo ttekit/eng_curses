@@ -249,13 +249,16 @@ export class ContentVideoService {
       if (reqUserId) {
         const user = await this.prisma.user.findUnique({
           where: { id: reqUserId },
-          select: { classId: true },
+          select: { classes: { select: { id: true } } },
         });
 
-        if (user?.classId) {
-          const classAccess = series.classAccesses.find(
-            (ca) => ca.classId === user.classId,
+        if (user?.classes && user.classes.length > 0) {
+          const userClassIds = user.classes.map((c) => c.id);
+
+          const classAccess = series.classAccesses.find((ca) =>
+            userClassIds.includes(ca.classId),
           );
+
           if (classAccess) {
             isAssignedToClass = true;
             applicableAvailableFrom = classAccess.availableFrom;

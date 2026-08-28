@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { apiFetch } from "../../lib/api";
-
 import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { TopBar } from "../../components/Topbar";
 import {
@@ -14,9 +13,9 @@ import {
   Send,
   Loader2,
 } from "lucide-react";
-
 import { CreateClassModal } from "../../components/teacher-students/CreateClassModal";
 import { Trash2 } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 
 interface GroupRecord {
   id: number;
@@ -37,6 +36,8 @@ export function Groups() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
 
@@ -94,7 +95,7 @@ export function Groups() {
     try {
       const res = await apiFetch(`/teacher/classes/${id}`, {
         method: "DELETE",
-      }); 
+      });
       if (!res.ok) throw new Error("Failed to delete class");
 
       toast.success("Group deleted successfully!");
@@ -200,6 +201,7 @@ export function Groups() {
                     >
                       <MoreVertical className="w-5 h-5" />
                     </button>
+
                     {openDropdownId === group.id && (
                       <>
                         <div
@@ -207,6 +209,18 @@ export function Groups() {
                           onClick={() => setOpenDropdownId(null)}
                         ></div>
                         <div className="absolute right-0 top-8 z-20 w-40 flex flex-col rounded-xl border border-border bg-card p-1.5 shadow-lg">
+                          <button
+                            onClick={() =>
+                              navigate(`/teacher/groups/${group.id}`)
+                            }
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors w-full text-left font-medium"
+                          >
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            Edit group
+                          </button>
+
+                          <div className="h-px bg-border my-1 w-full" />
+
                           <button
                             onClick={() =>
                               handleDeleteClass(group.id, group.name)
@@ -229,7 +243,7 @@ export function Groups() {
                   <div className="flex items-center gap-2 mt-4">
                     <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-muted/20 text-xs font-medium text-muted-foreground">
                       <Users className="w-3.5 h-3.5" />
-                      {group.learnersCount} learners
+                      {group.learnersCount} /40 learners
                     </div>
                   </div>
 
@@ -272,10 +286,13 @@ export function Groups() {
                   </div>
 
                   <div className="pt-5 flex items-center gap-3 border-t border-border mt-auto">
-                    <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors text-sm font-medium">
+                    <Link
+                      to="/catalog"
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors text-sm font-medium"
+                    >
                       <BookOpen className="w-4 h-4" />
                       Assign course
-                    </button>
+                    </Link>
                     <button className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0">
                       <Send className="w-4 h-4" />
                     </button>

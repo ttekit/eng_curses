@@ -1,5 +1,6 @@
 import { useState, useEffect, forwardRef } from "react";
-import { BookOpen, Loader2, CalendarIcon, Check } from "lucide-react";
+// Добавили Users в импорты!
+import { BookOpen, Loader2, CalendarIcon, Check, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -16,7 +17,6 @@ import { useUser } from "../context/UserContext";
 
 const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
   (props, ref) => {
-    // Вытаскиваем onClick, чтобы повесить его только на иконку
     const { onClick, value, onChange, onKeyDown, id } = props;
 
     return (
@@ -24,21 +24,17 @@ const CustomDateTimeInput = forwardRef<HTMLInputElement, DatePickerInputProps>(
         <input
           id={id}
           type="datetime-local"
-          max="9999-12-31T23:59" // Ограничиваем год 4 цифрами
+          max="9999-12-31T23:59"
           ref={ref}
           value={value || ""}
           onChange={onChange}
           onKeyDown={onKeyDown}
-          // Убрали onClick отсюда, чтобы календарь не открывался при вводе текста
           onFocus={(e) => e.stopPropagation()}
           autoComplete="off"
-          // Заменили жесткие темные цвета на адаптивные bg-background и border-input
-          // Увеличили pr-16 и скрыли системные браузерные крестики
           className="flex h-12 w-full bg-background border border-input hover:border-primary/50 rounded-xl pl-4 pr-16 py-2 text-[15px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background transition-all shadow-sm [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-clear-button]:hidden [&::-webkit-inner-spin-button]:hidden"
         />
         <button
           type="button"
-          // Календарь открывается только при клике сюда
           onClick={onClick}
           tabIndex={-1}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors flex items-center justify-center cursor-pointer"
@@ -79,9 +75,8 @@ export function AssignHomeworkButton({
   contentName: string;
 }) {
   const { user } = useUser();
-  if (user?.role?.toLowerCase() !== "teacher") {
-    return null;
-  }
+
+  // ВСЕ ХУКИ ДОЛЖНЫ БЫТЬ ОБЪЯВЛЕНЫ ДО RETURN!
   const [isOpen, setIsOpen] = useState(false);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
@@ -89,6 +84,7 @@ export function AssignHomeworkButton({
   const [selectedClasses, setSelectedClasses] = useState<
     Record<number, { availableFrom: string; deadline: string }>
   >({});
+
   const L = useAppMessages().lesson;
 
   useEffect(() => {
@@ -101,6 +97,11 @@ export function AssignHomeworkButton({
         .finally(() => setLoadingClasses(false));
     }
   }, [isOpen, classes.length]);
+
+  // ПЕРЕНЕСЛИ ПРОВЕРКУ СЮДА (после всех хуков)
+  if (user?.role?.toLowerCase() !== "teacher") {
+    return null;
+  }
 
   const handleSave = async () => {
     if (Object.keys(selectedClasses).length === 0) {
@@ -139,6 +140,8 @@ export function AssignHomeworkButton({
     }
   };
 
+  const selectedCount = Object.keys(selectedClasses).length;
+
   return (
     <>
       <button
@@ -155,26 +158,43 @@ export function AssignHomeworkButton({
         onClose={() => !isSaving && setIsOpen(false)}
         title="Assign as Homework"
         footer={
-          <>
-            <AdminButton
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-              disabled={isSaving}
-            >
-              Cancel
-            </AdminButton>
-            <AdminButton onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Assign"}
-            </AdminButton>
-          </>
+          <div className="flex items-center justify-between w-full">
+            <label className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none">
+              <input
+                type="checkbox"
+                defaultChecked
+                className="size-4 rounded border-border bg-background accent-purple-600"
+              />
+              Notify learners by email
+            </label>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <AdminButton
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                disabled={isSaving}
+              >
+                Cancel
+              </AdminButton>
+              <AdminButton onClick={handleSave} disabled={isSaving}>
+                {isSaving
+                  ? "Saving..."
+                  : selectedCount > 0
+                    ? `Assign to ${selectedCount}`
+                    : "Assign"}
+              </AdminButton>
+            </div>
+          </div>
         }
       >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Select the classes you want to assign the lesson{" "}
-            <span className="font-bold text-foreground">"{contentName}"</span>{" "}
-            to, and set the deadlines.
-          </p>
+        <div className="space-y-5">
+          <div className="space-y-1 text-sm text-muted-foreground">
+            Applies to{" "}
+            <span className="font-semibold text-purple-400">
+              {selectedCount}
+            </span>{" "}
+            classes · "{contentName}"
+          </div>
 
           {loadingClasses ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
@@ -185,21 +205,22 @@ export function AssignHomeworkButton({
               You don't have any classes yet. Create one in the "Students" tab.
             </div>
           ) : (
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 pb-2">
               {classes.map((cls) => {
                 const isSelected = !!selectedClasses[cls.id];
                 const data = selectedClasses[cls.id] || {
                   availableFrom: "",
                   deadline: "",
                 };
+
                 return (
                   <div
                     key={cls.id}
                     className={cn(
-                      "border border-border/70 rounded-xl p-4 space-y-4 transition-colors",
+                      "flex flex-col border rounded-[20px] transition-all overflow-hidden",
                       isSelected
-                        ? "bg-primary/5 border-primary/40 shadow-sm"
-                        : "bg-background hover:border-primary/30",
+                        ? "bg-purple-500/10 border-purple-500 shadow-[0_0_0_1px_rgba(168,85,247,0.2)]"
+                        : "bg-background border-border/60 hover:border-border",
                     )}
                   >
                     <div
@@ -215,84 +236,100 @@ export function AssignHomeworkButton({
                           }));
                         }
                       }}
-                      className="flex items-center gap-3 font-semibold cursor-pointer text-sm select-none"
+                      className="flex items-center justify-between p-4 cursor-pointer select-none"
                     >
-                      <div
-                        className={cn(
-                          "size-5 rounded flex items-center justify-center transition-colors shrink-0 border",
-                          isSelected
-                            ? "bg-primary border-primary text-primary-foreground"
-                            : "border-muted-foreground/40 bg-background",
-                        )}
-                      >
-                        {isSelected && (
-                          <Check className="size-3.5 stroke-[3]" />
+                      <div className="flex items-center gap-4">
+                        <div className="size-11 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                          <Users className="size-5" />
+                        </div>
+
+                        <div>
+                          <h4 className="text-[15px] font-semibold text-foreground leading-tight">
+                            {cls.name}
+                          </h4>
+                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground mt-1">
+                            Cohort Group
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 ml-4">
+                        {isSelected ? (
+                          <div className="size-6 rounded-full bg-purple-600 flex items-center justify-center shadow-sm">
+                            <Check className="size-3.5 text-white stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="size-6 rounded-full border-[2px] border-border/80" />
                         )}
                       </div>
-                      <span className="text-foreground">{cls.name}</span>
                     </div>
 
                     {isSelected && (
-                      <div className="flex flex-col gap-4 pl-8 pt-1">
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">
-                            Available from (optional)
-                          </label>
-                          <ExplysDatePicker
-                            id={`assign-open-${cls.id}`}
-                            selected={
-                              data.availableFrom
-                                ? new Date(data.availableFrom)
-                                : null
-                            }
-                            onChange={(date: Date | null) =>
-                              setSelectedClasses((p) => ({
-                                ...p,
-                                [cls.id]: {
-                                  ...p[cls.id],
-                                  availableFrom: date ? date.toISOString() : "",
-                                },
-                              }))
-                            }
-                            onKeyDown={(
-                              e: React.KeyboardEvent<HTMLInputElement>,
-                            ) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                document
-                                  .getElementById(`assign-close-${cls.id}`)
-                                  ?.focus();
+                      <div className="px-5 pb-5 pt-3 border-t border-purple-500/20 bg-background/50">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="space-y-1.5 flex-1">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              Available from (optional)
+                            </label>
+                            <ExplysDatePicker
+                              id={`assign-open-${cls.id}`}
+                              selected={
+                                data.availableFrom
+                                  ? new Date(data.availableFrom)
+                                  : null
                               }
-                            }}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">
-                            Deadline (optional)
-                          </label>
-                          <ExplysDatePicker
-                            id={`assign-close-${cls.id}`}
-                            selected={
-                              data.deadline ? new Date(data.deadline) : null
-                            }
-                            onChange={(date: Date | null) =>
-                              setSelectedClasses((p) => ({
-                                ...p,
-                                [cls.id]: {
-                                  ...p[cls.id],
-                                  deadline: date ? date.toISOString() : "",
-                                },
-                              }))
-                            }
-                            onKeyDown={(
-                              e: React.KeyboardEvent<HTMLInputElement>,
-                            ) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                void handleSave();
+                              onChange={(date: Date | null) =>
+                                setSelectedClasses((p) => ({
+                                  ...p,
+                                  [cls.id]: {
+                                    ...p[cls.id],
+                                    availableFrom: date
+                                      ? date.toISOString()
+                                      : "",
+                                  },
+                                }))
                               }
-                            }}
-                          />
+                              onKeyDown={(
+                                e: React.KeyboardEvent<HTMLInputElement>,
+                              ) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  document
+                                    .getElementById(`assign-close-${cls.id}`)
+                                    ?.focus();
+                                }
+                              }}
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 flex-1">
+                            <label className="text-xs font-medium text-muted-foreground">
+                              Deadline (optional)
+                            </label>
+                            <ExplysDatePicker
+                              id={`assign-close-${cls.id}`}
+                              selected={
+                                data.deadline ? new Date(data.deadline) : null
+                              }
+                              onChange={(date: Date | null) =>
+                                setSelectedClasses((p) => ({
+                                  ...p,
+                                  [cls.id]: {
+                                    ...p[cls.id],
+                                    deadline: date ? date.toISOString() : "",
+                                  },
+                                }))
+                              }
+                              onKeyDown={(
+                                e: React.KeyboardEvent<HTMLInputElement>,
+                              ) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  void handleSave();
+                                }
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}

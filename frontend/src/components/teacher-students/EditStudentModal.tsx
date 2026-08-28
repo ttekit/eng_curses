@@ -8,7 +8,6 @@ import { AdminModal, AdminButton, AdminInput } from "../admin/adminUi";
 
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { TeacherClass, TeacherStudentResult } from "../types/teacher-students";
-import { SearchableSelect } from "../UI/SearchableSelect";
 
 export interface NewStudentCredentials {
   email: string;
@@ -28,7 +27,6 @@ export function EditStudentModal({
   open,
   onClose,
   onSuccess,
-  classes,
   studentToEdit,
 }: EditStudentModalProps) {
   const t = useAppMessages().profileTeacherStudents;
@@ -42,11 +40,9 @@ export function EditStudentModal({
   const [isSaving, setIsSaving] = useState(false);
   const [randomId, setRandomId] = useState<number>(0);
 
-  // Инициализация формы при открытии
   useEffect(() => {
     if (open) {
       if (studentToEdit) {
-        // Режим редактирования
         const parts = studentToEdit.name.split(" ");
         const firstName = parts[0] || "";
         const lastName = parts.slice(1).join(" ") || "";
@@ -64,7 +60,6 @@ export function EditStudentModal({
           classId: studentToEdit.classId ? String(studentToEdit.classId) : "",
         });
       } else {
-        // Режим добавления нового
         setRandomId(Math.floor(1000 + Math.random() * 9000));
         setFormData({ firstName: "", lastName: "", email: "", classId: "" });
       }
@@ -122,7 +117,6 @@ export function EditStudentModal({
       const responseData = await res.json();
       onClose();
 
-      // Если это новый студент и бэкенд вернул временный пароль
       if (!isEditing && responseData.tempPassword) {
         await onSuccess({
           email: formData.email,
@@ -195,22 +189,6 @@ export function EditStudentModal({
               required
             />
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Assign to Class</label>
-          <SearchableSelect
-            value={formData.classId}
-            onChange={(val) =>
-              setFormData((p) => ({ ...p, classId: String(val) }))
-            }
-            showSearch={true}
-            searchPlaceholder="Searching for a class..."
-            options={[
-              { value: "", label: "No Class (General)" },
-              ...classes.map((c) => ({ value: String(c.id), label: c.name })),
-            ]}
-          />
         </div>
 
         <div className="space-y-2">

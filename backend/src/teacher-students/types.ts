@@ -20,7 +20,6 @@ export type TeacherStudentResultRow = {
   videosCompleted: number;
   quizAttempts: number;
   avgQuizScorePct: number | null;
-  classId: number | null;
   className: string | null;
   lastPlacement: {
     scorePct: number;
