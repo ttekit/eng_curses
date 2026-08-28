@@ -13,10 +13,10 @@ import {
   BookOpen,
   Send,
   Loader2,
-  Trash2, // <-- Не забудь добавить Trash2 в импорты!
 } from "lucide-react";
 
 import { CreateClassModal } from "../../components/teacher-students/CreateClassModal";
+import { Trash2 } from "lucide-react";
 
 interface GroupRecord {
   id: number;
@@ -38,7 +38,6 @@ export function Groups() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // === НОВОЕ: Состояние для открытого меню (три точки) ===
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
 
   const loadClasses = async () => {
@@ -85,9 +84,7 @@ export function Groups() {
     }
   };
 
-  // === НОВОЕ: Функция удаления класса ===
   const handleDeleteClass = async (id: number, name: string) => {
-    // Спрашиваем подтверждение перед удалением
     if (
       !window.confirm(`Are you sure you want to delete the group "${name}"?`)
     ) {
@@ -97,12 +94,12 @@ export function Groups() {
     try {
       const res = await apiFetch(`/teacher/classes/${id}`, {
         method: "DELETE",
-      }); // Запрос на твой бэкенд
+      }); 
       if (!res.ok) throw new Error("Failed to delete class");
 
       toast.success("Group deleted successfully!");
-      setOpenDropdownId(null); // Закрываем меню
-      await loadClasses(); // Перезагружаем список
+      setOpenDropdownId(null);
+      await loadClasses();
     } catch (error) {
       console.error("🔥 DELETE ERROR:", error);
       toast.error("Failed to delete group");
@@ -129,7 +126,6 @@ export function Groups() {
         <TopBar />
 
         <div className="px-6 w-full mt-8 pb-12 flex-1 flex flex-col">
-          {/* ШАПКА */}
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold">Cohorts & Groups</h1>
@@ -150,7 +146,6 @@ export function Groups() {
             )}
           </div>
 
-          {/* КОНТЕНТ */}
           {isLoading ? (
             <div className="flex-1 flex flex-col items-center justify-center mt-20">
               <Loader2 className="w-10 h-10 animate-spin text-purple-500 mb-4" />
@@ -161,7 +156,7 @@ export function Groups() {
           ) : classes.length === 0 ? (
             <div
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex-1 mt-8 flex flex-col items-center justify-center min-h-[500px] p-12 rounded-[24px] border-2 border-dashed border-border hover:border-purple-500/50 bg-card/30 hover:bg-purple-500/5 transition-colors cursor-pointer group"
+              className="flex-1 mt-8 flex flex-col items-center justify-center min-h-125 p-12 rounded-3xl border-2 border-dashed border-border hover:border-purple-500/50 bg-card/30 hover:bg-purple-500/5 transition-colors cursor-pointer group"
             >
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all">
                 <Plus className="w-8 h-8 text-muted-foreground group-hover:text-purple-500" />
@@ -184,17 +179,17 @@ export function Groups() {
                   key={group.id}
                   className="relative flex flex-col p-6 bg-card border border-border rounded-[24px] shadow-sm hover:border-white/20 transition-colors group"
                 >
-                  <div
-                    className="absolute top-0 left-0 right-0 h-1.5 rounded-t-[24px] opacity-80 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: group.themeColor }}
-                  />
+                  <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1.5 opacity-80 group-hover:opacity-100 transition-opacity"
+                      style={{ backgroundColor: group.themeColor }}
+                    />
+                  </div>
 
-                  {/* === ОБНОВЛЕННЫЙ ЗАГОЛОВОК С МЕНЮ === */}
                   <div className="flex items-start justify-between gap-4 mt-2 relative">
                     <h3 className="font-semibold text-lg leading-tight text-foreground pr-6">
                       {group.name}
                     </h3>
-
                     <button
                       onClick={() =>
                         setOpenDropdownId(
@@ -205,8 +200,6 @@ export function Groups() {
                     >
                       <MoreVertical className="w-5 h-5" />
                     </button>
-
-                    {/* Поп-ап меню */}
                     {openDropdownId === group.id && (
                       <>
                         <div
@@ -214,7 +207,6 @@ export function Groups() {
                           onClick={() => setOpenDropdownId(null)}
                         ></div>
                         <div className="absolute right-0 top-8 z-20 w-40 flex flex-col rounded-xl border border-border bg-card p-1.5 shadow-lg">
-                          {/* Здесь потом можно будет добавить кнопку Edit group */}
                           <button
                             onClick={() =>
                               handleDeleteClass(group.id, group.name)
@@ -228,7 +220,6 @@ export function Groups() {
                       </>
                     )}
                   </div>
-                  {/* =================================== */}
 
                   <div className="flex items-center gap-1.5 text-muted-foreground mt-2">
                     <Building2 className="w-4 h-4 opacity-70" />
@@ -280,7 +271,7 @@ export function Groups() {
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-5 flex items-center gap-3 border-t border-border mt-auto">
+                  <div className="pt-5 flex items-center gap-3 border-t border-border mt-auto">
                     <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors text-sm font-medium">
                       <BookOpen className="w-4 h-4" />
                       Assign course
@@ -295,7 +286,6 @@ export function Groups() {
           )}
         </div>
 
-        {/* МОДАЛЬНОЕ ОКНО СОЗДАНИЯ */}
         <CreateClassModal
           open={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}

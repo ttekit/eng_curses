@@ -5,6 +5,7 @@ import { CatalogSidebar } from "../../components/catalog/CatalogSidebar";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { getCachedChangelogs } from "../../lib/changelogsCache";
+import { useUser } from "../../context/UserContext";
 
 interface LogType {
   id: number;
@@ -27,6 +28,9 @@ export default function WhatsNewPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   const dateLocale = locale === "uk" ? "uk-UA" : "en-US";
+
+  const { user } = useUser();
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
 
   useEffect(() => {
     const loadLogs = async () => {
