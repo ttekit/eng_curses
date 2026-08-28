@@ -6,6 +6,7 @@ import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { useAppMessages } from "../../hooks/useAppMessages";
 import { getCachedChangelogs } from "../../lib/changelogsCache";
 import { useUser } from "../../context/UserContext";
+import { TopBar } from "../../components/Topbar";
 
 interface LogType {
   id: number;
@@ -80,10 +81,12 @@ export default function WhatsNewPage() {
 
       <main
         className={cn(
-          "transition-[margin] duration-300 ease-in-out min-h-screen pt-12 pb-20",
+          "transition-[margin] duration-300 ease-in-out min-h-screen pb-20",
           isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64",
+          !isTeacher && "pt-12",
         )}
       >
+        {isTeacher && <TopBar />}
         <div className="max-w-4xl mx-auto px-6 w-full">
           <div className="text-center space-y-3 mb-12">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
