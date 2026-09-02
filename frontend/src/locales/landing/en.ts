@@ -77,13 +77,13 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
-    freeAccess: "Free access in July 2026!",
+    freeAccess: "Free access first month!",
     startLearning: "Start learning now",
   },
 
   header: {
     navLinks: [
-      { hash: "pricing", label: "Pricing" },
+      { hash: "pricing", label: "Pricing and Questions" },
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "testimonials", label: "Learners about Explys" },
@@ -99,9 +99,11 @@ export const landingEn = {
 
   hero: {
     badge: "English learning platform",
-    titleBefore: "Understand real English from",
-    titleAccent: "movies & series",
-    lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
+    titleBefore: "Learn English from movies and series —",
+    titleAccent: "not boring textbooks.",
+    lead: "Interactive video lessons, quizzes, and AI practice that adapts to your level and interests.",
+    account: "Creare an account in 2 minutes with level test",
+    progressSave: "All progress is saved",
     ctaSecondary: "Browse content",
     videoCaption: "60-second product demo",
     videoWatch: "Watch the demo",
@@ -189,16 +191,46 @@ export const landingEn = {
     ],
   },
 
+  gamification: {
+    eyebrow: "Gamification",
+    title: "Level up your English",
+    titleAccent: "like a game",
+    subtitle:
+      "Every lesson pushes you closer to the next level. XP, level-ups and achievements keep you hooked while the language becomes a habit.",
+    strips: [
+      {
+        label: "Levels",
+        from: "./lowLevel.jpg",
+        fromAlt: "Level 1",
+        to: "./highLevel.jpg",
+        toAlt: "Level 2",
+        burst: "LEVEL UP!",
+      },
+      {
+        label: "Experience",
+        from: "./lowExp.jpg",
+        fromAlt: "0 XP",
+        to: "./highExp.jpg",
+        toAlt: "1950 XP",
+        burst: "+XP",
+      },
+    ],
+    achievementLabel: "Achievement",
+    achievementTitle: "Unlock achievements",
+    achievementText:
+      "Finish lessons, keep your streak and unlock badges for every bit of progress — from your first video to a thousand words learned.",
+  },
+
   pricingSection: {
     title:
       "After that, simple and transparent payment to achieve the best results",
     subtitle:
       "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
-    freeHeadline: "Start free in ",
-    freeAccess: "July 2026",
+    freeHeadline: "Free access ",
+    freeAccess: "first month!",
     freeHeadlineEnd: "No credit card required",
-    freePromo: "Free access in July 2026!",
+    freePromo: "Free access first month!",
   },
 
   differentiation: {
@@ -375,9 +407,9 @@ export const landingEn = {
 
   pricingQuestions: {
     cost: {
-      question: "How much does Explys cost?",
+      question: "Why Explys costs so much",
       answer:
-        "Light (Essentials) is $7 per month, Smart (Adaptive) is $12 per month, and Family (LMS/Pro) is $19 per month. Teacher / Enterprise pricing is custom — contact us for schools and private teachers.",
+        "Explys is not just a standard flashcard app — it is a full interactive learning environment. Our platform uses advanced artificial intelligence algorithms and sophisticated video processing to create a fully immersive experience. Subscription pricing lets us run resource-intensive neural networks, regularly update high-quality video content, and deliver adaptive learning that adjusts individually to you — effectively replacing hours of work with a live tutor.",
     },
     popular: {
       question: "Which Explys plan is most popular?",
@@ -407,7 +439,7 @@ export const landingEn = {
     howItWorks: "Try demo lesson",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
-    footnotePromo: "Free access in July 2026!",
+    footnotePromo: "Free access first month!",
   },
 
   pricingCards: {

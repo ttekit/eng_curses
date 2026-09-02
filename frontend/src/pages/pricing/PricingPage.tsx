@@ -11,7 +11,7 @@ import { userMayUseLearnerApp } from "../../lib/subscriptionAccess";
 import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { buildPricingJsonLdSchemas } from "../../lib/seoStructuredData";
 import { pricingFaqEn } from "../../lib/marketingSeoContent";
-import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
+import { PricingFaqSection } from "../../components/landing/PricingFaqSection";
 import { ArrowRight } from "lucide-react";
 import { captureEvent } from "../../lib/analytics";
 
@@ -122,7 +122,7 @@ export default function PricingPage() {
             </div>
           ) : null}
 
-          <MarketingFaqSection
+          <PricingFaqSection
             id="pricing-faq"
             title={messages.marketingFaq.pricingTitle}
             subtitle={messages.marketingFaq.pricingSubtitle}

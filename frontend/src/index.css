@@ -35,6 +35,9 @@
 
   --error-bright: rgba(220, 38, 38, 1);
   --error-transparent: rgba(220, 38, 38, 0.15);
+
+  --nebula: oklch(0.55 0.2 295);
+  --glow: oklch(0.62 0.23 302);
 }
 
 /* === ТЕМНАЯ ТЕМА (Твои старые цвета) === */
@@ -68,6 +71,9 @@
 
   --error-bright: rgba(108, 31, 55, 1);
   --error-transparent: rgba(139, 32, 66, 0.35);
+
+  --nebula: oklch(0.55 0.2 295);
+  --glow: oklch(0.7 0.22 305);
 }
 
 @theme inline {
@@ -92,6 +98,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-nebula: var(--nebula);
+  --color-glow: var(--glow);
   --radius-sm: calc(0.75rem - 4px);
   --radius-md: calc(0.75rem - 2px);
   --radius-lg: 0.75rem;
@@ -160,6 +168,109 @@
 }
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes shooting {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(var(--angle, 20deg));
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--travel, 480px), calc(var(--travel, 480px) * 0.42), 0)
+      rotate(var(--angle, 20deg));
+    opacity: 0;
+  }
+}
+
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, -4%, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-5%, 5%, 0) scale(0.95);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-aurora {
+  animation: aurora-drift 18s ease-in-out infinite;
+}
+
+.animate-gradient-text {
+  background-size: 220% 220%;
+  animation: gradient-pan 6s ease-in-out infinite;
+}
+
+.landing-card-glow {
+  @apply backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_20px_50px_-24px_var(--glow)];
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-text,
+  .animate-aurora,
+  .animate-pulse-glow,
+  .animate-float-slow {
+    animation: none !important;
+  }
 }
 
 .scrollbar-hide {

@@ -22,9 +22,10 @@ function resolveFaqItems(
 }
 
 /**
+ * Backup of the original pricing/general FAQ layout (static cards).
  * Visible FAQ block — content must match FAQPage JSON-LD on the same route.
  */
-export function MarketingFaqSection({
+export function MarketingFaqSectionBackup({
   id = "faq",
   title,
   subtitle,
