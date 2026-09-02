@@ -107,7 +107,7 @@ export const landingUk = {
     ctaSecondary: "Перейти до каталогу",
     videoCaption: "60-секундна демонстрація продукту",
     videoWatch: "Дивіться демо",
-    activeLearnersCount: 3315,
+    activeLearnersCount: 3000,
     users: "учні",
     videos: "відео",
     hours: "годин",
