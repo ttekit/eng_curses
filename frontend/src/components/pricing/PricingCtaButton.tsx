@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 import { cn } from "../../lib/utils";
 import type { PricingPlan } from "../../lib/pricingPlans";
 import { getSalesContactHref } from "../../lib/salesContact";

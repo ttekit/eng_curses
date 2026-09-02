@@ -9,7 +9,7 @@ import {
 type TestimonialsMobileCarouselProps = {
   title: string;
   subtitle: string;
-  items: TestimonialItem[];
+  items: readonly TestimonialItem[];
 };
 
 /**
