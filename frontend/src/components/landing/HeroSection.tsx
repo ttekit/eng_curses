@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { Play, Sparkles, Clock, SaveAll } from "lucide-react";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
@@ -6,57 +7,87 @@ import {
   trackLandingCtaPrimary,
   trackLandingCtaSecondary,
 } from "../../lib/landingAnalytics";
+import { ShootingStars } from "./effects/ShootingStars";
 import HeroStats from "./HeroStats";
 
 export function HeroSection() {
   const { messages } = useLandingLocale();
   const { hero, cta } = messages;
   const { user } = useUser();
+  const heroRef = useRef<HTMLElement | null>(null);
+  const [pointer, setPointer] = useState({ x: 50, y: 30 });
 
   const primaryTo = user ? "/catalog" : "/register";
 
+  function handle_pointer_move(event: React.MouseEvent) {
+    const element = heroRef.current;
+    if (!element) {
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    setPointer({
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((event.clientY - rect.top) / rect.height) * 100,
+    });
+  }
+
   return (
-    <section className="relative flex min-h-screen items-center overflow-hidden border-b border-border pt-24 pb-16 font-display">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.65_0.25_295/0.15)_0%,transparent_50%)]" />
-      <div className="absolute top-1/4 right-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="absolute bottom-1/4 left-0 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
+    <section
+      ref={heroRef}
+      onMouseMove={handle_pointer_move}
+      className="relative flex min-h-[calc(100dvh-4.5rem)] items-center overflow-hidden border-b border-border/60 pt-20 pb-10 font-display sm:min-h-screen sm:pt-24 sm:pb-16"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 transition-[background] duration-300"
+        style={{
+          background: `radial-gradient(600px circle at ${pointer.x}% ${pointer.y}%, color-mix(in oklch, var(--glow) 18%, transparent), transparent 65%)`,
+        }}
+      />
+      <ShootingStars />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-20 top-1/4 size-72 animate-aurora rounded-full bg-primary/20 blur-3xl"
+      />
 
       <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">
+        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="space-y-5 sm:space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 backdrop-blur-sm sm:px-4 sm:py-2">
+              <Sparkles className="h-4 w-4 animate-pulse-glow text-glow" />
+              <span className="text-xs font-medium text-primary sm:text-sm">
                 {hero.badge}
               </span>
             </div>
 
-            <h1 className="text-4xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="text-3xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
               {hero.titleBefore}{" "}
-              <span className="text-primary">{hero.titleAccent}</span>
+              <span className="animate-gradient-text bg-gradient-to-r from-glow via-primary to-nebula bg-clip-text text-transparent">
+                {hero.titleAccent}
+              </span>
             </h1>
 
-            <p className="max-w-lg text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-xl">
               {hero.lead}
             </p>
 
-            <div className="space-y-3">
-              <div className="flex flex-col">
-                <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/70">
-                  <Clock className="h-4 w-4" />
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1">
+                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-primary/70 sm:text-sm">
+                  <Clock className="h-4 w-4 shrink-0" />
                   {hero.account}
                 </div>
-                <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary/70">
-                  <SaveAll className="h-4 w-4" />
+                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-primary/70 sm:text-sm">
+                  <SaveAll className="h-4 w-4 shrink-0" />
                   {hero.progressSave}
                 </div>
               </div>
 
-              <div className="flex flex-col flex-wrap items-start gap-4 sm:flex-row">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
                 <Link
                   to={primaryTo}
                   onClick={() => trackLandingCtaPrimary("hero")}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-center text-lg font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:w-auto"
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-center text-base font-semibold text-primary-foreground shadow-[0_0_30px_-8px_var(--glow)] transition-all hover:scale-[1.02] hover:bg-primary/90 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
                   {cta.startFree}
                 </Link>
@@ -64,37 +95,45 @@ export function HeroSection() {
                 <Link
                   to="/catalog"
                   onClick={() => trackLandingCtaSecondary("hero")}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-8 py-4 text-center text-lg font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto"
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary/40 px-6 py-3.5 text-center text-base font-semibold text-foreground backdrop-blur-sm transition-colors hover:bg-secondary/70 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
-                  <Play className="h-5 w-5" />
+                  <Play className="h-5 w-5 shrink-0" />
                   {hero.ctaSecondary}
                 </Link>
               </div>
-              <p className="text-sm text-muted-foreground -mb-5">
-                {hero.trustNoCard}
-                <span aria-hidden="true"> · </span>
-                {hero.trustPrivacy}
-              </p>
+
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  {hero.trustNoCard}
+                  <span aria-hidden="true"> · </span>
+                  {hero.trustPrivacy}
+                </p>
+                <p className="text-xs font-medium text-primary/80 sm:text-sm">
+                  {cta.footnotePromo}
+                </p>
+              </div>
             </div>
+
             <HeroStats />
           </div>
 
-          <div className="relative flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-lg">
-              <p className="mb-4 items-start text-center font-display text-3xl sm:text-right">
-                {/* {hero.videoCaption}{" "}
-                <span className="text-primary">{hero.videoWatch}</span> */}
-              </p>
-            </div>
+          <div className="relative hidden justify-center lg:flex lg:justify-end">
+            <img
+              src="/LandingPicture.png"
+              className="w-full max-w-md animate-float xl:max-w-lg"
+              alt=""
+            />
           </div>
         </div>
-      </div>
-      <div className="pointer-events-none absolute right-60 bottom-115 z-0 hidden h-40 w-40 rounded-full bg-amber-300/30 blur-3xl animate-glow duration-100 xl:block" />
 
-      <img
-        src="/LandingPicture.png"
-        className="pointer-events-none absolute right-0 bottom-0 z-10 hidden w-200 xl:block"
-      />
+        <div className="relative mx-auto mt-6 flex max-w-[280px] justify-center sm:max-w-xs lg:hidden">
+          <img
+            src="/LandingPicture.png"
+            className="w-full animate-float"
+            alt=""
+          />
+        </div>
+      </div>
     </section>
   );
 }

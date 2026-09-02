@@ -20,22 +20,22 @@ export default function HeroStats() {
   }, []);
 
   return (
-    <div className="items-center sm:items-start mx-auto sm:mx-0 flex w-fit flex-row gap-7 sm:gap-20 rounded-[15px] px-6 py-3 text-center text-lg text-foreground/75">
-      <div className="flex flex-col items-center">
-        <p className="text-primary font-bold text-2xl">
+    <div className="mx-auto flex w-full max-w-sm flex-wrap justify-center gap-x-6 gap-y-3 rounded-[15px] px-2 py-3 text-center text-foreground/75 sm:mx-0 sm:max-w-none sm:flex-nowrap sm:justify-start sm:gap-20 sm:px-6 sm:text-lg">
+      <div className="flex min-w-[5.5rem] flex-col items-center">
+        <p className="text-xl font-bold text-primary sm:text-2xl">
           {stats ? stats.users.toString() : hero.activeLearnersCount.toString()}
         </p>
-        <p className="text-md -mt-2">{hero.users}</p>
+        <p className="-mt-1 text-xs sm:text-md">{hero.users}</p>
       </div>
-      <div className="flex flex-col items-center">
-        <p className="text-primary font-bold text-2xl">
+      <div className="flex min-w-[5.5rem] flex-col items-center">
+        <p className="text-xl font-bold text-primary sm:text-2xl">
           {stats ? `${stats.videos}+` : "500+"}
         </p>
-        <p className="text-md -mt-2">{hero.videos}</p>
+        <p className="-mt-1 text-xs sm:text-md">{hero.videos}</p>
       </div>
-      <div className="flex flex-col items-center">
-        <p className="text-primary font-bold text-2xl">10,000+</p>
-        <p className="text-md -mt-2">{hero.hours}</p>
+      <div className="flex min-w-[5.5rem] flex-col items-center">
+        <p className="text-xl font-bold text-primary sm:text-2xl">10,000+</p>
+        <p className="-mt-1 text-xs sm:text-md">{hero.hours}</p>
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ function ComicStrip({
               strokeLinecap="round"
             />
           </svg>
-          <span className="absolute left-1/2 top-1/2 -translate-y-1/2 translate-x-5 -rotate-2 whitespace-nowrap rounded-full border-2 border-foreground/20 bg-primary px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-primary-foreground shadow-[3px_3px_0_0_color-mix(in_oklch,var(--color-foreground)_18%,transparent)] sm:translate-x-8 sm:text-xs">
+          <span className="absolute left-1/2 top-1/2 max-w-[42%] -translate-y-1/2 translate-x-3 -rotate-2 truncate rounded-full border-2 border-foreground/20 bg-primary px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-primary-foreground shadow-[3px_3px_0_0_color-mix(in_oklch,var(--color-foreground)_18%,transparent)] sm:max-w-none sm:translate-x-8 sm:whitespace-nowrap sm:px-2.5 sm:text-xs">
             {burst}
           </span>
         </div>
@@ -121,7 +121,7 @@ export function GamificationSection() {
             </p>
           </div>
           <img
-            src="./achievement.jpg"
+            src="/achievement.jpg"
             alt={gamification.achievementTitle}
             className={`${FRAME} relative block h-auto w-full`}
             loading="lazy"

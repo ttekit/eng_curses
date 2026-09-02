@@ -77,7 +77,7 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
-    freeAccess: "Free access for the first 3 months!",
+    freeAccess: "Free access first month!",
     startLearning: "Start learning now",
   },
 
@@ -99,9 +99,9 @@ export const landingEn = {
 
   hero: {
     badge: "English learning platform",
-    titleBefore: "Understand real English from",
-    titleAccent: "movies & series",
-    lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
+    titleBefore: "Learn English from movies and series —",
+    titleAccent: "not boring textbooks.",
+    lead: "Interactive video lessons, quizzes, and AI practice that adapts to your level and interests.",
     account: "Creare an account in 2 minutes with level test",
     progressSave: "All progress is saved",
     ctaSecondary: "Browse content",
@@ -227,10 +227,10 @@ export const landingEn = {
     subtitle:
       "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
-    freeHeadline: "Free access for the ",
-    freeAccess: "first 3 months",
+    freeHeadline: "Free access ",
+    freeAccess: "first month!",
     freeHeadlineEnd: "No credit card required",
-    freePromo: "Free access for the first 3 months!",
+    freePromo: "Free access first month!",
   },
 
   differentiation: {
@@ -407,9 +407,9 @@ export const landingEn = {
 
   pricingQuestions: {
     cost: {
-      question: "How much does Explys cost?",
+      question: "Why Explys costs so much",
       answer:
-        "Light (Essentials) is $7 per month, Smart (Adaptive) is $12 per month, and Family (LMS/Pro) is $19 per month. Teacher / Enterprise pricing is custom — contact us for schools and private teachers.",
+        "Explys is not just a standard flashcard app — it is a full interactive learning environment. Our platform uses advanced artificial intelligence algorithms and sophisticated video processing to create a fully immersive experience. Subscription pricing lets us run resource-intensive neural networks, regularly update high-quality video content, and deliver adaptive learning that adjusts individually to you — effectively replacing hours of work with a live tutor.",
     },
     popular: {
       question: "Which Explys plan is most popular?",
@@ -439,7 +439,7 @@ export const landingEn = {
     howItWorks: "Try demo lesson",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
-    footnotePromo: "Free access for the first 3 months!",
+    footnotePromo: "Free access first month!",
   },
 
   pricingCards: {
