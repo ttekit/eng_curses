@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { apiFetch } from "../../lib/api";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
-
+//наверн надо просто удалить его
 export default function EmailConfirmedPage() {
   const { messages } = useLandingLocale();
   const t = messages.auth.emailLinkConfirm;

@@ -77,13 +77,13 @@ export const landingEn = {
     signInPromptAfter: "to subscribe to Light, Smart, or Family.",
     stripeTerms:
       "Payments are processed securely by Stripe. By continuing you agree to our terms for your selected plan.",
-    freeAccess: "Free access in July 2026!",
+    freeAccess: "Free access first month!",
     startLearning: "Start learning now",
   },
 
   header: {
     navLinks: [
-      { hash: "pricing", label: "Pricing" },
+      { hash: "pricing", label: "Pricing and Questions" },
       { hash: "why-choose-explys", label: "Why Explys" },
       { hash: "how-explys-works", label: "How it works" },
       { hash: "testimonials", label: "Learners about Explys" },
@@ -99,9 +99,11 @@ export const landingEn = {
 
   hero: {
     badge: "English learning platform",
-    titleBefore: "Understand real English from",
-    titleAccent: "movies & series",
-    lead: "Adaptive video lessons, interactive quizzes, and AI-assisted practice — matched to your level and interests.",
+    titleBefore: "Learn English from movies and series —",
+    titleAccent: "not boring textbooks.",
+    lead: "Interactive video lessons, quizzes, and AI practice that adapts to your level and interests.",
+    account: "Creare an account in 2 minutes with level test",
+    progressSave: "All progress is saved",
     ctaSecondary: "Browse content",
     videoCaption: "60-second product demo",
     videoWatch: "Watch the demo",
@@ -189,16 +191,46 @@ export const landingEn = {
     ],
   },
 
+  gamification: {
+    eyebrow: "Gamification",
+    title: "Level up your English",
+    titleAccent: "like a game",
+    subtitle:
+      "Every lesson pushes you closer to the next level. XP, level-ups and achievements keep you hooked while the language becomes a habit.",
+    strips: [
+      {
+        label: "Levels",
+        from: "./lowLevel.jpg",
+        fromAlt: "Level 1",
+        to: "./highLevel.jpg",
+        toAlt: "Level 2",
+        burst: "LEVEL UP!",
+      },
+      {
+        label: "Experience",
+        from: "./lowExp.jpg",
+        fromAlt: "0 XP",
+        to: "./highExp.jpg",
+        toAlt: "1950 XP",
+        burst: "+XP",
+      },
+    ],
+    achievementLabel: "Achievement",
+    achievementTitle: "Unlock achievements",
+    achievementText:
+      "Finish lessons, keep your streak and unlock badges for every bit of progress — from your first video to a thousand words learned.",
+  },
+
   pricingSection: {
     title:
       "After that, simple and transparent payment to achieve the best results",
     subtitle:
       "Choose what's right for you: basic access, adaptive AI, family plan, or educational solution.",
     fullPageLink: "Full pricing page",
-    freeHeadline: "Start free in ",
-    freeAccess: "July 2026",
+    freeHeadline: "Free access ",
+    freeAccess: "first month!",
     freeHeadlineEnd: "No credit card required",
-    freePromo: "Free access in July 2026!",
+    freePromo: "Free access first month!",
   },
 
   differentiation: {
@@ -375,9 +407,9 @@ export const landingEn = {
 
   pricingQuestions: {
     cost: {
-      question: "How much does Explys cost?",
+      question: "Why Explys costs so much",
       answer:
-        "Light (Essentials) is $7 per month, Smart (Adaptive) is $12 per month, and Family (LMS/Pro) is $19 per month. Teacher / Enterprise pricing is custom — contact us for schools and private teachers.",
+        "Explys is not just a standard flashcard app — it is a full interactive learning environment. Our platform uses advanced artificial intelligence algorithms and sophisticated video processing to create a fully immersive experience. Subscription pricing lets us run resource-intensive neural networks, regularly update high-quality video content, and deliver adaptive learning that adjusts individually to you — effectively replacing hours of work with a live tutor.",
     },
     popular: {
       question: "Which Explys plan is most popular?",
@@ -407,7 +439,7 @@ export const landingEn = {
     howItWorks: "Try demo lesson",
     trustNoCard: "No credit card required",
     trustPrivacy: "No spam. Your information stays private.",
-    footnotePromo: "Free access in July 2026!",
+    footnotePromo: "Free access first month!",
   },
 
   pricingCards: {
@@ -516,7 +548,7 @@ export const landingEn = {
       resendCode: "Resend code",
       verifying: "Verifying...",
       verifyCode: "Verify Code",
-      backToRegistration: "← Back to registration",
+      backToRegistration: "← Go back",
       codeRequired: "Please enter the 6-digit code.",
       invalidCode: "Invalid verification code",
       connectionError: "Connection error. Please try again.",
@@ -599,6 +631,9 @@ export const landingEn = {
         dateOfBirth: "Date of Birth",
         orContinueWith: "Or start with",
         google: "Start with Google",
+        rightTitleTeacher: "Welcome to Explys!",
+        rightSubtitleTeacher:
+          "Join the community of teachers and manage your students' learning using interactive content.",
       },
       errors: {
         passwordMin8: "Password must be at least 8 characters.",
@@ -731,7 +766,7 @@ export const landingEn = {
         title: "Registration successful",
         withStudents:
           "Your teacher account is ready. Student logins were created for the pupils you listed. Download the Excel file to share credentials securely (store it in a safe place—anyone with the file can sign in as those students).",
-        solo: "Your account is ready. You can sign in with the email and password you chose.",
+        solo: "Registration complete! Click the button below to start working with Explys interactive tools.",
         studentAccounts: "Student accounts (COUNT)",
         colName: "Name",
         colEmail: "Email",
@@ -744,6 +779,8 @@ export const landingEn = {
         continueToSite: "Continue to site",
         show: "Show",
         hide: "Hide",
+        mascotSubtitleTeacher:
+          "Everything is set! Choose video materials, create classes, and turn English learning into an exciting process.",
       },
     },
   },
@@ -907,5 +944,27 @@ export const landingEn = {
       question4:
         "Both verbs must be in the past tense: 'arrived' (regular) and 'met' (the past form of the irregular verb 'meet').",
     },
+  },
+  googleUsername: {
+    seoTitle: "Set Username",
+    seoDesc: "Choose a unique username for your Explys account",
+    rightTitle: "Almost there!",
+    rightSubtitle:
+      "Your Google account is successfully linked. Just one small step left.",
+    rightTitleTeacher: "Almost done!",
+    rightSubtitleTeacher:
+      "Your Google account is successfully connected. Just one step left to create your teacher dashboard.",
+    title: "Choose your username",
+    lead: "What should we call you? This username will be visible on your profile and leaderboards.",
+    label: "Username",
+    placeholder: "e.g: your name",
+    titleTeacher: "How to introduce you?",
+    leadTeacher:
+      "Your students will see this name in virtual classes and assignments.",
+    labelTeacher: "Full name",
+    placeholderTeacher: "e.g., Jane Doe",
+    errorEmpty: "Username cannot be empty",
+    btnSubmit: "Continue",
+    saving: "Saving...",
   },
 } as const;

@@ -10,9 +10,12 @@ export function FeaturesSection() {
   return (
     <section
       id="why-choose-explys"
-      className="relative font-display scroll-mt-24 py-24"
+      className="relative scroll-mt-24 py-16 font-display sm:py-24"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,oklch(0.75_0.18_145/0.08)_0%,transparent_50%)]" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,oklch(0.75_0.18_145/0.06)_0%,transparent_50%)]"
+      />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
@@ -32,9 +35,9 @@ export function FeaturesSection() {
             return (
               <div
                 key={feature.title}
-                className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"
+                className="landing-card-glow group rounded-2xl border border-border bg-card/60 p-6"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-glow transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary/20">
                   <Icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-foreground">

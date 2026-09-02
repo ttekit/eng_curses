@@ -48,12 +48,12 @@ export class AlcorythmGeminiTranscriptTagClient {
     const userTagRules =
       genres.length === 0
         ? [
-            '- userTags: MUST be [] (empty array). No free-form labels; the genre catalog is empty.',
-          ]
+          '- userTags: MUST be [] (empty array). No free-form labels; the genre catalog is empty.',
+        ]
         : [
-            '- userTags: 1 to 10 items. Each string MUST be copied exactly from the genre catalog JSON array below (same spelling and punctuation as one of the listed values). Pick genres that best fit the video (film/TV style or overall content). Do not output any label that is not in that catalog. No duplicates.',
-            `- Genre catalog (JSON string array, exhaustive allow-list): ${genreCatalogJson}`,
-          ];
+          '- userTags: 1 to 10 items. Each string MUST be copied exactly from the genre catalog JSON array below (same spelling and punctuation as one of the listed values). Pick genres that best fit the video (film/TV style or overall content). Do not output any label that is not in that catalog. No duplicates.',
+          `- Genre catalog (JSON string array, exhaustive allow-list): ${genreCatalogJson}`,
+        ];
     const prompt = buildAiPrompt(
       AI_PROMPT_ENV_KEYS.transcriptTags,
       DEFAULT_PROMPT_TRANSCRIPT_TAGS,

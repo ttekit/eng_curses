@@ -18,7 +18,6 @@ import {
 } from "../../lib/learnerOnboarding";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
-import { formatMessage } from "../../lib/formatMessage";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
 import { CatalogWelcomeBar } from "../../components/catalog/CatalogWelcomeBar";
 import { AgeVerificationModal } from "../../components/profile/AgeVerificationModal";
@@ -44,6 +43,7 @@ import { appUk } from "../../locales/app/uk";
 import { Layers, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import { isTrustedIframeMessageOrigin } from "../../lib/trustedMessageOrigin";
+import { AuthSplitLayout } from "../../components/AuthSplitLayout";
 
 interface ContentVideo {
   id: number;
@@ -719,8 +719,6 @@ export default function VideoPage() {
                             {filterLabel(lvl)}
                           </button>
                         ))}
-
-                        
                       </div>
 
                       <button
@@ -757,8 +755,7 @@ export default function VideoPage() {
                           msOverflowStyle: "none",
                         }}
                       >
-
-                       {AGE_LIST.map((age) => (
+                        {AGE_LIST.map((age) => (
                           <button
                             key={age}
                             type="button"
@@ -773,7 +770,6 @@ export default function VideoPage() {
                             {filterLabel(age)}
                           </button>
                         ))}
-                
                       </div>
 
                       <button
@@ -977,83 +973,47 @@ export default function VideoPage() {
       </div>
 
       {showPlacementPrepOverlay ? (
-        <div className="fixed inset-0 z-200 font-display flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
-          <header className="shrink-0 border-border border-b bg-background">
-            <div className="mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-4">
-              <div aria-hidden="true" />
-              <div className="flex items-center gap-2">
-                <img src="/Icon.svg" className="w-10 h-13" alt="" />
-                <span className="font-display text-lg font-bold tracking-tight text-foreground">
-                  Explys
-                </span>
+        <div className="fixed inset-0 z-200 bg-background overflow-y-auto">
+          <AuthSplitLayout
+            progressStep={3}
+            progressTotal={3}
+            rightTitle={cb.placementPrepRightTitle}
+            rightSubtitle={cb.placementPrepRightSubtitle}
+          >
+            <div className="mb-6 flex items-center gap-3">
+              <img src="/Icon.svg" className="w-12 h-15" alt="Explys" />
+              <div>
+                <h1 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                  {cb.placementTakeTestTitle || "Let's find your level"}
+                </h1>
               </div>
-              <span className="justify-self-end text-sm text-muted-foreground">
-                {cb.placementStepCounter || "Step 1 of 2"}
-              </span>
             </div>
-          </header>
-          <div className="mx-auto w-full max-w-4xl shrink-0 px-4 py-6">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full w-1/2 rounded-full bg-primary transition-all" />
-            </div>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-              <div className="w-full max-w-lg flex flex-col bg-card border border-border rounded-3xl overflow-hidden shadow-lg p-6 sm:p-10">
-                <div className="w-full text-center">
-                  <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
-                    {cb.placementTakeTestTitle || "Let's find your level"}
-                  </h2>
-                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                    {cb.placementTakeTestDesc ||
-                      "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you."}
-                  </p>
-                </div>
 
-                <div className="flex flex-col gap-3 mt-10 w-full">
-                  <button
-                    onClick={() => setForceTest(true)}
-                    className="w-full rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
-                  >
-                    {cb.placementBtnStart || "Start the test"}
-                  </button>
-                  <button
-                    onClick={handleSkipTest}
-                    disabled={isSkipping}
-                    className="w-full rounded-xl border border-border bg-background px-6 py-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted cursor-pointer disabled:opacity-50"
-                  >
-                    {isSkipping
-                      ? "..."
-                      : cb.placementBtnSkip || "Skip test (Start at A1)"}
-                  </button>
-                </div>
-              </div>
+            <p className="mb-8 text-sm text-muted-foreground leading-relaxed">
+              {cb.placementTakeTestDesc ||
+                "Please take a short placement test. It helps us understand your current English level so we can recommend the perfect videos and quizzes for you."}
+            </p>
+
+            <div className="flex flex-col gap-3 w-full">
+              <button
+                onClick={() => setForceTest(true)}
+                className="w-full rounded-xl bg-primary px-6 py-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 cursor-pointer"
+              >
+                {cb.placementBtnStart || "Start the test"}
+              </button>
+              <button
+                onClick={handleSkipTest}
+                disabled={isSkipping}
+                className="w-full rounded-xl border border-border bg-background px-6 py-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted cursor-pointer disabled:opacity-50"
+              >
+                {isSkipping
+                  ? "..."
+                  : cb.placementBtnSkip || "Skip test (Start at A1)"}
+              </button>
             </div>
-            <footer className="shrink-0 border-border border-t bg-card">
-              <div className="mx-auto flex max-w-4xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="mb-3 flex items-center gap-2">
-                    <img src="/Icon.svg" className="w-8 h-10" alt="" />
-                    <span className="font-display text-lg font-bold tracking-tight text-foreground">
-                      Explys
-                    </span>
-                  </div>
-                  <p className="max-w-xs text-sm text-muted-foreground">
-                    {cb.placementFooterBlurb ||
-                      "Explys placement test personalization."}
-                  </p>
-                </div>
-                <p className="shrink-0 text-sm text-muted-foreground">
-                  {formatMessage(cb.placementCopyright || "© {year} Explys", {
-                    year: String(new Date().getFullYear()),
-                  })}
-                </p>
-              </div>
-            </footer>
-          </div>
+          </AuthSplitLayout>
         </div>
       ) : null}
-
       {showPlacementTest ? (
         <div className="fixed inset-0 z-200 flex flex-col bg-background">
           {placementDocError ? (

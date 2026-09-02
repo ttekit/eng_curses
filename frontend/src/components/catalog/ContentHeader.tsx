@@ -73,17 +73,17 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
 
   return (
     <>
-      <header className="fixed top-[var(--email-verification-banner-height,0px)] z-999 flex h-18 w-full items-center gap-2 border-b border-border bg-[--header-background] px-3 font-display backdrop-blur-md md:px-4">
-        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+      <header className="fixed top-(--email-verification-banner-height,0px) z-999 flex h-18 w-full items-center gap-1 overflow-x-hidden border-b border-border bg-[--header-background] px-2 font-display backdrop-blur-md sm:gap-2 sm:px-3 md:px-4">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-3">
           <Link to="/">
             <img
               src="/Icon.svg"
               alt="Explys Logo"
-              className="h-15 w-16 shrink-0 object-contain hover:cursor-pointer"
+              className="h-12 w-14 shrink-0 object-contain hover:cursor-pointer sm:h-15 sm:w-16"
             />
           </Link>
 
-          <p className="truncate text-2xl font-bold sm:text-3xl md:text-[35px] text-foreground">
+          <p className="hidden truncate text-xl font-bold text-foreground sm:block sm:text-2xl md:text-[35px]">
             Explys
           </p>
         </div>
@@ -134,9 +134,8 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          {/* Блок с переключателями темы и языка */}
-          <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ThemeToggle />
             {variant === "landing" ? <LandingLanguageToggle /> : null}
           </div>
@@ -237,13 +236,13 @@ export default function ContentHeader({ variant = "app" }: ContentHeaderProps) {
           <button
             type="button"
             tabIndex={-1}
-            className="fixed inset-0 top-[calc(var(--email-verification-banner-height,0px)+4.5rem)] z-[998] bg-background/80 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 top-[calc(var(--email-verification-banner-height,0px)+4.5rem)] z-998 bg-background/80 backdrop-blur-sm lg:hidden"
             aria-hidden
             onClick={closeMenu}
           />
           <div
             id={menuId}
-            className="fixed top-[calc(var(--email-verification-banner-height,0px)+4.5rem)] right-0 left-0 z-[999] max-h-[min(70vh,calc(100dvh-var(--email-verification-banner-height,0px)-4.5rem))] overflow-y-auto border-b border-border bg-[--header-background] px-4 py-4 font-display shadow-lg lg:hidden"
+            className="fixed top-[calc(var(--email-verification-banner-height,0px)+4.5rem)] right-0 left-0 z-999 max-h-[min(70vh,calc(100dvh-var(--email-verification-banner-height,0px)-4.5rem))] overflow-y-auto border-b border-border bg-[--header-background] px-4 py-4 font-display shadow-lg lg:hidden"
           >
             <div className="mx-auto flex max-w-7xl flex-col gap-1">
               {variant === "landing" ? (

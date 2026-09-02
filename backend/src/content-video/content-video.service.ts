@@ -309,22 +309,46 @@ export class ContentVideoService {
   }
 
   async update(id: number, updateContentVideoDto: UpdateContentVideoDto) {
+    const { cefrLevel, ...videoData } = updateContentVideoDto;
+
     const contentVideo = await this.prisma.contentVideo.findUnique({
       where: { id },
-      select: { id: true },
+      include: { content: { include: { stats: true } } },
     });
+
     if (!contentVideo) {
       throw new NotFoundException(`ContentVideo with ID ${id} not found`);
     }
+
     const updatedVideo = await this.prisma.contentVideo.update({
       where: { id },
-      data: updateContentVideoDto,
+      data: videoData,
     });
+    if (cefrLevel !== undefined) {
+      const statsId = contentVideo.content.stats?.id;
+
+      if (statsId) {
+        const cefrLevels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+        const currentTags = contentVideo.content.stats?.systemTags || [];
+        const newTags = currentTags.filter((tag) => !cefrLevels.includes(tag));
+
+        if (cefrLevel && cefrLevels.includes(cefrLevel)) {
+          newTags.push(cefrLevel);
+        }
+
+        await this.prisma.contentStats.update({
+          where: { id: statsId },
+          data: { systemTags: newTags },
+        });
+      }
+    }
+
     try {
       await this.redis.del("catalog:videos");
       await this.redis.del("catalog:videos:admin");
       await this.redis.del("catalog:videos:public_safe");
     } catch (e) {}
+
     return updatedVideo;
   }
 

@@ -399,7 +399,7 @@ export default function AdminUsersPage() {
                 <option value="adult">Adult</option>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="admin">Admin</option>
+                {/* <option value="admin">Admin</option> */}
               </AdminSelectNative>
             </div>
           </div>
@@ -495,7 +495,7 @@ export default function AdminUsersPage() {
                 <option value="adult">Adult</option>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="admin">Admin</option>
+                {/* <option value="admin">Admin</option> */}
               </AdminSelectNative>
             </div>
           </div>

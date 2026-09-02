@@ -18,7 +18,7 @@ import CatalogSeriesPage from "./pages/content/CatalogSeriesPage";
 import WatchedLessonsPage from "./pages/content/WatchedLessonsPage";
 import LearnerRecapQuizPage from "./pages/content/LearnerRecapQuizPage";
 import LessonSummaryPage from "./pages/content/LessonSummaryPage";
-//import RegisterSuccessPage from "./pages/registration/RegisterSuccessPage";
+import RegisterSuccessPage from "./pages/registration/RegisterSuccessPage";
 import LandingPage from "./pages/landing/LandingPage";
 import DemoLessonPage from "./pages/landing/DemoLessonPage";
 import LevelTestPage from "./pages/registration/LevelTestPage";
@@ -52,6 +52,10 @@ import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
+import GoogleUsernamePage from "./components/GoogleUsernamePage";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
 
 const router = createBrowserRouter([
   {
@@ -59,12 +63,17 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <LandingPage /> },
       { path: "/register", element: <RegistrationMain /> },
+      { path: "/register-teacher", element: <RegistrationMain /> },
       // { path: "/register-details", element: <RegistrationDetails /> },
+      {
+        path: "/google-username",
+        element: <GoogleUsernamePage />,
+      },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
       },
-      // { path: "/register-success", element: <RegisterSuccessPage /> },
+      { path: "/register-success", element: <RegisterSuccessPage /> },
       { path: "/verify-email", element: <EmailVerification /> },
       { path: "/restore-account", element: <RestoreAccount /> },
       { path: "/login", element: <LoginForm /> },

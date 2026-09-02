@@ -1,13 +1,14 @@
 import React, { Suspense, useEffect, useMemo } from "react";
 import { useLocation } from "react-router";
 import { HeroSection } from "../../components/landing/HeroSection";
-import { MarketingFaqSection } from "../../components/landing/MarketingFaqSection";
+import { PricingFaqSection } from "../../components/landing/PricingFaqSection";
 import ContentHeader from "../../components/catalog/ContentHeader";
 import { SEO } from "../../components/SEO/SEO";
 import { resolveCanonicalUrl } from "../../lib/siteUrl";
 import { buildLandingJsonLdSchemas } from "../../lib/seoStructuredData";
 import { buildMarketingHreflangAlternates } from "../../lib/seoHreflang";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+import { LandingAmbientBackground } from "../../components/landing/effects/LandingAmbientBackground";
 
 const FeaturesSection = React.lazy(() =>
   import("../../components/landing/FeaturesSection").then((m) => ({
@@ -17,6 +18,11 @@ const FeaturesSection = React.lazy(() =>
 const HowItWorksSection = React.lazy(() =>
   import("../../components/landing/HowItWorksSection").then((m) => ({
     default: m.HowItWorksSection,
+  })),
+);
+const GamificationSection = React.lazy(() =>
+  import("../../components/landing/GamificationSection").then((m) => ({
+    default: m.GamificationSection,
   })),
 );
 const LandingPricingSection = React.lazy(() =>
@@ -72,9 +78,11 @@ export default function LandingPage() {
 
   return (
     <main
-      className="min-h-screen bg-background text-foreground selection:bg-primary/30"
+      className="relative min-h-screen overflow-x-hidden text-foreground selection:bg-primary/30"
       lang={locale === "uk" ? "uk" : "en"}
     >
+      <LandingAmbientBackground />
+      <div className="relative z-10">
       <SEO
         title={seo.title}
         description={seo.description}
@@ -88,9 +96,9 @@ export default function LandingPage() {
       <ContentHeader variant="landing" />
       <HeroSection />
 
-      <Suspense fallback={<div className="min-h-screen" />}>
+      <Suspense fallback={<div className="min-h-[40vh]" aria-hidden />}>
         <LandingPricingSection />
-        <MarketingFaqSection
+        <PricingFaqSection
           id="pricing-faq"
           title={marketingFaq.pricingTitle}
           subtitle={marketingFaq.pricingSubtitle}
@@ -99,10 +107,12 @@ export default function LandingPage() {
         <FeaturesSection />
         <DifferentiationSection />
         <HowItWorksSection />
+        <GamificationSection />
         <TestimonialsSection />
         <CtaSection />
         <LandingFooter />
       </Suspense>
+      </div>
     </main>
   );
 }
