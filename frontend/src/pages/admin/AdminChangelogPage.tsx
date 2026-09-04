@@ -208,6 +208,7 @@ export default function AdminChangelogPage() {
     }
   };
 
+  
   const confirmDelete = async () => {
     if (logToDelete === null) return;
 
