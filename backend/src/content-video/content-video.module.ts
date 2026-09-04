@@ -16,13 +16,14 @@ import { UserVocabularyModule } from "src/user-vocabulary/user-vocabulary.module
 import { ContentVideoController } from "./content-video.controller";
 import { ContentVideoService } from "./content-video.service";
 import { DeepSeekService } from "src/contents/deepseek.service";
+import { ConstellationModule } from "src/constelattions/constellation.module";
 
 @Module({
   imports: [
     AuthModule,
     AlcorythmModule,
     UserVocabularyModule,
-    ContentVideoModule,
+    ConstellationModule,
   ],
   controllers: [ContentVideoController],
   providers: [
@@ -38,8 +39,8 @@ import { DeepSeekService } from "src/contents/deepseek.service";
     VocabularyHintsService,
     VocabularyPersonalizeGeminiClient,
     VocabularyPersonalizationService,
-    DeepSeekService
+    DeepSeekService,
   ],
   exports: [ContentVideoService, VideoCaptionsService],
 })
-export class ContentVideoModule {}
+export class ContentVideoModule { }

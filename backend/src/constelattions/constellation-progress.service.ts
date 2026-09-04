@@ -4,7 +4,7 @@ import { ProgressStatus } from "../generated/prisma/client";
 
 @Injectable()
 export class ConstellationProgressService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async completeStar(userId: number, starId: number) {
     const star = await this.prisma.star.findUnique({
@@ -42,13 +42,19 @@ export class ConstellationProgressService {
         .map((p) => p.starId),
     );
 
+    completedStarIds.add(starId);
+
     const newlyAvailable: number[] = [];
 
     for (const s of constellationStars) {
       if (completedStarIds.has(s.id)) continue;
 
-      const hasProgress = userProgress.find((p) => p.starId === s.id);
-      if (hasProgress && hasProgress.status !== ProgressStatus.LOCKED) continue;
+      const progressRecord = userProgress.find((p) => p.starId === s.id);
+      const currentStatus = progressRecord ? progressRecord.status : (s.prerequisites.length === 0 ? ProgressStatus.AVAILABLE : ProgressStatus.LOCKED);
+
+      if (currentStatus === ProgressStatus.COMPLETED || currentStatus === ProgressStatus.IN_PROGRESS || currentStatus === ProgressStatus.AVAILABLE) {
+        continue;
+      }
 
       const allPrereqsMet = s.prerequisites.every((prereq) =>
         completedStarIds.has(prereq.prerequisiteId),

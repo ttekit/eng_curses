@@ -11,7 +11,8 @@ export class ConstellationGeneratorService {
         private readonly matcher: StarVideoMatcherService,
     ) { }
 
-    async generateAndSaveConstellation(domain: string, cefrLevel: string) {
+    // ДОДАНО необов'язковий параметр userId?: number
+    async generateAndSaveConstellation(domain: string, cefrLevel: string, userId?: number) {
         const generated = await this.gemini.generateConstellation(domain, cefrLevel);
 
         if (!generated || !generated.stars || generated.stars.length === 0) {
@@ -22,6 +23,7 @@ export class ConstellationGeneratorService {
             data: {
                 name: generated.constellationName,
                 description: generated.description,
+                userId: userId ?? null, // <-- Прив'язуємо до учня, якщо передано ID
             },
         });
 
@@ -64,6 +66,45 @@ export class ConstellationGeneratorService {
 
         for (const dbId of tempIdToDbId.values()) {
             await this.matcher.matchAndAssignVideo(dbId, cefrLevel);
+        }
+
+        if (userId) {
+            await this.prisma.userConstellationProgress.create({
+                data: {
+                    userId,
+                    constellationId: constellation.id,
+                    status: "AVAILABLE",
+                },
+            }).catch(() => undefined);
+        }
+
+        for (const dbId of tempIdToDbId.values()) {
+            await this.matcher.matchAndAssignVideo(dbId, cefrLevel);
+        }
+
+        if (userId) {
+            await this.prisma.userConstellationProgress.create({
+                data: {
+                    userId,
+                    constellationId: constellation.id,
+                    status: "AVAILABLE",
+                },
+            }).catch(() => undefined);
+
+            const dependentIds = new Set(prerequisitesData.map(p => p.dependentId));
+
+            const firstStarId = Array.from(tempIdToDbId.values()).find(id => !dependentIds.has(id))
+                ?? Array.from(tempIdToDbId.values())[0];
+
+            if (firstStarId) {
+                await this.prisma.userStarProgress.create({
+                    data: {
+                        userId,
+                        starId: firstStarId,
+                        status: "AVAILABLE",
+                    },
+                }).catch(() => undefined);
+            }
         }
 
         return this.prisma.constellation.findUnique({

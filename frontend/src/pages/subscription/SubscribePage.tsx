@@ -126,6 +126,7 @@ export default function SubscribePage() {
           <>
             <PricingCards
               onlyPlanId={isTeacherRegistration ? "teacher" : undefined}
+              defaultPlanId="smart"
               onSelectTeacherPlan={
                 isTeacherRegistration
                   ? () =>

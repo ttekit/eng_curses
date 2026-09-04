@@ -49,9 +49,7 @@ export function AgeVerificationModal({
       onSaved?.();
       onClose();
     } catch (err) {
-      setErrorText(
-        err instanceof Error ? err.message : copy.saveFailed,
-      );
+      setErrorText(err instanceof Error ? err.message : copy.saveFailed);
     } finally {
       setLoading(false);
     }

@@ -13,4 +13,6 @@ export const AI_PROMPT_ENV_KEYS = {
   comprehensionTests: "GEMINI_PROMPT_COMPREHENSION_TESTS",
   placementTest: "GEMINI_PROMPT_PLACEMENT_TEST",
   vocabularyPersonalize: "GEMINI_PROMPT_VOCABULARY_PERSONALIZE",
+  constellationGenerator: "GEMINI_PROMPT_CONSTELLATION_GENERATOR",
+  subtitleTranslate: "SUBTITLE_TRANSLATE_PROMPT",
 } as const;

@@ -74,7 +74,7 @@ export class DeepSeekService {
           },
           signal: controller.signal,
           body: JSON.stringify({
-            model: "deepseek-v4-flash",
+            model: "deepseek-chat",
             messages: [
               { role: "system", content: prompt },
               { role: "user", content: JSON.stringify(batchObject) },

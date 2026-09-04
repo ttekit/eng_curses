@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import "./index.css";
 import { LandingLocaleProvider } from "./context/LandingLocaleContext";
 import RegistrationMain from "./pages/registration/RegistrationMain";
-import RegistrationDetails from "./pages/registration/RegistrationDetails";
+//import RegistrationDetails from "./pages/registration/RegistrationDetails";
 import RegistrationPreferences from "./pages/registration/RegistrationPreferences";
 import LoginForm from "./pages/login/LoginForm";
 import { RegistrationProvider } from "./context/RegistrationContext";
@@ -31,6 +31,7 @@ import AdminVideosPage from "./pages/admin/AdminVideosPage";
 import AdminTeachersPage from "./pages/admin/AdminTeachersPage";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import AdminConstellationsPage from "./pages/admin/AdminConstellationsPage";
 import AnalyticsLayout from "./components/AnalyticsLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireAdmin from "./components/RequireAdmin";
@@ -51,6 +52,10 @@ import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
+import GoogleUsernamePage from "./components/GoogleUsernamePage";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
 
 const router = createBrowserRouter([
   {
@@ -58,7 +63,12 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <LandingPage /> },
       { path: "/register", element: <RegistrationMain /> },
-      { path: "/register-details", element: <RegistrationDetails /> },
+      { path: "/register-teacher", element: <RegistrationMain /> },
+      // { path: "/register-details", element: <RegistrationDetails /> },
+      {
+        path: "/google-username",
+        element: <GoogleUsernamePage />,
+      },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
@@ -74,6 +84,7 @@ const router = createBrowserRouter([
       { path: "/terms", element: <TermsOfServicePage /> },
       { path: "/feedback", element: <FeedbackPage /> },
       { path: "/demo-lesson", element: <DemoLessonPage /> },
+
       {
         element: <RequireAuth />,
         children: [
@@ -93,6 +104,10 @@ const router = createBrowserRouter([
                   { path: "avatars", element: <AdminAvatarsPage /> },
                   { path: "settings", element: <AdminSettingsPage /> },
                   { path: "changelog", element: <AdminChangelogPage /> },
+                  {
+                    path: "constellations",
+                    element: <AdminConstellationsPage />,
+                  },
                 ],
               },
             ],

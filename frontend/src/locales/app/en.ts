@@ -193,6 +193,9 @@ export const appEn = {
     filterGenre: "Genre",
     next: "Next",
     prev: "Prev",
+    placementPrepRightTitle: "One last step!",
+    placementPrepRightSubtitle:
+      "Let's find out your English level to provide the best video recommendations.",
   },
 
   search: {
@@ -246,7 +249,7 @@ export const appEn = {
   },
 
   profileHeader: {
-    roleAdult: "Adult learner",
+    roleAdult: "Adult",
     roleStudent: "Student",
     roleTeacher: "Teacher",
     roleAdmin: "Administrator",
@@ -755,7 +758,7 @@ export const appEn = {
     openCatalogPathAria: "Open {title} in catalog",
     scorePrefix: "Score:",
     notStartedStatus: "Not started",
-    viewAll: "View all",
+    viewAll: "Go to catalog",
     categoryBusiness: "Business",
     categoryMotivation: "Motivation",
     categoryCasual: "Casual",
@@ -1115,6 +1118,13 @@ export const appEn = {
     warning: "Warning! Age resctriction:",
     xpInfo: "Earn 150xp after finishing this lesson to move to a new level!",
     assignHomework: "Assign homework",
+    ageVerificationRequired: "Age Verification Required",
+    ageVerificationDesc:
+      "To watch age-restricted content, please confirm your date of birth.",
+    verifyAgeBtn: "Verify age",
+    adultsOnlyTitle: "18+ Only",
+    adultsOnlyDesc:
+      "This content is restricted to adults (18+) and is not available to your profile.",
   },
 
   lessonSummaryPage: {
@@ -1327,5 +1337,12 @@ export const appEn = {
     readMore: "Read more",
     newBadge: "New",
     markAllAsRead: "Mark all as read",
+  },
+  videoPlayer: {
+    skipBack: "-10 sec",
+    skipForward: "+10 sec",
+    speed: "Speed",
+    subtitles: "Subtitles",
+    subtitlesOff: "Off",
   },
 } as const;

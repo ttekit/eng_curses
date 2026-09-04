@@ -392,13 +392,14 @@ export default function AdminUsersPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Role</label>
               <AdminSelectNative
+                className="w-full"
                 value={addRole}
                 onChange={(e) => setAddRole(e.target.value as KnownRole)}
               >
                 <option value="adult">Adult</option>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="admin">Admin</option>
+                {/* <option value="admin">Admin</option> */}
               </AdminSelectNative>
             </div>
           </div>
@@ -407,6 +408,7 @@ export default function AdminUsersPage() {
               English level (optional)
             </label>
             <AdminSelectNative
+              className="w-full"
               value={addLevel}
               onChange={(e) => setAddLevel(e.target.value)}
             >
@@ -486,13 +488,14 @@ export default function AdminUsersPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Role</label>
               <AdminSelectNative
+                className="w-full"
                 value={editRole}
                 onChange={(e) => setEditRole(e.target.value as KnownRole)}
               >
                 <option value="adult">Adult</option>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
-                <option value="admin">Admin</option>
+                {/* <option value="admin">Admin</option> */}
               </AdminSelectNative>
             </div>
           </div>
@@ -501,9 +504,10 @@ export default function AdminUsersPage() {
               English level (CEFR hint)
             </label>
             <AdminSelectNative
+              className="w-full"
               value={
                 editLevel &&
-                ["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel)
+                  ["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel)
                   ? editLevel
                   : ""
               }
@@ -517,7 +521,7 @@ export default function AdminUsersPage() {
               ))}
             </AdminSelectNative>
             {editLevel.trim() &&
-            !["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel) ? (
+              !["A1", "A2", "B1", "B2", "C1", "C2"].includes(editLevel) ? (
               <p className="text-xs text-muted-foreground">
                 Profile currently <code>{editLevel}</code> — pick a level above
                 to replace it, or save without selecting to leave it unchanged.

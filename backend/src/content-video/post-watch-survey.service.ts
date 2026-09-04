@@ -9,12 +9,14 @@ import { applyListeningBumpToExistingTopics } from "src/user-language-data/user-
 import {
   PostWatchSurveyGeminiClient,
 } from "./post-watch-survey-gemini.client";
+import { ConstellationProgressService } from "src/constelattions/constellation-progress.service";
 
 @Injectable()
 export class PostWatchSurveyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: PostWatchSurveyGeminiClient,
+    private readonly constellationProgress: ConstellationProgressService,
   ) { }
 
   private async incrementUsersWatched(contentMediaId: number): Promise<void> {
@@ -55,11 +57,11 @@ export class PostWatchSurveyService {
         contentVideoId,
         completionDate,
         endedAt: now,
-        secondsWatched: secondsWatched || 0,
+        secondsWatched: secondsWatched ? Number(secondsWatched) : 0,
       },
       update: {
         endedAt: now,
-        secondsWatched: secondsWatched || 0,
+        secondsWatched: secondsWatched ? Number(secondsWatched) : 0,
       },
     });
   }
@@ -68,39 +70,49 @@ export class PostWatchSurveyService {
     videoId: number,
     userId: number,
     secondsWatched?: number,
-    isCompleted?: boolean,
+    isCompleted?: boolean | string,
   ) {
-    const duration = secondsWatched || 0;
+    const duration = secondsWatched ? Number(secondsWatched) : 0;
+    const isVideoCompleted = isCompleted === true || String(isCompleted) === "true";
 
     const session = await this.prisma.watchSession.upsert({
       where: {
         userId_contentVideoId_completionDate: {
           userId,
-          contentVideoId: videoId,
+          contentVideoId: Number(videoId),
           completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
         },
       },
       update: {
         secondsWatched: { increment: duration },
         endedAt: new Date(),
-        ...(isCompleted ? { completed: true } : {}),
+        ...(isVideoCompleted ? { completed: true } : {}),
       },
       create: {
         userId,
-        contentVideoId: videoId,
+        contentVideoId: Number(videoId),
         completionDate: new Date(new Date().setHours(0, 0, 0, 0)),
         secondsWatched: duration,
-        completed: isCompleted ?? false,
+        completed: isVideoCompleted,
         endedAt: new Date(),
       },
     });
 
     await this.updateUserStreak(userId);
 
-    if (isCompleted) {
-      await this.bumpListeningForVideoTopics(userId, videoId).catch(() => { });
-
+    if (session.completed) {
+      await this.bumpListeningForVideoTopics(userId, Number(videoId)).catch(() => { });
       await this.awardXpAndCheckAchievements(userId, 0);
+
+      const linkedStars = await this.prisma.star.findMany({
+        where: { contentVideoId: Number(videoId) },
+      });
+
+      for (const star of linkedStars) {
+        await this.constellationProgress
+          .completeStar(userId, star.id)
+          .catch(() => { });
+      }
     }
 
     return session;

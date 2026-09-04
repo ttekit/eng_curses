@@ -1,23 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipSubscriptionCheck } from 'src/auth/decorators/skip-subscription-check.decorator';
+import { JwtAdminGuard } from 'src/auth/guards/jwt-admin.guard';
 
 @ApiTags('categories')
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(private readonly categoriesService: CategoriesService) { }
 
   @Post()
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Create a new category',
     description: 'Creates a new category with a unique name. Categories group related topics together.',
   })
   @ApiBody({ type: CreateCategoryDto })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Category successfully created.',
     schema: {
       example: {
@@ -35,12 +38,12 @@ export class CategoriesController {
 
   @Get()
   @SkipSubscriptionCheck()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all categories',
     description: 'Retrieves all available categories with their associated topics.',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Return all categories.',
     schema: {
       example: [
@@ -57,17 +60,17 @@ export class CategoriesController {
   }
 
   @Get(':id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get a category by id',
     description: 'Retrieves a specific category by its ID along with all associated topics.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the category to retrieve' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the category to retrieve'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Return a category.',
     schema: {
       example: {
@@ -83,18 +86,20 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Update a category',
     description: 'Updates a category with new information. The name must be unique.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the category to update' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the category to update'
   })
   @ApiBody({ type: UpdateCategoryDto })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Category successfully updated.',
     schema: {
       example: {
@@ -114,17 +119,19 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ 
+  @UseGuards(JwtAdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
     summary: 'Delete a category',
     description: 'Deletes a category. Associated topics will not be deleted.',
   })
-  @ApiParam({ 
-    name: 'id', 
-    type: Number, 
-    description: 'The ID of the category to delete' 
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'The ID of the category to delete'
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Category successfully deleted.',
     schema: {
       example: {
@@ -138,4 +145,3 @@ export class CategoriesController {
     return this.categoriesService.remove(id);
   }
 }
-

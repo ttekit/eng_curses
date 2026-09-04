@@ -81,7 +81,6 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
                 </div>
               )}
             </div>
-            {/* Кнопка открытия модалки */}
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
@@ -94,25 +93,30 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
 
           <div className="min-w-0 flex-1 space-y-2 text-center sm:text-left">
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap">
-              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+              <h1 className="max-w-full break-all text-2xl font-bold text-foreground sm:text-3xl">
                 {user.name || h.learnerFallback || "Learner"}
               </h1>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                <span className="rounded-md border-0 bg-primary/20 px-2.5 py-0.5 text-sm font-medium text-primary">
-                  {formatMessage(h.levelLine || "Level: {level}", {
-                    level: user.level || "—",
-                  })}
-                </span>
+                {user.role !== "teacher" && (
+                  <span className="rounded-md border-0 bg-primary/20 px-2.5 py-0.5 text-sm font-medium text-primary">
+                    {formatMessage(h.levelLine || "Level: {level}", {
+                      level: user.level || "—",
+                    })}
+                  </span>
+                )}
+
                 <span className="rounded-md border border-accent px-2.5 py-0.5 text-sm text-accent">
                   {roleLabel}
                 </span>
               </div>
             </div>
 
-            <p className="text-muted-foreground">{user.email}</p>
+            <p className="max-w-full break-all text-muted-foreground">
+              {user.email}
+            </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground sm:justify-start">
-              {/* Ищем этот блок ниже в возвращаемом JSX и заменяем: */}
+              {" "}
               {user.joinDateLabel || user.fullJoinDate ? (
                 <div className="flex items-center gap-1.5">
                   <Calendar className="size-4 shrink-0" />
@@ -144,7 +148,6 @@ export function ProfileHeader({ user }: { user: ProfileHeaderModel }) {
         </div>
       </div>
 
-      {/* Рендерим саму модалку */}
       <AvatarPickerModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

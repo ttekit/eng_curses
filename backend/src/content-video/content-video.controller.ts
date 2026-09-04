@@ -6,6 +6,7 @@ import {
   Get,
   Header,
   HttpCode,
+  InternalServerErrorException,
   Param,
   ParseIntPipe,
   Patch,
@@ -47,6 +48,8 @@ import { VocabularyHintsService } from "src/content-video/vocabulary-hints.servi
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
 import { PrismaService } from "src/prisma.service";
 import { Public } from "src/auth/decorators/public.decorator";
+import { Throttle } from "@nestjs/throttler";
+import { ConstellationProgressService } from "src/constelattions/constellation-progress.service";
 
 @ApiTags("content-video")
 @Controller("content-video")
@@ -61,7 +64,8 @@ export class ContentVideoController {
     private readonly vocabularyHintsService: VocabularyHintsService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly constellationProgress: ConstellationProgressService,
+  ) { }
 
   @Post()
   @UseGuards(JwtAdminGuard)
@@ -108,6 +112,9 @@ export class ContentVideoController {
   }
 
   @Post("vocabulary-hints")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 10, ttl: 60000 } })
   @ApiOperation({
     summary:
       "Hints for vocabulary cards: translation (optional target language), English pronunciation, simple English meaning",
@@ -125,6 +132,8 @@ export class ContentVideoController {
 
   @Post(":id/vocabulary-personalize")
   @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 10, ttl: 60000 } })
   @ApiOperation({
     summary:
       "Personalized vocabulary hints for signed-in learners (native translation + level-tuned gloss; gloss in native language when level is below B1)",
@@ -210,17 +219,23 @@ export class ContentVideoController {
       "Downloads MP4 from `videoLink`, FFmpeg extracts mono 16 kHz PCM WAV, POSTs `audio/wav` to Listen (`DEEPGRAM_TRANSCRIBE_MODEL`, default `nova-3`), writes WebVTT to S3, upserts `VideoCaptions`. Optional Gemini tag refresh after success.",
   })
   async regenerateCaptions(@Param("id", ParseIntPipe) id: number) {
-    const row = await this.videoCaptionsService.generateCaptions(id);
-    if (row === null) {
-      throw new BadRequestException(
-        "Caption generation could not run. Set DEEPGRAM_API_KEY and ensure FFmpeg can decode the video’s audio (see server logs). Optional: FFMPEG_PATH, DEEPGRAM_TRANSCRIBE_MODEL.",
+    try {
+      const row = await this.videoCaptionsService.generateCaptions(id);
+      if (row === null) {
+        throw new BadRequestException(
+          "Caption generation could not run. Set DEEPGRAM_API_KEY and ensure FFmpeg can decode the video’s audio (see server logs). Optional: FFMPEG_PATH, DEEPGRAM_TRANSCRIBE_MODEL.",
+        );
+      }
+      return {
+        ok: true,
+        contentVideoId: id,
+        subtitlesFileLink: row.subtitlesFileLink,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : "Caption generation failed",
       );
     }
-    return {
-      ok: true,
-      contentVideoId: id,
-      subtitlesFileLink: row.subtitlesFileLink,
-    };
   }
 
   @Get(":id/captions")
@@ -292,20 +307,39 @@ export class ContentVideoController {
   async watchComplete(
     @Param("id", ParseIntPipe) id: number,
     @Req() req: Request & { user: unknown },
-    @Body() body: { secondsWatched?: number; completed?: boolean },
+    @Body() body: { secondsWatched?: number; completed?: boolean | string },
   ) {
     const userId = jwtSubToUserId(req.user);
-    return this.postWatchSurveyService.recordWatchAndGenerateSurvey(
+    const isCompleted = body.completed === true || String(body.completed) === "true";
+
+    const session = await this.postWatchSurveyService.recordWatchAndGenerateSurvey(
       id,
       userId,
       body.secondsWatched || 0,
-      body.completed,
+      isCompleted,
     );
+
+    if (isCompleted || session?.completed) {
+      const linkedStars = await this.prisma.star.findMany({
+        where: { contentVideoId: id },
+      });
+
+      for (const star of linkedStars) {
+        try {
+          await this.constellationProgress.completeStar(userId, star.id);
+        } catch (error) {
+          console.error(`[Constellation] Failed to complete star ${star.id}:`, error);
+        }
+      }
+    }
+
+    return session;
   }
 
   @Post(":id/tests/generate")
   @UseGuards(AuthGuard)
   @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 5, ttl: 60000 } })
   generateComprehensionTests(
     @Param("id", ParseIntPipe) id: number,
     @Body() body: { userId?: number | null } | undefined,
@@ -433,6 +467,9 @@ export class ContentVideoController {
   }
 
   @Post(":id/summary-recommendations")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @Throttle({ gemini: { limit: 5, ttl: 60000 } })
   @SkipSubscriptionCheck()
   @ApiOperation({
     summary:

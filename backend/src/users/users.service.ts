@@ -691,6 +691,19 @@ export class UsersService {
     return this.update(id, profilePatch);
   }
 
+  // Public Stats
+
+  async getPublicStats() {
+    const [usersCount, videosCount] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.contentVideo.count(),
+    ]);
+    return {
+      users: usersCount,
+      videos: videosCount,
+    };
+  }
+
   async updateAsAdmin(
     id: number,
     updateUserDto: UpdateUserDto | AdminUpdateUserDto,

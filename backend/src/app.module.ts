@@ -55,6 +55,10 @@ import { ChangelogModule } from './changelog/changelog.module';
         const uploadLimit = Number(
           configService.get("UPLOAD_RATE_LIMIT") ?? 10,
         );
+        const geminiTtlSec = Number(configService.get("GEMINI_RATE_TTL") ?? 60);
+        const geminiLimit = Number(
+          configService.get("GEMINI_RATE_LIMIT") ?? 10,
+        );
         return [
           {
             name: "default",
@@ -66,6 +70,11 @@ import { ChangelogModule } from './changelog/changelog.module';
             name: "upload",
             ttl: uploadTtlSec * 1000,
             limit: uploadLimit,
+          },
+          {
+            name: "gemini",
+            ttl: geminiTtlSec * 1000,
+            limit: geminiLimit,
           },
         ];
       },
@@ -106,4 +115,4 @@ import { ChangelogModule } from './changelog/changelog.module';
     { provide: APP_GUARD, useClass: GlobalApiTokenGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }

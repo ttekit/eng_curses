@@ -1,39 +1,36 @@
 import { useState, useEffect } from "react";
-import type { AdminAnalyticsOverviewDto } from "../../lib/adminAnalyticsApi";
-import {
-  fetchAdminOverview,
-  defaultAnalyticsRange,
-} from "../../lib/adminAnalyticsApi";
 import { useLandingLocale } from "../../context/LandingLocaleContext";
+
+type PublicStatsDto = {
+  videos: number;
+};
 
 export default function HeroStats() {
   const { messages } = useLandingLocale();
   const { hero } = messages;
-  const [overview, setOverview] = useState<AdminAnalyticsOverviewDto | null>(
-    null,
-  );
+  const [stats, setStats] = useState<PublicStatsDto | null>(null);
 
   useEffect(() => {
-    const { from, to } = defaultAnalyticsRange();
-    fetchAdminOverview(from, to).then(setOverview).catch(console.error);
+    const apiUrl = import.meta.env.VITE_API_URL || "https://api.explys.com";
+    fetch(`${apiUrl}/users/public/stats`)
+      .then((res) => res.json())
+      .then((data: { videos?: number }) =>
+        setStats(typeof data.videos === "number" ? { videos: data.videos } : null),
+      )
+      .catch(console.error);
   }, []);
+
   return (
-    <div className="items-center sm:items-start mx-auto sm:mx-0 flex w-fit flex-row gap-7 sm:gap-20 rounded-[15px] px-6 py-3 text-center text-lg text-foreground/75">
-      <div className="flex flex-col items-center">
-        <p className="text-primary font-bold text-2xl">
-          {overview
-            ? (overview.totalUsers + 3259).toString()
-            : hero.activeLearnersCount.toString()}
+    <div className="mx-auto flex w-full max-w-sm flex-wrap justify-center gap-x-6 gap-y-3 rounded-[15px] px-2 py-3 text-center text-foreground/75 sm:mx-0 sm:max-w-none sm:flex-nowrap sm:justify-start sm:gap-20 sm:px-6 sm:text-lg">
+      <div className="flex min-w-[5.5rem] flex-col items-center">
+        <p className="text-xl font-bold text-primary sm:text-2xl">
+          {stats ? `${stats.videos}+` : "500+"}
         </p>
-        <p className="text-md -mt-2">{hero.users}</p>
+        <p className="-mt-1 text-xs sm:text-md">{hero.videos}</p>
       </div>
-      <div className="flex flex-col items-center">
-        <p className="text-primary font-bold text-2xl">500+</p>
-        <p className="text-md -mt-2">{hero.videos}</p>
-      </div>
-      <div className="flex flex-col items-center">
-        <p className="text-primary font-bold text-2xl">10,000+</p>
-        <p className="text-md -mt-2">{hero.hours}</p>
+      <div className="flex min-w-[5.5rem] flex-col items-center">
+        <p className="text-xl font-bold text-primary sm:text-2xl">10,000+</p>
+        <p className="-mt-1 text-xs sm:text-md">{hero.hours}</p>
       </div>
     </div>
   );

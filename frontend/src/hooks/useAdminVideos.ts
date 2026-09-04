@@ -527,7 +527,7 @@ export function useAdminVideos() {
             await generateVideoThumbnailBlob(uploadLink),
             "thumbnail.jpg",
           );
-        } catch (e) {}
+        } catch (e) { }
       }
       await createAdminCatalogVideo(fd);
       toast.success("Video published successfully");
@@ -681,7 +681,7 @@ export function useAdminVideos() {
             await generateVideoThumbnailBlob(addEpisodeLink),
             "thumbnail.jpg",
           );
-        } catch (e) {}
+        } catch (e) { }
       }
 
       await postAdminSeriesEpisode(addEpisodeSeries.contentRootId, fd);
