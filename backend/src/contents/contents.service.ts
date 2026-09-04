@@ -1006,12 +1006,14 @@ export class ContentsService {
   async getVideosForStudent(studentId: number) {
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
-      select: { teacherId: true, classId: true },
+      select: { teacherId: true, classes: { select: { id: true } } },
     });
 
     if (!student || !student.teacherId) {
       return [];
     }
+
+    const myClassIds = student.classes.map((c) => c.id);
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -1025,7 +1027,7 @@ export class ContentsService {
             visibility: "public",
             OR: [{ deadline: null }, { deadline: { gt: sevenDaysAgo } }],
           },
-          ...(student.classId
+          ...(myClassIds.length > 0
             ? [
                 {
                   OR: [
@@ -1034,7 +1036,7 @@ export class ContentsService {
                   ],
                   classAccesses: {
                     some: {
-                      classId: student.classId,
+                      classId: { in: myClassIds },
                       OR: [
                         { deadline: null },
                         { deadline: { gt: sevenDaysAgo } },
@@ -1048,12 +1050,13 @@ export class ContentsService {
       },
       orderBy: { createAt: "desc" },
       include: {
-        classAccesses: student.classId
-          ? {
-              where: { classId: student.classId },
-              take: 1,
-            }
-          : false,
+        classAccesses:
+          myClassIds.length > 0
+            ? {
+                where: { classId: { in: myClassIds } },
+                take: 1,
+              }
+            : false,
         category: {
           orderBy: { playlistPosition: "asc" },
           take: 1,
@@ -1092,6 +1095,7 @@ export class ContentsService {
       };
     });
   }
+
   private async getDistinctCompletedVideosByUser(
     userIds: number[],
   ): Promise<Map<number, number>> {
@@ -1236,106 +1240,85 @@ export class ContentsService {
 
     return { students: out };
   }
-
   async getVideoStudentResults(teacherId: number, contentId: number) {
     const content = await this.prisma.content.findFirst({
-      where: {
-        id: contentId,
-        OR: [
-          { ownerUserId: teacherId },
-          { classAccesses: { some: { class: { teacherId } } } },
-        ],
-      },
+      where: { id: contentId, teacherId },
       include: {
-        category: { include: { ContentVideo: true } },
         classAccesses: { include: { class: true } },
       },
     });
 
-    if (!content)
-      throw new NotFoundException("Content not found or access denied");
+    if (!content) {
+      throw new ForbiddenException("Content not found or access denied.");
+    }
 
-    const contentVideoId = content.category[0]?.ContentVideo[0]?.id;
-    if (!contentVideoId)
-      throw new BadRequestException("No video attached to this content");
+    const classIds = content.classAccesses.map((a: any) => a.classId);
 
-    let students: any[] = [];
-    let classes: any[] = [];
-
-    if (
-      content.ownerUserId === teacherId &&
-      content.classAccesses.length === 0
-    ) {
+    let students = [];
+    if (classIds.length > 0) {
       students = await this.prisma.user.findMany({
-        where: { teacherId },
+        where: {
+          teacherId: teacherId,
+          classes: { some: { id: { in: classIds } } },
+        },
         select: {
           id: true,
           name: true,
           email: true,
-          classId: true,
-          class: { select: { name: true } },
+          classes: { select: { id: true, name: true } },
         },
       });
-      classes = await this.prisma.class.findMany({
-        where: { teacherId },
-        select: { id: true, name: true },
-      });
     } else {
-      const classIds = content.classAccesses.map((a: any) => a.classId);
-      classes = content.classAccesses.map((a: any) => a.class);
       students = await this.prisma.user.findMany({
-        where: { teacherId, classId: { in: classIds } },
+        where: { teacherId: teacherId },
         select: {
           id: true,
           name: true,
           email: true,
-          classId: true,
-          class: { select: { name: true } },
+          classes: { select: { id: true, name: true } },
         },
       });
     }
 
-    const studentIds = students.map((s: any) => s.id);
+    if (students.length === 0) {
+      return {
+        contentName: content.name,
+        classes: content.classAccesses.map((a: any) => ({
+          id: a.class.id,
+          name: a.class.name,
+        })),
+        students: [],
+      };
+    }
+
     const attempts = await this.prisma.comprehensionTestAttempt.findMany({
       where: {
-        userId: { in: studentIds },
-        contentVideoId: contentVideoId,
+        userId: { in: students.map((s) => s.id) },
+        contentVideo: {
+          content: {
+            categoryId: contentId,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
-
-    const attemptMap = new Map();
-    for (const att of attempts) {
-      if (!attemptMap.has(att.userId)) {
-        attemptMap.set(att.userId, att);
-      }
-    }
-
-    const results = students.map((s: any) => {
-      const att: any = attemptMap.get(s.id);
-
-      let parsed = att?.details;
-      if (typeof parsed === "string") {
-        try {
-          parsed = JSON.parse(parsed);
-        } catch (e) {}
-      }
+    const mappedStudents = students.map((s) => {
+      const studentAttempt = attempts.find((a) => a.userId === s.id);
 
       return {
         id: s.id,
         name: s.name,
         email: s.email,
-        classId: s.classId,
-        className: s.class?.name || null,
-        attempt: att
+        classId: s.classes.length > 0 ? s.classes[0].id : null,
+        className:
+          s.classes.length > 0 ? s.classes.map((c) => c.name).join(", ") : null,
+        attempt: studentAttempt
           ? {
-              id: att.id,
-              scorePct: att.scorePct,
-              correct: att.correct,
-              total: att.total,
-              passed: att.passed,
-              answers: parsed,
-              createdAt: att.createdAt.toISOString(),
+              passed: studentAttempt.passed,
+              scorePct: studentAttempt.scorePct,
+              correct: studentAttempt.correct,
+              total: studentAttempt.total,
+              answers: studentAttempt.answers,
             }
           : null,
       };
@@ -1343,8 +1326,11 @@ export class ContentsService {
 
     return {
       contentName: content.name,
-      classes: classes.map((c: any) => ({ id: c.id, name: c.name })),
-      students: results,
+      classes: content.classAccesses.map((a: any) => ({
+        id: a.class.id,
+        name: a.class.name,
+      })),
+      students: mappedStudents,
     };
   }
 

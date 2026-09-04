@@ -287,7 +287,7 @@ export function Groups() {
 
                   <div className="pt-5 flex items-center gap-3 border-t border-border mt-auto">
                     <Link
-                      to="/catalog"
+                      to="/teacher/assign-course"
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors text-sm font-medium"
                     >
                       <BookOpen className="w-4 h-4" />

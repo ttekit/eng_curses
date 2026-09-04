@@ -58,6 +58,7 @@ import { Overview } from "./pages/teacher/overview";
 import { Students } from "./pages/teacher/students";
 import { Groups } from "./pages/teacher/Groups";
 import { EditGroupPage } from "./components/teacher-students/EditGroupPage";
+import { AssignCourse } from "./pages/teacher/AssignCourse";
 
 registerSW({ immediate: true });
 
@@ -155,6 +156,7 @@ const router = createBrowserRouter([
               { path: "/teacher/students", element: <Students /> },
               { path: "/teacher/groups", element: <Groups /> },
               { path: "/teacher/groups/:id", element: <EditGroupPage /> },
+              { path: "/teacher/assign-course", element: <AssignCourse /> },
             ],
           },
         ],
