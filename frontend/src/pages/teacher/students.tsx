@@ -163,9 +163,9 @@ export function Students() {
       const mappedStudents: StudentRecord[] = studentsArray.map(
         (s: any, index: number) => {
           const cohortName =
-            classesData.find((c: any) => c.id === s.classId)?.name ||
-            "No Class";
-
+            s.classes && s.classes.length > 0
+              ? s.classes.map((c: any) => c.name).join(", ")
+              : "No Class";
           const studentName = s.name || s.fullName || "Unknown Student";
           const parts = studentName.split(" ");
           const initials =
@@ -227,7 +227,7 @@ export function Students() {
             statusBg,
             barColor,
             avatarBg,
-            classId: s.classId || null,
+            classes: s.classes || [],
           };
         },
       );

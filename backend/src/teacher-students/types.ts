@@ -21,6 +21,7 @@ export type TeacherStudentResultRow = {
   quizAttempts: number;
   avgQuizScorePct: number | null;
   className: string | null;
+  classes: { id: number; name: string }[];
   lastPlacement: {
     scorePct: number;
     englishLevel: string;

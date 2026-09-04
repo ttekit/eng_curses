@@ -46,7 +46,7 @@ export class StudentTeacherResults {
         name: true,
         email: true,
         role: true,
-        classes: { select: { name: true } },
+        classes: { select: { id: true, name: true } },
         additionalUserData: { select: { englishLevel: true } },
       },
     });
@@ -55,8 +55,7 @@ export class StudentTeacherResults {
     if (ids.length === 0) {
       return { students: [] };
     }
-
-    const [watchMap, attemptGroups, placements, recentPerStudent] =
+    const [watchMap, attemptGroups, placements, allRecentAttempts] =
       await Promise.all([
         this.getDistinctCompletedVideosByUser(ids),
         this.prisma.comprehensionTestAttempt.groupBy({
@@ -78,18 +77,13 @@ export class StudentTeacherResults {
             createdAt: true,
           },
         }),
-        Promise.all(
-          ids.map((userId) =>
-            this.prisma.comprehensionTestAttempt.findMany({
-              where: { userId },
-              take: 8,
-              orderBy: { createdAt: "desc" },
-              include: {
-                contentVideo: { select: { videoName: true } },
-              },
-            }),
-          ),
-        ),
+        this.prisma.comprehensionTestAttempt.findMany({
+          where: { userId: { in: ids } },
+          orderBy: { createdAt: "desc" },
+          include: {
+            contentVideo: { select: { videoName: true } },
+          },
+        }),
       ]);
 
     const attemptAvgMap = new Map(
@@ -98,11 +92,18 @@ export class StudentTeacherResults {
         { count: g._count._all, avg: g._avg.scorePct },
       ]),
     );
+
     const placementMap = new Map(placements.map((p) => [p.userId, p]));
-    const recentByUser = new Map<number, (typeof recentPerStudent)[0]>();
-    ids.forEach((uid, i) => {
-      recentByUser.set(uid, recentPerStudent[i] ?? []);
-    });
+
+    const recentByUser = new Map<number, typeof allRecentAttempts>();
+
+    for (const attempt of allRecentAttempts) {
+      const userAttempts = recentByUser.get(attempt.userId) || [];
+      if (userAttempts.length < 8) {
+        userAttempts.push(attempt);
+        recentByUser.set(attempt.userId, userAttempts);
+      }
+    }
 
     const out: TeacherStudentResultRow[] = students.map((s) => {
       const agg = attemptAvgMap.get(s.id);
@@ -129,6 +130,7 @@ export class StudentTeacherResults {
         email: s.email,
         role: s.role as string,
         className: s.classes?.map((c) => c.name).join(", ") || null,
+        classes: s.classes || [],
         englishLevel: s.additionalUserData?.englishLevel ?? null,
         videosCompleted: watchMap.get(s.id) ?? 0,
         quizAttempts: agg?.count ?? 0,

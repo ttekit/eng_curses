@@ -94,7 +94,7 @@ export class UsersService {
         currentResolution: true,
       },
     },
-    class: {
+    classes: {
       select: { name: true },
     },
     teacher: {

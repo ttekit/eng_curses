@@ -19,7 +19,7 @@ export class TeacherClassesService {
       },
     });
   }
-
+ 
   async getMyClasses(teacherId: number) {
     return this.prisma.class.findMany({
       where: { teacherId },
