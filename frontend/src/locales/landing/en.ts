@@ -107,8 +107,6 @@ export const landingEn = {
     ctaSecondary: "Browse content",
     videoCaption: "60-second product demo",
     videoWatch: "Watch the demo",
-    activeLearnersCount: 3000,
-    users: "learners",
     videos: "videos",
     hours: "hours",
     socialProofLine: "Join {count}+ learners — no credit card required",
