@@ -85,6 +85,7 @@ model ContentVideo {
   watchSessions              WatchSession[]
   comprehensionTestAttempts  ComprehensionTestAttempt[]
   userComprehensionWeakSpots UserComprehensionWeakSpot[]
+  videoSegments              VideoSegment[]
 
   ageRestriction String @default("0+") @map("age_restriction")
 

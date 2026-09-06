@@ -47,6 +47,7 @@ import { SmtpService } from "./smtp.service";
 import { UserProfile } from "src/users/user-profile.service";
 import { AccountManagementService } from "src/users/account-management.service";
 import * as crypto from "crypto";
+import { ConstellationGeneratorService } from "src/constelattions/constellation-generator.service";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -59,6 +60,7 @@ export class AuthController {
     private readonly smtpService: SmtpService,
     private readonly userProfile: UserProfile,
     private readonly accountManagementService: AccountManagementService,
+    private readonly constellationGenerator: ConstellationGeneratorService,
   ) { }
 
   @Public()
@@ -199,7 +201,20 @@ export class AuthController {
     @Body() body: UpdatePreferencesDto,
   ) {
     const userId = resolve_authed_user_id(req.user);
-    return this.authService.updateUserPreferences(userId, body);
+    const result = await this.authService.updateUserPreferences(userId, body);
+
+    // Only when placement is completed via englishLevel (e.g. catalog skip).
+    // Do not generate on every preferences save during registration.
+    if (body.englishLevel !== undefined) {
+      const cefrLevel = String(body.englishLevel).trim() || "A1";
+      this.constellationGenerator
+        .ensurePersonalConstellationForUser(userId, cefrLevel)
+        .catch((err: unknown) =>
+          console.error(`Failed to generate constellation:`, err),
+        );
+    }
+
+    return result;
   }
 
   @UseGuards(AuthGuard)
@@ -372,8 +387,6 @@ export class AuthController {
     return this.studyingPlanRegeneration.regenerateForUser(userId);
   }
 
-  @Public()
-  @SkipSubscriptionCheck()
   @Public()
   @SkipSubscriptionCheck()
   @Get("/oauth/callback/:provider")

@@ -45,6 +45,7 @@ import { CreateContentVideoDto } from "./dto/create-content-video.dto";
 import { ComprehensionSummaryRecommendationsBodyDto } from "./dto/summary-recommendations.dto";
 import { UpdateContentVideoDto } from "./dto/update-content-video.dto";
 import { VocabularyHintsService } from "src/content-video/vocabulary-hints.service";
+import { WordTranslateService } from "src/content-video/word-translate.service";
 import { VocabularyPersonalizationService } from "src/content-video/vocabulary-personalization.service";
 import { PrismaService } from "src/prisma.service";
 import { Public } from "src/auth/decorators/public.decorator";
@@ -62,6 +63,7 @@ export class ContentVideoController {
     private readonly postWatchSurveyService: PostWatchSurveyService,
     private readonly comprehensionTestsService: ContentVideoComprehensionTestsService,
     private readonly vocabularyHintsService: VocabularyHintsService,
+    private readonly wordTranslateService: WordTranslateService,
     private readonly vocabularyPersonalizationService: VocabularyPersonalizationService,
     private readonly prisma: PrismaService,
     private readonly constellationProgress: ConstellationProgressService,
@@ -128,6 +130,23 @@ export class ContentVideoController {
       body?.targetLang ?? null,
     );
     return { hints };
+  }
+
+  @Post("quick-translate")
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({
+    summary: "Fast word translations only (MyMemory, no dictionary or AI)",
+  })
+  async quickTranslate(
+    @Body() body: { words?: string[]; targetLang?: string | null } | undefined,
+  ) {
+    const words = Array.isArray(body?.words) ? body.words : [];
+    const translations = await this.wordTranslateService.translate_words(
+      words,
+      body?.targetLang ?? null,
+    );
+    return { translations };
   }
 
   @Post(":id/vocabulary-personalize")

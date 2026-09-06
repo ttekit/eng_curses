@@ -1,0 +1,24 @@
+model LearnerEngineProfile {
+  userId           Int      @id @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proficiencyLevel Int      @default(2) @map("proficiency_level")
+  interestsVector  Float[]  @default([]) @map("interests_vector")
+  targetAccent     String   @default("general-american") @map("target_accent")
+  knownWords       String[] @default([]) @map("known_words")
+  wordMemories     UserWordMemory[]
+
+  @@map("learner_engine_profiles")
+}
+
+model UserWordMemory {
+  id             Int                  @id @default(autoincrement())
+  userId         Int                  @map("user_id")
+  profile        LearnerEngineProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  word           String
+  lastSeenAt     DateTime             @default(now()) @map("last_seen_at")
+  memoryStrength Float                @default(2.0) @map("memory_strength")
+
+  @@unique([userId, word])
+  @@index([userId])
+  @@map("user_word_memories")
+}

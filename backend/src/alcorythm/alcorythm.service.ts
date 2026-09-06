@@ -313,4 +313,19 @@ export class AlcorythmService {
 
     return result;
   }
+
+  async resetSkillsForA1(userId: number): Promise<void> {
+    this.logger.log(`Hard resetting language data for user ${userId} to A1 baseline`);
+
+    await (this.prisma as any).userLanguageData.updateMany({
+      where: { userId },
+      data: {
+        score: 0.1,
+        listeningScore: 0.1,
+        vocabularyScore: 0.1,
+        grammarScore: 0.1,
+        confidence: 1.0,
+      },
+    });
+  }
 }

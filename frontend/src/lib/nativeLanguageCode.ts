@@ -70,3 +70,21 @@ export function nativeLanguageToIso639_1(native: string | undefined): string | u
   }
   return undefined;
 }
+
+/**
+ * Resolve the best ISO 639-1 code for word translation APIs.
+ */
+export function resolve_translation_target_lang(
+  nativeLanguage: string | undefined,
+  uiLocale?: string,
+): string {
+  const fromNative = nativeLanguageToIso639_1(nativeLanguage);
+  if (fromNative && fromNative !== "en") {
+    return fromNative;
+  }
+  const fromUi = nativeLanguageToIso639_1(uiLocale);
+  if (fromUi && fromUi !== "en") {
+    return fromUi;
+  }
+  return "uk";
+}

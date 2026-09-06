@@ -1,74 +1,112 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { DEFAULT_PROMPT_CONSTELLATION_PLAN } from "src/config/ai-prompts/constellation-plan.prompt";
+import { DEFAULT_PROMPT_STAR_CONTENT } from "src/config/ai-prompts/star-content.prompt";
+import { fetch_gemini_json } from "./constellation-gemini-request.util";
 
 export interface GeneratedStar {
-    id: string;
-    name: string;
-    topic: string;
-    description: string;
-    prerequisiteIds: string[];
+  id: string;
+  name: string;
+  topic: string;
+  description: string;
+  prerequisiteIds: string[];
+  type?: "VIDEO" | "GRAMMAR" | "READING" | "PHRASE" | "TEST";
+  metadata?: Record<string, unknown>;
 }
 
 export interface GeneratedConstellation {
-    constellationName: string;
-    description: string;
-    stars: GeneratedStar[];
+  constellationName: string;
+  description: string;
+  stars: GeneratedStar[];
 }
 
+export type GenerateConstellationOptions = {
+  readonly priorLemmas?: readonly string[];
+  readonly weakSkills?: readonly string[];
+};
+
+export type GenerateStarContentInput = {
+  readonly starType: string;
+  readonly starName: string;
+  readonly starTopic: string;
+  readonly starDescription: string;
+  readonly canDo: string;
+  readonly introducedLemmas: readonly string[];
+  readonly recycledLemmas: readonly string[];
+  readonly priorLemmas: readonly string[];
+  readonly learnerCefr: string;
+  readonly domain: string;
+};
+
+/**
+ * Calls Gemini to produce constellation plans and per-star lesson content.
+ */
 @Injectable()
 export class ConstellationGeminiClient {
-    async generateConstellation(
-        domain: string,
-        learnerCefr: string,
-    ): Promise<GeneratedConstellation | null> {
-        const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-        const apiUrl =
-            process.env.GEMINI_API_URL ||
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-        const apiKey = process.env.GEMINI_API_KEY;
+  private readonly logger = new Logger(ConstellationGeminiClient.name);
 
-        if (!apiKey) {
-            return null;
-        }
+  async generateConstellationPlan(
+    domain: string,
+    learnerCefr: string,
+    options: GenerateConstellationOptions = {},
+  ): Promise<GeneratedConstellation | null> {
+    const template =
+      process.env.GEMINI_PROMPT_CONSTELLATION_PLAN ||
+      DEFAULT_PROMPT_CONSTELLATION_PLAN;
+    const prompt = this.build_plan_prompt(template, domain, learnerCefr, options);
+    this.logger.log(`Generating constellation plan for ${domain} (${learnerCefr})`);
+    return fetch_gemini_json<GeneratedConstellation>(prompt, "constellation-plan");
+  }
 
-        const template =
-            process.env.GEMINI_PROMPT_CONSTELLATION_GENERATOR ||
-            `You are an expert English curriculum designer and a creative sci-fi writer. Break down the provided English learning domain into a logical learning graph (a 'Constellation' made of 'Stars').\nReturn ONLY valid JSON with this exact shape: {"constellationName":"Atmospheric name (e.g. Nebula of Action)","description":"Short lore description","stars":[{"id":"s1","name":"Atmospheric star name","topic":"Concrete grammar/vocab topic","description":"...","prerequisiteIds":[]}]}\n\nCRITICAL RULES:\n- Break the domain into 4 to 8 logical micro-topics (Stars).\n- 'prerequisiteIds' MUST contain the string 'id' of previous stars to form a directed acyclic learning graph. Leave empty [] if it's a starting star.\n- Names MUST be space-themed and atmospheric, but closely tied to the topic meaning.\n- Descriptions must blend lore with the actual educational objective.\n\nDomain: {{DOMAIN}}\nLearner Level: {{LEARNER_CEFR}}`;
+  async generateStarContent(
+    input: GenerateStarContentInput,
+  ): Promise<{ metadata: Record<string, unknown> } | null> {
+    const template =
+      process.env.GEMINI_PROMPT_STAR_CONTENT || DEFAULT_PROMPT_STAR_CONTENT;
+    const prompt = template
+      .replace(/\{\{STAR_TYPE\}\}/g, input.starType)
+      .replace(/\{\{STAR_NAME\}\}/g, input.starName)
+      .replace(/\{\{STAR_TOPIC\}\}/g, input.starTopic)
+      .replace(/\{\{STAR_DESCRIPTION\}\}/g, input.starDescription)
+      .replace(/\{\{CAN_DO\}\}/g, input.canDo)
+      .replace(/\{\{INTRODUCED_LEMMAS\}\}/g, input.introducedLemmas.join(", "))
+      .replace(/\{\{RECYCLED_LEMMAS\}\}/g, input.recycledLemmas.join(", "))
+      .replace(/\{\{PRIOR_LEMMAS\}\}/g, input.priorLemmas.join(", ") || "(none)")
+      .replace(/\{\{LEARNER_CEFR\}\}/g, input.learnerCefr)
+      .replace(/\{\{DOMAIN\}\}/g, input.domain);
+    this.logger.log(`Generating content for star "${input.starName}" (${input.starType})`);
+    return fetch_gemini_json<{ metadata: Record<string, unknown> }>(
+      prompt,
+      `star-content:${input.starName}`,
+    );
+  }
 
-        const prompt = template
-            .replace(/\{\{DOMAIN\}\}/g, domain)
-            .replace(/\{\{LEARNER_CEFR\}\}/g, learnerCefr);
+  /** @deprecated Use generateConstellationPlan — kept for admin compatibility */
+  async generateConstellation(
+    domain: string,
+    learnerCefr: string,
+    options: GenerateConstellationOptions = {},
+  ): Promise<GeneratedConstellation | null> {
+    return this.generateConstellationPlan(domain, learnerCefr, options);
+  }
 
-        try {
-            const res = await fetch(`${apiUrl}?key=${encodeURIComponent(apiKey)}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        responseMimeType: "application/json",
-                    },
-                }),
-            });
-
-            if (!res.ok) {
-                return null;
-            }
-
-            const data = (await res.json()) as {
-                candidates?: Array<{
-                    content?: { parts?: Array<{ text?: string }> };
-                }>;
-            };
-
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            if (!text) {
-                return null;
-            }
-
-            return JSON.parse(text) as GeneratedConstellation;
-        } catch {
-            return null;
-        }
-    }
+  private build_plan_prompt(
+    template: string,
+    domain: string,
+    learnerCefr: string,
+    options: GenerateConstellationOptions,
+  ): string {
+    const priorLemmas =
+      options.priorLemmas && options.priorLemmas.length > 0
+        ? options.priorLemmas.join(", ")
+        : "(none)";
+    const weakSkills =
+      options.weakSkills && options.weakSkills.length > 0
+        ? options.weakSkills.join(", ")
+        : "(none)";
+    return template
+      .replace(/\{\{DOMAIN\}\}/g, domain)
+      .replace(/\{\{LEARNER_CEFR\}\}/g, learnerCefr)
+      .replace(/\{\{PRIOR_LEMMAS\}\}/g, priorLemmas)
+      .replace(/\{\{WEAK_SKILLS\}\}/g, weakSkills);
+  }
 }

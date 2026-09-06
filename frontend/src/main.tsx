@@ -52,10 +52,10 @@ import { Error404Page } from "./pages/Error404Page";
 import { ThemeProvider } from "./context/ThemeContext";
 import AdminChangelogPage from "./pages/admin/AdminChangelogPage";
 import WhatsNewPage from "./pages/content/WhatsNewPage";
-import GoogleUsernamePage from "./components/GoogleUsernamePage";
-import { registerSW } from "virtual:pwa-register";
+import TaskPage from "./pages/content/TaskPage";
+import TestSessionDemoPage from "./pages/content/TestSessionDemoPage";
+import FeedPage from "./pages/feed/FeedPage";
 
-registerSW({ immediate: true });
 
 const router = createBrowserRouter([
   {
@@ -65,10 +65,6 @@ const router = createBrowserRouter([
       { path: "/register", element: <RegistrationMain /> },
       { path: "/register-teacher", element: <RegistrationMain /> },
       // { path: "/register-details", element: <RegistrationDetails /> },
-      {
-        path: "/google-username",
-        element: <GoogleUsernamePage />,
-      },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
@@ -137,6 +133,7 @@ const router = createBrowserRouter([
                 element: <CatalogSeriesPage />,
               },
               { path: "/catalog", element: <VideoPage /> },
+              { path: "/feed", element: <FeedPage /> },
               { path: "/customise", element: <CustomisePage /> },
               { path: "/classroom", element: <ClassroomPage /> },
               { path: "/leaderboard", element: <LeaderboardPage /> },
@@ -147,6 +144,9 @@ const router = createBrowserRouter([
               },
               { path: "/content/:id/summary", element: <LessonSummaryPage /> },
               { path: "/content/:id?", element: <ContentPage /> },
+              { path: "/task/:id", element: <TaskPage /> },
+              { path: "/test-session-demo", element: <TestSessionDemoPage /> },
+
             ],
           },
         ],

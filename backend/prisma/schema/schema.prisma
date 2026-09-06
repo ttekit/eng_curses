@@ -84,6 +84,9 @@ model User {
   constellationProgress UserConstellationProgress[]
   starProgress          UserStarProgress[]
   constellations        Constellation[]
+  lemmaProgress         UserLemmaProgress[]
+  segmentSeen           UserSegmentSeen[]
+  learnerEngineProfile  LearnerEngineProfile?
 
   @@index([teacherId], map: "users_teacher_id_idx")
   @@map("users")
@@ -391,10 +394,22 @@ model Constellation {
   userId Int?  @map("user_id") // <-- НОВЕ: власник сузір'я (null, якщо глобальне)
   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  /// FOUNDATION | PERSONAL | null (legacy/admin global)
+  kind String? @map("kind")
+
   stars        Star[]
   userProgress UserConstellationProgress[]
 
+  @@index([userId, kind])
   @@map("constellations")
+}
+
+enum StarType {
+  VIDEO
+  GRAMMAR
+  READING
+  PHRASE
+  TEST
 }
 
 model Star {
@@ -404,12 +419,13 @@ model Star {
   description     String?
   contentVideoId  Int?    @map("content_video_id")
 
-  constellation Constellation @relation(fields: [constellationId], references: [id], onDelete: Cascade)
+  type     StarType @default(VIDEO)
+  metadata Json?
 
+  constellation Constellation      @relation(fields: [constellationId], references: [id], onDelete: Cascade)
   prerequisites StarPrerequisite[] @relation("DependentStars")
   dependents    StarPrerequisite[] @relation("PrerequisiteStars")
-
-  userProgress UserStarProgress[]
+  userProgress  UserStarProgress[]
 
   @@map("stars")
 }

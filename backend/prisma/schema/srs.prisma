@@ -1,0 +1,78 @@
+model VideoSegment {
+  id             Int          @id @default(autoincrement())
+  contentVideoId Int          @map("content_video_id")
+  contentVideo   ContentVideo @relation(fields: [contentVideoId], references: [id], onDelete: Cascade)
+  startTimeSec   Float        @map("start_time_sec")
+  endTimeSec     Float        @map("end_time_sec")
+  fullPhrase     String       @map("full_phrase")
+  difficultyLevel   String?  @map("difficulty_level")
+  cueIndex          Int      @map("cue_index")
+  proficiencyLevel  Int?     @map("proficiency_level")
+  contextVector     Float[]  @default([]) @map("context_vector")
+  accent            String   @default("general-american")
+  words             String[] @default([])
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  lemmas SegmentLemma[]
+  seenBy UserSegmentSeen[]
+
+  @@unique([contentVideoId, cueIndex])
+  @@index([contentVideoId])
+  @@index([difficultyLevel])
+  @@map("video_segments")
+}
+
+model Lemma {
+  id           Int    @id @default(autoincrement())
+  word         String
+  baseLanguage String @default("en") @map("base_language")
+
+  segments SegmentLemma[]
+  progress UserLemmaProgress[]
+
+  @@unique([word, baseLanguage])
+  @@map("lemmas")
+}
+
+model SegmentLemma {
+  segmentId Int          @map("segment_id")
+  lemmaId   Int          @map("lemma_id")
+  position  Int
+  segment   VideoSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  lemma     Lemma        @relation(fields: [lemmaId], references: [id], onDelete: Cascade)
+
+  @@id([segmentId, lemmaId, position])
+  @@index([lemmaId])
+  @@map("segment_lemmas")
+}
+
+model UserLemmaProgress {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @map("user_id")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lemmaId        Int       @map("lemma_id")
+  lemma          Lemma     @relation(fields: [lemmaId], references: [id], onDelete: Cascade)
+  stability      Float     @default(1.0)
+  retrievability Float     @default(1.0)
+  lastReviewedAt DateTime? @map("last_reviewed_at")
+  nextReviewAt   DateTime  @default(now()) @map("next_review_at")
+  reviewCount    Int       @default(0) @map("review_count")
+  lapseCount     Int       @default(0) @map("lapse_count")
+
+  @@unique([userId, lemmaId])
+  @@index([userId, nextReviewAt])
+  @@map("user_lemma_progress")
+}
+
+model UserSegmentSeen {
+  id        Int          @id @default(autoincrement())
+  userId    Int          @map("user_id")
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  segmentId Int          @map("segment_id")
+  segment   VideoSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  seenAt    DateTime     @default(now()) @map("seen_at")
+
+  @@unique([userId, segmentId])
+  @@index([userId, seenAt])
+  @@map("user_segment_seen")
+}

@@ -6,10 +6,21 @@ import {
   UpdateConstellationDto,
   UpdateStarDto,
 } from "./dto/constellation.dto";
+import { normalize_star_questions } from "./test-question.validator";
+import { StarContentGeneratorService } from "./star-content-generator.service";
+import {
+  get_content_status,
+  is_star_content_ready,
+  read_star_metadata,
+  StarContentStatus,
+} from "./star-content.util";
 
 @Injectable()
 export class ConstellationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly starContentGenerator: StarContentGeneratorService,
+  ) { }
 
   async createConstellation(data: CreateConstellationDto) {
     return this.prisma.constellation.create({ data });
@@ -17,7 +28,21 @@ export class ConstellationService {
 
   async getAllConstellations() {
     return this.prisma.constellation.findMany({
-      include: { stars: true },
+      include: {
+        stars: { orderBy: { id: "asc" } },
+      },
+    });
+  }
+
+  /**
+   * Learner-facing list: only constellations owned by this user.
+   */
+  async getConstellationsForUser(userId: number) {
+    return this.prisma.constellation.findMany({
+      where: { userId },
+      include: {
+        stars: { orderBy: { id: "asc" } },
+      },
     });
   }
 
@@ -63,10 +88,10 @@ export class ConstellationService {
         ...restData,
         prerequisites: prerequisiteIds?.length
           ? {
-              create: prerequisiteIds.map((id) => ({
-                prerequisiteId: id,
-              })),
-            }
+            create: prerequisiteIds.map((id) => ({
+              prerequisiteId: id,
+            })),
+          }
           : undefined,
       },
     });
@@ -107,5 +132,31 @@ export class ConstellationService {
     } catch {
       throw new NotFoundException("Star not found");
     }
+  }
+
+  async getStarById(id: number) {
+    await this.starContentGenerator.ensure_star_content(id);
+    const star = await this.prisma.star.findUnique({
+      where: { id },
+    });
+    if (!star) throw new NotFoundException("Star not found");
+    const metadata =
+      typeof star.metadata === "object" && star.metadata !== null
+        ? (star.metadata as Record<string, unknown>)
+        : undefined;
+    const normalizedQuestions = normalize_star_questions(
+      metadata,
+      star.contentVideoId,
+    );
+    const contentReady = is_star_content_ready(star.type, metadata);
+    const contentStatus = contentReady
+      ? StarContentStatus.READY
+      : get_content_status(read_star_metadata(metadata));
+    return {
+      ...star,
+      normalizedQuestions,
+      contentStatus,
+      contentReady,
+    };
   }
 }

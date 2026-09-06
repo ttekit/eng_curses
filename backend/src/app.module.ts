@@ -33,6 +33,8 @@ import { AvatarsModule } from "./avatars/avatars.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConstellationModule } from "./constelattions/constellation.module";
 import { ChangelogModule } from './changelog/changelog.module';
+import { SrsModule } from "./srs/srs.module";
+import { RecommendationEngineModule } from "./recommendation-engine/recommendation-engine.module";
 
 @Module({
   imports: [
@@ -105,7 +107,9 @@ import { ChangelogModule } from './changelog/changelog.module';
     SeoModule,
     AvatarsModule,
     ConstellationModule,
-    ChangelogModule
+    ChangelogModule,
+    SrsModule,
+    RecommendationEngineModule,
   ],
   controllers: [AppController],
   providers: [

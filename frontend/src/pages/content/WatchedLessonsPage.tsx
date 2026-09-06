@@ -23,12 +23,12 @@ import {
 import {
   fetchAllConstellations,
   fetchConstellationGraph,
-  completeStar,
   type Constellation,
   type StarProgress,
 } from "../../lib/constellationApi";
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
+
 
 interface ContentVideo {
   id: number;
@@ -261,23 +261,19 @@ export default function WatchedLessonsPage() {
     };
   }, []);
 
-  const handleCompleteStar = async (
-    starId: number,
-    constellationId: number,
-  ) => {
-    try {
-      await completeStar(starId);
-      const updatedGraph = await fetchConstellationGraph(constellationId);
-      setStarProgressMap((prev) => ({
-        ...prev,
-        [constellationId]: Array.isArray(updatedGraph)
-          ? updatedGraph
-          : updatedGraph.stars || [],
-      }));
-    } catch (e) {
-      console.error("Failed to complete star:", e);
+  useEffect(() => {
+    if (!loadingPlan && constellations.length === 0) {
+      const interval = setInterval(async () => {
+        try {
+          const list = await fetchAllConstellations();
+          if (list.length > 0) {
+            window.location.reload();
+          }
+        } catch (e) { console.log(e) }
+      }, 5000);
+      return () => clearInterval(interval);
     }
-  };
+  }, [loadingPlan, constellations.length]);
 
   const cards = useMemo(() => {
     const rawCards = videos.map(toCardVideo);
@@ -306,7 +302,7 @@ export default function WatchedLessonsPage() {
       />
       <div className="flex w-full max-w-[100vw]">
         <CatalogSidebar
-          onSelectLevel={() => {}}
+          onSelectLevel={() => { }}
           reserveTopNavSpace={false}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
@@ -363,10 +359,20 @@ export default function WatchedLessonsPage() {
                   <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
                 </div>
               ) : constellations.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-border rounded-2xl">
-                  <p className="text-muted-foreground text-sm">
-                    Сузір'я ще не створені або недоступні для вашого рівня.
+                <div className="flex flex-col items-center justify-center py-14 px-4 border border-dashed border-border/60 rounded-2xl bg-card/10">
+                  <Loader2 className="w-10 h-10 animate-spin text-purple-500 mb-4 shadow-purple-500/50" />
+                  <p className="font-display font-semibold text-lg text-foreground">
+                    Генеруємо ваш персональний план...
                   </p>
+                  <p className="text-muted-foreground text-sm mt-2 mb-6 max-w-md text-center leading-relaxed">
+                    Штучний інтелект саме зараз підбирає теми та створює унікальні сузір'я для вашого рівня. Зазвичай це займає 15-20 секунд.
+                  </p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600/10 text-purple-400 font-semibold text-sm hover:bg-purple-600/20 border border-purple-500/20 transition-all cursor-pointer"
+                  >
+                    Перевірити готовність
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full min-w-0">
@@ -375,9 +381,6 @@ export default function WatchedLessonsPage() {
                       key={c.id}
                       constellation={c}
                       progress={starProgressMap[c.id] || []}
-                      onCompleteStar={(starId) =>
-                        handleCompleteStar(starId, c.id)
-                      }
                       onFinishCategory={(cid) => {
                         console.log("Finished category:", cid);
                       }}

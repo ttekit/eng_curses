@@ -85,6 +85,8 @@
     "seed": "npx ts-node prisma/seed.ts",
     "seed:leaderboard": "npx ts-node prisma/seed-leaderboard-users.ts",
     "copy:avatars-prod": "npx ts-node prisma/copy-avatars-from-prod.ts",
+    "srs:ingest": "npx ts-node -r tsconfig-paths/register src/srs/srs-ingest.cli.ts",
+    "recommendation:backfill": "npx ts-node -r tsconfig-paths/register src/recommendation-engine/recommendation-backfill.cli.ts",
     "postbuild": "node -e \"require('fs').cpSync('src/generated','dist/generated',{recursive:true,force:true})\""
   },
   "jest": {
