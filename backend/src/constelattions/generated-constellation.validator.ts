@@ -58,8 +58,12 @@ export function validate_star_content_metadata(
   }
   if (starType === "PHRASE") {
     const phrases = metadata.phrases;
+    const questions = normalize_star_questions(metadata);
     if (!Array.isArray(phrases) || phrases.length < 5) {
       return { valid: false, reason: "PHRASE needs at least 5 phrases" };
+    }
+    if (questions.length < 10) {
+      return { valid: false, reason: "PHRASE needs at least 10 questions" };
     }
     return { valid: true };
   }
@@ -73,8 +77,8 @@ export function validate_star_content_metadata(
     if (examples.length < 5) {
       return { valid: false, reason: "GRAMMAR needs at least 5 examples" };
     }
-    if (questions.length < 5) {
-      return { valid: false, reason: "GRAMMAR needs at least 5 questions" };
+    if (questions.length < 10) {
+      return { valid: false, reason: "GRAMMAR needs at least 10 questions" };
     }
     return { valid: true };
   }
@@ -85,14 +89,14 @@ export function validate_star_content_metadata(
     if (wordCount < 60) {
       return { valid: false, reason: "READING text too short" };
     }
-    if (questions.length < 4) {
-      return { valid: false, reason: "READING needs at least 4 questions" };
+    if (questions.length < 10) {
+      return { valid: false, reason: "READING needs at least 10 questions" };
     }
     return { valid: true };
   }
   if (starType === "TEST") {
-    if (normalize_star_questions(metadata).length < 5) {
-      return { valid: false, reason: "TEST needs at least 5 questions" };
+    if (normalize_star_questions(metadata).length < 10) {
+      return { valid: false, reason: "TEST needs at least 10 questions" };
     }
     return { valid: true };
   }
@@ -105,11 +109,3 @@ export function validate_star_content_metadata(
   }
   return { valid: true };
 }
-
-export function validate_generated_constellation(
-  generated: GeneratedConstellation | null | undefined,
-): ValidationResult {
-  return validate_constellation_plan(generated);
-}
-
-export type { GeneratedStar };

@@ -19,10 +19,10 @@ VOCABULARY BALANCE RULE:
 - If "Prior lemmas" is empty (e.g., this is the first star), ignore this ratio and focus on "Introduced lemmas" suitable for the CEFR level.
 
 TYPE REQUIREMENTS:
-- PHRASE: metadata.phrases — at least 5 items with targetPhrase, translation (UK), dialogue (2–4 short English lines WITHOUT speaker labels like A:/B:), context (2–4 Ukrainian sentences). metadata.questions x5+ (varied types below).
-- GRAMMAR: metadata.rule (~200+ Ukrainian chars), examples[{en,uk}] x5+, metadata.questions x5+ (varied types below). CRITICAL: ALL questions for GRAMMAR must test the specific rule (e.g., fill-in-the-blank with correct verb form). NEVER ask reading comprehension or story questions (e.g., "What time does Alex work?").
-- READING: metadata.text (60–100 English words), metadata.questions x4+.
-- TEST: metadata.questions x5+ mixing prior topics.
+- PHRASE: metadata.phrases — at least 5 items with targetPhrase, translation (UK), dialogue (2–4 short English lines WITHOUT speaker labels like A:/B:), context (2–4 Ukrainian sentences). metadata.questions MUST be exactly 10 to 15 items (varied types below).
+- GRAMMAR: metadata.rule (~200+ Ukrainian chars), examples[{en,uk}] x5+. metadata.questions MUST be exactly 10 to 15 items (varied types below). CRITICAL: ALL questions for GRAMMAR must test the specific rule (e.g., fill-in-the-blank with correct verb form). NEVER ask reading comprehension or story questions (e.g., "What time does Alex work?").
+- READING: metadata.text (60–100 English words). metadata.questions MUST be exactly 10 to 15 items.
+- TEST: metadata.questions MUST be exactly 10 to 15 items mixing prior topics.
 
 QUESTION TYPES (metadata.questions[]):
 - text_pick: { id, type:"text_pick", prompt: "Fill-in-the-blank (e.g. 'He ___ to work') or Ukrainian grammar question", options: [3 English strings], correctAnswer }
