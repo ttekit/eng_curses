@@ -1,6 +1,3 @@
-/**
- * Interactive test session question types (mirrors backend schema).
- */
 export const QuestionType = {
   TEXT_PICK: "text_pick",
   VIDEO_RIDDLE: "video_riddle",
@@ -48,6 +45,7 @@ export type SwipeCardQuestion = BaseQuestion & {
 export type SentenceBuilderQuestion = BaseQuestion & {
   readonly type: typeof QuestionType.SENTENCE_BUILDER;
   readonly segment?: VideoSegmentRef;
+  readonly prompt?: string; 
   readonly targetPhrase: string;
   readonly wordChips: readonly string[];
 };
@@ -87,6 +85,10 @@ export type AnswerResult = {
 
 export type FeedbackKind = "correct" | "wrong" | null;
 
+export type TestMistake = {
+  readonly question: TestQuestion;
+};
+
 export type TestSessionState = {
   readonly currentIndex: number;
   readonly score: number;
@@ -96,6 +98,7 @@ export type TestSessionState = {
   readonly feedback: FeedbackKind;
   readonly isLocked: boolean;
   readonly showCheckpoint: boolean;
+  readonly mistakes: readonly TestMistake[];
 };
 
 export type TestSessionAction =

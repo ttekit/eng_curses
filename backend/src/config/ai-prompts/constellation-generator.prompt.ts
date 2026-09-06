@@ -27,7 +27,7 @@ Each item: { "id": "q1", "type": "<type>", ...fields }
 Types:
 - text_pick: { prompt?: "Ukrainian question", options: [3 English strings], correctAnswer }
 - swipe_card: { cards: [{ id, word, hint (Ukrainian), isMatch: boolean }] } — at least 3 cards
-- sentence_builder: { targetPhrase: "English phrase", wordChips: [scrambled words] }
+- sentence_builder: { id, type:"sentence_builder", prompt: "REQUIRED: Ukrainian translation of the target phrase", targetPhrase: "English phrase", wordChips: [scrambled words + 2 extra fake words] }
 - reward_checkpoint: { message: "Ukrainian encouragement" } — optional, max 1 per star
 NEVER use video_riddle, blind_audio, or video segments. NEVER use metadata.quiz. ALWAYS use metadata.questions with typed interactive items. Do NOT number questions.
 

@@ -34,7 +34,7 @@ export class StarContentGeneratorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gemini: ConstellationGeminiClient,
-  ) {}
+  ) { }
 
   async ensure_star_content(starId: number): Promise<void> {
     const deadline = Date.now() + GENERATION_WAIT_MS;

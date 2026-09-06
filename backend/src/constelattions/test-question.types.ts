@@ -48,6 +48,7 @@ export type SwipeCardQuestion = BaseQuestion & {
 export type SentenceBuilderQuestion = BaseQuestion & {
   readonly type: typeof QuestionType.SENTENCE_BUILDER;
   readonly segment?: VideoSegmentRef;
+  readonly prompt?: string;
   readonly targetPhrase: string;
   readonly wordChips: readonly string[];
 };

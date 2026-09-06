@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { motion } from "framer-motion";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { AnswerFeedbackOverlay } from "./AnswerFeedbackOverlay";
 import { SegmentedProgressBar } from "./SegmentedProgressBar";
 import { InjectedRewardCheckpoint } from "./questions/RewardCheckpoint";
@@ -8,6 +9,7 @@ import {
   AUTO_ADVANCE_MS,
   type AnswerResult,
   type TestQuestion,
+  type SwipeCardItem,
 } from "./test-session.types";
 import {
   count_scorable_questions,
@@ -20,6 +22,7 @@ type TestSessionEngineProps = {
   readonly questions: readonly TestQuestion[];
   readonly onSessionComplete: () => void;
   readonly completing?: boolean;
+  readonly completionMessage?: string;
 };
 
 /**
@@ -29,6 +32,7 @@ export function TestSessionEngine({
   questions,
   onSessionComplete,
   completing = false,
+  completionMessage = "Вітаємо! Ви успішно завершили цей етап. Тепер ви можете впевнено використовувати ці знання на практиці!",
 }: TestSessionEngineProps) {
   const [state, dispatch] = useReducer(
     (prev, action) => test_session_reducer(prev, action, questions),
@@ -38,12 +42,6 @@ export function TestSessionEngine({
   const { apply_feedback } = useAnswerFeedback();
   const advanceTimerRef = useRef<number | null>(null);
   const currentQuestion = questions[state.currentIndex];
-
-  useEffect(() => {
-    if (state.isComplete && !completing) {
-      onSessionComplete();
-    }
-  }, [state.isComplete, completing, onSessionComplete]);
 
   useEffect(() => {
     if (!state.feedback) {
@@ -91,9 +89,68 @@ export function TestSessionEngine({
 
   if (state.isComplete) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-        <p className="text-2xl font-bold text-foreground">Session complete!</p>
-        <p className="text-muted-foreground">Score: {state.score}</p>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 px-4 py-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-2xl bg-[#0B0C10] border border-white/5 rounded-[24px] p-8 sm:p-12 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+          <div className="mb-8 text-xs font-bold text-amber-400 uppercase tracking-widest">
+            {state.combo > 1 ? `Combo x${state.combo}` : `Score: ${state.score}`}
+          </div>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-white mb-10 leading-tight max-w-[90%]">
+            {completionMessage}
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              if (!completing) onSessionComplete();
+            }}
+            disabled={completing}
+            className="px-8 py-3.5 rounded-2xl bg-[#34D399] hover:bg-[#2BB884] text-[#022C22] font-bold text-base sm:text-lg transition-all shadow-[0_4px_20px_rgba(52,211,153,0.3)] disabled:opacity-50 cursor-pointer"
+          >
+            {completing ? "Збереження..." : "Continue"}
+          </button>
+        </div>
+
+        {state.mistakes.length > 0 && (
+          <div className="w-full max-w-2xl mt-4 animate-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-both">
+            <h3 className="text-xl font-bold mb-4 text-foreground flex items-center gap-2">
+              <XCircle className="w-6 h-6 text-destructive" />
+              Ось ваші помилки ({state.mistakes.length})
+            </h3>
+            <div className="flex flex-col gap-4">
+              {state.mistakes.map((m, i) => {
+                let prompt = "Завдання";
+                let correct = "";
+
+                if (m.question.type === "text_pick" || m.question.type === "blind_audio") {
+                  prompt = m.question.prompt || "Оберіть правильний варіант";
+                  correct = m.question.correctAnswer;
+                } else if (m.question.type === "video_riddle") {
+                  prompt = m.question.subtitleWithBlank;
+                  correct = m.question.correctAnswer;
+                } else if (m.question.type === "sentence_builder") {
+                  prompt = "Зберіть фразу:";
+                  correct = m.question.targetPhrase;
+                } else if (m.question.type === "swipe_card") {
+                  prompt = "Свайп-картки";
+                  correct = m.question.cards.filter((c: SwipeCardItem) => c.isMatch).map((c: SwipeCardItem) => c.word).join(", ");
+                }
+
+                return (
+                  <div key={i} className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 relative overflow-hidden">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive/50"></div>
+                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{prompt}</p>
+                    <div className="flex items-start gap-2 text-[#34D399] bg-[#34D399]/10 rounded-xl p-3 border border-[#34D399]/20">
+                      <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider block mb-1 opacity-80">Правильна відповідь:</span>
+                        <span className="font-medium text-[#6EE7B7]">{correct || "Див. контекст"}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   }

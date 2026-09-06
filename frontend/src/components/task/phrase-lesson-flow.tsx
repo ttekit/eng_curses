@@ -36,6 +36,7 @@ export function PhraseLessonFlow({
         questions={questions}
         completing={completing}
         onSessionComplete={onComplete}
+        completionMessage="Вітаємо! Ви опанували базові фрази. Тепер ви можете впевнено розповісти про себе!"
       />
     );
   }

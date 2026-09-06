@@ -73,6 +73,7 @@ function strip_segment(
   return {
     id: question.id,
     type: QuestionType.SENTENCE_BUILDER,
+    prompt: question.prompt,
     targetPhrase: question.targetPhrase,
     wordChips: question.wordChips,
   };

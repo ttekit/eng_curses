@@ -190,13 +190,22 @@ function parse_sentence_builder(
   segment?: VideoSegmentRef,
 ): TestQuestion | null {
   const wordChips = parse_string_array(record.wordChips);
-  if (typeof record.targetPhrase !== "string" || wordChips.length < 2) {
+
+  if (
+    typeof record.targetPhrase !== "string" ||
+    wordChips.length < 2
+  ) {
     return null;
   }
+
   return {
     id,
     type: QuestionType.SENTENCE_BUILDER,
     segment,
+    prompt:
+      typeof record.prompt === "string"
+        ? record.prompt
+        : undefined,
     targetPhrase: record.targetPhrase,
     wordChips,
   };

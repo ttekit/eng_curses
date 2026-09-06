@@ -17,6 +17,7 @@ export function create_initial_session_state(): TestSessionState {
     feedback: null,
     isLocked: false,
     showCheckpoint: false,
+    mistakes: [],
   };
 }
 
@@ -39,6 +40,11 @@ export function test_session_reducer(
     const nextAnswered = state.answeredScorableCount + 1;
     const shouldCheckpoint =
       nextAnswered > 0 && nextAnswered % CHECKPOINT_INTERVAL === 0;
+
+    const nextMistakes = isCorrect
+      ? state.mistakes
+      : [...state.mistakes, { question: current }];
+
     return {
       ...state,
       score: nextScore,
@@ -47,6 +53,7 @@ export function test_session_reducer(
       feedback: isCorrect ? "correct" : "wrong",
       isLocked: true,
       showCheckpoint: shouldCheckpoint,
+      mistakes: nextMistakes,
     };
   }
   if (action.type === "CONTINUE_CHECKPOINT") {

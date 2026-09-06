@@ -1,17 +1,31 @@
+import { useEffect, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
 type StarLoadingScreenProps = {
   readonly starName?: string;
-  readonly message?: string;
 };
 
-/**
- * Full-screen loading state while Gemini prepares star lesson content.
- */
+const LOADING_PHRASES = [
+  "Готуємо ваш урок…",
+  "Шукаємо зірку в небі…",
+  "Підбираємо фрази…",
+  "Створюємо цікаві завдання…",
+  "Майже готово…"
+];
+
 export function StarLoadingScreen({
   starName,
-  message = "Готуємо ваш урок…",
 }: StarLoadingScreenProps) {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIndex((current) => (current + 1) % LOADING_PHRASES.length);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
       <div className="relative mb-8 flex h-24 w-24 items-center justify-center">
@@ -25,11 +39,10 @@ export function StarLoadingScreen({
           {starName}
         </h2>
       ) : null}
-      <p className="mb-6 max-w-sm text-base text-muted-foreground">{message}</p>
-      <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-      <p className="mt-4 text-xs uppercase tracking-wider text-muted-foreground">
-        AI генерує контент
+      <p className="mb-6 max-w-sm text-base text-muted-foreground transition-opacity">
+        {LOADING_PHRASES[phraseIndex]}
       </p>
+      <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
     </div>
   );
 }
