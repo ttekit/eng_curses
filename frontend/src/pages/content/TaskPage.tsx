@@ -12,8 +12,6 @@ import { build_phrase_questions } from "../../components/test-session/phrase-que
 import { normalize_star_questions } from "../../components/test-session/normalize-star-questions.util";
 import {
   is_star_lesson_ready,
-  loading_message_for_status,
-  read_content_status,
 } from "../../lib/starContentStatus";
 import {
   asGrammarExamples,
