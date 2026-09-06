@@ -43,7 +43,7 @@ export function test_session_reducer(
 
     const nextMistakes = isCorrect
       ? state.mistakes
-      : [...state.mistakes, { question: current }];
+      : [...state.mistakes, { question: current, userAnswer: action.userAnswer }];
 
     return {
       ...state,

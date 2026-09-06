@@ -32,7 +32,7 @@ export function SwipeCardQuestion({
           const remainingCount = question.cards.length - results.length;
           const nextResults = [...results, ...Array(remainingCount).fill(false)];
           setResults(nextResults);
-          onAnswer({ isCorrect: false });
+          onAnswer({ isCorrect: false, userAnswer: "Час вийшов" });
           return 0;
         }
         return prev - 1;
@@ -45,7 +45,10 @@ export function SwipeCardQuestion({
   const finish_if_done = (nextResults: boolean[]): void => {
     if (nextResults.length >= question.cards.length) {
       const allCorrect = nextResults.every(Boolean);
-      onAnswer({ isCorrect: allCorrect });
+      const userSummary = question.cards
+        .map((c, idx) => `${c.word}: ${nextResults[idx] ? "Вірно" : "Помилка"}`)
+        .join(", ");
+      onAnswer({ isCorrect: allCorrect, userAnswer: userSummary });
     }
   };
 

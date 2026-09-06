@@ -25,9 +25,6 @@ type TestSessionEngineProps = {
   readonly completionMessage?: string;
 };
 
-/**
- * Orchestrates dynamic quiz session with progress and feedback.
- */
 export function TestSessionEngine({
   questions,
   onSessionComplete,
@@ -66,7 +63,11 @@ export function TestSessionEngine({
       if (state.isLocked) {
         return;
       }
-      dispatch({ type: "ANSWER", isCorrect: result.isCorrect });
+      dispatch({
+        type: "ANSWER",
+        isCorrect: result.isCorrect,
+        userAnswer: result.userAnswer
+      });
     },
     [state.isLocked],
   );
@@ -119,6 +120,7 @@ export function TestSessionEngine({
               {state.mistakes.map((m, i) => {
                 let prompt = "Завдання";
                 let correct = "";
+                const userAns = m.userAnswer || "Немає відповіді";
 
                 if (m.question.type === "text_pick" || m.question.type === "blind_audio") {
                   prompt = m.question.prompt || "Оберіть правильний варіант";
@@ -137,12 +139,23 @@ export function TestSessionEngine({
                 return (
                   <div key={i} className="bg-destructive/5 border border-destructive/20 rounded-2xl p-5 relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive/50"></div>
-                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">{prompt}</p>
-                    <div className="flex items-start gap-2 text-[#34D399] bg-[#34D399]/10 rounded-xl p-3 border border-[#34D399]/20">
-                      <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider block mb-1 opacity-80">Правильна відповідь:</span>
-                        <span className="font-medium text-[#6EE7B7]">{correct || "Див. контекст"}</span>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{prompt}</p>
+
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start gap-2 text-destructive bg-destructive/10 rounded-xl p-3 border border-destructive/20">
+                        <XCircle className="w-5 h-5 shrink-0 mt-0.5 opacity-80" />
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider block mb-1 opacity-70">Ваша відповідь:</span>
+                          <span className="font-medium text-destructive/90">{userAns}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 text-[#34D399] bg-[#34D399]/10 rounded-xl p-3 border border-[#34D399]/20">
+                        <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider block mb-1 opacity-80">Правильна відповідь:</span>
+                          <span className="font-medium text-[#6EE7B7]">{correct || "Див. контекст"}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

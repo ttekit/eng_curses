@@ -45,7 +45,7 @@ export type SwipeCardQuestion = BaseQuestion & {
 export type SentenceBuilderQuestion = BaseQuestion & {
   readonly type: typeof QuestionType.SENTENCE_BUILDER;
   readonly segment?: VideoSegmentRef;
-  readonly prompt?: string; 
+  readonly prompt?: string;
   readonly targetPhrase: string;
   readonly wordChips: readonly string[];
 };
@@ -81,12 +81,14 @@ export type TestQuestion =
 
 export type AnswerResult = {
   readonly isCorrect: boolean;
+  readonly userAnswer?: string;
 };
 
 export type FeedbackKind = "correct" | "wrong" | null;
 
 export type TestMistake = {
   readonly question: TestQuestion;
+  readonly userAnswer?: string;
 };
 
 export type TestSessionState = {
@@ -102,7 +104,7 @@ export type TestSessionState = {
 };
 
 export type TestSessionAction =
-  | { type: "ANSWER"; isCorrect: boolean }
+  | { type: "ANSWER"; isCorrect: boolean; userAnswer?: string }
   | { type: "ADVANCE" }
   | { type: "CONTINUE_CHECKPOINT" }
   | { type: "CLEAR_FEEDBACK" };

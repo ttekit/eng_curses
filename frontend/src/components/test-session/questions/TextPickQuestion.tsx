@@ -20,7 +20,10 @@ export function TextPickQuestion({
       return;
     }
     setSelected(option);
-    onAnswer({ isCorrect: option === question.correctAnswer });
+    onAnswer({
+      isCorrect: option === question.correctAnswer,
+      userAnswer: option
+    });
   };
 
   return (

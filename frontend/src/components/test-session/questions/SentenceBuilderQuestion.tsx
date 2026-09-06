@@ -53,10 +53,9 @@ export function SentenceBuilderQuestion({
     setSubmitted(true);
     const correct = grade_sentence(built, question.targetPhrase);
     setIsCorrect(correct);
-    onAnswer({ isCorrect: correct });
+    onAnswer({ isCorrect: correct, userAnswer: built.join(" ") });
   };
 
-  console.log("=== ДАНІ В КОМПОНЕНТІ ===", question);
 
   return (
     <div className="flex min-h-full flex-col px-4 py-8">
