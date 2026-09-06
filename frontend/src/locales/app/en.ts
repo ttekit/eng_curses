@@ -193,6 +193,9 @@ export const appEn = {
     filterGenre: "Genre",
     next: "Next",
     prev: "Prev",
+    placementPrepRightTitle: "One last step!",
+    placementPrepRightSubtitle:
+      "Let's find out your English level to provide the best video recommendations.",
   },
 
   search: {
@@ -246,7 +249,7 @@ export const appEn = {
   },
 
   profileHeader: {
-    roleAdult: "Adult learner",
+    roleAdult: "Adult",
     roleStudent: "Student",
     roleTeacher: "Teacher",
     roleAdmin: "Administrator",
@@ -1334,5 +1337,12 @@ export const appEn = {
     readMore: "Read more",
     newBadge: "New",
     markAllAsRead: "Mark all as read",
+  },
+  videoPlayer: {
+    skipBack: "-10 sec",
+    skipForward: "+10 sec",
+    speed: "Speed",
+    subtitles: "Subtitles",
+    subtitlesOff: "Off",
   },
 } as const;

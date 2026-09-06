@@ -194,6 +194,9 @@ export const appUk = {
     filterGenre: "Жанр",
     next: "Далі",
     prev: "Назад",
+    placementPrepRightTitle: "Останній крок!",
+    placementPrepRightSubtitle:
+      "Давай визначимо твій рівень англійської, щоб підібрати найкращі відео.",
   },
 
   search: {
@@ -247,7 +250,7 @@ export const appUk = {
   },
 
   profileHeader: {
-    roleAdult: "Дорослий учень",
+    roleAdult: "Користувач",
     roleStudent: "Учень",
     roleTeacher: "Викладач",
     roleAdmin: "Адміністратор",
@@ -1331,5 +1334,12 @@ export const appUk = {
     readMore: "Читати повністю",
     newBadge: "Нове",
     markAllAsRead: "Позначити всі як прочитані",
+  },
+  videoPlayer: {
+    skipBack: "-10 сек",
+    skipForward: "+10 сек",
+    speed: "Швидкість",
+    subtitles: "Субтитри",
+    subtitlesOff: "Вимкнено",
   },
 } as const;

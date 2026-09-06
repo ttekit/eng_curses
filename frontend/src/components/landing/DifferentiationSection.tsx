@@ -10,7 +10,7 @@ export function DifferentiationSection() {
   return (
     <section
       id="why-explys-different"
-      className="scroll-mt-24 border-t border-border bg-background py-20 font-display"
+      className="relative scroll-mt-24 border-t border-border/60 bg-background/40 py-12 font-display backdrop-blur-[2px] sm:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-2xl text-center">
@@ -30,7 +30,7 @@ export function DifferentiationSection() {
             return (
               <div
                 key={item.title}
-                className="rounded-2xl border border-border bg-card p-6"
+                className="landing-card-glow rounded-2xl border border-border bg-card/60 p-6"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
                   <Icon className="h-5 w-5 text-primary" aria-hidden />

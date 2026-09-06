@@ -228,7 +228,7 @@ export class AuthService {
         email: dto.email.toLowerCase(),
         password: hashedPassword,
         name: dto.name,
-        role: "STUDENT",
+        role: roleLabel as UserRole,
         method: "CREDENTIALS",
         isVerified: isVerifiedOnCreate,
         subscriptionPlan: "smart",
@@ -532,10 +532,22 @@ export class AuthService {
         ? AuthMethod.GOOGLE
         : AuthMethod.CREDENTIALS;
 
+    let extractedRole = "ADULT";
+
+    const rawCookies = req.headers.cookie || "";
+    if (
+      rawCookies.toLowerCase().includes("oauth_role=teacher") ||
+      req.query.role === "teacher"
+    ) {
+      extractedRole = "TEACHER";
+    }
+
+    const finalRole = extractedRole as UserRole;
+
     const created = await this.userService.create({
       email,
       password: "",
-      role: UserRole.STUDENT,
+      role: finalRole,
       name: profile.name,
       picture: profile.picture,
       method: oauthMethod,
@@ -543,7 +555,11 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: created.id },
-      data: { isVerified: true },
+      data: {
+        role: finalRole, 
+        isVerified: true,
+        hasCompletedPlacement: finalRole === "TEACHER",
+      },
     });
 
     await this.prisma.account.create({

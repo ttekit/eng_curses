@@ -433,12 +433,12 @@ export class AuthController {
       });
 
       const isNewUser = result.isNewUser;
-      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/oauth/success?token=${result.access_token}&isNewUser=${isNewUser}`;
+      const redirectUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}oauth/success?token=${result.access_token}&isNewUser=${isNewUser}`;
 
       return res.redirect(redirectUrl);
     } catch (error) {
       console.error("OAuth Callback Error:", error);
-      const errorUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}/login?error=oauth_failed`;
+      const errorUrl = `${this.configService.getOrThrow<string>("FRONTEND_URL")}login?error=oauth_failed`;
       return res.redirect(errorUrl);
     }
   }

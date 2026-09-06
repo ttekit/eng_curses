@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -7,6 +8,7 @@ import {
 import { PrismaService } from "src/prisma.service";
 import { AlcorythmGeminiTranscriptTagClient } from "src/alcorythm/alcorythm-gemini-transcript-tags.client";
 import { webVttToPlainText } from "./webvtt-to-plain-text.util";
+import { RedisCatalogCacheClient } from "src/redis/in-memory-redis.client";
 
 export type VideoTranscriptTagsResult = {
   contentStatsId: number;
@@ -26,7 +28,8 @@ export class VideoTranscriptTagsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly geminiTranscriptTags: AlcorythmGeminiTranscriptTagClient,
-  ) { }
+    @Inject("REDIS_CLIENT") private readonly redis: RedisCatalogCacheClient,
+  ) {}
 
   /**
    * WebVTT → plain text → Gemini: CEFR `systemTags`, `userTags` (names from `genres` table only), `processingComplexity` 1–10 on ContentStats.
@@ -46,7 +49,9 @@ export class VideoTranscriptTagsService {
       include: { videoCaption: true },
     });
     if (!video) {
-      throw new NotFoundException(`ContentVideo with ID ${contentVideoId} not found`);
+      throw new NotFoundException(
+        `ContentVideo with ID ${contentVideoId} not found`,
+      );
     }
     const vttUrl = video.videoCaption?.subtitlesFileLink;
     if (!vttUrl?.trim()) {
@@ -87,7 +92,9 @@ export class VideoTranscriptTagsService {
     });
 
     if (metadata === null) {
-      this.logger.warn("GEMINI_API_KEY missing or metadata call failed; ContentStats not updated");
+      this.logger.warn(
+        "GEMINI_API_KEY missing or metadata call failed; ContentStats not updated",
+      );
       const existing = await this.prisma.contentStats.findUnique({
         where: { contentMediaId },
       });
@@ -117,42 +124,49 @@ export class VideoTranscriptTagsService {
         ? { userTags: metadata.userTags }
         : scope === "systemTags"
           ? {
-            systemTags: metadata.systemTags,
-            processingComplexity: metadata.complexity,
-          }
+              systemTags: metadata.systemTags,
+              processingComplexity: metadata.complexity,
+            }
           : {
-            systemTags: metadata.systemTags,
-            userTags: metadata.userTags,
-            processingComplexity: metadata.complexity,
-          };
+              systemTags: metadata.systemTags,
+              userTags: metadata.userTags,
+              processingComplexity: metadata.complexity,
+            };
 
     const createPayload =
       scope === "userTags"
         ? {
-          contentMediaId,
-          userTags: metadata.userTags,
-          systemTags: [] as string[],
-          processingComplexity: null as number | null,
-        }
+            contentMediaId,
+            userTags: metadata.userTags,
+            systemTags: [] as string[],
+            processingComplexity: null as number | null,
+          }
         : scope === "systemTags"
           ? {
-            contentMediaId,
-            systemTags: metadata.systemTags,
-            processingComplexity: metadata.complexity,
-            userTags: [] as string[],
-          }
+              contentMediaId,
+              systemTags: metadata.systemTags,
+              processingComplexity: metadata.complexity,
+              userTags: [] as string[],
+            }
           : {
-            contentMediaId,
-            systemTags: metadata.systemTags,
-            userTags: metadata.userTags,
-            processingComplexity: metadata.complexity,
-          };
+              contentMediaId,
+              systemTags: metadata.systemTags,
+              userTags: metadata.userTags,
+              processingComplexity: metadata.complexity,
+            };
 
     const updated = await this.prisma.contentStats.upsert({
       where: { contentMediaId },
       create: createPayload,
       update: updatePayload,
     });
+    try {
+      await this.redis.del("catalog:videos");
+      await this.redis.del("catalog:videos:admin");
+      await this.redis.del("catalog:videos:public_safe");
+    } catch (e) {
+      this.logger.warn(`Failed to clear redis cache: ${String(e)}`);
+    }
 
     return {
       contentStatsId: updated.id,

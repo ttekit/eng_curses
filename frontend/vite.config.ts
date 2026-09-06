@@ -1,6 +1,33 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { ManifestOptions, VitePWA } from "vite-plugin-pwa";
+
+const manifest: Partial<ManifestOptions> = {
+  theme_color: "#8936FF",
+  background_color: "#ffffff",
+  icons: [
+    {
+      purpose: "maskable",
+      sizes: "512x512",
+      src: "icon512_maskable.png",
+      type: "image/png",
+    },
+    {
+      purpose: "any",
+      sizes: "512x512",
+      src: "icon512_rounded.png",
+      type: "image/png",
+    },
+  ],
+  orientation: "any",
+  display: "standalone",
+  dir: "ltr",
+  lang: "ru",
+  name: "Explys",
+  start_url: "/",
+  short_name: "Explys",
+};
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -27,44 +54,51 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      tailwindcss()
+      tailwindcss(),
+      VitePWA({
+        registerType: "autoUpdate",
+        workbox: {
+          globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        },
+        manifest: manifest,
+      }),
     ],
     server: {
       proxy: useApiProxy
         ? {
-          "/__proxy": {
-            target: proxyTarget,
-            changeOrigin: true,
-            secure: true,
-            rewrite: (path) => path.replace(/^\/__proxy/, "") || "/",
-            configure(proxy) {
-              proxy.on("proxyReq", (proxyReq) => {
-                if (proxyBasicAuthHeader) {
-                  proxyReq.setHeader("Authorization", proxyBasicAuthHeader);
-                }
-              });
-              proxy.on("proxyRes", (proxyRes) => {
-                if (!proxyBasicAuthHeader) {
-                  return;
-                }
-                delete proxyRes.headers["www-authenticate"];
-                delete proxyRes.headers["WWW-Authenticate"];
-              });
+            "/__proxy": {
+              target: proxyTarget,
+              changeOrigin: true,
+              secure: true,
+              rewrite: (path) => path.replace(/^\/__proxy/, "") || "/",
+              configure(proxy) {
+                proxy.on("proxyReq", (proxyReq) => {
+                  if (proxyBasicAuthHeader) {
+                    proxyReq.setHeader("Authorization", proxyBasicAuthHeader);
+                  }
+                });
+                proxy.on("proxyRes", (proxyRes) => {
+                  if (!proxyBasicAuthHeader) {
+                    return;
+                  }
+                  delete proxyRes.headers["www-authenticate"];
+                  delete proxyRes.headers["WWW-Authenticate"];
+                });
+              },
             },
-          },
-        }
+          }
         : undefined,
     },
     build: {
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router', 'react-router-dom'],
-            player: ['hls.js'],
-            icons: ['lucide-react']
-          }
-        }
-      }
-    }
+            vendor: ["react", "react-dom", "react-router", "react-router-dom"],
+            player: ["hls.js"],
+            icons: ["lucide-react"],
+          },
+        },
+      },
+    },
   };
 });

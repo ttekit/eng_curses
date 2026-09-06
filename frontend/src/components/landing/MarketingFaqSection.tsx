@@ -40,7 +40,7 @@ export function MarketingFaqSection({
     <section
       id={id}
       className={cn(
-        "border-t border-border bg-background py-16 sm:py-20",
+        "relative border-t border-border/60 bg-background/40 py-16 backdrop-blur-[2px] sm:py-20",
         className,
       )}
       aria-labelledby={headingId}
@@ -61,7 +61,7 @@ export function MarketingFaqSection({
           {faqItems.map((item) => (
             <div
               key={item.question}
-              className="rounded-xl border border-border bg-card/50 p-5"
+              className="rounded-xl border border-border bg-card/60 p-5 backdrop-blur-sm transition-colors hover:border-primary/30"
             >
               <dt className="font-semibold text-foreground">{item.question}</dt>
               <dd className="mt-2 font-sans text-sm leading-relaxed text-muted-foreground">

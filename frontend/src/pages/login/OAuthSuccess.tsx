@@ -19,7 +19,6 @@ export default function OAuthSuccess() {
     if (token) {
       setStoredAccessToken(token);
 
-      // Завантажуємо профіль та перевіряємо його дані
       refreshProfile()
         .then((profile) => {
           if (!profile) {
@@ -27,9 +26,12 @@ export default function OAuthSuccess() {
             return;
           }
 
-          // 2. Если дата рождения есть, но юзер новый или не выбрал роль -> на детали регистрации
+          if (isNewUser || (profile.name && profile.name.includes("@"))) {
+            navigate("/google-username", { replace: true });
+            return;
+          }
+
           if (
-            isNewUser ||
             !profile.role ||
             profile.role === "choose" ||
             profile.role === "regular"
@@ -38,7 +40,6 @@ export default function OAuthSuccess() {
             return;
           }
 
-          // 3. Если старый юзер и всё заполнено -> в каталог
           navigate("/catalog", { replace: true });
         })
         .catch((err) => {

@@ -15,7 +15,7 @@ export function HowItWorksSection() {
   return (
     <section
       id="how-explys-works"
-      className="bg-card/50 scroll-mt-24 border-b border-t border-border py-24 font-display"
+      className="relative scroll-mt-24 border-b border-t border-border/60 bg-card/30 py-16 font-display backdrop-blur-[2px] sm:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
@@ -37,7 +37,7 @@ export function HowItWorksSection() {
               )}
 
               <div className="relative flex flex-col items-center text-center">
-                <div className="hover:cursor-pointer mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-border bg-muted transition-colors group-hover:border-primary">
+                <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-border bg-muted/80 backdrop-blur-sm transition-all duration-300 group-hover:border-primary group-hover:shadow-[0_0_24px_-8px_var(--glow)]">
                   {stepIcons[index]}
                 </div>
 
