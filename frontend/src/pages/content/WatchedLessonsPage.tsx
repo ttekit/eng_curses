@@ -29,6 +29,7 @@ import {
 import { appEn } from "../../locales/app/en";
 import { appUk } from "../../locales/app/uk";
 
+
 interface ContentVideo {
   id: number;
   videoName: string;
@@ -268,7 +269,7 @@ export default function WatchedLessonsPage() {
           if (list.length > 0) {
             window.location.reload();
           }
-        } catch (e) { }
+        } catch (e) { console.log(e) }
       }, 5000);
       return () => clearInterval(interval);
     }
@@ -301,7 +302,7 @@ export default function WatchedLessonsPage() {
       />
       <div className="flex w-full max-w-[100vw]">
         <CatalogSidebar
-          onSelectLevel={() => {}}
+          onSelectLevel={() => { }}
           reserveTopNavSpace={false}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}

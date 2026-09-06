@@ -66,10 +66,6 @@ const router = createBrowserRouter([
       { path: "/register-teacher", element: <RegistrationMain /> },
       // { path: "/register-details", element: <RegistrationDetails /> },
       {
-        path: "/google-username",
-        element: <GoogleUsernamePage />,
-      },
-      {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
       },
