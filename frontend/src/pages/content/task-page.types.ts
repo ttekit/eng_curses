@@ -15,6 +15,7 @@ export type TaskStar = {
   normalizedQuestions?: TestQuestion[];
   contentStatus?: "pending" | "generating" | "ready";
   contentReady?: boolean;
+  description?: string | null;
 };
 
 export type GrammarExample = { en: string; uk: string };

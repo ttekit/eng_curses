@@ -167,9 +167,6 @@ export default function TaskPage() {
         <main className="mx-auto max-w-2xl px-4 pt-6">
           <StarLoadingScreen
             starName={star?.name}
-            message={loading_message_for_status(
-              star ? read_content_status(star) : "pending",
-            )}
           />
         </main>
       </div>
