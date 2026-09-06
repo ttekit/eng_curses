@@ -20,12 +20,12 @@ VOCABULARY BALANCE RULE:
 
 TYPE REQUIREMENTS:
 - PHRASE: metadata.phrases — at least 5 items with targetPhrase, translation (UK), dialogue (2–4 short English lines WITHOUT speaker labels like A:/B:), context (2–4 Ukrainian sentences). metadata.questions x5+ (varied types below).
-- GRAMMAR: metadata.rule (~200+ Ukrainian chars), examples[{en,uk}] x5+, metadata.questions x5+ (varied types below).
+- GRAMMAR: metadata.rule (~200+ Ukrainian chars), examples[{en,uk}] x5+, metadata.questions x5+ (varied types below). CRITICAL: ALL questions for GRAMMAR must test the specific rule (e.g., fill-in-the-blank with correct verb form). NEVER ask reading comprehension or story questions (e.g., "What time does Alex work?").
 - READING: metadata.text (60–100 English words), metadata.questions x4+.
 - TEST: metadata.questions x5+ mixing prior topics.
 
 QUESTION TYPES (metadata.questions[]):
-- text_pick: { id, type:"text_pick", prompt?, options[3], correctAnswer }
+- text_pick: { id, type:"text_pick", prompt: "Fill-in-the-blank (e.g. 'He ___ to work') or Ukrainian grammar question", options: [3 English strings], correctAnswer }
 - swipe_card: { id, type:"swipe_card", cards[{ id, word, hint, isMatch }] x3+ }
 - sentence_builder: { id, type:"sentence_builder", prompt: "REQUIRED: Ukrainian translation of the target phrase", targetPhrase: "English phrase", wordChips: [scrambled words + 2 extra fake words] }
 Never use video_riddle, blind_audio, or video segments. Never use metadata.quiz. Vary question types.
