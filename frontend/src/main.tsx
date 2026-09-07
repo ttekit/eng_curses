@@ -55,7 +55,7 @@ import WhatsNewPage from "./pages/content/WhatsNewPage";
 import TaskPage from "./pages/content/TaskPage";
 import TestSessionDemoPage from "./pages/content/TestSessionDemoPage";
 import FeedPage from "./pages/feed/FeedPage";
-
+import GoogleUsernamePage from "./components/GoogleUsernamePage";
 
 const router = createBrowserRouter([
   {
@@ -65,6 +65,10 @@ const router = createBrowserRouter([
       { path: "/register", element: <RegistrationMain /> },
       { path: "/register-teacher", element: <RegistrationMain /> },
       // { path: "/register-details", element: <RegistrationDetails /> },
+      {
+        path: "/google-username",
+        element: <GoogleUsernamePage />,
+      },
       {
         path: "/register-preferences",
         element: <RegistrationPreferences />,
@@ -146,7 +150,6 @@ const router = createBrowserRouter([
               { path: "/content/:id?", element: <ContentPage /> },
               { path: "/task/:id", element: <TaskPage /> },
               { path: "/test-session-demo", element: <TestSessionDemoPage /> },
-
             ],
           },
         ],
